@@ -1,4 +1,5 @@
 import 'package:bsb/core/strings.dart';
+import 'package:bsb/ui/home/home.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -11,31 +12,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: Strings.appName,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
-        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF606f49)),
       ),
       home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: const Text('Hello World'),
     );
   }
 }
