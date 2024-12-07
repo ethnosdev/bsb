@@ -1,0 +1,53 @@
+﻿<ScriptureText>
+  <StyleSheet>usfm.sty</StyleSheet>
+  <Versification>4</Versification>
+  <LanguageIsoCode>en:::</LanguageIsoCode>
+  <Language>English</Language>
+  <MinParatextVersion>8.0.100.76</MinParatextVersion>
+  <FullName>Berean Standard Bible</FullName>
+  <Encoding>65001</Encoding>
+  <Editable>T</Editable>
+  <Copyright>&lt;p&gt;Berean Standard Bible © Bible Hub, 2020.&lt;/p&gt;</Copyright>
+  <NormalizationForm>NFC</NormalizationForm>
+  <Name>BSB</Name>
+  <Guid>bba9f401835264639b62f3760c5b52a5e78ecb04</Guid>
+  <DefaultFont>Charis SIL</DefaultFont>
+  <DefaultFontSize>12</DefaultFontSize>
+  <FontFeatures />
+  <HtmlLanguage />
+  <AssociatedLexicalProject />
+  <FileNameBookNameForm>41MAT</FileNameBookNameForm>
+  <FileNamePrePart />
+  <FileNamePostPart>BSB.SFM</FileNamePostPart>
+  <BiblicalTermsListSetting>Major::BiblicalTerms.xml</BiblicalTermsListSetting>
+  <MatchBasedOnStems>F</MatchBasedOnStems>
+  <AllowReadAccess>F</AllowReadAccess>
+  <AllowSharingWithSLDR>F</AllowSharingWithSLDR>
+  <Visibility>Public</Visibility>
+  <TranslationInfo>Standard::</TranslationInfo>
+  <EncodingConverter />
+  <UsfmVersion>3</UsfmVersion>
+  <ParallelPassagesBooks>000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000</ParallelPassagesBooks>
+  <InitialImportBooksDirectory>C:\main\000bsbusfm</InitialImportBooksDirectory>
+  <BooksPresent>111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000</BooksPresent>
+  <ParatextRegistryId>sRpBAczyzsHLCepRu</ParatextRegistryId>
+  <ChapterVerseSeparator>:</ChapterVerseSeparator>
+  <ReferenceFinalPunctuation>.</ReferenceFinalPunctuation>
+  <BookSourceForMarkerXt>Abbreviation</BookSourceForMarkerXt>
+  <BookSourceForMarkerR>ShortName</BookSourceForMarkerR>
+  <OriginRangeOption>MatchVerseExactly</OriginRangeOption>
+  <CrossReferenceSettingsHaveBeenReviewed>T</CrossReferenceSettingsHaveBeenReviewed>
+  <RefsMustMatchVerseSegments>False</RefsMustMatchVerseSegments>
+  <SegmentsMustHaveFinalPunctuation>False</SegmentsMustHaveFinalPunctuation>
+  <NoSpaceBetweenBookAndChapter>False</NoSpaceBetweenBookAndChapter>
+  <RangeIndicator>–</RangeIndicator>
+  <SequenceIndicator>,</SequenceIndicator>
+  <ChapterRangeSeparator>—</ChapterRangeSeparator>
+  <BookSequenceSeparator>; </BookSequenceSeparator>
+  <ChapterNumberSeparator>; </ChapterNumberSeparator>
+  <ReferenceExtraMaterial />
+  <GBCId>60e757ac1f17fd0615b2d256</GBCId>
+  <GBCSummary>English(eng), Berean Standard Bible, United States of America, Bible, 2020-12-01, Published, BSB, dbl: matches</GBCSummary>
+  <DateArchived>2021-07-12T18:26:22.524535</DateArchived>
+  <Naming PrePart="" PostPart="BSB.SFM" BookNameForm="41MAT" />
+</ScriptureText>
