@@ -14,7 +14,7 @@ class BookChooser extends StatefulWidget {
     required this.onBookSelected,
   });
 
-  final void Function(String) onBookSelected;
+  final void Function(String bookId, int chapter) onBookSelected;
 
   static const Color ot1 = Color(0xFFe9edc9);
   static const Color ot2 = Color(0xFFccd5ae);
@@ -48,7 +48,7 @@ class _BookChooserState extends State<BookChooser> {
         _chapterNotifier.value = '$chapter';
       case ChapterSelectionState.end:
         _chapterNotifier.value = '';
-        widget.onBookSelected('$book $chapter');
+        widget.onBookSelected(book, chapter);
     }
   }
 
@@ -679,7 +679,7 @@ class BookItem extends StatefulWidget {
 
   final String title;
   final Color color;
-  final void Function(String) onTap;
+  final void Function(String bookId, int chapter) onTap;
   final int chapterCount;
   final void Function(String, int, ChapterSelectionState) onSelectionUpdate;
 
@@ -702,7 +702,7 @@ class _BookItemState extends State<BookItem> {
           onPanUpdate: _onPanUpdate,
           onPanEnd: _onPanEnd,
           child: InkWell(
-            onTap: () => widget.onTap('${widget.title.toUpperCase()} 1'),
+            onTap: () => widget.onTap(widget.title.toUpperCase(), 1),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(width: 0.5),
