@@ -6,8 +6,10 @@ environment:
   sdk: ^3.6.0
 
 dependencies:
-  sqflite: ^2.4.1
+  # sqflite: ^2.4.1
   path: ^1.9.1
+  # path_provider: ^2.1.5
+  sqlite3: ^2.5.0
 
 dev_dependencies:
   lints: ^5.0.0
