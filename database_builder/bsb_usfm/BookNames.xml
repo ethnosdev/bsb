@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BookNames>
+  <book code="GEN" abbr="" short="Genesis" long="Genesis" />
+  <book code="EXO" abbr="" short="Exodus" long="Exodus" />
+  <book code="LEV" abbr="" short="Leviticus" long="Leviticus" />
+  <book code="NUM" abbr="" short="Numbers" long="Numbers" />
+  <book code="DEU" abbr="" short="Deuteronomy" long="Deuteronomy" />
+  <book code="JOS" abbr="" short="Joshua" long="Joshua" />
+  <book code="JDG" abbr="" short="Judges" long="Judges" />
+  <book code="RUT" abbr="" short="Ruth" long="Ruth" />
+  <book code="1SA" abbr="" short="1 Samuel" long="1 Samuel" />
+  <book code="2SA" abbr="" short="2 Samuel" long="2 Samuel" />
+  <book code="1KI" abbr="" short="1 Kings" long="1 Kings" />
+  <book code="2KI" abbr="" short="2 Kings" long="2 Kings" />
+  <book code="1CH" abbr="" short="1 Chronicles" long="1 Chronicles" />
+  <book code="2CH" abbr="" short="2 Chronicles" long="2 Chronicles" />
+  <book code="EZR" abbr="" short="Ezra" long="Ezra" />
+  <book code="NEH" abbr="" short="Nehemiah" long="Nehemiah" />
+  <book code="EST" abbr="" short="Esther" long="Esther" />
+  <book code="JOB" abbr="" short="Job" long="Job" />
+  <book code="PSA" abbr="" short="Psalms" long="Psalms" />
+  <book code="PRO" abbr="" short="Proverbs" long="Proverbs" />
+  <book code="ECC" abbr="" short="Ecclesiastes" long="Ecclesiastes" />
+  <book code="SNG" abbr="" short="Song" long="Song" />
+  <book code="ISA" abbr="" short="Isaiah" long="Isaiah" />
+  <book code="JER" abbr="" short="Jeremiah" long="Jeremiah" />
+  <book code="LAM" abbr="" short="Lamentations" long="Lamentations" />
+  <book code="EZK" abbr="" short="Ezekiel" long="Ezekiel" />
+  <book code="DAN" abbr="" short="Daniel" long="Daniel" />
+  <book code="HOS" abbr="" short="Hosea" long="Hosea" />
+  <book code="JOL" abbr="" short="Joel" long="Joel" />
+  <book code="AMO" abbr="" short="Amos" long="Amos" />
+  <book code="OBA" abbr="" short="Obadiah" long="Obadiah" />
+  <book code="JON" abbr="" short="Jonah" long="Jonah" />
+  <book code="MIC" abbr="" short="Micah" long="Micah" />
+  <book code="NAM" abbr="" short="Nahum" long="Nahum" />
+  <book code="HAB" abbr="" short="Habakkuk" long="Habakkuk" />
+  <book code="ZEP" abbr="" short="Zephaniah" long="Zephaniah" />
+  <book code="HAG" abbr="" short="Haggai" long="Haggai" />
+  <book code="ZEC" abbr="" short="Zechariah" long="Zechariah" />
+  <book code="MAL" abbr="" short="Malachi" long="Malachi" />
+  <book code="MAT" abbr="" short="Matthew" long="Matthew" />
+  <book code="MRK" abbr="" short="Mark" long="Mark" />
+  <book code="LUK" abbr="" short="Luke" long="Luke" />
+  <book code="JHN" abbr="" short="John" long="John" />
+  <book code="ACT" abbr="" short="Acts" long="Acts" />
+  <book code="ROM" abbr="" short="Romans" long="Romans" />
+  <book code="1CO" abbr="" short="1 Corinthians" long="1 Corinthians" />
+  <book code="2CO" abbr="" short="2 Corinthians" long="2 Corinthians" />
+  <book code="GAL" abbr="" short="Galatians" long="Galatians" />
+  <book code="EPH" abbr="" short="Ephesians" long="Ephesians" />
+  <book code="PHP" abbr="" short="Philippians" long="Philippians" />
+  <book code="COL" abbr="" short="Colossians" long="Colossians" />
+  <book code="1TH" abbr="" short="1 Thessalonians" long="1 Thessalonians" />
+  <book code="2TH" abbr="" short="2 Thessalonians" long="2 Thessalonians" />
+  <book code="1TI" abbr="" short="1 Timothy" long="1 Timothy" />
+  <book code="2TI" abbr="" short="2 Timothy" long="2 Timothy" />
+  <book code="TIT" abbr="" short="Titus" long="Titus" />
+  <book code="PHM" abbr="" short="Philemon" long="Philemon" />
+  <book code="HEB" abbr="" short="Hebrews" long="Hebrews" />
+  <book code="JAS" abbr="" short="James" long="James" />
+  <book code="1PE" abbr="" short="1 Peter" long="1 Peter" />
+  <book code="2PE" abbr="" short="2 Peter" long="2 Peter" />
+  <book code="1JN" abbr="" short="1 John" long="1 John" />
+  <book code="2JN" abbr="" short="2 John" long="2 John" />
+  <book code="3JN" abbr="" short="3 John" long="3 John" />
+  <book code="JUD" abbr="" short="Jude" long="Jude" />
+  <book code="REV" abbr="" short="Revelation" long="Revelation" />
+  <book code="TOB" abbr="" short="" long="" />
+  <book code="JDT" abbr="" short="" long="" />
+  <book code="ESG" abbr="" short="" long="" />
+  <book code="WIS" abbr="" short="" long="" />
+  <book code="SIR" abbr="" short="" long="" />
+  <book code="BAR" abbr="" short="" long="" />
+  <book code="LJE" abbr="" short="" long="" />
+  <book code="S3Y" abbr="" short="" long="" />
+  <book code="SUS" abbr="" short="" long="" />
+  <book code="BEL" abbr="" short="" long="" />
+  <book code="1MA" abbr="" short="" long="" />
+  <book code="2MA" abbr="" short="" long="" />
+  <book code="3MA" abbr="" short="" long="" />
+  <book code="4MA" abbr="" short="" long="" />
+  <book code="1ES" abbr="" short="" long="" />
+  <book code="2ES" abbr="" short="" long="" />
+  <book code="MAN" abbr="" short="" long="" />
+  <book code="PS2" abbr="" short="" long="" />
+  <book code="ODA" abbr="" short="" long="" />
+  <book code="PSS" abbr="" short="" long="" />
+  <book code="JSA" abbr="" short="" long="" />
+  <book code="JDB" abbr="" short="" long="" />
+  <book code="TBS" abbr="" short="" long="" />
+  <book code="SST" abbr="" short="" long="" />
+  <book code="DNT" abbr="" short="" long="" />
+  <book code="BLT" abbr="" short="" long="" />
+  <book code="XXA" abbr="" short="" long="" />
+  <book code="XXB" abbr="" short="" long="" />
+  <book code="XXC" abbr="" short="" long="" />
+  <book code="XXD" abbr="" short="" long="" />
+  <book code="XXE" abbr="" short="" long="" />
+  <book code="XXF" abbr="" short="" long="" />
+  <book code="XXG" abbr="" short="" long="" />
+  <book code="FRT" abbr="" short="" long="" />
+  <book code="BAK" abbr="" short="" long="" />
+  <book code="OTH" abbr="" short="" long="" />
+  <book code="3ES" abbr="" short="" long="" />
+  <book code="EZA" abbr="" short="" long="" />
+  <book code="5EZ" abbr="" short="" long="" />
+  <book code="6EZ" abbr="" short="" long="" />
+  <book code="INT" abbr="" short="" long="" />
+  <book code="CNC" abbr="" short="" long="" />
+  <book code="GLO" abbr="" short="" long="" />
+  <book code="TDX" abbr="" short="" long="" />
+  <book code="NDX" abbr="" short="" long="" />
+  <book code="DAG" abbr="" short="" long="" />
+  <book code="PS3" abbr="" short="" long="" />
+  <book code="2BA" abbr="" short="" long="" />
+  <book code="LBA" abbr="" short="" long="" />
+  <book code="JUB" abbr="" short="" long="" />
+  <book code="ENO" abbr="" short="" long="" />
+  <book code="1MQ" abbr="" short="" long="" />
+  <book code="2MQ" abbr="" short="" long="" />
+  <book code="3MQ" abbr="" short="" long="" />
+  <book code="REP" abbr="" short="" long="" />
+  <book code="4BA" abbr="" short="" long="" />
+  <book code="LAO" abbr="" short="" long="" />
+</BookNames>

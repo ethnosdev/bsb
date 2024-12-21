@@ -1,0 +1,41 @@
+/*
+This file is from the Charis SIL project (https://software.sil.org/charis/).
+Copyright (c) 1997-2023 SIL International (http://www.sil.org/) with Reserved
+Font Names "Charis" and "SIL". This Font Software is licensed under the SIL
+Open Font License, Version 1.1 (http://scripts.sil.org/OFL).
+*/
+
+/* use Charis SIL - Regular in .woff2 format */
+@font-face {
+  font-family: CharisSILW;
+  src: url(CharisSIL-Regular.woff2);
+}
+/* use Charis SIL - Italic in .woff2 format */
+@font-face {
+  font-family: CharisSILW;
+  font-style: italic;
+  src: url(CharisSIL-Italic.woff2);
+}
+/* use Charis SIL - Bold in .woff2 format */
+@font-face {
+	font-family: CharisSILW;
+	font-weight: bold;
+	src: url(CharisSIL-Bold.woff2);
+}
+/* use Charis SIL - Bold Italic in .woff2 format */
+@font-face {
+	font-family: CharisSILW;
+	font-weight: bold;
+	font-style: italic;
+	src: url(CharisSIL-BoldItalic.woff2);
+}
+
+/* set body to use Charis SIL */
+body {
+  font-family: CharisSILW, sans-serif;
+    /* fall back to sans serif so that it's really obvious if the fonts don't load */
+}
+/* remove bold styling from heading */
+h1 {
+  font-weight: normal;	
+}

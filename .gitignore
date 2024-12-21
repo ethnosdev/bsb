@@ -1,0 +1,17 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# Untracked supplemental files
+bsb_tables.xlsx
+bsb-book-9.5.pdf

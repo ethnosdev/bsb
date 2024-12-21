@@ -1,0 +1,25 @@
+{
+"charissil": {
+    "defaults": {
+        "ttf": "CharisSIL-Regular.ttf",
+        "woff": "CharisSIL-Regular.woff",
+        "woff2": "CharisSIL-Regular.woff2"
+    },
+    "family": "Charis SIL",
+    "files": {
+        "CharisSIL-Bold.ttf": { "axes": { "ital": 0, "wght": 700.0 }, "packagepath": "CharisSIL-Bold.ttf" },
+        "CharisSIL-Bold.woff": { "axes": { "ital": 0, "wght": 700.0 }, "packagepath": "web/CharisSIL-Bold.woff" },
+        "CharisSIL-Bold.woff2": { "axes": { "ital": 0, "wght": 700.0 }, "packagepath": "web/CharisSIL-Bold.woff2" },
+        "CharisSIL-BoldItalic.ttf": { "axes": { "ital": 1, "wght": 700.0 }, "packagepath": "CharisSIL-BoldItalic.ttf" },
+        "CharisSIL-BoldItalic.woff": { "axes": { "ital": 1, "wght": 700.0 }, "packagepath": "web/CharisSIL-BoldItalic.woff" },
+        "CharisSIL-BoldItalic.woff2": { "axes": { "ital": 1, "wght": 700.0 }, "packagepath": "web/CharisSIL-BoldItalic.woff2" },
+        "CharisSIL-Italic.ttf": { "axes": { "ital": 1, "wght": 400.0 }, "packagepath": "CharisSIL-Italic.ttf" },
+        "CharisSIL-Italic.woff": { "axes": { "ital": 1, "wght": 400.0 }, "packagepath": "web/CharisSIL-Italic.woff" },
+        "CharisSIL-Italic.woff2": { "axes": { "ital": 1, "wght": 400.0 }, "packagepath": "web/CharisSIL-Italic.woff2" },
+        "CharisSIL-Regular.ttf": { "axes": { "ital": 0, "wght": 400.0 }, "packagepath": "CharisSIL-Regular.ttf" },
+        "CharisSIL-Regular.woff": { "axes": { "ital": 0, "wght": 400.0 }, "packagepath": "web/CharisSIL-Regular.woff" },
+        "CharisSIL-Regular.woff2": { "axes": { "ital": 0, "wght": 400.0 }, "packagepath": "web/CharisSIL-Regular.woff2" }
+    },
+    "version": "6.200"
+}
+}
