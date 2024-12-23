@@ -50,3 +50,6 @@ pubspec.lock
 # Untracked supplemental files
 bsb_tables.xlsx
 bsb-book-9.5.pdf
+
+# Untracked during development
+database.db
