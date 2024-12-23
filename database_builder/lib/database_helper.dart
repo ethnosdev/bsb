@@ -6,13 +6,9 @@ import 'schema.dart';
 
 class DatabaseHelper {
   final String _databaseName = "database.db";
-  static const _databaseVersion = 1;
   late Database _database;
 
   void init() {
-    // final userDirectory =
-    // final path = join(userDirectory.path, _databaseName);
-    // print('init: $path');
     _database = sqlite3.open(_databaseName);
     _createTable();
   }
@@ -37,7 +33,7 @@ class DatabaseHelper {
     required String text,
   }) async {
     _database.execute('''
-      INSERT INTO ${Schema.tableName} (
+      INSERT INTO ${Schema.bibleTextTable} (
         ${Schema.colBookId},
         ${Schema.colChapter},
         ${Schema.colVerse},
@@ -50,7 +46,7 @@ class DatabaseHelper {
   Future<List<String>> fetchChapter(int bookId, int chapter) async {
     final verseLines = _database.select('''
       SELECT ${Schema.colText}
-      FROM ${Schema.tableName}
+      FROM ${Schema.bibleTextTable}
       WHERE ${Schema.colBookId} = ? AND ${Schema.colChapter} = ?
       ORDER BY ${Schema.colVerse} ASC, ${Schema.colLine} ASC
       ''', [bookId, chapter]);

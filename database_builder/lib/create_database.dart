@@ -31,17 +31,19 @@ Future<void> createDatabase() async {
 
     final lines = await file.readAsLines();
     for (String newLine in lines) {
-      text = '';
+      // text = '';
       final marker = newLine.split(RegExp(r'[ \n]'))[0];
       final remainder = newLine.substring(marker.length).trim();
       // print(marker);
       switch (marker) {
         case '\\id': // book
           bookId = _getBookId(remainder);
+          continue;
         case '\\c': // chapter
           chapter = _getChapter(remainder);
           verse = 0;
           line = 0;
+          continue;
         case '\\v':
           (verse, text) = _getVerse(remainder);
           line = 1;
@@ -49,8 +51,10 @@ Future<void> createDatabase() async {
         case '\\q2':
           text = remainder;
           line++;
+        case '\\b':
+          text = '$text\n\n';
         default:
-        //
+          continue;
       }
       if (text.isEmpty) continue;
 
