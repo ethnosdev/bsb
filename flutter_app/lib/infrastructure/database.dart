@@ -31,20 +31,36 @@ class Schema {
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 2;
   late Database _database;
 
   Future<void> init() async {
     var databasesPath = await getDatabasesPath();
     var path = join(databasesPath, _databaseName);
     var exists = await databaseExists(path);
+
     if (!exists) {
       print("Creating new copy from asset");
       await _copyDatabaseFromAssets(path);
     } else {
-      print("Opening existing database");
+      // Check if database needs update
+      var currentVersion = await getDatabaseVersion(path);
+      if (currentVersion != _databaseVersion) {
+        print("Updating database from version $currentVersion to $_databaseVersion");
+        await deleteDatabase(path);
+        await _copyDatabaseFromAssets(path);
+      } else {
+        print("Opening existing database");
+      }
     }
     _database = await openDatabase(path, version: _databaseVersion);
+  }
+
+  Future<int> getDatabaseVersion(String path) async {
+    var db = await openDatabase(path);
+    var version = await db.getVersion();
+    await db.close();
+    return version;
   }
 
   Future<void> _copyDatabaseFromAssets(String path) async {
@@ -55,6 +71,8 @@ class DatabaseHelper {
   }
 
   Future<String> getChapter(int bookId, int chapter) async {
+    print('bookId: $bookId, chapter: $chapter');
+    // final id = _bookIdMap[bookId]!;
     final List<Map<String, dynamic>> verses = await _database.query(Schema.tableName,
         columns: [Schema.colText],
         where: '${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',

@@ -1,8 +1,13 @@
 import 'package:bsb/core/strings.dart';
+import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/home.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  setupServiceLocator();
+  await getIt<DatabaseHelper>().init();
   runApp(const MyApp());
 }
 
