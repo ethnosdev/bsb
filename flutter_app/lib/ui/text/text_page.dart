@@ -32,16 +32,16 @@ class _TextPageState extends State<TextPage> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ValueListenableBuilder<String>(
+          child: ValueListenableBuilder<TextSpan>(
               valueListenable: textManager.textNotifier,
               builder: (context, text, child) {
-                return SelectableText(
+                return SelectableText.rich(
                   text,
-                  style: const TextStyle(
-                    fontSize: 12.0,
-                    height: 1.5,
-                    letterSpacing: 0.5,
-                  ),
+                  // style: const TextStyle(
+                  //   fontSize: 12.0,
+                  //   height: 1.5,
+                  //   letterSpacing: 0.5,
+                  // ),
                   textAlign: TextAlign.justify,
                 );
               }),

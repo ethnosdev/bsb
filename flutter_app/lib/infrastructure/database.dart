@@ -2,36 +2,37 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:database_builder/database_builder.dart';
 
 // TODO: add this as a monorepo import
-class Schema {
-  // Bible table
-  static const String tableName = "bible";
+// class Schema {
+//   // Bible table
+//   static const String tableName = "bible";
 
-  // Column names
-  static const String colId = '_id';
-  static const String colBookId = 'book';
-  static const String colChapter = 'chapter';
-  static const String colVerse = 'verse';
-  static const String colLine = 'line';
-  static const String colText = 'text';
+//   // Column names
+//   static const String colId = '_id';
+//   static const String colBookId = 'book';
+//   static const String colChapter = 'chapter';
+//   static const String colVerse = 'verse';
+//   static const String colLine = 'line';
+//   static const String colText = 'text';
 
-  // SQL statements
-  static const String createTable = '''
-  CREATE TABLE IF NOT EXISTS $tableName (
-    $colId INTEGER PRIMARY KEY AUTOINCREMENT,
-    $colBookId INTEGER NOT NULL,
-    $colChapter INTEGER NOT NULL,
-    $colVerse INTEGER NOT NULL,
-    $colLine INTEGER NOT NULL,
-    $colText TEXT NOT NULL
-  )
-  ''';
-}
+//   // SQL statements
+//   static const String createTable = '''
+//   CREATE TABLE IF NOT EXISTS $tableName (
+//     $colId INTEGER PRIMARY KEY AUTOINCREMENT,
+//     $colBookId INTEGER NOT NULL,
+//     $colChapter INTEGER NOT NULL,
+//     $colVerse INTEGER NOT NULL,
+//     $colLine INTEGER NOT NULL,
+//     $colText TEXT NOT NULL
+//   )
+//   ''';
+// }
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 2;
+  static const _databaseVersion = 3;
   late Database _database;
 
   Future<void> init() async {
@@ -70,15 +71,23 @@ class DatabaseHelper {
     await File(path).writeAsBytes(bytes, flush: true);
   }
 
-  Future<String> getChapter(int bookId, int chapter) async {
+  Future<List<Map<String, Object?>>> getChapter(int bookId, int chapter) async {
     print('bookId: $bookId, chapter: $chapter');
-    // final id = _bookIdMap[bookId]!;
-    final List<Map<String, dynamic>> verses = await _database.query(Schema.tableName,
-        columns: [Schema.colText],
-        where: '${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',
-        whereArgs: [bookId, chapter],
-        orderBy: '${Schema.colVerse} ASC');
+    final verses = await _database.query(
+      Schema.bibleTextTable,
+      columns: [
+        Schema.colVerse,
+        Schema.colLine,
+        Schema.colText,
+        Schema.colFootnote,
+        Schema.colFormat,
+        Schema.colType,
+      ],
+      where: '${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',
+      whereArgs: [bookId, chapter],
+      orderBy: '${Schema.colId} ASC',
+    );
 
-    return verses.map((verse) => verse[Schema.colText] as String).join(' ');
+    return verses;
   }
 }

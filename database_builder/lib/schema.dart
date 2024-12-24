@@ -48,6 +48,12 @@ enum TextType {
       (type) => type.name == value,
     );
   }
+
+  static TextType fromInt(int value) {
+    return TextType.values.firstWhere(
+      (type) => type.id == value,
+    );
+  }
 }
 
 enum Format {
@@ -62,4 +68,10 @@ enum Format {
 
   final int id;
   const Format(this.id);
+
+  static Format fromInt(int value) {
+    return Format.values.firstWhere(
+      (format) => format.id == value,
+    );
+  }
 }
