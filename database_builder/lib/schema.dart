@@ -69,6 +69,12 @@ enum Format {
   final int id;
   const Format(this.id);
 
+  static Format fromString(String value) {
+    return Format.values.firstWhere(
+      (format) => format.name == value,
+    );
+  }
+
   static Format fromInt(int value) {
     return Format.values.firstWhere(
       (format) => format.id == value,

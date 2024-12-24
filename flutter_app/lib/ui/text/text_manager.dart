@@ -16,82 +16,82 @@ class TextManager {
   }
 
   TextSpan _formatVerses(List<Map<String, Object?>> content) {
-    final spans = TextSpan(children: []);
+    final spans = <TextSpan>[];
     for (final row in content) {
       final type = TextType.fromInt(row['type'] as int);
       final text = row['text'] as String;
 
       switch (type) {
         case TextType.v:
-          spans.children?.add(TextSpan(text: text));
-          spans.children?.add(const TextSpan(text: ' '));
+          if (text == '\n') {
+            _addNewLine(spans);
+          } else {
+            spans.add(TextSpan(text: text));
+            spans.add(const TextSpan(text: ' '));
+          }
 
         case TextType.d:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          spans.add(TextSpan(
             text: text,
             style: const TextStyle(fontStyle: FontStyle.italic),
           ));
-          _addNewLineIfNeeded(spans);
+          _addNewLine(spans);
 
         case TextType.r:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          spans.add(TextSpan(
             text: text,
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ));
-          _addNewLineIfNeeded(spans);
+          _addNewLine(spans, addParagraphSpace: false);
 
         case TextType.s1:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          _addNewLine(spans);
+          spans.add(TextSpan(
             text: text,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ));
-          _addNewLineIfNeeded(spans);
+          _addNewLine(spans, addParagraphSpace: false);
 
         case TextType.s2:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          _addNewLine(spans);
+          spans.add(TextSpan(
             text: text,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ));
-          _addNewLineIfNeeded(spans);
+          _addNewLine(spans, addParagraphSpace: false);
 
         case TextType.ms:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          spans.add(TextSpan(
             text: text,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ));
-          _addNewLineIfNeeded(spans);
+          _addNewLine(spans, addParagraphSpace: false);
 
         case TextType.mr:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          spans.add(TextSpan(
             text: text,
             style: const TextStyle(fontSize: 16, color: Colors.grey),
           ));
-          _addNewLineIfNeeded(spans);
 
         case TextType.qa:
-          _addNewLineIfNeeded(spans);
-          spans.children?.add(TextSpan(
+          spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ));
-          _addNewLineIfNeeded(spans);
+          _addNewLine(spans, addParagraphSpace: false);
       }
     }
-    return spans;
+    return TextSpan(children: spans);
   }
 
-  void _addNewLineIfNeeded(TextSpan text) {
-    final spans = text.children;
-    if (spans == null) return;
+  void _addNewLine(List<TextSpan> spans, {bool addParagraphSpace = true}) {
     if (spans.isEmpty) return;
-    if (spans.last.toPlainText().endsWith('\n')) return;
-    text.children?.add(const TextSpan(text: '\n'));
+    spans.add(const TextSpan(text: '\n'));
+    if (addParagraphSpace) {
+      spans.add(
+        const TextSpan(text: '\n'),
+      );
+    }
   }
 
   String formatTitle(int bookId, int chapter) {

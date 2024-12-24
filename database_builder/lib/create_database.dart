@@ -57,46 +57,18 @@ Future<void> createDatabase() async {
           line = -1;
           continue;
         case 's1': // section heading level 1
-          type = TextType.s1;
-          text = remainder;
         case 's2': // section heading level 2
-          type = TextType.s2;
-          text = remainder;
         case 'r': // cross reference
-          type = TextType.r;
-          text = remainder;
         case 'ms': // major section (Psalms)
-          type = TextType.ms;
-          text = remainder;
         case 'mr': // major section range (Psalms)
-          type = TextType.mr;
-          text = remainder;
         case 'qa': // Acrostic heading (Psalm 119)
-          type = TextType.qa;
+          type = TextType.fromString(marker);
           text = remainder;
         case 'm': // margin
-          format = Format.m;
-          if (remainder.isEmpty) {
-            continue;
-          }
-          text = remainder;
-          line++;
         case 'pmo': // indented paragraph margin opening
-          format = Format.pmo;
-          if (remainder.isEmpty) {
-            continue;
-          }
-          text = remainder;
-          line++;
         case 'li1': // list item level 1
-          format = Format.li1;
-          if (remainder.isEmpty) {
-            continue;
-          }
-          text = remainder;
-          line++;
         case 'li2': // list item level 2
-          format = Format.li2;
+          format = Format.fromString(marker);
           if (remainder.isEmpty) {
             continue;
           }
@@ -115,6 +87,9 @@ Future<void> createDatabase() async {
           verse = 0;
           line = 1;
         case 'b': // break
+          if (type != TextType.v) {
+            continue;
+          }
           if (verse == -1) {
             continue;
           }
