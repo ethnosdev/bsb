@@ -35,8 +35,8 @@ class DatabaseHelper {
     required int? format,
     required String? footnote,
   }) async {
-    if (format == -1) {
-      throw Exception('Invalid format: $format for $bookId, $chapter, $verse');
+    if (text.isEmpty) {
+      throw Exception('Empty text for $bookId, $chapter, $verse');
     }
     _database.execute('''
       INSERT INTO ${Schema.bibleTextTable} (

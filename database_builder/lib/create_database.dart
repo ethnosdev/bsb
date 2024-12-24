@@ -63,6 +63,15 @@ Future<void> createDatabase() async {
         case 'r': // cross reference
           type = TextType.r;
           text = remainder;
+        case 'ms': // major section (Psalms)
+          type = TextType.ms;
+          text = remainder;
+        case 'mr': // major section range (Psalms)
+          type = TextType.mr;
+          text = remainder;
+        case 'qa': // Acrostic heading (Psalm 119)
+          type = TextType.qa;
+          text = remainder;
         case 'm': // margin
           format = Format.m;
           if (remainder.isEmpty) {
@@ -110,12 +119,21 @@ Future<void> createDatabase() async {
           text = '\n';
           line++;
           format = null;
-        case 'q1':
+        case 'q1': // poetry indentation level 1
           format = Format.q1;
           text = remainder;
           line++;
-        case 'q2':
+        case 'q2': // poetry indentation level 2
           format = Format.q2;
+          text = remainder;
+          line++;
+        case 'pc': // centered
+          format = Format.pc;
+          text = remainder;
+          line++;
+        // TODO: there is a centered itallic line in Habakkuk. Need to figure out what to do with it.
+        case 'qr': // right aligned
+          format = Format.qr;
           text = remainder;
           line++;
         default:
