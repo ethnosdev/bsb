@@ -93,4 +93,9 @@ class TextManager {
     if (spans.last.toPlainText().endsWith('\n')) return;
     text.children?.add(const TextSpan(text: '\n'));
   }
+
+  String formatTitle(int bookId, int chapter) {
+    final book = bookIdToFullNameMap[bookId]!;
+    return '$book $chapter';
+  }
 }
