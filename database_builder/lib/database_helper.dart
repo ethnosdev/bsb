@@ -41,12 +41,15 @@ class DatabaseHelper {
     _database.execute('''
       INSERT INTO ${Schema.bibleTextTable} (
         ${Schema.colBookId},
+        ${Schema.colType},
         ${Schema.colChapter},
         ${Schema.colVerse},
         ${Schema.colLine},
-        ${Schema.colText}
-      ) VALUES (?, ?, ?, ?, ?)
-      ''', [bookId, chapter, verse, line, text]);
+        ${Schema.colText},
+        ${Schema.colFormat},
+        ${Schema.colFootnote}
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ''', [bookId, type, chapter, verse, line, text, format, footnote]);
   }
 
   Future<List<String>> fetchChapter(int bookId, int chapter) async {

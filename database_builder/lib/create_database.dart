@@ -105,35 +105,51 @@ Future<void> createDatabase() async {
           (verse, text) = _getVerse(remainder);
           line = 1;
         case 'd': // descriptive title
+          type = TextType.d;
           if (remainder.isEmpty) {
             continue;
           }
-          type = TextType.d;
           text = remainder;
           verse = 0;
           line = 1;
         case 'b': // break
+          if (verse == -1) {
+            continue;
+          }
           if (format == null) {
-            throw Exception('Undefined format: $format');
+            print('Missing format for break, book: $bookId, chapter $chapter, verse $verse');
+            continue;
           }
           text = '\n';
           line++;
           format = null;
         case 'q1': // poetry indentation level 1
           format = Format.q1;
+          if (remainder.isEmpty) {
+            continue;
+          }
           text = remainder;
           line++;
         case 'q2': // poetry indentation level 2
           format = Format.q2;
+          if (remainder.isEmpty) {
+            continue;
+          }
           text = remainder;
           line++;
         case 'pc': // centered
           format = Format.pc;
+          if (remainder.isEmpty) {
+            continue;
+          }
           text = remainder;
           line++;
         // TODO: there is a centered itallic line in Habakkuk. Need to figure out what to do with it.
         case 'qr': // right aligned
           format = Format.qr;
+          if (remainder.isEmpty) {
+            continue;
+          }
           text = remainder;
           line++;
         default:
@@ -142,9 +158,14 @@ Future<void> createDatabase() async {
 
       (text, footnote) = extractFootnote(text);
 
+      if (type == null) {
+        print('Type null at: $marker (chapter: $chapter, verse: $verse)');
+        return;
+      }
+
       dbHelper.insert(
         bookId: bookId,
-        type: type!.id,
+        type: type.id,
         chapter: chapter,
         verse: verse,
         line: line,
@@ -153,13 +174,12 @@ Future<void> createDatabase() async {
         footnote: footnote,
       );
 
-      type = null;
       footnote = null;
       text = null;
     }
 
     // testing. Only do first book
-    break;
+    // break;
   }
 }
 
