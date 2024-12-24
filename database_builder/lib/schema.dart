@@ -23,8 +23,8 @@ class Schema {
     $colVerse INTEGER NOT NULL,
     $colLine INTEGER NOT NULL,
     $colText TEXT NOT NULL,
-    $colFormat INTEGER NOT NULL,
-    $colFootnote TEXT NOT NULL
+    $colFormat INTEGER,
+    $colFootnote TEXT
   )
   ''';
 }
@@ -51,6 +51,7 @@ enum TextType {
 }
 
 enum Format {
+  catchError(-1), // this should never be used entered in db
   m(0), // margin, no indentation
   q1(1), // poetry indentation level 1
   q2(2), // poetry indentation level 2

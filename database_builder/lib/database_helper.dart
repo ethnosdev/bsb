@@ -27,11 +27,17 @@ class DatabaseHelper {
 
   Future<void> insert({
     required int bookId,
+    required int type,
     required int chapter,
     required int verse,
     required int line,
     required String text,
+    required int? format,
+    required String? footnote,
   }) async {
+    if (format == -1) {
+      throw Exception('Invalid format: $format for $bookId, $chapter, $verse');
+    }
     _database.execute('''
       INSERT INTO ${Schema.bibleTextTable} (
         ${Schema.colBookId},
