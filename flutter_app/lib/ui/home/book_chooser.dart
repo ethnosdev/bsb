@@ -36,19 +36,21 @@ class BookChooser extends StatefulWidget {
 
 class _BookChooserState extends State<BookChooser> {
   final _chapterNotifier = ValueNotifier<String>('');
+  bool _isOT = false;
 
   void _onSelectingChapter(
     String book,
     int chapter,
     ChapterSelectionState selectionState,
   ) {
+    final bookId = _bookIdFromAbbreviation(book);
+    _isOT = bookId <= 39;
     switch (selectionState) {
       case ChapterSelectionState.start:
       case ChapterSelectionState.selecting:
         _chapterNotifier.value = '$chapter';
       case ChapterSelectionState.end:
         _chapterNotifier.value = '';
-        final bookId = _bookIdFromAbbreviation(book);
         widget.onBookSelected(bookId, chapter);
     }
   }
@@ -76,7 +78,9 @@ class _BookChooserState extends State<BookChooser> {
         ValueListenableBuilder<String>(
           valueListenable: _chapterNotifier,
           builder: (context, chapter, child) {
-            return Center(
+            final offset = _isOT ? 0.5 : -0.5;
+            return Align(
+              alignment: Alignment(0.0, offset),
               child: Text(
                 chapter,
                 style: const TextStyle(
