@@ -30,6 +30,23 @@ class _TextPageState extends State<TextPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(textManager.formatTitle(widget.bookId, widget.chapter)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.navigate_next),
+            onPressed: () {
+              final (bookId, chapter) = textManager.getNextChapter(widget.bookId, widget.chapter);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TextPage(
+                    bookId: bookId,
+                    chapter: chapter,
+                  ),
+                ),
+              );
+            },
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
