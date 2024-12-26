@@ -1,7 +1,7 @@
 name: bsb
-description: "A new Flutter project."
+description: "Berean Standard Bible"
 publish_to: 'none' 
-version: 1.0.0+1
+version: 0.1.0+1
 
 environment:
   sdk: ^3.5.4
