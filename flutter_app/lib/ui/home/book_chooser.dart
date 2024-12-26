@@ -77,7 +77,13 @@ class _BookChooserState extends State<BookChooser> {
           valueListenable: _chapterNotifier,
           builder: (context, chapter, child) {
             return Center(
-              child: Text(chapter, style: const TextStyle(fontSize: 100)),
+              child: Text(
+                chapter,
+                style: const TextStyle(
+                  fontSize: 100,
+                  color: Colors.black,
+                ),
+              ),
             );
           },
         ),

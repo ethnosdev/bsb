@@ -19,9 +19,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: Strings.appName,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF606f49)),
-        fontFamily: 'Charis',
+      theme: ThemeData.dark().copyWith(
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF606f49),
+          secondary: Color(0xFF606f49),
+        ),
+        textTheme: ThemeData.dark().textTheme.apply(
+              fontFamily: 'Charis',
+            ),
       ),
       home: const HomePage(),
     );
