@@ -18,15 +18,31 @@ class TextManager {
 
   TextSpan _formatVerses(List<Map<String, Object?>> content) {
     final spans = <TextSpan>[];
+    int oldVerseNumber = 0;
+
     for (final row in content) {
       final type = TextType.fromInt(row['type'] as int);
       final text = row['text'] as String;
+      final verseNumber = row['verse'] as int;
 
       switch (type) {
         case TextType.v:
           if (text == '\n') {
             _addNewLine(spans);
           } else {
+            if (oldVerseNumber != verseNumber) {
+              oldVerseNumber = verseNumber;
+              spans.add(
+                TextSpan(
+                  text: '$verseNumber ',
+                  style: const TextStyle(
+                    fontSize: 12 * multiplier,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            }
             spans.add(TextSpan(
               text: text,
               style: const TextStyle(
