@@ -39,11 +39,6 @@ class _TextPageState extends State<TextPage> {
               builder: (context, text, child) {
                 return SelectableText.rich(
                   text,
-                  // style: const TextStyle(
-                  //   fontSize: 12.0,
-                  //   height: 1.5,
-                  //   letterSpacing: 0.5,
-                  // ),
                   textAlign: TextAlign.justify,
                 );
               }),

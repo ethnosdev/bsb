@@ -8,6 +8,7 @@ import 'package:flutter/painting.dart';
 class TextManager {
   final _dbHelper = getIt<DatabaseHelper>();
   final textNotifier = ValueNotifier<TextSpan>(const TextSpan());
+  static const multiplier = 1.5;
 
   Future<void> getText(int bookId, int chapter) async {
     final content = await _dbHelper.getChapter(bookId, chapter);
@@ -26,21 +27,32 @@ class TextManager {
           if (text == '\n') {
             _addNewLine(spans);
           } else {
-            spans.add(TextSpan(text: text));
+            spans.add(TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 14 * multiplier,
+              ),
+            ));
             spans.add(const TextSpan(text: ' '));
           }
 
         case TextType.d:
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontStyle: FontStyle.italic),
+            style: const TextStyle(
+              fontSize: 14 * multiplier,
+              fontStyle: FontStyle.italic,
+            ),
           ));
           _addNewLine(spans);
 
         case TextType.r:
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: const TextStyle(
+              fontSize: 12 * multiplier,
+              color: Colors.grey,
+            ),
           ));
           _addNewLine(spans, addParagraphSpace: false);
 
@@ -48,7 +60,7 @@ class TextManager {
           _addNewLine(spans);
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 18 * multiplier, fontWeight: FontWeight.bold),
           ));
           _addNewLine(spans, addParagraphSpace: false);
 
@@ -56,27 +68,27 @@ class TextManager {
           _addNewLine(spans);
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 16 * multiplier, fontWeight: FontWeight.bold),
           ));
           _addNewLine(spans, addParagraphSpace: false);
 
         case TextType.ms:
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 20 * multiplier, fontWeight: FontWeight.bold),
           ));
           _addNewLine(spans, addParagraphSpace: false);
 
         case TextType.mr:
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 16, color: Colors.grey),
+            style: const TextStyle(fontSize: 16 * multiplier, color: Colors.grey),
           ));
 
         case TextType.qa:
           spans.add(TextSpan(
             text: text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 14 * multiplier, fontWeight: FontWeight.bold),
           ));
           _addNewLine(spans, addParagraphSpace: false);
       }
