@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -71,7 +72,7 @@ class DatabaseHelper {
     await File(path).writeAsBytes(bytes, flush: true);
   }
 
-  Future<List<Map<String, Object?>>> getChapter(int bookId, int chapter) async {
+  Future<List<VerseLine>> getChapter(int bookId, int chapter) async {
     print('bookId: $bookId, chapter: $chapter');
     final verses = await _database.query(
       Schema.bibleTextTable,
@@ -88,6 +89,20 @@ class DatabaseHelper {
       orderBy: '${Schema.colId} ASC',
     );
 
-    return verses;
+    return verses.map(
+      (verse) {
+        final format = verse[Schema.colFormat] as int?;
+        return VerseLine(
+          bookId: bookId,
+          chapter: chapter,
+          verse: verse[Schema.colVerse] as int,
+          line: verse[Schema.colLine] as int,
+          text: verse[Schema.colText] as String,
+          footnote: verse[Schema.colFootnote] as String?,
+          format: (format == null) ? null : Format.fromInt(format),
+          type: TextType.fromInt(verse[Schema.colType] as int),
+        );
+      },
+    ).toList();
   }
 }
