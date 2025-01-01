@@ -1,5 +1,5 @@
 import 'package:bsb/infrastructure/verse_line.dart';
-import 'package:bsb/ui/text/usfm_layout.dart';
+import 'package:bsb/ui/text/scripture_layout.dart';
 import 'package:flutter/material.dart';
 
 import 'text_manager.dart';
