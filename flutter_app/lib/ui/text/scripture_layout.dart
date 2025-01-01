@@ -67,6 +67,23 @@ class RenderUsfmLayout extends RenderBox {
         _chunks!.add(_Word(word: word));
       }
     }
+
+    TextPainter painter = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: const TextSpan(
+        text: 'Hello World',
+        style: TextStyle(
+          fontSize: 20.0,
+          color: Color(0xFF000000),
+        ),
+      ),
+    );
+
+    painter.layout(maxWidth: constraints.maxWidth);
+    final metrics = painter.computeLineMetrics();
+    for (final LineMetrics metric in metrics) {
+      print('Text on line: ${painter.getPositionForOffset(Offset(0, metric.baseline)).offset}');
+    }
   }
 
   // Take the one-word chunks and create styled paragraphs that are measured.
