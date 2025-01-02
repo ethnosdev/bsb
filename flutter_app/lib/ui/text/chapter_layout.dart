@@ -17,6 +17,7 @@ class _ChapterLayoutState extends State<ChapterLayout> {
   @override
   Widget build(BuildContext context) {
     final sections = <Widget>[];
+    int index = 0;
     for (final (span, type) in widget.paragraphs) {
       switch (type) {
         case TextType.v:
@@ -29,7 +30,10 @@ class _ChapterLayoutState extends State<ChapterLayout> {
           sections.add(_paragraphSpacing);
         case TextType.s1:
           sections.add(SelectableText.rich(span));
-          sections.add(_paragraphSpacing);
+          if (index < widget.paragraphs.length - 1 && //
+              widget.paragraphs[index + 1].$2 != TextType.r) {
+            sections.add(_paragraphSpacing);
+          }
         case TextType.s2:
           sections.add(SelectableText.rich(span));
           sections.add(_paragraphSpacing);
@@ -40,6 +44,7 @@ class _ChapterLayoutState extends State<ChapterLayout> {
         case TextType.qa:
           sections.add(SelectableText.rich(span));
       }
+      index++;
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

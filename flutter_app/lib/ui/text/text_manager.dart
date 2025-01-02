@@ -99,8 +99,8 @@ class TextManager {
             TextSpan(
               text: text,
               style: const TextStyle(
-                fontSize: 16 * multiplier,
-                fontWeight: FontWeight.bold,
+                fontSize: normalTextSize * multiplier,
+                fontStyle: FontStyle.italic,
               ),
             ),
             type
