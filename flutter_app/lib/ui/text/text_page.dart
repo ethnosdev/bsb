@@ -53,7 +53,7 @@ class _TextPageState extends State<TextPage> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ValueListenableBuilder<List<(TextSpan, TextType)>>(
+          child: ValueListenableBuilder<List<(InlineSpan, TextType, Format?)>>(
             valueListenable: textManager.paragraphNotifier,
             builder: (context, paragraphs, child) {
               return ChapterLayout(paragraphs: paragraphs);

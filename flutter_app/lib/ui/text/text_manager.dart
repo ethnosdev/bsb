@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 
 class TextManager {
   final _dbHelper = getIt<DatabaseHelper>();
-  final paragraphNotifier = ValueNotifier<List<(TextSpan, TextType)>>([]);
+  final paragraphNotifier = ValueNotifier<List<(InlineSpan, TextType, Format?)>>([]);
+  static const verseNumberSize = 10.0;
   static const normalTextSize = 14.0;
   static const multiplier = 1.5;
 
@@ -16,35 +17,43 @@ class TextManager {
   }
 
   void _formatVerses(List<VerseLine> content) {
-    final paragraphs = <(TextSpan, TextType)>[];
-    var verseSpans = <TextSpan>[];
+    final paragraphs = <(InlineSpan, TextType, Format?)>[];
+    var verseSpans = <InlineSpan>[];
     int oldVerseNumber = 0;
+    Format? oldFormat;
 
     for (final row in content) {
       final type = row.type;
+      final format = row.format;
       final text = row.text;
       final verseNumber = row.verse;
 
       if (type != TextType.v && verseSpans.isNotEmpty) {
-        paragraphs.add((TextSpan(children: verseSpans), TextType.v));
+        paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
         verseSpans = [];
       }
+      oldFormat = format;
 
       switch (type) {
         case TextType.v:
           if (text == '\n') {
-            paragraphs.add((TextSpan(children: verseSpans), type));
+            paragraphs.add((TextSpan(children: verseSpans), type, format));
             verseSpans = [];
           } else {
             if (oldVerseNumber != verseNumber) {
               oldVerseNumber = verseNumber;
               verseSpans.add(
-                TextSpan(
-                  text: '$verseNumber ',
-                  style: const TextStyle(
-                    fontSize: 12 * multiplier,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold,
+                WidgetSpan(
+                  child: Transform.translate(
+                    offset: const Offset(0, -1 * normalTextSize * multiplier / 3),
+                    child: Text(
+                      '$verseNumber ',
+                      style: const TextStyle(
+                        fontSize: verseNumberSize * multiplier,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -66,7 +75,8 @@ class TextManager {
                 fontStyle: FontStyle.italic,
               ),
             ),
-            type
+            type,
+            format,
           ));
 
         case TextType.r:
@@ -79,7 +89,8 @@ class TextManager {
                 fontStyle: FontStyle.italic,
               ),
             ),
-            type
+            type,
+            format,
           ));
 
         case TextType.s1:
@@ -91,7 +102,8 @@ class TextManager {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            type
+            type,
+            format,
           ));
 
         case TextType.s2:
@@ -103,7 +115,8 @@ class TextManager {
                 fontStyle: FontStyle.italic,
               ),
             ),
-            type
+            type,
+            format,
           ));
 
         case TextType.ms:
@@ -115,7 +128,8 @@ class TextManager {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            type
+            type,
+            format,
           ));
 
         case TextType.mr:
@@ -127,7 +141,8 @@ class TextManager {
                 color: Colors.grey,
               ),
             ),
-            type
+            type,
+            format,
           ));
 
         case TextType.qa:
@@ -139,13 +154,14 @@ class TextManager {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            type
+            type,
+            format,
           ));
       }
     }
 
     if (verseSpans.isNotEmpty) {
-      paragraphs.add((TextSpan(children: verseSpans), TextType.v));
+      paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
     }
 
     paragraphNotifier.value = paragraphs;
