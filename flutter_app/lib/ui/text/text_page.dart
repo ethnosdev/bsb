@@ -1,5 +1,5 @@
-import 'package:bsb/infrastructure/verse_line.dart';
-import 'package:bsb/ui/text/scripture_layout.dart';
+import 'package:bsb/ui/text/chapter_layout.dart';
+import 'package:database_builder/schema.dart';
 import 'package:flutter/material.dart';
 
 import 'text_manager.dart';
@@ -53,11 +53,12 @@ class _TextPageState extends State<TextPage> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ValueListenableBuilder<List<VerseLine>>(
-              valueListenable: textManager.textNotifier,
-              builder: (context, text, child) {
-                return ScriptureLayout(lines: text);
-              }),
+          child: ValueListenableBuilder<List<(TextSpan, TextType)>>(
+            valueListenable: textManager.paragraphNotifier,
+            builder: (context, paragraphs, child) {
+              return ChapterLayout(paragraphs: paragraphs);
+            },
+          ),
         ),
       ),
     );

@@ -6,120 +6,150 @@ import 'package:flutter/material.dart';
 
 class TextManager {
   final _dbHelper = getIt<DatabaseHelper>();
-  final textNotifier = ValueNotifier<List<VerseLine>>([]);
+  final paragraphNotifier = ValueNotifier<List<(TextSpan, TextType)>>([]);
+  static const normalTextSize = 14.0;
   static const multiplier = 1.5;
 
   Future<void> getText(int bookId, int chapter) async {
     final content = await _dbHelper.getChapter(bookId, chapter);
-    // final text = _formatVerses(content);
-    textNotifier.value = content;
+    _formatVerses(content);
   }
 
-  // List<VerseLine> _formatVerses(List<Map<String, Object?>> content) {
-  //   final spans = <TextSpan>[];
-  //   int oldVerseNumber = 0;
+  void _formatVerses(List<VerseLine> content) {
+    final paragraphs = <(TextSpan, TextType)>[];
+    var verseSpans = <TextSpan>[];
+    int oldVerseNumber = 0;
 
-  //   for (final row in content) {
-  //     final type = TextType.fromInt(row['type'] as int);
-  //     final text = row['text'] as String;
-  //     final verseNumber = row['verse'] as int;
+    for (final row in content) {
+      final type = row.type;
+      final text = row.text;
+      final verseNumber = row.verse;
 
-  //     switch (type) {
-  //       case TextType.v:
-  //         if (text == '\n') {
-  //           _addNewLine(spans);
-  //         } else {
-  //           if (oldVerseNumber != verseNumber) {
-  //             oldVerseNumber = verseNumber;
-  //             spans.add(
-  //               TextSpan(
-  //                 text: '$verseNumber ',
-  //                 style: const TextStyle(
-  //                   fontSize: 12 * multiplier,
-  //                   color: Colors.grey,
-  //                   fontWeight: FontWeight.bold,
-  //                 ),
-  //               ),
-  //             );
-  //           }
-  //           spans.add(TextSpan(
-  //             text: text,
-  //             style: const TextStyle(
-  //               fontSize: 14 * multiplier,
-  //             ),
-  //           ));
-  //           spans.add(const TextSpan(text: ' '));
-  //         }
+      if (type != TextType.v && verseSpans.isNotEmpty) {
+        paragraphs.add((TextSpan(children: verseSpans), TextType.v));
+        verseSpans = [];
+      }
 
-  //       case TextType.d:
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(
-  //             fontSize: 14 * multiplier,
-  //             fontStyle: FontStyle.italic,
-  //           ),
-  //         ));
-  //         _addNewLine(spans);
+      switch (type) {
+        case TextType.v:
+          if (text == '\n') {
+            paragraphs.add((TextSpan(children: verseSpans), type));
+            verseSpans = [];
+          } else {
+            if (oldVerseNumber != verseNumber) {
+              oldVerseNumber = verseNumber;
+              verseSpans.add(
+                TextSpan(
+                  text: '$verseNumber ',
+                  style: const TextStyle(
+                    fontSize: 12 * multiplier,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
+            }
+            verseSpans.add(TextSpan(
+              text: '$text ',
+              style: const TextStyle(
+                fontSize: normalTextSize * multiplier,
+              ),
+            ));
+          }
 
-  //       case TextType.r:
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(
-  //             fontSize: 12 * multiplier,
-  //             color: Colors.grey,
-  //           ),
-  //         ));
-  //         _addNewLine(spans, addParagraphSpace: false);
+        case TextType.d:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 14 * multiplier,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            type
+          ));
 
-  //       case TextType.s1:
-  //         _addNewLine(spans);
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(fontSize: 18 * multiplier, fontWeight: FontWeight.bold),
-  //         ));
-  //         _addNewLine(spans, addParagraphSpace: false);
+        case TextType.r:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: normalTextSize * multiplier,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            type
+          ));
 
-  //       case TextType.s2:
-  //         _addNewLine(spans);
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(fontSize: 16 * multiplier, fontWeight: FontWeight.bold),
-  //         ));
-  //         _addNewLine(spans, addParagraphSpace: false);
+        case TextType.s1:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: normalTextSize * multiplier,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            type
+          ));
 
-  //       case TextType.ms:
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(fontSize: 20 * multiplier, fontWeight: FontWeight.bold),
-  //         ));
-  //         _addNewLine(spans, addParagraphSpace: false);
+        case TextType.s2:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 16 * multiplier,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            type
+          ));
 
-  //       case TextType.mr:
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(fontSize: 16 * multiplier, color: Colors.grey),
-  //         ));
+        case TextType.ms:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 20 * multiplier,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            type
+          ));
 
-  //       case TextType.qa:
-  //         spans.add(TextSpan(
-  //           text: text,
-  //           style: const TextStyle(fontSize: 14 * multiplier, fontWeight: FontWeight.bold),
-  //         ));
-  //         _addNewLine(spans, addParagraphSpace: false);
-  //     }
-  //   }
-  //   return TextSpan(children: spans);
-  // }
+        case TextType.mr:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 16 * multiplier,
+                color: Colors.grey,
+              ),
+            ),
+            type
+          ));
 
-  // void _addNewLine(List<TextSpan> spans, {bool addParagraphSpace = true}) {
-  //   if (spans.isEmpty) return;
-  //   spans.add(const TextSpan(text: '\n'));
-  //   if (addParagraphSpace) {
-  //     spans.add(
-  //       const TextSpan(text: '\n'),
-  //     );
-  //   }
-  // }
+        case TextType.qa:
+          paragraphs.add((
+            TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: 14 * multiplier,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            type
+          ));
+      }
+    }
+
+    if (verseSpans.isNotEmpty) {
+      paragraphs.add((TextSpan(children: verseSpans), TextType.v));
+    }
+
+    paragraphNotifier.value = paragraphs;
+  }
 
   String formatTitle(int bookId, int chapter) {
     final book = bookIdToFullNameMap[bookId]!;
