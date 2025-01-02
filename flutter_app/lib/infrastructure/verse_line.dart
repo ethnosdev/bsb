@@ -5,7 +5,6 @@ class VerseLine {
     required this.bookId,
     required this.chapter,
     required this.verse,
-    required this.line,
     required this.text,
     required this.footnote,
     required this.format,
@@ -15,7 +14,6 @@ class VerseLine {
   final int bookId;
   final int chapter;
   final int verse;
-  final int line;
   final String text;
   final String? footnote;
   final Format? format;
@@ -28,7 +26,6 @@ class VerseLine {
         other.bookId == bookId &&
         other.chapter == chapter &&
         other.verse == verse &&
-        other.line == line &&
         other.text == text &&
         other.footnote == footnote &&
         other.format == format &&
@@ -40,7 +37,6 @@ class VerseLine {
         bookId,
         chapter,
         verse,
-        line,
         text,
         footnote,
         format,

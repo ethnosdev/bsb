@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 class TextManager {
   final _dbHelper = getIt<DatabaseHelper>();
   final paragraphNotifier = ValueNotifier<List<(InlineSpan, TextType, Format?)>>([]);
+  static const msTitleSize = 20.0;
+  static const mrTitleSize = 16.0;
   static const verseNumberSize = 10.0;
   static const normalTextSize = 14.0;
   static const multiplier = 1.5;
@@ -27,6 +29,9 @@ class TextManager {
       final format = row.format;
       final text = row.text;
       final verseNumber = row.verse;
+      if (verseNumber == 4) {
+        print('object');
+      }
 
       if (type != TextType.v && verseSpans.isNotEmpty) {
         paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
@@ -142,7 +147,7 @@ class TextManager {
             TextSpan(
               text: text,
               style: const TextStyle(
-                fontSize: 20 * multiplier,
+                fontSize: msTitleSize * multiplier,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -155,8 +160,9 @@ class TextManager {
             TextSpan(
               text: text,
               style: const TextStyle(
-                fontSize: 16 * multiplier,
+                fontSize: mrTitleSize * multiplier,
                 color: Colors.grey,
+                fontStyle: FontStyle.italic,
               ),
             ),
             type,

@@ -8,7 +8,7 @@ class Schema {
   static const String colBookId = 'book';
   static const String colChapter = 'chapter';
   static const String colVerse = 'verse';
-  static const String colLine = 'line';
+  // static const String colLine = 'line';
   static const String colText = 'text';
   static const String colFormat = 'format'; // m, q1, q2, pmo, li1, li2, pc, qr
   static const String colFootnote = 'footnote';
@@ -17,12 +17,11 @@ class Schema {
   static const String createTable = '''
   CREATE TABLE IF NOT EXISTS $bibleTextTable (
     $colId INTEGER PRIMARY KEY AUTOINCREMENT,
-    $colType INTEGER NOT NULL,
     $colBookId INTEGER NOT NULL,
     $colChapter INTEGER NOT NULL,
     $colVerse INTEGER NOT NULL,
-    $colLine INTEGER NOT NULL,
     $colText TEXT NOT NULL,
+    $colType INTEGER NOT NULL,
     $colFormat INTEGER,
     $colFootnote TEXT
   )

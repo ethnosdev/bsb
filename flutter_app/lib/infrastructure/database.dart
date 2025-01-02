@@ -5,35 +5,9 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:database_builder/database_builder.dart';
 
-// TODO: add this as a monorepo import
-// class Schema {
-//   // Bible table
-//   static const String tableName = "bible";
-
-//   // Column names
-//   static const String colId = '_id';
-//   static const String colBookId = 'book';
-//   static const String colChapter = 'chapter';
-//   static const String colVerse = 'verse';
-//   static const String colLine = 'line';
-//   static const String colText = 'text';
-
-//   // SQL statements
-//   static const String createTable = '''
-//   CREATE TABLE IF NOT EXISTS $tableName (
-//     $colId INTEGER PRIMARY KEY AUTOINCREMENT,
-//     $colBookId INTEGER NOT NULL,
-//     $colChapter INTEGER NOT NULL,
-//     $colVerse INTEGER NOT NULL,
-//     $colLine INTEGER NOT NULL,
-//     $colText TEXT NOT NULL
-//   )
-//   ''';
-// }
-
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 5;
+  static const _databaseVersion = 6;
   late Database _database;
 
   Future<void> init() async {
@@ -78,11 +52,10 @@ class DatabaseHelper {
       Schema.bibleTextTable,
       columns: [
         Schema.colVerse,
-        Schema.colLine,
         Schema.colText,
         Schema.colFootnote,
-        Schema.colFormat,
         Schema.colType,
+        Schema.colFormat,
       ],
       where: '${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',
       whereArgs: [bookId, chapter],
@@ -96,7 +69,6 @@ class DatabaseHelper {
           bookId: bookId,
           chapter: chapter,
           verse: verse[Schema.colVerse] as int,
-          line: verse[Schema.colLine] as int,
           text: verse[Schema.colText] as String,
           footnote: verse[Schema.colFootnote] as String?,
           format: (format == null) ? null : Format.fromInt(format),

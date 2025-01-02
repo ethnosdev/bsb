@@ -32,23 +32,35 @@ class _ChapterLayoutState extends State<ChapterLayout> {
           sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
         case TextType.s1:
+          if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
+            sections.add(_paragraphSpacing);
+          }
           sections.add(Text.rich(span));
           if (index < widget.paragraphs.length - 1 && //
               widget.paragraphs[index + 1].$2 != TextType.r) {
             sections.add(_paragraphSpacing);
           }
         case TextType.s2:
+          if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
+            sections.add(_paragraphSpacing);
+          }
           sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
         case TextType.ms:
-          sections.add(Text.rich(span));
+          sections.add(Center(
+            child: Text.rich(span),
+          ));
         case TextType.mr:
-          sections.add(Text.rich(span));
+          sections.add(Center(
+            child: Text.rich(span),
+          ));
+          sections.add(_paragraphSpacing);
         case TextType.qa:
           sections.add(Text.rich(span));
       }
       index++;
     }
+    sections.add(const SizedBox(height: 100));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: sections,

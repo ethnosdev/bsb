@@ -21,11 +21,11 @@ Future<void> createDatabase() async {
   int bookId = -1;
   int chapter = -1;
   int verse = -1;
-  int line = -1;
+  // int line = -1;
   String? text;
+  TextType? type;
   Format? format;
   String? footnote;
-  TextType? type;
 
   for (String bookFilename in bibleBooks) {
     print('Processing: $bookFilename');
@@ -54,7 +54,7 @@ Future<void> createDatabase() async {
         case 'c': // chapter
           chapter = _getChapter(remainder);
           verse = -1;
-          line = -1;
+          // line = -1;
           continue;
         case 's1': // section heading level 1
         case 's2': // section heading level 2
@@ -68,16 +68,17 @@ Future<void> createDatabase() async {
         case 'pmo': // indented paragraph margin opening
         case 'li1': // list item level 1
         case 'li2': // list item level 2
+          type = TextType.v;
           format = Format.fromString(marker);
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
-          line++;
+        // line++;
         case 'v': // verse
           type = TextType.v;
           (verse, text) = _getVerse(remainder);
-          line = 1;
+        // line = 1;
         case 'd': // descriptive title
           type = TextType.d;
           if (remainder.isEmpty) {
@@ -85,7 +86,7 @@ Future<void> createDatabase() async {
           }
           text = remainder;
           verse = 0;
-          line = 1;
+        // line = 1;
         case 'b': // break
           if (type != TextType.v) {
             continue;
@@ -98,37 +99,36 @@ Future<void> createDatabase() async {
             continue;
           }
           text = '\n';
-          line++;
           format = null;
         case 'q1': // poetry indentation level 1
+          type = TextType.v;
           format = Format.q1;
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
-          line++;
         case 'q2': // poetry indentation level 2
+          type = TextType.v;
           format = Format.q2;
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
-          line++;
         case 'pc': // centered
+          type = TextType.v;
           format = Format.pc;
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
-          line++;
         // TODO: there is a centered itallic line in Habakkuk. Need to figure out what to do with it.
         case 'qr': // right aligned
+          type = TextType.v;
           format = Format.qr;
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
-          line++;
         default:
           throw Exception('Unknown marker: $marker (chapter: $chapter, verse: $verse)');
       }
@@ -142,11 +142,10 @@ Future<void> createDatabase() async {
 
       dbHelper.insert(
         bookId: bookId,
-        type: type.id,
         chapter: chapter,
         verse: verse,
-        line: line,
         text: text,
+        type: type.id,
         format: format?.id,
         footnote: footnote,
       );
@@ -155,7 +154,7 @@ Future<void> createDatabase() async {
       text = null;
     }
 
-    // testing. Only do first book
+    // Uncomment this for testing the first book only:
     // break;
   }
 }
