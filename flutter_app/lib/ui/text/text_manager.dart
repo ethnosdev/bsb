@@ -20,7 +20,7 @@ class TextManager {
     final paragraphs = <(InlineSpan, TextType, Format?)>[];
     var verseSpans = <InlineSpan>[];
     int oldVerseNumber = 0;
-    Format? oldFormat;
+    Format oldFormat = Format.m;
 
     for (final row in content) {
       final type = row.type;
@@ -32,32 +32,43 @@ class TextManager {
         paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
         verseSpans = [];
       }
-      oldFormat = format;
 
       switch (type) {
         case TextType.v:
           if (text == '\n') {
-            paragraphs.add((TextSpan(children: verseSpans), type, format));
+            paragraphs.add((TextSpan(children: verseSpans), type, oldFormat));
             verseSpans = [];
-          } else {
-            if (oldVerseNumber != verseNumber) {
-              oldVerseNumber = verseNumber;
-              verseSpans.add(
-                WidgetSpan(
-                  child: Transform.translate(
-                    offset: const Offset(0, -1 * normalTextSize * multiplier / 3),
-                    child: Text(
-                      '$verseNumber ',
-                      style: const TextStyle(
-                        fontSize: verseNumberSize * multiplier,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.bold,
-                      ),
+            break;
+          }
+          // add verse number
+          if (oldVerseNumber != verseNumber) {
+            oldVerseNumber = verseNumber;
+            verseSpans.add(
+              WidgetSpan(
+                child: Transform.translate(
+                  offset: const Offset(0, -1 * normalTextSize * multiplier / 3),
+                  child: Text(
+                    '$verseNumber ',
+                    style: const TextStyle(
+                      fontSize: verseNumberSize * multiplier,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              );
-            }
+              ),
+            );
+          }
+          // add verse line text
+          if (format == Format.qr) {
+            verseSpans.add(TextSpan(
+              text: text,
+              style: const TextStyle(
+                fontSize: normalTextSize * multiplier,
+                fontStyle: FontStyle.italic,
+              ),
+            ));
+          } else {
             verseSpans.add(TextSpan(
               text: '$text ',
               style: const TextStyle(
@@ -66,12 +77,19 @@ class TextManager {
             ));
           }
 
+          // handle poetry
+          if (format == Format.q1 || format == Format.q2 || format == Format.qr) {
+            paragraphs.add((TextSpan(children: verseSpans), type, format));
+            verseSpans = [];
+          }
+          oldFormat = format ?? Format.m;
+
         case TextType.d:
           paragraphs.add((
             TextSpan(
               text: text,
               style: const TextStyle(
-                fontSize: 14 * multiplier,
+                fontSize: normalTextSize * multiplier,
                 fontStyle: FontStyle.italic,
               ),
             ),

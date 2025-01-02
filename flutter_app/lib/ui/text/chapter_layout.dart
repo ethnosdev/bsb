@@ -23,7 +23,11 @@ class _ChapterLayoutState extends State<ChapterLayout> {
         case TextType.v:
           _applyFormat(sections, span, format);
         case TextType.d:
-          sections.add(Text.rich(span));
+          sections.add(Text.rich(
+            span,
+            textAlign: TextAlign.center,
+          ));
+          sections.add(_paragraphSpacing);
         case TextType.r:
           sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
@@ -61,20 +65,28 @@ class _ChapterLayoutState extends State<ChapterLayout> {
         case Format.q1:
           text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
         case Format.q2:
-          text = Padding(padding: const EdgeInsets.only(left: 40), child: text);
+          text = Padding(padding: const EdgeInsets.only(left: 60), child: text);
         case Format.pmo:
           text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
         case Format.li1:
           text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
         case Format.li2:
-          text = Padding(padding: const EdgeInsets.only(left: 40), child: text);
+          text = Padding(padding: const EdgeInsets.only(left: 60), child: text);
         case Format.pc:
           text = Align(alignment: Alignment.center, child: text);
         case Format.qr:
-          text = Align(alignment: Alignment.centerRight, child: text);
+          text = Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: text,
+            ),
+          );
       }
     }
     sections.add(text);
-    sections.add(_paragraphSpacing);
+    if (format != Format.q1 && format != Format.q2) {
+      sections.add(_paragraphSpacing);
+    }
   }
 }
