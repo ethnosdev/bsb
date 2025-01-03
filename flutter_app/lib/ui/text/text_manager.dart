@@ -29,9 +29,6 @@ class TextManager {
       final format = row.format;
       final text = row.text;
       final verseNumber = row.verse;
-      if (verseNumber == 4) {
-        print('object');
-      }
 
       if (type != TextType.v && verseSpans.isNotEmpty) {
         paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));

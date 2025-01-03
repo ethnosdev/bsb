@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:bsb/ui/home/chapter_overlay.dart';
 import 'package:flutter/material.dart';
 
 enum ChapterSelectionState {
@@ -35,7 +36,7 @@ class BookChooser extends StatefulWidget {
 }
 
 class _BookChooserState extends State<BookChooser> {
-  final _locationNotifier = ValueNotifier<Offset?>(null);
+  final _locationNotifier = ValueNotifier<(int, Offset)?>(null);
   final _chapterNotifier = ValueNotifier<String>('');
   bool _isOT = false;
 
@@ -54,21 +55,20 @@ class _BookChooserState extends State<BookChooser> {
       case ChapterSelectionState.start:
         _onSelectionStart(offset!, chapterCount);
       case ChapterSelectionState.selecting:
-        // _chapterNotifier.value = '$chapter';
         _onSelectionUpdate(offset!, chapterCount);
       case ChapterSelectionState.end:
-        // _chapterNotifier.value = '';
-        // widget.onBookSelected(bookId, chapter);
         _onSelectionEnd(bookId);
     }
   }
 
   void _onSelectionStart(Offset offset, int chapterCount) {
+    _locationNotifier.value = (chapterCount, offset);
     _startPanPosition = offset;
     _lastChapter = -1;
   }
 
   void _onSelectionUpdate(Offset offset, int chapterCount) {
+    _locationNotifier.value = (chapterCount, offset);
     final currentPosition = offset;
     final relativePosition = currentPosition - _startPanPosition;
     final screenSize = MediaQuery.sizeOf(context);
@@ -88,28 +88,21 @@ class _BookChooserState extends State<BookChooser> {
     _lastChapter = chapter;
 
     _chapterNotifier.value = '$chapter';
-
-    // widget.onSelectionUpdate(
-    //   widget.title,
-    //   chapter,
-    //   ChapterSelectionState.selecting,
-    // );
   }
 
   void _onSelectionEnd(int bookId) {
+    _locationNotifier.value = null;
     _chapterNotifier.value = '';
     if (_lastChapter < 1) {
       return;
     }
     widget.onBookSelected(bookId, _lastChapter);
-    // widget.onSelectionUpdate(
-    //   widget.title,
-    //   ChapterSelectionState.end,
-    // );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
     return Stack(
       children: [
         Column(
@@ -144,17 +137,23 @@ class _BookChooserState extends State<BookChooser> {
             );
           },
         ),
-        ValueListenableBuilder<Offset?>(
+        ValueListenableBuilder<(int, Offset)?>(
           valueListenable: _locationNotifier,
-          builder: (context, location, child) {
-            if (location == null) {
+          builder: (context, data, child) {
+            if (data == null) {
               return const SizedBox();
             }
-            final item = Container(width: 30, height: 30, color: Colors.red);
+            final (chapterCount, location) = data;
+            // final item = Container(width: 30, height: 30, color: Colors.red);
             return Positioned(
-              left: location.dx,
-              top: location.dy,
-              child: item,
+              left: _startPanPosition.dx,
+              top: _startPanPosition.dy,
+              child: ChapterOverlay(
+                chapterCount: chapterCount,
+                localOffset: location - _startPanPosition,
+                width: maxPanLength,
+                onChapterSelected: (chapter) {},
+              ),
             );
           },
         ),
