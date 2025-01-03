@@ -35,24 +35,77 @@ class BookChooser extends StatefulWidget {
 }
 
 class _BookChooserState extends State<BookChooser> {
+  final _locationNotifier = ValueNotifier<Offset?>(null);
   final _chapterNotifier = ValueNotifier<String>('');
   bool _isOT = false;
 
+  Offset _startPanPosition = const Offset(0, 0);
+  int _lastChapter = -1;
+
   void _onSelectingChapter(
     String book,
-    int chapter,
+    int chapterCount,
     ChapterSelectionState selectionState,
+    Offset? offset,
   ) {
     final bookId = _bookIdFromAbbreviation(book);
     _isOT = bookId <= 39;
     switch (selectionState) {
       case ChapterSelectionState.start:
+        _onSelectionStart(offset!, chapterCount);
       case ChapterSelectionState.selecting:
-        _chapterNotifier.value = '$chapter';
+        // _chapterNotifier.value = '$chapter';
+        _onSelectionUpdate(offset!, chapterCount);
       case ChapterSelectionState.end:
-        _chapterNotifier.value = '';
-        widget.onBookSelected(bookId, chapter);
+        // _chapterNotifier.value = '';
+        // widget.onBookSelected(bookId, chapter);
+        _onSelectionEnd(bookId);
     }
+  }
+
+  void _onSelectionStart(Offset offset, int chapterCount) {
+    _startPanPosition = offset;
+    _lastChapter = -1;
+  }
+
+  void _onSelectionUpdate(Offset offset, int chapterCount) {
+    final currentPosition = offset;
+    final relativePosition = currentPosition - _startPanPosition;
+    final screenSize = MediaQuery.sizeOf(context);
+    final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
+    final percentX = (relativePosition.dx / maxPanLength).clamp(-1.0, 1.0).abs();
+    final percentY = (relativePosition.dy / maxPanLength).clamp(-1.0, 1.0).abs();
+
+    int units = (9 * percentX).round();
+    final maxTens = chapterCount ~/ 10;
+    final verticalIncrements = max(maxTens, 10); // 15 for Psalms
+    int tens = (verticalIncrements * percentY).round().clamp(0, maxTens);
+
+    final chapter = (10 * tens + units).clamp(1, chapterCount);
+    if (chapter == _lastChapter) {
+      return;
+    }
+    _lastChapter = chapter;
+
+    _chapterNotifier.value = '$chapter';
+
+    // widget.onSelectionUpdate(
+    //   widget.title,
+    //   chapter,
+    //   ChapterSelectionState.selecting,
+    // );
+  }
+
+  void _onSelectionEnd(int bookId) {
+    _chapterNotifier.value = '';
+    if (_lastChapter < 1) {
+      return;
+    }
+    widget.onBookSelected(bookId, _lastChapter);
+    // widget.onSelectionUpdate(
+    //   widget.title,
+    //   ChapterSelectionState.end,
+    // );
   }
 
   @override
@@ -88,6 +141,20 @@ class _BookChooserState extends State<BookChooser> {
                   color: Colors.black,
                 ),
               ),
+            );
+          },
+        ),
+        ValueListenableBuilder<Offset?>(
+          valueListenable: _locationNotifier,
+          builder: (context, location, child) {
+            if (location == null) {
+              return const SizedBox();
+            }
+            final item = Container(width: 30, height: 30, color: Colors.red);
+            return Positioned(
+              left: location.dx,
+              top: location.dy,
+              child: item,
             );
           },
         ),
@@ -692,7 +759,7 @@ class BookItem extends StatefulWidget {
   final Color color;
   final void Function(int bookId, int chapter) onTap;
   final int chapterCount;
-  final void Function(String, int, ChapterSelectionState) onSelectionUpdate;
+  final void Function(String, int, ChapterSelectionState, Offset) onSelectionUpdate;
 
   @override
   State<BookItem> createState() => _BookItemState();
@@ -741,42 +808,61 @@ class _BookItemState extends State<BookItem> {
   }
 
   void _onPanStart(DragStartDetails details) {
-    _startPanPosition = details.globalPosition;
-    _lastChapter = -1;
+    widget.onSelectionUpdate(
+      widget.title,
+      widget.chapterCount,
+      ChapterSelectionState.start,
+      details.globalPosition,
+    );
+    // _startPanPosition = details.globalPosition;
+    // _lastChapter = -1;
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    final currentPosition = details.globalPosition;
-    final relativePosition = currentPosition - _startPanPosition;
-    final screenSize = MediaQuery.sizeOf(context);
-    final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
-    final percentX = (relativePosition.dx / maxPanLength).clamp(-1.0, 1.0).abs();
-    final percentY = (relativePosition.dy / maxPanLength).clamp(-1.0, 1.0).abs();
-
-    int units = (9 * percentX).round();
-    final maxTens = widget.chapterCount ~/ 10;
-    final verticalIncrements = max(maxTens, 10); // 15 for Psalms
-    int tens = (verticalIncrements * percentY).round().clamp(0, maxTens);
-
-    final chapter = (10 * tens + units).clamp(1, widget.chapterCount);
-    if (chapter == _lastChapter) {
-      return;
-    }
-    _lastChapter = chapter;
-
     widget.onSelectionUpdate(
       widget.title,
-      chapter,
+      widget.chapterCount,
       ChapterSelectionState.selecting,
+      details.globalPosition,
     );
+
+    // final currentPosition = details.globalPosition;
+    // final relativePosition = currentPosition - _startPanPosition;
+    // final screenSize = MediaQuery.sizeOf(context);
+    // final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
+    // final percentX = (relativePosition.dx / maxPanLength).clamp(-1.0, 1.0).abs();
+    // final percentY = (relativePosition.dy / maxPanLength).clamp(-1.0, 1.0).abs();
+
+    // int units = (9 * percentX).round();
+    // final maxTens = widget.chapterCount ~/ 10;
+    // final verticalIncrements = max(maxTens, 10); // 15 for Psalms
+    // int tens = (verticalIncrements * percentY).round().clamp(0, maxTens);
+
+    // final chapter = (10 * tens + units).clamp(1, widget.chapterCount);
+    // if (chapter == _lastChapter) {
+    //   return;
+    // }
+    // _lastChapter = chapter;
+
+    // widget.onSelectionUpdate(
+    //   widget.title,
+    //   chapter,
+    //   ChapterSelectionState.selecting,
+    // );
   }
 
   void _onPanEnd(DragEndDetails details) {
     widget.onSelectionUpdate(
       widget.title,
-      _lastChapter,
+      widget.chapterCount,
       ChapterSelectionState.end,
+      details.globalPosition,
     );
+    // widget.onSelectionUpdate(
+    //   widget.title,
+    //   _lastChapter,
+    //   ChapterSelectionState.end,
+    // );
   }
 }
 

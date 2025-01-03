@@ -1,3 +1,11 @@
+# 0.3.0 - 2025.01.02
+
+- Formatting for poetry.
+- Add fonts for italic and bold.
+- Make verse numbers superscript.
+- Remove text justification.
+- Adjust space between paragraphs.
+
 # 0.2.0 - 2024.12.26
 
 - update launcher image
