@@ -67,27 +67,29 @@ class _BookChooserState extends State<BookChooser> {
     _lastChapter = -1;
   }
 
+  void _onChapterUpdate(int chapter) {}
+
   void _onSelectionUpdate(Offset offset, int chapterCount) {
     _locationNotifier.value = (chapterCount, offset);
-    final currentPosition = offset;
-    final relativePosition = currentPosition - _startPanPosition;
-    final screenSize = MediaQuery.sizeOf(context);
-    final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
-    final percentX = (relativePosition.dx / maxPanLength).clamp(-1.0, 1.0).abs();
-    final percentY = (relativePosition.dy / maxPanLength).clamp(-1.0, 1.0).abs();
+    // final currentPosition = offset;
+    // final relativePosition = currentPosition - _startPanPosition;
+    // final screenSize = MediaQuery.sizeOf(context);
+    // final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
+    // final percentX = (relativePosition.dx / maxPanLength).clamp(-1.0, 1.0).abs();
+    // final percentY = (relativePosition.dy / maxPanLength).clamp(-1.0, 1.0).abs();
 
-    int units = (9 * percentX).round();
-    final maxTens = chapterCount ~/ 10;
-    final verticalIncrements = max(maxTens, 10); // 15 for Psalms
-    int tens = (verticalIncrements * percentY).round().clamp(0, maxTens);
+    // int units = (9 * percentX).round();
+    // final maxTens = chapterCount ~/ 10;
+    // final verticalIncrements = max(maxTens, 10); // 15 for Psalms
+    // int tens = (verticalIncrements * percentY).round().clamp(0, maxTens);
 
-    final chapter = (10 * tens + units).clamp(1, chapterCount);
-    if (chapter == _lastChapter) {
-      return;
-    }
-    _lastChapter = chapter;
+    // final chapter = (10 * tens + units).clamp(1, chapterCount);
+    // if (chapter == _lastChapter) {
+    //   return;
+    // }
+    // _lastChapter = chapter;
 
-    _chapterNotifier.value = '$chapter';
+    // _chapterNotifier.value = '$chapter';
   }
 
   void _onSelectionEnd(int bookId) {
@@ -102,7 +104,7 @@ class _BookChooserState extends State<BookChooser> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
-    final maxPanLength = min(screenSize.width, screenSize.height) / 2 - 20;
+    final maxPanLength = min(screenSize.width, screenSize.height);
     return Stack(
       children: [
         Column(
@@ -124,7 +126,7 @@ class _BookChooserState extends State<BookChooser> {
         ValueListenableBuilder<String>(
           valueListenable: _chapterNotifier,
           builder: (context, chapter, child) {
-            final offset = _isOT ? 0.5 : -0.5;
+            final offset = _isOT ? 0.7 : -0.7;
             return Align(
               alignment: Alignment(0.0, offset),
               child: Text(
@@ -145,14 +147,17 @@ class _BookChooserState extends State<BookChooser> {
             }
             final (chapterCount, location) = data;
             // final item = Container(width: 30, height: 30, color: Colors.red);
-            return Positioned(
-              left: _startPanPosition.dx,
-              top: _startPanPosition.dy,
+            return Center(
               child: ChapterOverlay(
                 chapterCount: chapterCount,
-                localOffset: location - _startPanPosition,
-                width: maxPanLength,
-                onChapterSelected: (chapter) {},
+                offset: location - Offset(0, _startPanPosition.dy),
+                // width: maxPanLength,
+                onChapterSelected: (chapter) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _lastChapter = chapter;
+                    _chapterNotifier.value = '$chapter';
+                  });
+                },
               ),
             );
           },
