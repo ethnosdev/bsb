@@ -34,7 +34,7 @@ class BookChooser extends StatefulWidget {
 }
 
 class _BookChooserState extends State<BookChooser> {
-  final _locationNotifier = ValueNotifier<(int, Offset)?>(null);
+  final _locationNotifier = ValueNotifier<(int, int, Offset)?>(null);
 
   Offset _startPanPosition = const Offset(0, 0);
   int? _lastChapter;
@@ -43,34 +43,22 @@ class _BookChooserState extends State<BookChooser> {
     int bookId,
     int chapterCount,
     ChapterSelectionState selectionState,
-    Offset? offset,
+    Offset offset,
   ) {
     switch (selectionState) {
       case ChapterSelectionState.start:
-        _onSelectionStart(offset!, chapterCount);
+        _locationNotifier.value = (bookId, chapterCount, offset);
+        _startPanPosition = offset;
+        _lastChapter = null;
       case ChapterSelectionState.selecting:
-        _onSelectionUpdate(offset!, chapterCount);
+        _locationNotifier.value = (bookId, chapterCount, offset);
       case ChapterSelectionState.end:
-        _onSelectionEnd(bookId);
+        _locationNotifier.value = null;
+        if (_lastChapter == null) {
+          return;
+        }
+        widget.onBookSelected(bookId, _lastChapter!);
     }
-  }
-
-  void _onSelectionStart(Offset offset, int chapterCount) {
-    _locationNotifier.value = (chapterCount, offset);
-    _startPanPosition = offset;
-    _lastChapter = null;
-  }
-
-  void _onSelectionUpdate(Offset offset, int chapterCount) {
-    _locationNotifier.value = (chapterCount, offset);
-  }
-
-  void _onSelectionEnd(int bookId) {
-    _locationNotifier.value = null;
-    if (_lastChapter == null) {
-      return;
-    }
-    widget.onBookSelected(bookId, _lastChapter!);
   }
 
   @override
@@ -93,16 +81,16 @@ class _BookChooserState extends State<BookChooser> {
             _buildGeneralEpistles2(),
           ],
         ),
-        ValueListenableBuilder<(int, Offset)?>(
+        ValueListenableBuilder<(int, int, Offset)?>(
           valueListenable: _locationNotifier,
           builder: (context, data, child) {
             if (data == null) {
               return const SizedBox();
             }
-            final (chapterCount, location) = data;
+            final (bookId, chapterCount, location) = data;
             return Center(
               child: ChapterOverlay(
-                bookId: 1,
+                bookId: bookId,
                 chapterCount: chapterCount,
                 offset: location - Offset(0, _startPanPosition.dy),
                 onChapterSelected: (chapter) {

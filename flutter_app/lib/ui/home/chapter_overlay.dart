@@ -73,12 +73,6 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    // final screenWidth = MediaQuery.of(context).size.width;
-    // final padding = screenWidth * 0.05;
-    // final gridWidth = screenWidth - padding * 2;
-    // final int rowCount = ((widget.chapterCount + 1) / 10).ceil();
-    // final int columnCount = widget.chapterCount >= 10 ? 10 : widget.chapterCount;
-    // final double rowHeight = rowCount > 10 ? gridWidth / 15 : gridWidth / 10;
     final offset = _isOT ? 0.7 : -0.7;
     final chapterLabel = (_selectedChapter == null) ? '' : '$_selectedChapter';
     return Stack(
@@ -133,7 +127,6 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
             ),
           ),
         ),
-        // (_isOT) ? chapterWidget : const Spacer(),
       ],
     );
   }
