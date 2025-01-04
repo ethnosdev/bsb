@@ -68,8 +68,16 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     _selectedChapter = _findSelectedChapter();
     if (_selectedChapter != _lastSelectedChapter) {
       _lastSelectedChapter = _selectedChapter;
-      widget.onChapterSelected(_selectedChapter);
+      if (_isValidChapter(_selectedChapter)) {
+        widget.onChapterSelected(_selectedChapter);
+      } else {
+        widget.onChapterSelected(null);
+      }
     }
+  }
+
+  bool _isValidChapter(int? chapter) {
+    return chapter != null && chapter > 0 && chapter <= widget.chapterCount;
   }
 
   void _setOffset() {
@@ -110,8 +118,10 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     if (offset == null) {
       return null;
     }
-
-    for (int index = 1; index <= widget.chapterCount; index++) {
+    final max = _rowCount * _columnCount;
+    final start = _isShortBook ? 1 : 0;
+    for (int index = start; index <= max; index++) {
+      // for (int index = 1; index <= widget.chapterCount; index++) {
       final adjustedIndex = _isShortBook ? index - 1 : index;
       final cellX = _horizontalPadding + (adjustedIndex % _columnCount) * _columnWidth;
       final cellY = _verticalPadding + (index ~/ 10) * _rowHeight;
@@ -138,7 +148,7 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   @override
   Widget build(BuildContext context) {
     final offset = _isBeforeJob ? 1.0 : -1.0;
-    final chapterLabel = (_selectedChapter == null) ? '' : '$_selectedChapter';
+    final chapterLabel = _isValidChapter(_selectedChapter) ? '$_selectedChapter' : '';
     return Stack(
       children: [
         Align(
@@ -165,21 +175,24 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
                 crossAxisCount: _columnCount,
                 childAspectRatio: (_gridWidth / _columnCount) / _rowHeight,
               ),
-              itemCount: _isShortBook ? widget.chapterCount : widget.chapterCount + 1,
+              // itemCount: _isShortBook ? widget.chapterCount : widget.chapterCount + 1,
+              itemCount: _isShortBook ? widget.chapterCount : _rowCount * _columnCount,
               itemBuilder: (context, index) {
                 final chapter = (_isShortBook) ? index + 1 : index;
 
-                if (!_isShortBook && index == 0) {
-                  return const SizedBox();
-                }
+                // if (!_isShortBook && index == 0) {
+                //   return const SizedBox();
+                // }
                 final isSelected = _selectedChapter == chapter;
+                final label = chapter == 0 || chapter > widget.chapterCount ? '' : '$chapter';
+
                 return Container(
                   decoration: BoxDecoration(
                     color: isSelected ? Colors.white.withOpacity(0.3) : null,
                   ),
                   child: Center(
                     child: Text(
-                      '$chapter',
+                      label,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
