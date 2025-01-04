@@ -19,7 +19,10 @@ class ChapterOverlay extends StatefulWidget {
 }
 
 class _ChapterOverlayState extends State<ChapterOverlay> {
-  bool _isOT = false;
+  late bool _isOT;
+  // Less than 10 chapters: that means the grid will not have an empty cell
+  // at index 0.
+  late bool _isShortBook;
   int? _lastSelectedChapter;
   int? _selectedChapter;
   late double _padding;
@@ -40,15 +43,16 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     _padding = screenWidth * 0.05;
     _gridWidth = screenWidth - _padding * 2;
     _rowCount = ((widget.chapterCount + 1) / 10).ceil();
-    _columnCount = widget.chapterCount >= 10 ? 10 : widget.chapterCount;
+    _columnCount = widget.chapterCount < 10 ? widget.chapterCount : 10;
     _rowHeight = _rowCount > 10 ? _gridWidth / 15 : _gridWidth / 10;
-    _cellWidth = _gridWidth / 10;
+    _cellWidth = _gridWidth / _columnCount;
   }
 
   @override
   void didUpdateWidget(ChapterOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     _isOT = widget.bookId <= 39;
+    _isShortBook = widget.chapterCount < 10;
     _selectedChapter = _findSelectedChapter();
     if (_selectedChapter != _lastSelectedChapter) {
       _lastSelectedChapter = _selectedChapter;
@@ -74,7 +78,9 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     final clampedY = dy.clamp(gridTop, gridBottom);
 
     for (int index = 1; index <= widget.chapterCount; index++) {
-      final cellX = (index % 10) * _cellWidth + _padding;
+      // subtract 1 cell width to account for the missing empty cell at index 0.
+      final oneCell = _isShortBook ? _cellWidth : 0.0;
+      final cellX = (index % 10) * _cellWidth + _padding - oneCell;
       var cellY = (index ~/ 10) * _rowHeight - _rowHeight / 2;
 
       if (widget.offset.dx >= cellX &&
@@ -115,23 +121,23 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: _columnCount,
-                childAspectRatio: _rowCount > 10 //
-                    ? (_gridWidth / 10) / _rowHeight
-                    : 1.0,
+                childAspectRatio: (_gridWidth / _columnCount) / _rowHeight,
               ),
-              itemCount: widget.chapterCount + 1,
+              itemCount: _isShortBook ? widget.chapterCount : widget.chapterCount + 1,
               itemBuilder: (context, index) {
-                if (index == 0) {
+                final chapter = (_isShortBook) ? index + 1 : index;
+
+                if (!_isShortBook && index == 0) {
                   return const SizedBox();
                 }
-                final isSelected = _selectedChapter == index;
+                final isSelected = _selectedChapter == chapter;
                 return Container(
                   decoration: BoxDecoration(
                     color: isSelected ? Colors.white.withOpacity(0.3) : null,
                   ),
                   child: Center(
                     child: Text(
-                      '$index',
+                      '$chapter',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
