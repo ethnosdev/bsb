@@ -56,15 +56,26 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     }
   }
 
+  static const _hebrews = 58;
+  static const _revelation = 66;
+
   int? _findSelectedChapter() {
+    var dy = widget.offset.dy;
+
+    // Hebrews and Revelation should start the selection on the bottom row.
+    if (widget.bookId == _hebrews) {
+      dy += _rowHeight;
+    } else if (widget.bookId == _revelation) {
+      dy += _rowHeight * 2;
+    }
+
     final gridTop = -_rowHeight / 2;
     final gridBottom = _rowCount * _rowHeight - _rowHeight;
-    final clampedY = widget.offset.dy.clamp(gridTop, gridBottom);
-    print('clampedY: $clampedY, gridTop: $gridTop, gridBottom: $gridBottom');
+    final clampedY = dy.clamp(gridTop, gridBottom);
 
     for (int index = 1; index <= widget.chapterCount; index++) {
       final cellX = (index % 10) * _cellWidth + _padding;
-      final cellY = (index ~/ 10) * _rowHeight - _rowHeight / 2;
+      var cellY = (index ~/ 10) * _rowHeight - _rowHeight / 2;
 
       if (widget.offset.dx >= cellX &&
           widget.offset.dx < cellX + _cellWidth &&
