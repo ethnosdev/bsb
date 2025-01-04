@@ -57,31 +57,6 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     final gridHeight = _rowHeight * _rowCount;
     _verticalPadding = (screenSize.height - gridHeight) / 2;
     _horizontalPadding = (screenSize.width - _gridWidth) / 2;
-    // _maxGridLength = minLength * 0.9;
-    // final screenWidth = screenSize.width;
-    // final screenHeight = screenSize.height;
-    // if (screenSize.width > screenSize.height) {
-    //   _verticalPadding = minLength * 0.05;
-    //   _horizontalPadding = (screenSize.width - _maxGridLength) / 2;
-    // } else {
-    //   _horizontalPadding = minLength * 0.05;
-    //   _verticalPadding = (screenSize.height - _maxGridLength) / 2;
-    // }
-    // _padding = minLength * 0.05;
-    // final gridHeight = screenHeight - _padding * 2;
-
-    // if (screenWidth > screenHeight) {
-    //   _rowHeight = (screenHeight - _padding * 2) / _columnCount;
-    // if (_rowCount > 10) {
-    //   if (screenWidth > screenHeight) {
-    //     _rowHeight = gridHeight / 16;
-    //   } else {
-    //     _rowHeight = _gridWidth / 16;
-    //   }
-    // } else {
-    //   _rowHeight = _gridWidth / 10;
-    // }
-    // _rowHeight = _rowCount > 10 ? _gridWidth / 15 : _gridWidth / 10;
   }
 
   @override
@@ -98,100 +73,42 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   }
 
   void _setOffset() {
-    // if start offset is within the grid, then use that as the offset.
     _offset = widget.currentOffset;
 
-    // Case 1: Above
-    if (widget.startOffset.dy < _verticalPadding) {
-      _offset = Offset(
-        widget.currentOffset.dx,
-        widget.currentOffset.dy + _verticalPadding - widget.startOffset.dy + _rowHeight / 2,
-      );
+    final dx = widget.startOffset.dx;
+    final dy = widget.startOffset.dy;
+    final gridRight = _horizontalPadding + _gridWidth;
+    final gridBottom = _verticalPadding + _rowHeight * _rowCount;
+
+    double offsetX = widget.currentOffset.dx;
+    double offsetY = widget.currentOffset.dy;
+
+    // Handle X axis
+    if (dx < _horizontalPadding) {
+      offsetX += _horizontalPadding - dx + _columnWidth / 2;
+    } else if (dx > gridRight) {
+      offsetX -= dx - gridRight + _columnWidth / 2;
     }
 
-    // Case 2: Below
-    if (widget.startOffset.dy > _verticalPadding + _rowHeight * _rowCount) {
-      _offset = Offset(
-        widget.currentOffset.dx,
-        widget.currentOffset.dy - (widget.startOffset.dy - _verticalPadding - _rowHeight * _rowCount) - _rowHeight / 2,
-      );
+    // Handle Y axis
+    if (dy < _verticalPadding) {
+      offsetY += _verticalPadding - dy + _rowHeight / 2;
+    } else if (dy > gridBottom) {
+      offsetY -= dy - gridBottom + _rowHeight / 2;
     }
 
-    // Case 3: Left
-    if (widget.startOffset.dx < _horizontalPadding) {
-      _offset = Offset(
-        widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
-        widget.currentOffset.dy,
-      );
-    }
-
-    // Case 4: Right
-    if (widget.startOffset.dx > _horizontalPadding + _gridWidth) {
-      _offset = Offset(
-        widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
-        widget.currentOffset.dy,
-      );
-    }
-
-    // Case 5: Top-Left
-    if (widget.startOffset.dx < _horizontalPadding && widget.startOffset.dy < _verticalPadding) {
-      _offset = Offset(
-        widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
-        widget.currentOffset.dy + _verticalPadding - widget.startOffset.dy + _rowHeight / 2,
-      );
-    }
-
-    // Case 6: Top-Right
-    if (widget.startOffset.dx > _horizontalPadding + _gridWidth && widget.startOffset.dy < _verticalPadding) {
-      _offset = Offset(
-        widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
-        widget.currentOffset.dy + _verticalPadding - widget.startOffset.dy + _rowHeight / 2,
-      );
-    }
-
-    // Case 7: Bottom-Left
-    if (widget.startOffset.dx < _horizontalPadding &&
-        widget.startOffset.dy > _verticalPadding + _rowHeight * _rowCount) {
-      _offset = Offset(
-        widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
-        widget.currentOffset.dy - (widget.startOffset.dy - _verticalPadding - _rowHeight * _rowCount) - _rowHeight / 2,
-      );
-    }
-
-    // Case 8: Bottom-Right
-    if (widget.startOffset.dx > _horizontalPadding + _gridWidth &&
-        widget.startOffset.dy > _verticalPadding + _rowHeight * _rowCount) {
-      _offset = Offset(
-        widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
-        widget.currentOffset.dy - (widget.startOffset.dy - _verticalPadding - _rowHeight * _rowCount) - _rowHeight / 2,
-      );
+    if (offsetX != widget.currentOffset.dx || offsetY != widget.currentOffset.dy) {
+      _offset = Offset(offsetX, offsetY);
     }
   }
 
   static const _psalms = 19;
-  static const _hebrews = 58;
-  static const _revelation = 66;
 
   int? _findSelectedChapter() {
     final offset = _offset;
     if (offset == null) {
       return null;
     }
-    // var dy = offset.dy;
-
-    // Hebrews and Revelation should start the selection on the bottom row.
-    // if (widget.bookId == _hebrews) {
-    //   dy += _rowHeight;
-    // } else if (widget.bookId == _revelation) {
-    //   dy += _rowHeight * 2;
-    // }
-
-    // final gridTop = -_rowHeight / 2;
-    // final gridBottom = _rowCount * _rowHeight - _rowHeight;
-    // final clampedY = dy.clamp(gridTop, gridBottom);
-    final screenSize = MediaQuery.of(context).size;
-    print(
-        '_horizontal: $_horizontalPadding, _cellWidth: $_columnWidth, screenWidth: ${screenSize.width}, offset.dx: ${offset.dx}');
 
     for (int index = 0; index <= widget.chapterCount; index++) {
       final cellX = _horizontalPadding + (index % _columnCount) * _columnWidth;
@@ -200,22 +117,8 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
           offset.dx < cellX + _columnWidth &&
           offset.dy >= cellY &&
           offset.dy < cellY + _rowHeight) {
-        // subtract 1 cell width to account for the missing empty cell at index 0.
-        // final oneCell = _isShortBook
-
         return index;
       }
-      // subtract 1 cell width to account for the missing empty cell at index 0.
-      // final oneCell = _isShortBook ? _cellWidth : 0.0;
-      // final cellX = (index % _columnCount) * _cellWidth + _horizontalPadding;
-      // final cellY = (index ~/ 10) * _rowHeight + _verticalPadding;
-
-      // if (offset.dx >= cellX && //
-      //     offset.dx < cellX + _cellWidth &&
-      //     clampedY >= cellY &&
-      //     clampedY < cellY + _rowHeight) {
-      //   return index;
-      // }
     }
     return null;
   }
