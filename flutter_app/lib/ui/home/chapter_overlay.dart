@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class ChapterOverlay extends StatefulWidget {
@@ -5,13 +7,15 @@ class ChapterOverlay extends StatefulWidget {
     super.key,
     required this.bookId,
     required this.chapterCount,
-    required this.offset,
+    required this.startOffset,
+    required this.currentOffset,
     required this.onChapterSelected,
   });
 
   final int bookId;
   final int chapterCount;
-  final Offset offset;
+  final Offset startOffset;
+  final Offset currentOffset;
   final void Function(int? chapter) onChapterSelected;
 
   @override
@@ -19,18 +23,20 @@ class ChapterOverlay extends StatefulWidget {
 }
 
 class _ChapterOverlayState extends State<ChapterOverlay> {
-  late bool _isOT;
+  bool _isBeforeJob = false;
   // Less than 10 chapters: that means the grid will not have an empty cell
   // at index 0.
-  late bool _isShortBook;
+  bool _isShortBook = false;
   int? _lastSelectedChapter;
   int? _selectedChapter;
-  late double _padding;
+  Offset? _offset;
+  late double _verticalPadding;
+  late double _horizontalPadding;
   late double _gridWidth;
   late int _rowCount;
   late int _columnCount;
   late double _rowHeight;
-  late double _cellWidth;
+  late double _columnWidth;
 
   @override
   void didChangeDependencies() {
@@ -39,19 +45,50 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   }
 
   void _calculateDimensions() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    _padding = screenWidth * 0.05;
-    _gridWidth = screenWidth - _padding * 2;
     _rowCount = ((widget.chapterCount + 1) / 10).ceil();
-    _columnCount = widget.chapterCount < 10 ? widget.chapterCount : 10;
-    _rowHeight = _rowCount > 10 ? _gridWidth / 15 : _gridWidth / 10;
-    _cellWidth = _gridWidth / _columnCount;
+    _columnCount = _isShortBook ? widget.chapterCount : 10;
+
+    final screenSize = MediaQuery.of(context).size;
+    _gridWidth = min(screenSize.width, screenSize.height) * 0.9;
+    _rowHeight = (widget.bookId == _psalms) //
+        ? _gridWidth / _rowCount
+        : _gridWidth / 10;
+    _columnWidth = _gridWidth / _columnCount;
+    final gridHeight = _rowHeight * _rowCount;
+    _verticalPadding = (screenSize.height - gridHeight) / 2;
+    _horizontalPadding = (screenSize.width - _gridWidth) / 2;
+    // _maxGridLength = minLength * 0.9;
+    // final screenWidth = screenSize.width;
+    // final screenHeight = screenSize.height;
+    // if (screenSize.width > screenSize.height) {
+    //   _verticalPadding = minLength * 0.05;
+    //   _horizontalPadding = (screenSize.width - _maxGridLength) / 2;
+    // } else {
+    //   _horizontalPadding = minLength * 0.05;
+    //   _verticalPadding = (screenSize.height - _maxGridLength) / 2;
+    // }
+    // _padding = minLength * 0.05;
+    // final gridHeight = screenHeight - _padding * 2;
+
+    // if (screenWidth > screenHeight) {
+    //   _rowHeight = (screenHeight - _padding * 2) / _columnCount;
+    // if (_rowCount > 10) {
+    //   if (screenWidth > screenHeight) {
+    //     _rowHeight = gridHeight / 16;
+    //   } else {
+    //     _rowHeight = _gridWidth / 16;
+    //   }
+    // } else {
+    //   _rowHeight = _gridWidth / 10;
+    // }
+    // _rowHeight = _rowCount > 10 ? _gridWidth / 15 : _gridWidth / 10;
   }
 
   @override
   void didUpdateWidget(ChapterOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _isOT = widget.bookId <= 39;
+    _setOffset();
+    _isBeforeJob = widget.bookId < 18;
     _isShortBook = widget.chapterCount < 10;
     _selectedChapter = _findSelectedChapter();
     if (_selectedChapter != _lastSelectedChapter) {
@@ -60,42 +97,94 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     }
   }
 
+  void _setOffset() {
+    // if start offset is within the grid, then use that as the offset.
+    _offset = widget.currentOffset;
+    // if start offset is above the grid, add the vertical padding and subtract the start offset.
+    if (widget.startOffset.dy < _verticalPadding) {
+      _offset = Offset(
+        widget.currentOffset.dx,
+        widget.currentOffset.dy + _verticalPadding - widget.startOffset.dy + _rowHeight / 2,
+      );
+    }
+
+    if (widget.startOffset.dx < _horizontalPadding) {
+      _offset = Offset(
+        widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
+        widget.currentOffset.dy,
+      );
+    }
+
+    if (widget.startOffset.dx < _horizontalPadding && widget.startOffset.dy < _verticalPadding) {
+      _offset = Offset(
+        widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
+        widget.currentOffset.dy + _verticalPadding - widget.startOffset.dy + _rowHeight / 2,
+      );
+    }
+
+    if (widget.startOffset.dx > _horizontalPadding + _gridWidth) {
+      _offset = Offset(
+        widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
+        widget.currentOffset.dy,
+      );
+    }
+  }
+
+  static const _psalms = 19;
   static const _hebrews = 58;
   static const _revelation = 66;
 
   int? _findSelectedChapter() {
-    var dy = widget.offset.dy;
+    final offset = _offset;
+    if (offset == null) {
+      return null;
+    }
+    // var dy = offset.dy;
 
     // Hebrews and Revelation should start the selection on the bottom row.
-    if (widget.bookId == _hebrews) {
-      dy += _rowHeight;
-    } else if (widget.bookId == _revelation) {
-      dy += _rowHeight * 2;
-    }
+    // if (widget.bookId == _hebrews) {
+    //   dy += _rowHeight;
+    // } else if (widget.bookId == _revelation) {
+    //   dy += _rowHeight * 2;
+    // }
 
-    final gridTop = -_rowHeight / 2;
-    final gridBottom = _rowCount * _rowHeight - _rowHeight;
-    final clampedY = dy.clamp(gridTop, gridBottom);
+    // final gridTop = -_rowHeight / 2;
+    // final gridBottom = _rowCount * _rowHeight - _rowHeight;
+    // final clampedY = dy.clamp(gridTop, gridBottom);
+    final screenSize = MediaQuery.of(context).size;
+    print(
+        '_horizontal: $_horizontalPadding, _cellWidth: $_columnWidth, screenWidth: ${screenSize.width}, offset.dx: ${offset.dx}');
 
-    for (int index = 1; index <= widget.chapterCount; index++) {
-      // subtract 1 cell width to account for the missing empty cell at index 0.
-      final oneCell = _isShortBook ? _cellWidth : 0.0;
-      final cellX = (index % 10) * _cellWidth + _padding - oneCell;
-      var cellY = (index ~/ 10) * _rowHeight - _rowHeight / 2;
+    for (int index = 0; index <= widget.chapterCount; index++) {
+      final cellX = _horizontalPadding + (index % _columnCount) * _columnWidth;
+      final cellY = _verticalPadding + (index ~/ 10) * _rowHeight;
+      if (offset.dx > cellX && //
+          offset.dx < cellX + _columnWidth &&
+          offset.dy >= cellY &&
+          offset.dy < cellY + _rowHeight) {
+        // subtract 1 cell width to account for the missing empty cell at index 0.
+        // final oneCell = _isShortBook
 
-      if (widget.offset.dx >= cellX &&
-          widget.offset.dx < cellX + _cellWidth &&
-          clampedY >= cellY &&
-          clampedY < cellY + _rowHeight) {
         return index;
       }
+      // subtract 1 cell width to account for the missing empty cell at index 0.
+      // final oneCell = _isShortBook ? _cellWidth : 0.0;
+      // final cellX = (index % _columnCount) * _cellWidth + _horizontalPadding;
+      // final cellY = (index ~/ 10) * _rowHeight + _verticalPadding;
+
+      // if (offset.dx >= cellX && //
+      //     offset.dx < cellX + _cellWidth &&
+      //     clampedY >= cellY &&
+      //     clampedY < cellY + _rowHeight) {
+      //   return index;
+      // }
     }
     return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final offset = _isOT ? 0.7 : -0.7;
+    final offset = _isBeforeJob ? 1.0 : -1.0;
     final chapterLabel = (_selectedChapter == null) ? '' : '$_selectedChapter';
     return Stack(
       children: [
@@ -111,7 +200,7 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
         ),
         Center(
           child: Container(
-            margin: EdgeInsets.all(_padding),
+            margin: EdgeInsets.all(min(_horizontalPadding, _verticalPadding)),
             width: _gridWidth,
             height: _rowHeight * _rowCount,
             decoration: BoxDecoration(

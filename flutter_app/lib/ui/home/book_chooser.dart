@@ -92,7 +92,9 @@ class _BookChooserState extends State<BookChooser> {
               child: ChapterOverlay(
                 bookId: bookId,
                 chapterCount: chapterCount,
-                offset: location - Offset(0, _startPanPosition.dy),
+                startOffset: _startPanPosition,
+                currentOffset: location,
+                // offset: location - Offset(0, _startPanPosition.dy),
                 onChapterSelected: (chapter) {
                   _lastChapter = chapter;
                 },
