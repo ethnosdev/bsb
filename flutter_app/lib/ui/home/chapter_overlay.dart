@@ -100,7 +100,8 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   void _setOffset() {
     // if start offset is within the grid, then use that as the offset.
     _offset = widget.currentOffset;
-    // if start offset is above the grid, add the vertical padding and subtract the start offset.
+
+    // Case 1: Above
     if (widget.startOffset.dy < _verticalPadding) {
       _offset = Offset(
         widget.currentOffset.dx,
@@ -108,6 +109,15 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
       );
     }
 
+    // Case 2: Below
+    if (widget.startOffset.dy > _verticalPadding + _rowHeight * _rowCount) {
+      _offset = Offset(
+        widget.currentOffset.dx,
+        widget.currentOffset.dy - (widget.startOffset.dy - _verticalPadding - _rowHeight * _rowCount) - _rowHeight / 2,
+      );
+    }
+
+    // Case 3: Left
     if (widget.startOffset.dx < _horizontalPadding) {
       _offset = Offset(
         widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
@@ -115,6 +125,15 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
       );
     }
 
+    // Case 4: Right
+    if (widget.startOffset.dx > _horizontalPadding + _gridWidth) {
+      _offset = Offset(
+        widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
+        widget.currentOffset.dy,
+      );
+    }
+
+    // Case 5: Top-Left
     if (widget.startOffset.dx < _horizontalPadding && widget.startOffset.dy < _verticalPadding) {
       _offset = Offset(
         widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
@@ -122,10 +141,29 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
       );
     }
 
-    if (widget.startOffset.dx > _horizontalPadding + _gridWidth) {
+    // Case 6: Top-Right
+    if (widget.startOffset.dx > _horizontalPadding + _gridWidth && widget.startOffset.dy < _verticalPadding) {
       _offset = Offset(
         widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
-        widget.currentOffset.dy,
+        widget.currentOffset.dy + _verticalPadding - widget.startOffset.dy + _rowHeight / 2,
+      );
+    }
+
+    // Case 7: Bottom-Left
+    if (widget.startOffset.dx < _horizontalPadding &&
+        widget.startOffset.dy > _verticalPadding + _rowHeight * _rowCount) {
+      _offset = Offset(
+        widget.currentOffset.dx + _horizontalPadding - widget.startOffset.dx + _columnWidth / 2,
+        widget.currentOffset.dy - (widget.startOffset.dy - _verticalPadding - _rowHeight * _rowCount) - _rowHeight / 2,
+      );
+    }
+
+    // Case 8: Bottom-Right
+    if (widget.startOffset.dx > _horizontalPadding + _gridWidth &&
+        widget.startOffset.dy > _verticalPadding + _rowHeight * _rowCount) {
+      _offset = Offset(
+        widget.currentOffset.dx - (widget.startOffset.dx - _horizontalPadding - _gridWidth) - _columnWidth / 2,
+        widget.currentOffset.dy - (widget.startOffset.dy - _verticalPadding - _rowHeight * _rowCount) - _rowHeight / 2,
       );
     }
   }
