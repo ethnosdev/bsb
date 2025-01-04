@@ -1,6 +1,7 @@
 # 0.4.0 - 2025.01.04
 
 - Visual chapter chooser widget.
+- Add previous chapter button.
 
 # 0.3.0 - 2025.01.02
 
