@@ -108,7 +108,6 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     if (offsetX != widget.currentOffset.dx || offsetY != widget.currentOffset.dy) {
       _offset = Offset(offsetX, offsetY);
     }
-    print('offset: $_offset');
   }
 
   static const _psalms = 19;
@@ -121,7 +120,6 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     final max = _rowCount * _columnCount;
     final start = _isShortBook ? 1 : 0;
     for (int index = start; index <= max; index++) {
-      // for (int index = 1; index <= widget.chapterCount; index++) {
       final adjustedIndex = _isShortBook ? index - 1 : index;
       final cellX = _horizontalPadding + (adjustedIndex % _columnCount) * _columnWidth;
       final cellY = _verticalPadding + (index ~/ 10) * _rowHeight;
@@ -130,7 +128,9 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
       final isInXBounds = offset.dx > cellX && offset.dx < cellX + _columnWidth;
 
       bool isInYBounds;
-      if (row == 0) {
+      if (_rowCount == 1) {
+        isInYBounds = true;
+      } else if (row == 0) {
         isInYBounds = offset.dy <= cellY + _rowHeight;
       } else if (row == (_rowCount - 1)) {
         isInYBounds = offset.dy >= cellY;
