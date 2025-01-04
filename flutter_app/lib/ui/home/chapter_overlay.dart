@@ -45,7 +45,9 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   }
 
   void _calculateDimensions() {
+    _isBeforeJob = widget.bookId < 18;
     _rowCount = ((widget.chapterCount + 1) / 10).ceil();
+    _isShortBook = widget.chapterCount < 10;
     _columnCount = _isShortBook ? widget.chapterCount : 10;
 
     final screenSize = MediaQuery.of(context).size;
@@ -63,8 +65,6 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   void didUpdateWidget(ChapterOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     _setOffset();
-    _isBeforeJob = widget.bookId < 18;
-    _isShortBook = widget.chapterCount < 10;
     _selectedChapter = _findSelectedChapter();
     if (_selectedChapter != _lastSelectedChapter) {
       _lastSelectedChapter = _selectedChapter;
@@ -100,6 +100,7 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     if (offsetX != widget.currentOffset.dx || offsetY != widget.currentOffset.dy) {
       _offset = Offset(offsetX, offsetY);
     }
+    print('offset: $_offset');
   }
 
   static const _psalms = 19;
@@ -110,8 +111,9 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
       return null;
     }
 
-    for (int index = 0; index <= widget.chapterCount; index++) {
-      final cellX = _horizontalPadding + (index % _columnCount) * _columnWidth;
+    for (int index = 1; index <= widget.chapterCount; index++) {
+      final adjustedIndex = _isShortBook ? index - 1 : index;
+      final cellX = _horizontalPadding + (adjustedIndex % _columnCount) * _columnWidth;
       final cellY = _verticalPadding + (index ~/ 10) * _rowHeight;
       if (offset.dx > cellX && //
           offset.dx < cellX + _columnWidth &&
