@@ -115,10 +115,20 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
       final adjustedIndex = _isShortBook ? index - 1 : index;
       final cellX = _horizontalPadding + (adjustedIndex % _columnCount) * _columnWidth;
       final cellY = _verticalPadding + (index ~/ 10) * _rowHeight;
-      if (offset.dx > cellX && //
-          offset.dx < cellX + _columnWidth &&
-          offset.dy >= cellY &&
-          offset.dy < cellY + _rowHeight) {
+      final row = index ~/ 10;
+
+      final isInXBounds = offset.dx > cellX && offset.dx < cellX + _columnWidth;
+
+      bool isInYBounds;
+      if (row == 0) {
+        isInYBounds = offset.dy <= cellY + _rowHeight;
+      } else if (row == (_rowCount - 1)) {
+        isInYBounds = offset.dy >= cellY;
+      } else {
+        isInYBounds = offset.dy >= cellY && offset.dy < cellY + _rowHeight;
+      }
+
+      if (isInXBounds && isInYBounds) {
         return index;
       }
     }
