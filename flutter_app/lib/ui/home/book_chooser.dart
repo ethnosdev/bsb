@@ -94,7 +94,6 @@ class _BookChooserState extends State<BookChooser> {
                 chapterCount: chapterCount,
                 offset: location - Offset(0, _startPanPosition.dy),
                 onChapterSelected: (chapter) {
-                  if (chapter == null) return;
                   _lastChapter = chapter;
                 },
               ),

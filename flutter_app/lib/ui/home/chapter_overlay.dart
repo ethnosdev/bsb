@@ -57,14 +57,19 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
   }
 
   int? _findSelectedChapter() {
+    final gridTop = -_rowHeight / 2;
+    final gridBottom = _rowCount * _rowHeight - _rowHeight;
+    final clampedY = widget.offset.dy.clamp(gridTop, gridBottom);
+    print('clampedY: $clampedY, gridTop: $gridTop, gridBottom: $gridBottom');
+
     for (int index = 1; index <= widget.chapterCount; index++) {
       final cellX = (index % 10) * _cellWidth + _padding;
       final cellY = (index ~/ 10) * _rowHeight - _rowHeight / 2;
 
       if (widget.offset.dx >= cellX &&
           widget.offset.dx < cellX + _cellWidth &&
-          widget.offset.dy >= cellY &&
-          widget.offset.dy < cellY + _rowHeight) {
+          clampedY >= cellY &&
+          clampedY < cellY + _rowHeight) {
         return index;
       }
     }
