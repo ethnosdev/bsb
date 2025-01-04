@@ -193,6 +193,21 @@ class TextManager {
     return '$book $chapter';
   }
 
+  (int bookId, int chapter) getPreviousChapter(int bookId, int chapter) {
+    if (chapter > 1) {
+      return (bookId, chapter - 1);
+    }
+
+    final previousBookId = bookId - 1;
+    if (bookIdToChapterCountMap.containsKey(previousBookId)) {
+      final maxChapters = bookIdToChapterCountMap[previousBookId]!;
+      return (previousBookId, maxChapters);
+    }
+
+    // Revelation 22 is the last book in the Bible
+    return (66, 22);
+  }
+
   (int bookId, int chapter) getNextChapter(int bookId, int chapter) {
     final maxChapters = bookIdToChapterCountMap[bookId]!;
 

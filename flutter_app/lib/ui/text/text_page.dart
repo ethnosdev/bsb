@@ -34,6 +34,21 @@ class _TextPageState extends State<TextPage> {
         title: Text(textManager.formatTitle(widget.bookId, widget.chapter)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.navigate_before),
+            onPressed: () {
+              final (bookId, chapter) = textManager.getPreviousChapter(widget.bookId, widget.chapter);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TextPage(
+                    bookId: bookId,
+                    chapter: chapter,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.navigate_next),
             onPressed: () {
               final (bookId, chapter) = textManager.getNextChapter(widget.bookId, widget.chapter);
@@ -47,7 +62,7 @@ class _TextPageState extends State<TextPage> {
                 ),
               );
             },
-          )
+          ),
         ],
       ),
       body: SingleChildScrollView(
