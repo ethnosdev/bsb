@@ -171,6 +171,7 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: GridView.builder(
+              padding: EdgeInsets.zero,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: _columnCount,
                 childAspectRatio: (_gridWidth / _columnCount) / _rowHeight,

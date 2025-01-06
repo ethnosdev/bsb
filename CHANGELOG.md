@@ -1,3 +1,7 @@
+# 0.4.1 - 2025.01.06
+
+- Fix chapter gridview offset error on Android.
+
 # 0.4.0 - 2025.01.04
 
 - Visual chapter chooser widget.
