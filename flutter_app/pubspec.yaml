@@ -1,7 +1,7 @@
 name: bsb
 description: "Berean Standard Bible"
 publish_to: 'none' 
-version: 0.4.1+5
+version: 0.5.0+6
 
 environment:
   sdk: ^3.5.4
