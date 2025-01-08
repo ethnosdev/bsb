@@ -2,23 +2,142 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:database_builder/database_builder.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+
+typedef TextParagraph = List<(InlineSpan, TextType, Format?)>;
 
 class TextManager {
   final _dbHelper = getIt<DatabaseHelper>();
-  final paragraphNotifier = ValueNotifier<List<(InlineSpan, TextType, Format?)>>([]);
+  final _chapterCache = <String, List<(InlineSpan, TextType, Format?)>>{};
+  static const _maxCacheSize = 3;
+  final _recentlyUsed = <String>[];
+
   static const msTitleSize = 20.0;
   static const mrTitleSize = 16.0;
   static const verseNumberSize = 10.0;
   static const normalTextSize = 14.0;
   static const multiplier = 1.5;
 
-  Future<void> getText(int bookId, int chapter) async {
-    final content = await _dbHelper.getChapter(bookId, chapter);
-    _formatVerses(content);
+  final titleNotifier = ValueNotifier<String>('');
+
+  List<ValueNotifier<TextParagraph>> _notifiers = [];
+  ValueNotifier<TextParagraph> notifier(int index) {
+    if (_notifiers.isEmpty) {
+      _notifiers = List.generate(
+        _maxCacheSize,
+        (_) => ValueNotifier<TextParagraph>([]),
+      );
+    }
+    final loopedIndex = index % _maxCacheSize;
+    return _notifiers[loopedIndex];
   }
 
-  void _formatVerses(List<VerseLine> content) {
+  Future<void> requestText({
+    required int initialBookId,
+    required int initialChapter,
+    required int index,
+  }) async {
+    final (bookId, chapter) = _getChapterFromOffset(
+      initialBookId,
+      initialChapter,
+      index,
+    );
+
+    // Update book and chapter title
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      titleNotifier.value = _formatTitle(bookId, chapter);
+    });
+
+    final key = '${bookId}_$chapter';
+    final targetNotifier = notifier(index);
+
+    // Check if content is already in the target notifier
+    if (_isContentAlreadyLoaded(targetNotifier, bookId, chapter)) {
+      return;
+    }
+
+    // Perform database lookup only if not cached
+    final content = await _dbHelper.getChapter(bookId, chapter);
+    final formattedContent = _formatVersesToList(content);
+
+    // Update cache
+    _chapterCache[key] = formattedContent;
+    _trackUsage(key);
+
+    // Update notifier
+    targetNotifier.value = formattedContent;
+  }
+
+  (int bookId, int chapter) _getChapterFromOffset(
+    int initialBookId,
+    int initialChapter,
+    int chapterOffset,
+  ) {
+    if (chapterOffset == 0) {
+      return (initialBookId, initialChapter);
+    }
+
+    var currentBookId = initialBookId;
+    var currentChapter = initialChapter;
+
+    if (chapterOffset > 0) {
+      for (var i = 0; i < chapterOffset; i++) {
+        currentChapter++;
+        if (currentChapter > bookIdToChapterCountMap[currentBookId]!) {
+          currentBookId++;
+          if (currentBookId > 66) {
+            currentBookId = 1;
+          }
+          currentChapter = 1;
+        }
+      }
+    } else {
+      for (var i = 0; i > chapterOffset; i--) {
+        currentChapter--;
+        if (currentChapter < 1) {
+          currentBookId--;
+          if (currentBookId < 1) {
+            currentBookId = 66;
+          }
+          currentChapter = bookIdToChapterCountMap[currentBookId]!;
+        }
+      }
+    }
+
+    return (currentBookId, currentChapter);
+  }
+
+  bool _isContentAlreadyLoaded(
+    ValueNotifier<TextParagraph> targetNotifier,
+    int bookId,
+    int chapter,
+  ) {
+    if (targetNotifier.value.isEmpty) return false;
+
+    final key = '${bookId}_$chapter';
+    final cachedContent = _chapterCache[key];
+    if (cachedContent == null) return false;
+
+    return listEquals(targetNotifier.value, cachedContent);
+  }
+
+  void _cleanCache() {
+    // Remove oldest entries when cache exceeds size
+    while (_chapterCache.length > _maxCacheSize) {
+      final oldest = _recentlyUsed.removeAt(0);
+      _chapterCache.remove(oldest);
+    }
+  }
+
+  void _trackUsage(String key) {
+    _recentlyUsed.remove(key);
+    _recentlyUsed.add(key);
+    _cleanCache();
+  }
+
+  List<(InlineSpan, TextType, Format?)> _formatVersesToList(List<VerseLine> content) {
     final paragraphs = <(InlineSpan, TextType, Format?)>[];
     var verseSpans = <InlineSpan>[];
     int oldVerseNumber = 0;
@@ -185,10 +304,11 @@ class TextManager {
       paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
     }
 
-    paragraphNotifier.value = paragraphs;
+    // paragraphNotifier.value = paragraphs;
+    return paragraphs;
   }
 
-  String formatTitle(int bookId, int chapter) {
+  String _formatTitle(int bookId, int chapter) {
     final book = bookIdToFullNameMap[bookId]!;
     return '$book $chapter';
   }
