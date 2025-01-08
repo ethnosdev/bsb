@@ -2,12 +2,15 @@ import 'package:bsb/core/strings.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/home.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
+// import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setupServiceLocator();
   await getIt<DatabaseHelper>().init();
+  await getIt<UserSettings>().init();
   runApp(const MyApp());
 }
 

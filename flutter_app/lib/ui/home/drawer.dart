@@ -1,3 +1,4 @@
+import 'package:bsb/ui/settings/settings.dart';
 import 'package:flutter/material.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -19,6 +20,10 @@ class AppDrawer extends StatelessWidget {
               title: const Text('Settings'),
               onTap: () {
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
               },
             ),
             ListTile(
