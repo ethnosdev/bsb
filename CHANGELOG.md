@@ -1,3 +1,11 @@
+# 0.6.0 - 2025.01.08
+
+- Add app drawer menu.
+
+# 0.5.0 - 2025.01.08
+
+- Swipe to navigate between chapters when on text page.
+
 # 0.4.1 - 2025.01.06
 
 - Fix chapter gridview offset error on Android.
