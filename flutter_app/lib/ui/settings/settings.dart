@@ -23,16 +23,56 @@ class _SettingsPageState extends State<SettingsPage> {
         builder: (context, widget) {
           return ListView(
             children: [
-              SwitchListTile(
-                title: const Text('Dark Mode'),
-                value: manager.isDarkMode,
-                onChanged: (value) {
-                  manager.setDarkMode(value);
+              ListTile(
+                title: const Text('Light-Dark Theme'),
+                subtitle: Text(manager.themeMode == ThemeMode.light
+                    ? 'Light'
+                    : manager.themeMode == ThemeMode.dark
+                        ? 'Dark'
+                        : 'Match device settings'),
+                trailing: Icon(
+                  manager.themeMode == ThemeMode.light
+                      ? Icons.light_mode
+                      : manager.themeMode == ThemeMode.dark
+                          ? Icons.dark_mode
+                          : Icons.smartphone,
+                ),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      content: SegmentedButton<ThemeMode>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment<ThemeMode>(
+                            value: ThemeMode.light,
+                            icon: Icon(Icons.light_mode),
+                          ),
+                          ButtonSegment<ThemeMode>(
+                            value: ThemeMode.system,
+                            icon: Icon(Icons.smartphone),
+                          ),
+                          ButtonSegment<ThemeMode>(
+                            value: ThemeMode.dark,
+                            icon: Icon(Icons.dark_mode),
+                          ),
+                        ],
+                        selected: {manager.themeMode},
+                        onSelectionChanged: (Set<ThemeMode> selection) {
+                          manager.setThemeMode(selection.first);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ),
+                  );
                 },
               ),
               ListTile(
                 title: const Text('Text Size'),
-                trailing: Text('${manager.textSize}'),
+                trailing: Text(
+                  '${manager.textSize}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
                 onTap: () {
                   showDialog(
                     context: context,
@@ -45,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               const Spacer(),
                               Text(
                                 'Text Size',
-                                style: TextStyle(fontSize: manager.textSize),
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const Spacer(),
                               Slider(

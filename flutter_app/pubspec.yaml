@@ -15,9 +15,7 @@ dependencies:
   path: ^1.9.0
   database_builder: 
     path: ../database_builder
-  # flutter_settings_ui: ^3.0.1
   shared_preferences: ^2.3.5
-  # flutter_settings_screens: ^0.3.4
 
 dev_dependencies:
   flutter_test: 

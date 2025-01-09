@@ -1,6 +1,20 @@
 import 'package:bsb/ui/home/chapter_overlay.dart';
 import 'package:flutter/material.dart';
 
+// static Color pentateuchColor = ot1;
+// static Color historicalColor = ot2;
+// static Color wisdomColor = ot1;
+// static Color majorProphetsColor = ot2;
+// static Color minorProphetsColor = ot1;
+// static Color gospelsColor = nt2;
+// static Color paulineColor = nt1;
+// static Color generalEpistlesColor = nt2;
+
+// static const Color ot1 = Color(0xFFe9edc9);
+// static const Color ot2 = Color(0xFFccd5ae);
+// static const Color nt1 = Color(0xFFfefae0);
+// static const Color nt2 = Color.fromARGB(255, 248, 228, 180);
+
 enum ChapterSelectionState {
   start,
   selecting,
@@ -15,19 +29,19 @@ class BookChooser extends StatefulWidget {
 
   final void Function(int bookId, int chapter) onBookSelected;
 
-  static const Color ot1 = Color(0xFFe9edc9);
-  static const Color ot2 = Color(0xFFccd5ae);
-  static const Color nt1 = Color(0xFFfefae0);
-  static const Color nt2 = Color.fromARGB(255, 248, 228, 180);
+  // static const Color ot1 = Color(0xFFe9edc9);
+  // static const Color ot2 = Color(0xFFccd5ae);
+  // static const Color nt1 = Color(0xFFfefae0);
+  // static const Color nt2 = Color.fromARGB(255, 248, 228, 180);
 
-  static Color pentateuchColor = ot1;
-  static Color historicalColor = ot2;
-  static Color wisdomColor = ot1;
-  static Color majorProphetsColor = ot2;
-  static Color minorProphetsColor = ot1;
-  static Color gospelsColor = nt2;
-  static Color paulineColor = nt1;
-  static Color generalEpistlesColor = nt2;
+  // static Color pentateuchColor = ot1;
+  // static Color historicalColor = ot2;
+  // static Color wisdomColor = ot1;
+  // static Color majorProphetsColor = ot2;
+  // static Color minorProphetsColor = ot1;
+  // static Color gospelsColor = nt2;
+  // static Color paulineColor = nt1;
+  // static Color generalEpistlesColor = nt2;
 
   @override
   State<BookChooser> createState() => _BookChooserState();
@@ -38,6 +52,20 @@ class _BookChooserState extends State<BookChooser> {
 
   Offset _startPanPosition = const Offset(0, 0);
   int? _lastChapter;
+
+  Color get ot1 => Theme.of(context).colorScheme.surfaceContainerLow;
+  Color get ot2 => Theme.of(context).colorScheme.surfaceContainerHigh;
+  Color get nt1 => Theme.of(context).colorScheme.surfaceContainerLow;
+  Color get nt2 => Theme.of(context).colorScheme.surfaceContainerHigh;
+
+  Color get pentateuchColor => ot1;
+  Color get historicalColor => ot2;
+  Color get wisdomColor => ot1;
+  Color get majorProphetsColor => ot2;
+  Color get minorProphetsColor => ot1;
+  Color get gospelsColor => nt2;
+  Color get paulineColor => nt1;
+  Color get generalEpistlesColor => nt2;
 
   void _onSelectingChapter(
     int bookId,
@@ -113,7 +141,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Gen',
-            color: BookChooser.pentateuchColor,
+            color: pentateuchColor,
             onTap: widget.onBookSelected,
             bookId: 1,
             chapterCount: 50,
@@ -121,7 +149,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Exo',
-            color: BookChooser.pentateuchColor,
+            color: pentateuchColor,
             onTap: widget.onBookSelected,
             bookId: 2,
             chapterCount: 40,
@@ -129,7 +157,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Lev',
-            color: BookChooser.pentateuchColor,
+            color: pentateuchColor,
             onTap: widget.onBookSelected,
             bookId: 3,
             chapterCount: 27,
@@ -137,7 +165,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Num',
-            color: BookChooser.pentateuchColor,
+            color: pentateuchColor,
             onTap: widget.onBookSelected,
             bookId: 4,
             chapterCount: 36,
@@ -145,7 +173,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Deu',
-            color: BookChooser.pentateuchColor,
+            color: pentateuchColor,
             onTap: widget.onBookSelected,
             bookId: 5,
             chapterCount: 34,
@@ -163,7 +191,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Jos',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 6,
             chapterCount: 24,
@@ -171,7 +199,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jdg',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 7,
             chapterCount: 21,
@@ -179,7 +207,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Rut',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 8,
             chapterCount: 4,
@@ -187,7 +215,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '1Sa',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 9,
             chapterCount: 31,
@@ -195,7 +223,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Sa',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 10,
             chapterCount: 24,
@@ -213,7 +241,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: '1Ki',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 11,
             chapterCount: 22,
@@ -221,7 +249,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Ki',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 12,
             chapterCount: 25,
@@ -229,7 +257,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '1Ch',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 13,
             chapterCount: 29,
@@ -237,7 +265,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Ch',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 14,
             chapterCount: 36,
@@ -245,7 +273,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Ezr',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 15,
             chapterCount: 10,
@@ -253,7 +281,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Neh',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 16,
             chapterCount: 13,
@@ -261,7 +289,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Est',
-            color: BookChooser.historicalColor,
+            color: historicalColor,
             onTap: widget.onBookSelected,
             bookId: 17,
             chapterCount: 10,
@@ -279,7 +307,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Job',
-            color: BookChooser.wisdomColor,
+            color: wisdomColor,
             onTap: widget.onBookSelected,
             bookId: 18,
             chapterCount: 42,
@@ -287,7 +315,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Psa',
-            color: BookChooser.wisdomColor,
+            color: wisdomColor,
             onTap: widget.onBookSelected,
             bookId: 19,
             chapterCount: 150,
@@ -295,7 +323,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Pro',
-            color: BookChooser.wisdomColor,
+            color: wisdomColor,
             onTap: widget.onBookSelected,
             bookId: 20,
             chapterCount: 31,
@@ -303,7 +331,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Ecc',
-            color: BookChooser.wisdomColor,
+            color: wisdomColor,
             onTap: widget.onBookSelected,
             bookId: 21,
             chapterCount: 12,
@@ -311,7 +339,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Sng',
-            color: BookChooser.wisdomColor,
+            color: wisdomColor,
             onTap: widget.onBookSelected,
             bookId: 22,
             chapterCount: 8,
@@ -329,7 +357,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Isa',
-            color: BookChooser.majorProphetsColor,
+            color: majorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 23,
             chapterCount: 66,
@@ -337,7 +365,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jer',
-            color: BookChooser.majorProphetsColor,
+            color: majorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 24,
             chapterCount: 52,
@@ -345,7 +373,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Lam',
-            color: BookChooser.majorProphetsColor,
+            color: majorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 25,
             chapterCount: 5,
@@ -353,7 +381,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Ezk',
-            color: BookChooser.majorProphetsColor,
+            color: majorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 26,
             chapterCount: 48,
@@ -361,7 +389,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Dan',
-            color: BookChooser.majorProphetsColor,
+            color: majorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 27,
             chapterCount: 12,
@@ -379,7 +407,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Hos',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 28,
             chapterCount: 14,
@@ -387,7 +415,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jol',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 29,
             chapterCount: 3,
@@ -395,7 +423,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Amo',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 30,
             chapterCount: 9,
@@ -403,7 +431,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Oba',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 31,
             chapterCount: 1,
@@ -411,7 +439,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jon',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 32,
             chapterCount: 4,
@@ -419,7 +447,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Mic',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 33,
             chapterCount: 7,
@@ -437,7 +465,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Nam',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 34,
             chapterCount: 3,
@@ -445,7 +473,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Hab',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 35,
             chapterCount: 3,
@@ -453,7 +481,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Zep',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 36,
             chapterCount: 3,
@@ -461,7 +489,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Hag',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 37,
             chapterCount: 2,
@@ -469,7 +497,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Zec',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 38,
             chapterCount: 14,
@@ -477,7 +505,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Mal',
-            color: BookChooser.minorProphetsColor,
+            color: minorProphetsColor,
             onTap: widget.onBookSelected,
             bookId: 39,
             chapterCount: 4,
@@ -495,7 +523,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Mat',
-            color: BookChooser.gospelsColor,
+            color: gospelsColor,
             onTap: widget.onBookSelected,
             bookId: 40,
             chapterCount: 28,
@@ -503,7 +531,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Mrk',
-            color: BookChooser.gospelsColor,
+            color: gospelsColor,
             onTap: widget.onBookSelected,
             bookId: 41,
             chapterCount: 16,
@@ -511,7 +539,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Luk',
-            color: BookChooser.gospelsColor,
+            color: gospelsColor,
             onTap: widget.onBookSelected,
             bookId: 42,
             chapterCount: 24,
@@ -519,7 +547,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jhn',
-            color: BookChooser.gospelsColor,
+            color: gospelsColor,
             onTap: widget.onBookSelected,
             bookId: 43,
             chapterCount: 21,
@@ -527,7 +555,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Act',
-            color: BookChooser.gospelsColor,
+            color: gospelsColor,
             onTap: widget.onBookSelected,
             bookId: 44,
             chapterCount: 28,
@@ -545,7 +573,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Rom',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 45,
             chapterCount: 16,
@@ -553,7 +581,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '1Co',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 46,
             chapterCount: 16,
@@ -561,7 +589,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Co',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 47,
             chapterCount: 13,
@@ -569,7 +597,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Gal',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 48,
             chapterCount: 6,
@@ -577,7 +605,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Eph',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 49,
             chapterCount: 6,
@@ -585,7 +613,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Php',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 50,
             chapterCount: 4,
@@ -593,7 +621,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Col',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 51,
             chapterCount: 4,
@@ -611,7 +639,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: '1Th',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 52,
             chapterCount: 5,
@@ -619,7 +647,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Th',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 53,
             chapterCount: 3,
@@ -627,7 +655,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '1Ti',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 54,
             chapterCount: 6,
@@ -635,7 +663,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Ti',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 55,
             chapterCount: 4,
@@ -643,7 +671,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Tit',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 56,
             chapterCount: 3,
@@ -651,7 +679,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Phm',
-            color: BookChooser.paulineColor,
+            color: paulineColor,
             onTap: widget.onBookSelected,
             bookId: 57,
             chapterCount: 1,
@@ -669,7 +697,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: 'Heb',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 58,
             chapterCount: 13,
@@ -677,7 +705,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jas',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 59,
             chapterCount: 5,
@@ -685,7 +713,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '1Pe',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 60,
             chapterCount: 5,
@@ -693,7 +721,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Pe',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 61,
             chapterCount: 3,
@@ -711,7 +739,7 @@ class _BookChooserState extends State<BookChooser> {
         children: [
           BookItem(
             title: '1Jn',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 62,
             chapterCount: 5,
@@ -719,7 +747,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '2Jn',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 63,
             chapterCount: 1,
@@ -727,7 +755,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: '3Jn',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 64,
             chapterCount: 1,
@@ -735,7 +763,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Jud',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 65,
             chapterCount: 1,
@@ -743,7 +771,7 @@ class _BookChooserState extends State<BookChooser> {
           ),
           BookItem(
             title: 'Rev',
-            color: BookChooser.generalEpistlesColor,
+            color: generalEpistlesColor,
             onTap: widget.onBookSelected,
             bookId: 66,
             chapterCount: 22,
@@ -800,9 +828,6 @@ class _BookItemState extends State<BookItem> {
                   child: Text(
                     widget.title,
                     maxLines: 1,
-                    style: const TextStyle(
-                      color: Colors.black87,
-                    ),
                   ),
                 ),
               ),
