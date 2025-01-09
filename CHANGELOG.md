@@ -1,4 +1,4 @@
-# 0.6.0 - 2025.01.08
+# 0.6.0 - 2025.01.09
 
 - Add app drawer menu.
 - Light-dark modes with default to system setting.
@@ -6,6 +6,7 @@
 - Change text size.
 - Show footnotes.
 - Help page.
+- About page.
 
 # 0.5.0 - 2025.01.08
 
