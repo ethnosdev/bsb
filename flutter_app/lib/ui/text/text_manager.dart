@@ -1,11 +1,12 @@
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
+import 'format_verses.dart';
 
 typedef TextParagraph = List<(InlineSpan, TextType, Format?)>;
 
@@ -53,6 +54,7 @@ class TextManager {
     required int initialBookId,
     required int initialChapter,
     required int index,
+    required Color textColor,
   }) async {
     final (bookId, chapter) = _getChapterFromOffset(
       initialBookId,
@@ -75,7 +77,11 @@ class TextManager {
 
     // Perform database lookup only if not cached
     final content = await _dbHelper.getChapter(bookId, chapter);
-    final formattedContent = _formatVersesToList(content);
+
+    // Format content
+    _normalTextSize = getIt<UserSettings>().textSize;
+
+    final formattedContent = formatVerses(content, _normalTextSize, textColor);
 
     // Update cache
     _chapterCache[key] = formattedContent;
@@ -150,179 +156,6 @@ class TextManager {
     _recentlyUsed.remove(key);
     _recentlyUsed.add(key);
     _cleanCache();
-  }
-
-  List<(InlineSpan, TextType, Format?)> _formatVersesToList(List<VerseLine> content) {
-    _normalTextSize = getIt<UserSettings>().textSize;
-    final referenceSize = _normalTextSize * 0.8;
-    final mrTitleSize = _normalTextSize * 1.2;
-    final msTitleSize = _normalTextSize * 1.5;
-
-    final paragraphs = <(InlineSpan, TextType, Format?)>[];
-    var verseSpans = <InlineSpan>[];
-    int oldVerseNumber = 0;
-    Format oldFormat = Format.m;
-
-    for (final row in content) {
-      final type = row.type;
-      final format = row.format;
-      final text = row.text;
-      final verseNumber = row.verse;
-
-      if (type != TextType.v && verseSpans.isNotEmpty) {
-        paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
-        verseSpans = [];
-      }
-
-      switch (type) {
-        case TextType.v:
-          if (text == '\n') {
-            paragraphs.add((TextSpan(children: verseSpans), type, oldFormat));
-            verseSpans = [];
-            break;
-          }
-          // add verse number
-          if (oldVerseNumber != verseNumber) {
-            oldVerseNumber = verseNumber;
-            verseSpans.add(
-              TextSpan(
-                // Use NNBSP so the verse number is not separated from the verse text.
-                text: '$verseNumber\u202f',
-                style: TextStyle(
-                  fontSize: _normalTextSize,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.bold,
-                  fontFeatures: const [FontFeature.superscripts()],
-                ),
-              ),
-            );
-          }
-          // add verse line text
-          if (format == Format.qr) {
-            verseSpans.add(TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: _normalTextSize,
-                fontStyle: FontStyle.italic,
-              ),
-            ));
-          } else {
-            verseSpans.add(TextSpan(
-              text: '$text ',
-              style: TextStyle(
-                fontSize: _normalTextSize,
-              ),
-            ));
-          }
-
-          // handle poetry
-          if (format == Format.q1 || format == Format.q2 || format == Format.qr) {
-            paragraphs.add((TextSpan(children: verseSpans), type, format));
-            verseSpans = [];
-          }
-          oldFormat = format ?? Format.m;
-
-        case TextType.d:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: _normalTextSize,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            type,
-            format,
-          ));
-
-        case TextType.r:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: referenceSize,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            type,
-            format,
-          ));
-
-        case TextType.s1:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: _normalTextSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            type,
-            format,
-          ));
-
-        case TextType.s2:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: _normalTextSize,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            type,
-            format,
-          ));
-
-        case TextType.ms:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: msTitleSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            type,
-            format,
-          ));
-
-        case TextType.mr:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: mrTitleSize,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            type,
-            format,
-          ));
-
-        case TextType.qa:
-          paragraphs.add((
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: _normalTextSize,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            type,
-            format,
-          ));
-      }
-    }
-
-    if (verseSpans.isNotEmpty) {
-      paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
-    }
-
-    // paragraphNotifier.value = paragraphs;
-    return paragraphs;
   }
 
   String _formatTitle(int bookId, int chapter) {

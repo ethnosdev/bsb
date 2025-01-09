@@ -31,7 +31,7 @@ class _TextPageState extends State<TextPage> {
       if (_pageController.page?.truncateToDouble() == _pageController.page) {
         final index = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
         // print('Arrived at page: ${index}');
-        textManager.requestText(
+        textManager.updateTitle(
           initialBookId: widget.bookId,
           initialChapter: widget.chapter,
           index: index,
@@ -59,6 +59,7 @@ class _TextPageState extends State<TextPage> {
             initialBookId: widget.bookId,
             initialChapter: widget.chapter,
             index: pageIndex,
+            textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           );
           return ValueListenableBuilder<TextParagraph>(
             valueListenable: textManager.notifier(pageIndex),
