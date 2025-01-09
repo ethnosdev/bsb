@@ -10,7 +10,7 @@ class UserSettings {
 
   static const _textSizeKey = 'textSize';
 
-  double get textSize => _prefs.getDouble(_textSizeKey) ?? 17.0;
+  double get textSize => _prefs.getDouble(_textSizeKey) ?? 20.0;
 
   Future<void> setTextSize(double size) async {
     _prefs.setDouble(_textSizeKey, size);

@@ -1,7 +1,9 @@
 # 0.6.0 - 2025.01.08
 
 - Add app drawer menu.
-- Light-dark theme.
+- Light-dark modes with default to system setting.
+- Update theme colors.
+- Change text size.
 
 # 0.5.0 - 2025.01.08
 

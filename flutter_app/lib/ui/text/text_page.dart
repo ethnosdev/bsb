@@ -20,12 +20,24 @@ class TextPage extends StatefulWidget {
 
 class _TextPageState extends State<TextPage> {
   final textManager = TextManager();
-  final _pageController = PageController(initialPage: 1000);
+  static const _initialPageOffset = 1000;
+  final _pageController = PageController(initialPage: _initialPageOffset);
 
   @override
   void initState() {
     super.initState();
-    textManager.init();
+    _pageController.addListener(() {
+      // print('Current page: ${_pageController.page}');
+      if (_pageController.page?.truncateToDouble() == _pageController.page) {
+        final index = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
+        // print('Arrived at page: ${index}');
+        textManager.requestText(
+          initialBookId: widget.bookId,
+          initialChapter: widget.chapter,
+          index: index,
+        );
+      }
+    });
   }
 
   @override
@@ -41,8 +53,8 @@ class _TextPageState extends State<TextPage> {
       body: PageView.builder(
         controller: _pageController,
         itemBuilder: (context, index) {
-          final pageIndex = index - 1000;
-          print('index: $pageIndex');
+          final pageIndex = index - _initialPageOffset;
+          // print('index: $pageIndex');
           textManager.requestText(
             initialBookId: widget.bookId,
             initialChapter: widget.chapter,

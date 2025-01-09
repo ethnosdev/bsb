@@ -15,22 +15,8 @@ class TextManager {
   static const _maxCacheSize = 3;
   final _recentlyUsed = <String>[];
 
-  double _msTitleSize = 20.0;
-  double _mrTitleSize = 16.0;
-  // double _verseNumberSize = 10.0;
   double _normalTextSize = 14.0;
-  double _referenceSize = 12.0;
-  // static const multiplier = 1.5;
   double get paragraphSpacing => _normalTextSize * 0.6;
-
-  void init() {
-    final userSettings = getIt<UserSettings>();
-    _normalTextSize = userSettings.textSize;
-    // _verseNumberSize = _normalTextSize * 0.7;
-    _referenceSize = _normalTextSize * 0.8;
-    _mrTitleSize = _normalTextSize * 1.2;
-    _msTitleSize = _normalTextSize * 1.5;
-  }
 
   final titleNotifier = ValueNotifier<String>('');
 
@@ -45,6 +31,22 @@ class TextManager {
     }
     final loopedIndex = index % _maxCacheSize;
     return _notifiers[loopedIndex];
+  }
+
+  void updateTitle({
+    required int initialBookId,
+    required int initialChapter,
+    required int index,
+  }) {
+    final (bookId, chapter) = _getChapterFromOffset(
+      initialBookId,
+      initialChapter,
+      index,
+    );
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      titleNotifier.value = _formatTitle(bookId, chapter);
+    });
   }
 
   Future<void> requestText({
@@ -151,6 +153,11 @@ class TextManager {
   }
 
   List<(InlineSpan, TextType, Format?)> _formatVersesToList(List<VerseLine> content) {
+    _normalTextSize = getIt<UserSettings>().textSize;
+    final referenceSize = _normalTextSize * 0.8;
+    final mrTitleSize = _normalTextSize * 1.2;
+    final msTitleSize = _normalTextSize * 1.5;
+
     final paragraphs = <(InlineSpan, TextType, Format?)>[];
     var verseSpans = <InlineSpan>[];
     int oldVerseNumber = 0;
@@ -233,7 +240,7 @@ class TextManager {
             TextSpan(
               text: text,
               style: TextStyle(
-                fontSize: _referenceSize,
+                fontSize: referenceSize,
                 color: Colors.grey,
                 fontStyle: FontStyle.italic,
               ),
@@ -273,7 +280,7 @@ class TextManager {
             TextSpan(
               text: text,
               style: TextStyle(
-                fontSize: _msTitleSize,
+                fontSize: msTitleSize,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -286,7 +293,7 @@ class TextManager {
             TextSpan(
               text: text,
               style: TextStyle(
-                fontSize: _mrTitleSize,
+                fontSize: mrTitleSize,
                 color: Colors.grey,
                 fontStyle: FontStyle.italic,
               ),
