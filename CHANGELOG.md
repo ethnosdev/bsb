@@ -5,6 +5,7 @@
 - Update theme colors.
 - Change text size.
 - Show footnotes.
+- Help page.
 
 # 0.5.0 - 2025.01.08
 

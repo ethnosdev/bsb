@@ -16,6 +16,8 @@ dependencies:
   database_builder: 
     path: ../database_builder
   shared_preferences: ^2.3.5
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.1.2
 
 dev_dependencies:
   flutter_test: 

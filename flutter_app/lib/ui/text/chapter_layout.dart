@@ -9,7 +9,7 @@ class ChapterLayout extends StatefulWidget {
   });
 
   /// The paragraphs will be rendered in order
-  final List<(InlineSpan, TextType, Format?)> paragraphs;
+  final List<(TextSpan, TextType, Format?)> paragraphs;
   final double paragraphSpacing;
 
   @override
@@ -72,7 +72,7 @@ class _ChapterLayoutState extends State<ChapterLayout> {
     );
   }
 
-  void _applyFormat(List<Widget> sections, InlineSpan span, Format? format) {
+  void _applyFormat(List<Widget> sections, TextSpan span, Format? format) {
     Widget text = Text.rich(span);
     if (format != null) {
       switch (format) {

@@ -8,11 +8,11 @@ import 'package:flutter/scheduler.dart';
 
 import 'format_verses.dart';
 
-typedef TextParagraph = List<(InlineSpan, TextType, Format?)>;
+typedef TextParagraph = List<(TextSpan, TextType, Format?)>;
 
 class TextManager {
   final _dbHelper = getIt<DatabaseHelper>();
-  final _chapterCache = <String, List<(InlineSpan, TextType, Format?)>>{};
+  final _chapterCache = <String, List<(TextSpan, TextType, Format?)>>{};
   static const _maxCacheSize = 3;
   final _recentlyUsed = <String>[];
 

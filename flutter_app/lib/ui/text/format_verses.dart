@@ -3,8 +3,13 @@ import 'package:database_builder/schema.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
-List<(TextSpan, TextType, Format?)> formatVerses(List<VerseLine> content, double baseFontSize, Color textColor,
-    Color footnoteColor, void Function(String) onFootnoteTap) {
+List<(TextSpan, TextType, Format?)> formatVerses(
+  List<VerseLine> content,
+  double baseFontSize,
+  Color textColor,
+  Color footnoteColor,
+  void Function(String) onFootnoteTap,
+) {
   final referenceSize = baseFontSize * 0.8;
   final mrTitleSize = baseFontSize * 1.2;
   final msTitleSize = baseFontSize * 1.5;
@@ -192,7 +197,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(List<VerseLine> content, double
 }
 
 void _addVerseSpansWithFootnotes(
-  List<InlineSpan> verseSpans,
+  List<TextSpan> verseSpans,
   String text,
   TextStyle style,
   String? footnote,
@@ -207,15 +212,18 @@ void _addVerseSpansWithFootnotes(
     return;
   }
 
-  /// The text may contain multiple footnotes. Each footnote is separated
-  /// by a \n newline. The index and the footnote text are separated by a #.
-  /// The indexes are exclusive, meaning the footnote text should be inserted before the index.
-  ///
-  /// Example footnote: 11#Or mist\n36#Or land
-  /// Example text: "But springs welled up from the earth and watered the whole surface of the ground. "
-  ///
-  /// This means there should be a footnote marker at index 11 and 36.
-  /// Resulting text: "But springs* welled up from the earth* and watered the whole surface of the ground. "
+  // The text may contain multiple footnotes. Each footnote is separated
+  // by a \n newline. The index and the footnote text are separated by a #.
+  // The indexes are exclusive, meaning the footnote text should be inserted
+  // before the index.
+  //
+  // Example footnote: 11#Or mist\n36#Or land
+  // Example text: "But springs welled up from the earth and watered the whole
+  // surface of the ground. "
+  //
+  // This means there should be a footnote marker at index 11 and 36.
+  // Resulting text: "But springs* welled up from the earth* and watered the
+  // whole surface of the ground. "
   final List<(int, String)> footnotes = footnote.split('\n').map((f) {
     final parts = f.split('#');
     return (int.parse(parts[0]), parts[1]);
