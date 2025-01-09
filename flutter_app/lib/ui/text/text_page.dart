@@ -1,5 +1,4 @@
 import 'package:bsb/ui/text/chapter_layout.dart';
-// import 'package:database_builder/schema.dart';
 import 'package:flutter/material.dart';
 
 import 'text_manager.dart';
@@ -27,10 +26,8 @@ class _TextPageState extends State<TextPage> {
   void initState() {
     super.initState();
     _pageController.addListener(() {
-      // print('Current page: ${_pageController.page}');
       if (_pageController.page?.truncateToDouble() == _pageController.page) {
         final index = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
-        // print('Arrived at page: ${index}');
         textManager.updateTitle(
           initialBookId: widget.bookId,
           initialChapter: widget.chapter,
@@ -54,12 +51,20 @@ class _TextPageState extends State<TextPage> {
         controller: _pageController,
         itemBuilder: (context, index) {
           final pageIndex = index - _initialPageOffset;
-          // print('index: $pageIndex');
           textManager.requestText(
             initialBookId: widget.bookId,
             initialChapter: widget.chapter,
             index: pageIndex,
             textColor: Theme.of(context).textTheme.bodyMedium!.color!,
+            footnoteColor: Theme.of(context).colorScheme.primary,
+            onFootnoteTap: (note) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  content: Text(note),
+                ),
+              );
+            },
           );
           return ValueListenableBuilder<TextParagraph>(
             valueListenable: textManager.notifier(pageIndex),

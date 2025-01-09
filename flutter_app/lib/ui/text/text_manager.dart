@@ -55,6 +55,8 @@ class TextManager {
     required int initialChapter,
     required int index,
     required Color textColor,
+    required Color footnoteColor,
+    required void Function(String) onFootnoteTap,
   }) async {
     final (bookId, chapter) = _getChapterFromOffset(
       initialBookId,
@@ -81,7 +83,13 @@ class TextManager {
     // Format content
     _normalTextSize = getIt<UserSettings>().textSize;
 
-    final formattedContent = formatVerses(content, _normalTextSize, textColor);
+    final formattedContent = formatVerses(
+      content,
+      _normalTextSize,
+      textColor,
+      footnoteColor,
+      onFootnoteTap,
+    );
 
     // Update cache
     _chapterCache[key] = formattedContent;
