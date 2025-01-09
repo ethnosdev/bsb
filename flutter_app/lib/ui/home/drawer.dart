@@ -1,3 +1,4 @@
+import 'package:bsb/ui/help.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +31,10 @@ class AppDrawer extends StatelessWidget {
               title: const Text('Help'),
               onTap: () {
                 Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HelpPage()),
+                );
               },
             ),
             ListTile(

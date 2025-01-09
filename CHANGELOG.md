@@ -4,6 +4,7 @@
 - Light-dark modes with default to system setting.
 - Update theme colors.
 - Change text size.
+- Show footnotes.
 
 # 0.5.0 - 2025.01.08
 
