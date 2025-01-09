@@ -1,6 +1,7 @@
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,15 +15,27 @@ class TextManager {
   static const _maxCacheSize = 3;
   final _recentlyUsed = <String>[];
 
-  static const msTitleSize = 20.0;
-  static const mrTitleSize = 16.0;
-  static const verseNumberSize = 10.0;
-  static const normalTextSize = 14.0;
-  static const multiplier = 1.5;
+  double _msTitleSize = 20.0;
+  double _mrTitleSize = 16.0;
+  // double _verseNumberSize = 10.0;
+  double _normalTextSize = 14.0;
+  double _referenceSize = 12.0;
+  // static const multiplier = 1.5;
+  double get paragraphSpacing => _normalTextSize * 0.6;
+
+  void init() {
+    final userSettings = getIt<UserSettings>();
+    _normalTextSize = userSettings.textSize;
+    // _verseNumberSize = _normalTextSize * 0.7;
+    _referenceSize = _normalTextSize * 0.8;
+    _mrTitleSize = _normalTextSize * 1.2;
+    _msTitleSize = _normalTextSize * 1.5;
+  }
 
   final titleNotifier = ValueNotifier<String>('');
 
   List<ValueNotifier<TextParagraph>> _notifiers = [];
+
   ValueNotifier<TextParagraph> notifier(int index) {
     if (_notifiers.isEmpty) {
       _notifiers = List.generate(
@@ -165,17 +178,14 @@ class TextManager {
           if (oldVerseNumber != verseNumber) {
             oldVerseNumber = verseNumber;
             verseSpans.add(
-              WidgetSpan(
-                child: Transform.translate(
-                  offset: const Offset(0, -1 * normalTextSize * multiplier / 3),
-                  child: Text(
-                    '$verseNumber ',
-                    style: const TextStyle(
-                      fontSize: verseNumberSize * multiplier,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              TextSpan(
+                // Use NNBSP so the verse number is not separated from the verse text.
+                text: '$verseNumber\u202f',
+                style: TextStyle(
+                  fontSize: _normalTextSize,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: const [FontFeature.superscripts()],
                 ),
               ),
             );
@@ -184,16 +194,16 @@ class TextManager {
           if (format == Format.qr) {
             verseSpans.add(TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: normalTextSize * multiplier,
+              style: TextStyle(
+                fontSize: _normalTextSize,
                 fontStyle: FontStyle.italic,
               ),
             ));
           } else {
             verseSpans.add(TextSpan(
               text: '$text ',
-              style: const TextStyle(
-                fontSize: normalTextSize * multiplier,
+              style: TextStyle(
+                fontSize: _normalTextSize,
               ),
             ));
           }
@@ -209,8 +219,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: normalTextSize * multiplier,
+              style: TextStyle(
+                fontSize: _normalTextSize,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -222,8 +232,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: normalTextSize * multiplier,
+              style: TextStyle(
+                fontSize: _referenceSize,
                 color: Colors.grey,
                 fontStyle: FontStyle.italic,
               ),
@@ -236,8 +246,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: normalTextSize * multiplier,
+              style: TextStyle(
+                fontSize: _normalTextSize,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -249,8 +259,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: normalTextSize * multiplier,
+              style: TextStyle(
+                fontSize: _normalTextSize,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -262,8 +272,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: msTitleSize * multiplier,
+              style: TextStyle(
+                fontSize: _msTitleSize,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -275,8 +285,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: mrTitleSize * multiplier,
+              style: TextStyle(
+                fontSize: _mrTitleSize,
                 color: Colors.grey,
                 fontStyle: FontStyle.italic,
               ),
@@ -289,8 +299,8 @@ class TextManager {
           paragraphs.add((
             TextSpan(
               text: text,
-              style: const TextStyle(
-                fontSize: 14 * multiplier,
+              style: TextStyle(
+                fontSize: _normalTextSize,
                 fontWeight: FontWeight.bold,
               ),
             ),

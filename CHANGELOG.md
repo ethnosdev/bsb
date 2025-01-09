@@ -1,6 +1,7 @@
 # 0.6.0 - 2025.01.08
 
 - Add app drawer menu.
+- Light-dark theme.
 
 # 0.5.0 - 2025.01.08
 

@@ -85,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               const Spacer(),
                               Text(
                                 'Text Size',
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                style: TextStyle(fontSize: manager.textSize),
                               ),
                               const Spacer(),
                               Slider(

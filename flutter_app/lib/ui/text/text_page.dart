@@ -23,6 +23,12 @@ class _TextPageState extends State<TextPage> {
   final _pageController = PageController(initialPage: 1000);
 
   @override
+  void initState() {
+    super.initState();
+    textManager.init();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +54,10 @@ class _TextPageState extends State<TextPage> {
               return SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: ChapterLayout(paragraphs: paragraph),
+                  child: ChapterLayout(
+                    paragraphs: paragraph,
+                    paragraphSpacing: textManager.paragraphSpacing,
+                  ),
                 ),
               );
             },

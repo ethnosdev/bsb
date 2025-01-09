@@ -4,19 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class UserSettings {
   late SharedPreferences _prefs;
 
-  // bool get isDarkMode => _prefs.getBool('isDarkMode') ?? false;
-
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // Future<void> setDarkMode(bool value) async {
-  //   _prefs.setBool('isDarkMode', value);
-  // }
-
   static const _textSizeKey = 'textSize';
 
-  double get textSize => _prefs.getDouble(_textSizeKey) ?? 16.0;
+  double get textSize => _prefs.getDouble(_textSizeKey) ?? 17.0;
 
   Future<void> setTextSize(double size) async {
     _prefs.setDouble(_textSizeKey, size);

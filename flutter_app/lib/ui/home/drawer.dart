@@ -1,4 +1,4 @@
-import 'package:bsb/ui/settings/settings.dart';
+import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 
 class AppDrawer extends StatelessWidget {

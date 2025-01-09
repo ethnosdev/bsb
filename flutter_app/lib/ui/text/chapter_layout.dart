@@ -2,17 +2,22 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
 class ChapterLayout extends StatefulWidget {
-  const ChapterLayout({super.key, required this.paragraphs});
+  const ChapterLayout({
+    super.key,
+    required this.paragraphs,
+    required this.paragraphSpacing,
+  });
 
   /// The paragraphs will be rendered in order
   final List<(InlineSpan, TextType, Format?)> paragraphs;
+  final double paragraphSpacing;
 
   @override
   State<ChapterLayout> createState() => _ChapterLayoutState();
 }
 
 class _ChapterLayoutState extends State<ChapterLayout> {
-  static const _paragraphSpacing = SizedBox(height: 12);
+  late final _paragraphSpacing = SizedBox(height: widget.paragraphSpacing);
 
   @override
   Widget build(BuildContext context) {
