@@ -1,4 +1,5 @@
 import 'package:bsb/ui/home/book_chooser.dart';
+import 'package:bsb/ui/home/chapter_dialog.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/text/text_page.dart';
 import 'package:flutter/material.dart';
@@ -16,11 +17,20 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Berean Standard Bible'),
-        // backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       drawer: const AppDrawer(),
       body: BookChooser(
-        onBookSelected: (bookId, chapter) {
+        onSelected: (bookId, chapter) {
+          // final chapterCount = 150;
+          // showDialog(
+          //   context: context,
+          //   builder: (context) => ChapterDialog(chapters: chapterCount),
+          // ).then((selectedChapter) {
+          //   // if (selectedChapter != null) {
+          //   //   _lastChapter = selectedChapter;
+          //   //   widget.onBookSelected(bookId, selectedChapter);
+          //   // }
+          // });
           Navigator.push(
             context,
             MaterialPageRoute(

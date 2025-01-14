@@ -91,22 +91,29 @@ class _ChapterOverlayState extends State<ChapterOverlay> {
     double offsetX = widget.currentOffset.dx;
     double offsetY = widget.currentOffset.dy;
 
+    // print('dx: $dx, dy: $dy, offsetX: $offsetX, offsetY: $offsetY');
+
     // Handle X axis
     if (dx < _horizontalPadding) {
       offsetX += _horizontalPadding - dx + _columnWidth / 2;
+      print('dx < _horizontalPadding');
     } else if (dx > gridRight) {
       offsetX -= dx - gridRight + _columnWidth / 2;
+      print('dx > gridRight');
     }
 
     // Handle Y axis
     if (dy < _verticalPadding) {
       offsetY += _verticalPadding - dy + _rowHeight / 2;
+      print('dy < _verticalPadding');
     } else if (dy > gridBottom) {
       offsetY -= dy - gridBottom + _rowHeight / 2;
+      print('dy > gridBottom');
     }
 
     if (offsetX != widget.currentOffset.dx || offsetY != widget.currentOffset.dy) {
       _offset = Offset(offsetX, offsetY);
+      print('other');
     }
   }
 
