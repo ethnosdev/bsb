@@ -1,3 +1,7 @@
+# 0.7.0 - 2025.01.14
+
+- Update chapter chooser dialog.
+
 # 0.6.0 - 2025.01.09
 
 - Add app drawer menu.

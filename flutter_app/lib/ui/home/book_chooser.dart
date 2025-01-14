@@ -37,6 +37,10 @@ class _BookChooserState extends State<BookChooser> {
   Color get generalEpistlesColor => nt2;
 
   void _onBookSelected(int bookId, int chapterCount) {
+    if (chapterCount == 1) {
+      widget.onSelected(bookId, 1);
+      return;
+    }
     _chapterNotifier.value = (bookId, chapterCount);
   }
 
