@@ -1,8 +1,5 @@
 import 'package:bsb/ui/home/chapter_chooser.dart';
-import 'package:bsb/ui/home/chapter_overlay.dart';
 import 'package:flutter/material.dart';
-
-import 'chapter_dialog.dart';
 
 enum ChapterSelectionState {
   start,
@@ -40,10 +37,6 @@ class _BookChooserState extends State<BookChooser> {
   Color get generalEpistlesColor => nt2;
 
   void _onBookSelected(int bookId, int chapterCount) {
-    print('bookId: $bookId');
-    // setState(() {
-    //   _showChapterChooser = !_showChapterChooser;
-    // });
     _chapterNotifier.value = (bookId, chapterCount);
   }
 
@@ -99,7 +92,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 1,
             chapterCount: 50,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Exo',
@@ -107,7 +99,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 2,
             chapterCount: 40,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Lev',
@@ -115,7 +106,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 3,
             chapterCount: 27,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Num',
@@ -123,7 +113,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 4,
             chapterCount: 36,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Deu',
@@ -131,7 +120,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 5,
             chapterCount: 34,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -149,7 +137,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 6,
             chapterCount: 24,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jdg',
@@ -157,7 +144,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 7,
             chapterCount: 21,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Rut',
@@ -165,7 +151,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 8,
             chapterCount: 4,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '1Sa',
@@ -173,7 +158,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 9,
             chapterCount: 31,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Sa',
@@ -181,7 +165,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 10,
             chapterCount: 24,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -199,7 +182,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 11,
             chapterCount: 22,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Ki',
@@ -207,7 +189,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 12,
             chapterCount: 25,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '1Ch',
@@ -215,7 +196,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 13,
             chapterCount: 29,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Ch',
@@ -223,7 +203,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 14,
             chapterCount: 36,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Ezr',
@@ -231,7 +210,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 15,
             chapterCount: 10,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Neh',
@@ -239,7 +217,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 16,
             chapterCount: 13,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Est',
@@ -247,7 +224,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 17,
             chapterCount: 10,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -265,7 +241,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 18,
             chapterCount: 42,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Psa',
@@ -273,7 +248,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 19,
             chapterCount: 150,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Pro',
@@ -281,7 +255,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 20,
             chapterCount: 31,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Ecc',
@@ -289,7 +262,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 21,
             chapterCount: 12,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Sng',
@@ -297,7 +269,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 22,
             chapterCount: 8,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -315,7 +286,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 23,
             chapterCount: 66,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jer',
@@ -323,7 +293,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 24,
             chapterCount: 52,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Lam',
@@ -331,7 +300,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 25,
             chapterCount: 5,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Ezk',
@@ -339,7 +307,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 26,
             chapterCount: 48,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Dan',
@@ -347,7 +314,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 27,
             chapterCount: 12,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -365,7 +331,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 28,
             chapterCount: 14,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jol',
@@ -373,7 +338,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 29,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Amo',
@@ -381,7 +345,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 30,
             chapterCount: 9,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Oba',
@@ -389,7 +352,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 31,
             chapterCount: 1,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jon',
@@ -397,7 +359,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 32,
             chapterCount: 4,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Mic',
@@ -405,7 +366,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 33,
             chapterCount: 7,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -423,7 +383,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 34,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Hab',
@@ -431,7 +390,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 35,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Zep',
@@ -439,7 +397,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 36,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Hag',
@@ -447,7 +404,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 37,
             chapterCount: 2,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Zec',
@@ -455,7 +411,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 38,
             chapterCount: 14,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Mal',
@@ -463,7 +418,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 39,
             chapterCount: 4,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -481,7 +435,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 40,
             chapterCount: 28,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Mrk',
@@ -489,7 +442,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 41,
             chapterCount: 16,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Luk',
@@ -497,7 +449,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 42,
             chapterCount: 24,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jhn',
@@ -505,7 +456,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 43,
             chapterCount: 21,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Act',
@@ -513,7 +463,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 44,
             chapterCount: 28,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -531,7 +480,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 45,
             chapterCount: 16,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '1Co',
@@ -539,7 +487,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 46,
             chapterCount: 16,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Co',
@@ -547,7 +494,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 47,
             chapterCount: 13,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Gal',
@@ -555,7 +501,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 48,
             chapterCount: 6,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Eph',
@@ -563,7 +508,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 49,
             chapterCount: 6,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Php',
@@ -571,7 +515,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 50,
             chapterCount: 4,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Col',
@@ -579,7 +522,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 51,
             chapterCount: 4,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -597,7 +539,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 52,
             chapterCount: 5,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Th',
@@ -605,7 +546,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 53,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '1Ti',
@@ -613,7 +553,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 54,
             chapterCount: 6,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Ti',
@@ -621,7 +560,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 55,
             chapterCount: 4,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Tit',
@@ -629,7 +567,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 56,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Phm',
@@ -637,7 +574,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 57,
             chapterCount: 1,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -655,7 +591,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 58,
             chapterCount: 13,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jas',
@@ -663,7 +598,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 59,
             chapterCount: 5,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '1Pe',
@@ -671,7 +605,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 60,
             chapterCount: 5,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Pe',
@@ -679,7 +612,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 61,
             chapterCount: 3,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -697,7 +629,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 62,
             chapterCount: 5,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '2Jn',
@@ -705,7 +636,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 63,
             chapterCount: 1,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: '3Jn',
@@ -713,7 +643,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 64,
             chapterCount: 1,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Jud',
@@ -721,7 +650,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 65,
             chapterCount: 1,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
           BookItem(
             title: 'Rev',
@@ -729,7 +657,6 @@ class _BookChooserState extends State<BookChooser> {
             onTap: _onBookSelected,
             bookId: 66,
             chapterCount: 22,
-            // onSelectionUpdate: _onSelectingChapter,
           ),
         ],
       ),
@@ -783,31 +710,4 @@ class _BookItemState extends State<BookItem> {
       ),
     );
   }
-
-  // void _onPanStart(DragStartDetails details) {
-  //   widget.onSelectionUpdate(
-  //     widget.bookId,
-  //     widget.chapterCount,
-  //     ChapterSelectionState.start,
-  //     details.globalPosition,
-  //   );
-  // }
-
-  // void _onPanUpdate(DragUpdateDetails details) {
-  //   widget.onSelectionUpdate(
-  //     widget.bookId,
-  //     widget.chapterCount,
-  //     ChapterSelectionState.selecting,
-  //     details.globalPosition,
-  //   );
-  // }
-
-  // void _onPanEnd(DragEndDetails details) {
-  //   widget.onSelectionUpdate(
-  //     widget.bookId,
-  //     widget.chapterCount,
-  //     ChapterSelectionState.end,
-  //     details.globalPosition,
-  //   );
-  // }
 }
