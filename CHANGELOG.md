@@ -1,5 +1,9 @@
 # 0.8.1 - 2025.01.15
 
+- Fix URLs still not opening on Android.
+
+# 0.8.1 - 2025.01.15
+
 - Increase vertical offset for chapter chooser popup label.
 - Allow internet permission for Android.
 
