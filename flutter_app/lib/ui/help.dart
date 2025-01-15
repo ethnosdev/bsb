@@ -1,7 +1,31 @@
+import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
 
-class HelpPage extends StatelessWidget {
+class HelpPage extends StatefulWidget {
   const HelpPage({super.key});
+
+  @override
+  State<HelpPage> createState() => _HelpPageState();
+}
+
+class _HelpPageState extends State<HelpPage> {
+  late double fontSize;
+  late TextStyle _titleStyle;
+  late TextStyle _contentStyle;
+
+  @override
+  void initState() {
+    super.initState();
+    fontSize = getIt<UserSettings>().textSize;
+    _titleStyle = TextStyle(
+      fontSize: fontSize * 1.2,
+      fontWeight: FontWeight.bold,
+    );
+    _contentStyle = TextStyle(
+      fontSize: fontSize,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,22 +36,28 @@ class HelpPage extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
-        children: const [
+        children: [
           _HelpCard(
             title: 'Chapter selection',
             content: 'On the main screen, tap any book to select a chapter and then go to the text. '
                 'Alternatively, double tap a book to go to chapter 1.',
+            titleStyle: _titleStyle,
+            contentStyle: _contentStyle,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _HelpCard(
             title: 'Navigation',
             content: 'While in the chapter text screen, swipe to the right or left '
                 'to go to the next or previous chapter.',
+            titleStyle: _titleStyle,
+            contentStyle: _contentStyle,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _HelpCard(
             title: 'Footnotes',
             content: 'If you see an asterisk (*) in the text, tap it to learn additional information.',
+            titleStyle: _titleStyle,
+            contentStyle: _contentStyle,
           ),
         ],
       ),
@@ -38,10 +68,14 @@ class HelpPage extends StatelessWidget {
 class _HelpCard extends StatelessWidget {
   final String title;
   final String content;
+  final TextStyle titleStyle;
+  final TextStyle contentStyle;
 
   const _HelpCard({
     required this.title,
     required this.content,
+    required this.titleStyle,
+    required this.contentStyle,
   });
 
   @override
@@ -55,12 +89,12 @@ class _HelpCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: titleStyle,
             ),
             const SizedBox(height: 8),
             Text(
               content,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: contentStyle,
             ),
           ],
         ),

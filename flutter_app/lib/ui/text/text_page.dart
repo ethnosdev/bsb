@@ -1,3 +1,5 @@
+import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:flutter/material.dart';
 
@@ -61,7 +63,12 @@ class _TextPageState extends State<TextPage> {
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                  content: Text(note),
+                  content: SelectableText(
+                    note,
+                    style: TextStyle(
+                      fontSize: getIt<UserSettings>().textSize,
+                    ),
+                  ),
                 ),
               );
             },
