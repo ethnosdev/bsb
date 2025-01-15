@@ -1,3 +1,16 @@
+# 0.8.0 - 2025.01.15
+
+- Update logo.
+- Add logo to menu drawer.
+- Increase font size for help, footnotes, and book names.
+- Expand some book chooser names.
+- Update help tips.
+- Improve chapter chooser (popup labels, resizing, etc).
+- Double tap book name to go to chapter 1.
+- Make text selectable (but only a single paragraph at a time works).
+- Make cross references a footnote on the section title.
+- Increase the tap size of the footnote to the preceding word.
+
 # 0.7.0 - 2025.01.14
 
 - Update chapter chooser dialog.
