@@ -244,7 +244,7 @@ class _AboutPageState extends State<AboutPage> {
   Future<void> _launch(String webpage) async {
     final url = Uri.parse(webpage);
     if (await canLaunchUrl(url)) {
-      launchUrl(url, mode: LaunchMode.externalApplication);
+      await launchUrl(url, mode: LaunchMode.externalApplication);
     }
   }
 }
