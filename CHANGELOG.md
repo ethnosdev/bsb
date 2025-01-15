@@ -1,3 +1,8 @@
+# 0.8.1 - 2025.01.15
+
+- Increase vertical offset for chapter chooser popup label.
+- Allow internet permission for Android.
+
 # 0.8.0 - 2025.01.15
 
 - Update logo.
