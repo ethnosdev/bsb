@@ -29,6 +29,7 @@ flutter:
 
   assets:
     - assets/database/database.db
+    - assets/images/logo.png
 
   # The printed version uses Cambria, but this apparently isn't free to use in an app.
   fonts:

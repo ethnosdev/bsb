@@ -15,8 +15,16 @@ class AppDrawer extends StatelessWidget {
       child: Drawer(
         child: ListView(
           children: [
-            const DrawerHeader(
-              child: SizedBox(),
+            DrawerHeader(
+              child: Center(
+                child: ColorFiltered(
+                  colorFilter: ColorFilter.mode(Theme.of(context).textTheme.titleMedium!.color!, BlendMode.srcIn),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
             ),
             ListTile(
               title: const Text('Settings'),
