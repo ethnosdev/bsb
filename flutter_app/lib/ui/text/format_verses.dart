@@ -233,23 +233,69 @@ void _addVerseSpansWithFootnotes(
   for (var i = 0; i < footnotes.length; i++) {
     final (index, note) = footnotes[i];
 
-    // Add text before footnote
+    // Add text before the word with footnote
     if (index > lastIndex) {
+      final beforeText = text.substring(lastIndex, index);
+      final lastSpace = beforeText.lastIndexOf(' ');
+
+      if (lastSpace != -1) {
+        // Add text up to the last word
+        verseSpans.add(TextSpan(
+          text: beforeText.substring(0, lastSpace + 1),
+          style: style,
+        ));
+
+        // Add the last word and footnote marker together as tappable
+        verseSpans.addAll([
+          TextSpan(
+            text: beforeText.substring(lastSpace + 1),
+            style: style,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onFootnoteTap(note);
+              },
+          ),
+          TextSpan(
+            text: '*',
+            style: style.copyWith(color: footnoteColor),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onFootnoteTap(note);
+              },
+          )
+        ]);
+      } else {
+        // If no space found, make the entire text tappable
+        verseSpans.addAll([
+          TextSpan(
+            text: beforeText,
+            style: style,
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onFootnoteTap(note);
+              },
+          ),
+          TextSpan(
+            text: '*',
+            style: style.copyWith(color: footnoteColor),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onFootnoteTap(note);
+              },
+          )
+        ]);
+      }
+    } else {
+      // If at start of text, just add the footnote marker
       verseSpans.add(TextSpan(
-        text: text.substring(lastIndex, index),
-        style: style,
+        text: '*',
+        style: style.copyWith(color: footnoteColor),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            onFootnoteTap(note);
+          },
       ));
     }
-
-    // Add footnote marker
-    verseSpans.add(TextSpan(
-      text: '*',
-      style: style.copyWith(color: footnoteColor),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () {
-          onFootnoteTap(note);
-        },
-    ));
 
     lastIndex = index;
   }
