@@ -146,7 +146,8 @@ class _RenderChapterChooser extends RenderBox {
   int _rows = 0;
   int _columns = 0;
   static const _desiredTileWidth = 40.0;
-  static const _desiredTileHeight = 40.0;
+  static const _desiredTileHeight = 30.0;
+  double _scaledFontSize = 0.0;
 
   @override
   Size computeDryLayout(BoxConstraints constraints) {
@@ -158,12 +159,38 @@ class _RenderChapterChooser extends RenderBox {
     final maxGridHeight = constraints.maxHeight * 0.9;
     final gridHeight = min(maxGridHeight, _rows * _desiredTileHeight);
     final tileHeight = gridHeight / _rows;
-    final tileSide = min(tileWidth, tileHeight);
-    _gridSize = Size(tileSide * _columns, tileSide * _rows);
-    _tileSize = Size(tileSide, tileSide);
+    _gridSize = Size(tileWidth * _columns, tileHeight * _rows);
+    _tileSize = Size(tileWidth, tileHeight);
+
+    _scaledFontSize = _calculateOptimalFontSize("150");
 
     final parentSize = Size(constraints.maxWidth, constraints.maxHeight);
     return constraints.constrain(parentSize);
+  }
+
+  double _calculateOptimalFontSize(String sampleText) {
+    double scaleFactor = 1.0;
+    final initialFontSize = textStyle.fontSize!;
+
+    TextPainter textPainter;
+    do {
+      textPainter = TextPainter(
+        text: TextSpan(
+          text: sampleText,
+          style: textStyle.copyWith(fontSize: initialFontSize * scaleFactor),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+
+      if (textPainter.width <= _tileSize.width && textPainter.height <= _tileSize.height) {
+        break;
+      }
+
+      scaleFactor *= 0.9;
+    } while (scaleFactor > 0.3);
+
+    return initialFontSize * scaleFactor;
   }
 
   @override
@@ -361,7 +388,7 @@ class _RenderChapterChooser extends RenderBox {
         text: text,
         style: textStyle.copyWith(
           color: color,
-          fontSize: fontSize,
+          fontSize: fontSize ?? _scaledFontSize,
         ),
       ),
       textDirection: TextDirection.ltr,
