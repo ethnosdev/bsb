@@ -696,6 +696,9 @@ class _BookItemState extends State<BookItem> {
         color: widget.color,
         child: InkWell(
           onTap: () => widget.onTap(widget.bookId, widget.chapterCount),
+          // Setting the chapter count to 1 is a hack to go directly to chapter
+          // 1 without showing the chapter chooser.
+          onDoubleTap: () => widget.onTap(widget.bookId, 1),
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(width: 0.5),
