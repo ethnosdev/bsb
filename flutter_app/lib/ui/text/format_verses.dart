@@ -10,7 +10,6 @@ List<(TextSpan, TextType, Format?)> formatVerses(
   Color footnoteColor,
   void Function(String) onFootnoteTap,
 ) {
-  final referenceSize = baseFontSize * 0.8;
   final mrTitleSize = baseFontSize * 1.2;
   final msTitleSize = baseFontSize * 1.5;
   final lightTextColor = textColor.withAlpha(150);
@@ -20,7 +19,8 @@ List<(TextSpan, TextType, Format?)> formatVerses(
   int oldVerseNumber = 0;
   Format oldFormat = Format.m;
 
-  for (final row in content) {
+  for (var i = 0; i < content.length; i++) {
+    final row = content[i];
     final type = row.type;
     final format = row.format;
     final text = row.text;
@@ -108,28 +108,56 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         ));
 
       case TextType.r:
-        paragraphs.add((
-          TextSpan(
-            text: text,
-            style: TextStyle(
-              fontSize: referenceSize,
-              color: lightTextColor,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          type,
-          format,
-        ));
+        // Skip as references are now handled in TextType.s1
+        break;
 
       case TextType.s1:
-        paragraphs.add((
-          TextSpan(
+        final spans = <TextSpan>[];
+        String? reference;
+        // Check if next row is a reference
+        if (i + 1 < content.length && content[i + 1].type == TextType.r) {
+          reference = content[i + 1].text;
+          i++; // Skip the reference row since we're handling it here
+        }
+        if (reference != null) {
+          // Strip parentheses from reference
+          reference = reference.replaceAll(RegExp(r'[()]'), '');
+          spans.addAll([
+            TextSpan(
+              text: text,
+              style: TextStyle(
+                fontSize: baseFontSize,
+                fontWeight: FontWeight.bold,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  onFootnoteTap(reference!);
+                },
+            ),
+            TextSpan(
+              text: '*',
+              style: TextStyle(
+                fontSize: baseFontSize,
+                fontWeight: FontWeight.bold,
+                color: footnoteColor,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  onFootnoteTap(reference!);
+                },
+            ),
+          ]);
+        } else {
+          spans.add(TextSpan(
             text: text,
             style: TextStyle(
               fontSize: baseFontSize,
               fontWeight: FontWeight.bold,
             ),
-          ),
+          ));
+        }
+        paragraphs.add((
+          TextSpan(children: spans),
           type,
           format,
         ));
