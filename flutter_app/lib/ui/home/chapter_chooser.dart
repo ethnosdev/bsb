@@ -77,6 +77,7 @@ class _RenderChapterChooser extends RenderBox {
   final _highlightPaint = Paint();
 
   int? _highlightedChapter;
+  bool _showOffsetTile = false;
 
   int get chapterCount => _chapterCount;
   int _chapterCount;
@@ -189,23 +190,27 @@ class _RenderChapterChooser extends RenderBox {
     return null;
   }
 
-  void _updateHighlightedChapter(Offset position) {
+  void _updateHighlightedChapter(Offset position, bool isMove) {
     final newHighlight = _getChapterAtPosition(position);
-    if (newHighlight != _highlightedChapter) {
+    if (newHighlight != _highlightedChapter || _showOffsetTile != isMove) {
       _highlightedChapter = newHighlight;
+      _showOffsetTile = isMove;
       markNeedsPaint();
     }
   }
 
   @override
   void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
-    if (event is PointerDownEvent || event is PointerHoverEvent || event is PointerMoveEvent) {
-      _updateHighlightedChapter(event.localPosition);
+    if (event is PointerDownEvent || event is PointerHoverEvent) {
+      _updateHighlightedChapter(event.localPosition, false);
+    } else if (event is PointerMoveEvent) {
+      _updateHighlightedChapter(event.localPosition, true);
     } else if (event is PointerUpEvent) {
       final chapter = _getChapterAtPosition(event.localPosition);
       print('chapter: $chapter');
       onChapterSelected?.call(chapter);
       _highlightedChapter = null;
+      _showOffsetTile = false;
       markNeedsPaint();
     }
   }
@@ -224,68 +229,144 @@ class _RenderChapterChooser extends RenderBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    context.canvas.save();
-    context.canvas.translate(offset.dx, offset.dy);
+    final canvas = context.canvas;
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
 
-    // paint the fullscreen translucent dark background
-    context.canvas.drawRect(Offset.zero & size, _backgroundPaint);
+    _paintBackground(canvas);
+    _paintGrid(canvas);
+    _paintChapters(context);
 
-    // paint the grid background
+    canvas.restore();
+  }
+
+  void _paintBackground(Canvas canvas) {
+    canvas.drawRect(Offset.zero & size, _backgroundPaint);
+  }
+
+  void _paintGrid(Canvas canvas) {
     final gridOffset = Offset(
       (size.width - _gridSize.width) / 2,
       (size.height - _gridSize.height) / 2,
     );
-    context.canvas.save();
-    context.canvas.translate(gridOffset.dx, gridOffset.dy);
+    canvas.save();
+    canvas.translate(gridOffset.dx, gridOffset.dy);
+
     final gridRect = Offset.zero & _gridSize;
-    context.canvas.drawRRect(
+    canvas.drawRRect(
       RRect.fromRectAndRadius(gridRect, const Radius.circular(8)),
       _gridPaint,
     );
+    canvas.restore();
+  }
 
-    // paint the grid items
+  void _paintChapters(PaintingContext context) {
+    final canvas = context.canvas;
+    final gridOffset = Offset(
+      (size.width - _gridSize.width) / 2,
+      (size.height - _gridSize.height) / 2,
+    );
+    canvas.save();
+    canvas.translate(gridOffset.dx, gridOffset.dy);
+
     for (var row = 0; row < _rows; row++) {
       for (var col = 0; col < _columns; col++) {
         final index = row * _columns + col + 1;
         if (index <= chapterCount) {
-          context.canvas.save();
-          context.canvas.translate(
-            col * _tileSize.width,
-            row * _tileSize.height,
-          );
-
-          // Draw highlight if this is the highlighted chapter
-          if (_highlightedChapter == index) {
-            context.canvas.drawRRect(
-              RRect.fromRectAndRadius(Offset.zero & _tileSize, const Radius.circular(4)),
-              _highlightPaint,
-            );
-          }
-
-          final textPainter = TextPainter(
-            text: TextSpan(
-              text: index.toString(),
-              style: textStyle.copyWith(
-                color: _highlightedChapter == index ? highlightTextColor : textColor,
-              ),
-            ),
-            textDirection: TextDirection.ltr,
-          );
-
-          textPainter.layout();
-          textPainter.paint(
-            context.canvas,
-            Offset(
-              (_tileSize.width - textPainter.width) / 2,
-              (_tileSize.height - textPainter.height) / 2,
-            ),
-          );
-          context.canvas.restore();
+          _paintChapter(context, row, col, index);
         }
       }
     }
-    context.canvas.restore();
+    canvas.restore();
+  }
 
-    context.canvas.restore();
+  void _paintChapter(PaintingContext context, int row, int col, int index) {
+    final canvas = context.canvas;
+    canvas.save();
+    canvas.translate(
+      col * _tileSize.width,
+      row * _tileSize.height,
+    );
+
+    if (_highlightedChapter == index) {
+      _paintHighlight(context, index);
+    }
+
+    _paintChapterNumber(context, index);
+    canvas.restore();
+  }
+
+  void _paintHighlight(PaintingContext context, int index) {
+    final canvas = context.canvas;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Offset.zero & _tileSize, const Radius.circular(4)),
+      _highlightPaint,
+    );
+
+    if (_showOffsetTile) {
+      _paintOffsetTile(context, index);
+    }
+  }
+
+  void _paintOffsetTile(PaintingContext context, int index) {
+    const verticalOffset = 50.0;
+    final canvas = context.canvas;
+    final offsetTileSize = Size(_tileSize.width * 2, _tileSize.height * 2);
+    final offsetPosition = Offset(
+      -_tileSize.width / 2,
+      -verticalOffset - _tileSize.height / 2,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        offsetPosition & offsetTileSize,
+        const Radius.circular(8),
+      ),
+      _highlightPaint,
+    );
+
+    final textPainter = _createTextPainter(
+      index.toString(),
+      fontSize: textStyle.fontSize! * 2,
+      color: highlightTextColor,
+    );
+
+    textPainter.paint(
+      context.canvas,
+      Offset(
+        (-_tileSize.width / 2) + (offsetTileSize.width - textPainter.width) / 2,
+        -verticalOffset - _tileSize.height / 2 + (offsetTileSize.height - textPainter.height) / 2,
+      ),
+    );
+  }
+
+  void _paintChapterNumber(PaintingContext context, int index) {
+    final textPainter = _createTextPainter(
+      index.toString(),
+      color: _highlightedChapter == index ? highlightTextColor : textColor,
+    );
+
+    textPainter.paint(
+      context.canvas,
+      Offset(
+        (_tileSize.width - textPainter.width) / 2,
+        (_tileSize.height - textPainter.height) / 2,
+      ),
+    );
+  }
+
+  TextPainter _createTextPainter(String text, {Color? color, double? fontSize}) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: textStyle.copyWith(
+          color: color,
+          fontSize: fontSize,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    return textPainter;
   }
 }
