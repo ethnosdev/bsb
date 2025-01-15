@@ -336,7 +336,7 @@ class _RenderChapterChooser extends RenderBox {
   }
 
   void _paintOffsetTile(PaintingContext context, int index) {
-    const verticalOffset = 50.0;
+    const verticalOffset = 70.0;
     final canvas = context.canvas;
     final offsetTileSize = Size(_tileSize.width * 2, _tileSize.height * 2);
     final offsetPosition = Offset(
