@@ -28,19 +28,19 @@ class _ChapterLayoutState extends State<ChapterLayout> {
         case TextType.v:
           _applyFormat(sections, span, format);
         case TextType.d:
-          sections.add(Text.rich(
+          sections.add(SelectableText.rich(
             span,
             textAlign: TextAlign.center,
           ));
           sections.add(_paragraphSpacing);
         case TextType.r:
-          sections.add(Text.rich(span));
+          sections.add(SelectableText.rich(span));
           sections.add(_paragraphSpacing);
         case TextType.s1:
           if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
             sections.add(_paragraphSpacing);
           }
-          sections.add(Text.rich(span));
+          sections.add(SelectableText.rich(span));
           if (index < widget.paragraphs.length - 1 && //
               widget.paragraphs[index + 1].$2 != TextType.r) {
             sections.add(_paragraphSpacing);
@@ -49,19 +49,19 @@ class _ChapterLayoutState extends State<ChapterLayout> {
           if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
             sections.add(_paragraphSpacing);
           }
-          sections.add(Text.rich(span));
+          sections.add(SelectableText.rich(span));
           sections.add(_paragraphSpacing);
         case TextType.ms:
           sections.add(Center(
-            child: Text.rich(span),
+            child: SelectableText.rich(span),
           ));
         case TextType.mr:
           sections.add(Center(
-            child: Text.rich(span),
+            child: SelectableText.rich(span),
           ));
           sections.add(_paragraphSpacing);
         case TextType.qa:
-          sections.add(Text.rich(span));
+          sections.add(SelectableText.rich(span));
       }
       index++;
     }
@@ -73,7 +73,7 @@ class _ChapterLayoutState extends State<ChapterLayout> {
   }
 
   void _applyFormat(List<Widget> sections, TextSpan span, Format? format) {
-    Widget text = Text.rich(span);
+    Widget text = SelectableText.rich(span);
     if (format != null) {
       switch (format) {
         case Format.m:
