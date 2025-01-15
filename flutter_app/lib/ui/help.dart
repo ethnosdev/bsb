@@ -15,19 +15,19 @@ class HelpPage extends StatelessWidget {
         children: const [
           _HelpCard(
             title: 'Chapter selection',
-            content: 'On the main screen, tap any book to go to the first chapter of that book. '
-                'Alternatively, slide your finger across the book button to choose a specific chapter.',
+            content: 'On the main screen, tap any book to select a chapter and then go to the text. '
+                'Alternatively, double tap a book to go to chapter 1.',
           ),
           SizedBox(height: 16),
           _HelpCard(
             title: 'Navigation',
             content: 'While in the chapter text screen, swipe to the right or left '
-                'to go to the next or previous chapters.',
+                'to go to the next or previous chapter.',
           ),
           SizedBox(height: 16),
           _HelpCard(
             title: 'Footnotes',
-            content: 'If you see an asterisk (*) in the text, tap it to see the footnote for that verse.',
+            content: 'If you see an asterisk (*) in the text, tap it to learn additional information.',
           ),
         ],
       ),
