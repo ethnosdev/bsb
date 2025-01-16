@@ -145,19 +145,19 @@ class _RenderChapterChooser extends RenderBox {
   Size _tileSize = Size.zero;
   int _rows = 0;
   int _columns = 0;
-  static const _desiredTileWidth = 40.0;
-  static const _desiredTileHeight = 30.0;
   double _scaledFontSize = 0.0;
 
   @override
   Size computeDryLayout(BoxConstraints constraints) {
     _rows = (chapterCount / 10).ceil();
     _columns = chapterCount < 10 ? chapterCount : 10;
+    const desiredTileWidth = 40.0;
+    final desireTileHeight = (chapterCount > 100) ? 30 : 40;
     final maxGridWidth = constraints.maxWidth * 0.9;
-    final gridWidth = min(maxGridWidth, _columns * _desiredTileWidth);
+    final gridWidth = min(maxGridWidth, _columns * desiredTileWidth);
     final tileWidth = gridWidth / _columns;
     final maxGridHeight = constraints.maxHeight * 0.9;
-    final gridHeight = min(maxGridHeight, _rows * _desiredTileHeight);
+    final gridHeight = min(maxGridHeight, _rows * desireTileHeight);
     final tileHeight = gridHeight / _rows;
     _gridSize = Size(tileWidth * _columns, tileHeight * _rows);
     _tileSize = Size(tileWidth, tileHeight);
