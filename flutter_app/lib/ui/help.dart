@@ -48,7 +48,8 @@ class _HelpPageState extends State<HelpPage> {
           _HelpCard(
             title: 'Navigation',
             content: 'While in the chapter text screen, swipe to the right or left '
-                'to go to the next or previous chapter.',
+                'to go to the next or previous chapter. You can also double tap the '
+                'text to show the chapter chooser dialog.',
             titleStyle: _titleStyle,
             contentStyle: _contentStyle,
           ),
