@@ -1,3 +1,9 @@
+# 1.0.0 - 2025.01.16
+
+- Stable release.
+- Update help tips.
+- iOS setup info and resources.
+
 # 0.9.0 - 2025.01.16
 
 - Chapter navigation dialog when double tapping in text.
