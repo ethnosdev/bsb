@@ -16,6 +16,9 @@ class TextManager {
   static const _maxCacheSize = 3;
   final _recentlyUsed = <String>[];
 
+  static const _chaptersInBible = 1189;
+  static const maxPageIndex = _chaptersInBible - 1;
+
   double _normalTextSize = 14.0;
   double get paragraphSpacing => _normalTextSize * 0.6;
 
@@ -35,15 +38,10 @@ class TextManager {
   }
 
   void updateTitle({
-    required int initialBookId,
-    required int initialChapter,
-    required int index,
+    required int? index,
   }) {
-    final (bookId, chapter) = _getChapterFromOffset(
-      initialBookId,
-      initialChapter,
-      index,
-    );
+    if (index == null) return;
+    final (bookId, chapter) = _currentBookAndChapter(index);
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       titleNotifier.value = _formatTitle(bookId, chapter);
@@ -51,18 +49,12 @@ class TextManager {
   }
 
   Future<void> requestText({
-    required int initialBookId,
-    required int initialChapter,
     required int index,
     required Color textColor,
     required Color footnoteColor,
     required void Function(String) onFootnoteTap,
   }) async {
-    final (bookId, chapter) = _getChapterFromOffset(
-      initialBookId,
-      initialChapter,
-      index,
-    );
+    final (bookId, chapter) = _currentBookAndChapter(index);
 
     // Update book and chapter title
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -99,40 +91,29 @@ class TextManager {
     targetNotifier.value = formattedContent;
   }
 
-  (int bookId, int chapter) _getChapterFromOffset(
-    int initialBookId,
-    int initialChapter,
-    int chapterOffset,
+  (int bookId, int chapter) currentBookAndChapterCount(int index) {
+    final (bookId, _) = _currentBookAndChapter(index);
+    final chapterCount = bookIdToChapterCountMap[bookId]!;
+    return (bookId, chapterCount);
+  }
+
+  (int bookId, int chapter) _currentBookAndChapter(
+    int index,
   ) {
-    if (chapterOffset == 0) {
-      return (initialBookId, initialChapter);
-    }
+    int pageIndex = index % (maxPageIndex + 1);
 
-    var currentBookId = initialBookId;
-    var currentChapter = initialChapter;
+    int currentBookId = 1;
+    int currentChapter = 1;
+    int remainingIndex = pageIndex;
 
-    if (chapterOffset > 0) {
-      for (var i = 0; i < chapterOffset; i++) {
-        currentChapter++;
-        if (currentChapter > bookIdToChapterCountMap[currentBookId]!) {
-          currentBookId++;
-          if (currentBookId > 66) {
-            currentBookId = 1;
-          }
-          currentChapter = 1;
-        }
+    // Find the book based on index
+    for (final entry in bookIdToChapterCountMap.entries) {
+      if (remainingIndex < entry.value) {
+        currentBookId = entry.key;
+        currentChapter = remainingIndex + 1;
+        break;
       }
-    } else {
-      for (var i = 0; i > chapterOffset; i--) {
-        currentChapter--;
-        if (currentChapter < 1) {
-          currentBookId--;
-          if (currentBookId < 1) {
-            currentBookId = 66;
-          }
-          currentChapter = bookIdToChapterCountMap[currentBookId]!;
-        }
-      }
+      remainingIndex -= entry.value;
     }
 
     return (currentBookId, currentChapter);
@@ -171,36 +152,82 @@ class TextManager {
     return '$book $chapter';
   }
 
-  (int bookId, int chapter) getPreviousChapter(int bookId, int chapter) {
-    if (chapter > 1) {
-      return (bookId, chapter - 1);
-    }
-
-    final previousBookId = bookId - 1;
-    if (bookIdToChapterCountMap.containsKey(previousBookId)) {
-      final maxChapters = bookIdToChapterCountMap[previousBookId]!;
-      return (previousBookId, maxChapters);
-    }
-
-    // Revelation 22 is the last book in the Bible
-    return (66, 22);
-  }
-
-  (int bookId, int chapter) getNextChapter(int bookId, int chapter) {
-    final maxChapters = bookIdToChapterCountMap[bookId]!;
-
-    if (chapter < maxChapters) {
-      return (bookId, chapter + 1);
-    }
-
-    final nextBookId = bookId + 1;
-    if (bookIdToChapterCountMap.containsKey(nextBookId)) {
-      return (nextBookId, 1);
-    }
-
-    return (1, 1);
+  int pageIndexForBookAndChapter({
+    required int bookId,
+    required int chapter,
+  }) {
+    return bookIdToIndexMap[bookId]! + chapter - 1;
   }
 }
+
+final bookIdToIndexMap = {
+  1: 0, // Genesis
+  2: 50, // Exodus
+  3: 90, // Leviticus
+  4: 117, // Numbers
+  5: 153, // Deuteronomy
+  6: 187, // Joshua
+  7: 211, // Judges
+  8: 232, // Ruth
+  9: 236, // 1 Samuel
+  10: 267, // 2 Samuel
+  11: 291, // 1 Kings
+  12: 313, // 2 Kings
+  13: 338, // 1 Chronicles
+  14: 367, // 2 Chronicles
+  15: 403, // Ezra
+  16: 413, // Nehemiah
+  17: 426, // Esther
+  18: 436, // Job
+  19: 478, // Psalms
+  20: 628, // Proverbs
+  21: 659, // Ecclesiastes
+  22: 671, // Song of Solomon
+  23: 679, // Isaiah
+  24: 745, // Jeremiah
+  25: 797, // Lamentations
+  26: 802, // Ezekiel
+  27: 850, // Daniel
+  28: 862, // Hosea
+  29: 876, // Joel
+  30: 879, // Amos
+  31: 888, // Obadiah
+  32: 889, // Jonah
+  33: 893, // Micah
+  34: 900, // Nahum
+  35: 903, // Habakkuk
+  36: 906, // Zephaniah
+  37: 909, // Haggai
+  38: 911, // Zechariah
+  39: 925, // Malachi
+  40: 929, // Matthew
+  41: 957, // Mark
+  42: 973, // Luke
+  43: 997, // John
+  44: 1018, // Acts
+  45: 1046, // Romans
+  46: 1062, // 1 Corinthians
+  47: 1078, // 2 Corinthians
+  48: 1091, // Galatians
+  49: 1097, // Ephesians
+  50: 1103, // Philippians
+  51: 1107, // Colossians
+  52: 1111, // 1 Thessalonians
+  53: 1116, // 2 Thessalonians
+  54: 1119, // 1 Timothy
+  55: 1125, // 2 Timothy
+  56: 1129, // Titus
+  57: 1132, // Philemon
+  58: 1133, // Hebrews
+  59: 1146, // James
+  60: 1151, // 1 Peter
+  61: 1156, // 2 Peter
+  62: 1159, // 1 John
+  63: 1164, // 2 John
+  64: 1165, // 3 John
+  65: 1166, // Jude
+  66: 1167, // Revelation
+};
 
 final Map<int, int> bookIdToChapterCountMap = {
   1: 50, // Genesis
