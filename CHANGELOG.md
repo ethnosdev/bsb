@@ -1,3 +1,8 @@
+# 0.9.0 - 2025.01.16
+
+- Chapter navigation dialog when double tapping in text.
+- Taller chapter chooser tiles for all books except Psalms.
+
 # 0.8.1 - 2025.01.15
 
 - Fix URLs still not opening on Android.
