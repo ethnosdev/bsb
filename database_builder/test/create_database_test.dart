@@ -1,4 +1,4 @@
-import 'package:database_builder/create_database.dart';
+import 'package:database_builder/bsb/create_database.dart';
 import 'package:test/test.dart';
 
 void main() {
