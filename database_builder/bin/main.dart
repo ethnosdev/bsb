@@ -1,7 +1,12 @@
-import 'package:database_builder/bsb/create_database.dart';
+import 'package:database_builder/src/create_database.dart';
+import 'package:database_builder/src/utils/interlinear_utils.dart';
 
 void main(List<String> arguments) {
   // printAllFilenames();
   // printAllParatextMarkers();
-  createBsbDatabase();
+  createDatabase();
+
+  // compareColumns();
+  // uniqueLanguageValues();
+  // uniquePosValues();
 }

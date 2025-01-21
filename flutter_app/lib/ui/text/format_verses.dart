@@ -1,5 +1,5 @@
 import 'package:bsb/infrastructure/verse_line.dart';
-import 'package:database_builder/bsb/schema.dart';
+import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 

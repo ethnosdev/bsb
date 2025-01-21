@@ -1,0 +1,149 @@
+class Schema {
+  // Bible table
+  static const String bibleTextTable = "bible";
+
+  // BSB column names
+  static const String colId = '_id';
+  static const String colType = 'type'; // ms, mr, d, s1, s2, qa, r, v
+  static const String colBookId = 'book';
+  static const String colChapter = 'chapter';
+  static const String colVerse = 'verse';
+  // static const String colLine = 'line';
+  static const String colText = 'text';
+  static const String colFormat = 'format'; // m, q1, q2, pmo, li1, li2, pc, qr
+  static const String colFootnote = 'footnote';
+
+  // SQL statements
+  static const String createBsbTable = '''
+  CREATE TABLE IF NOT EXISTS $bibleTextTable (
+    $colId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $colBookId INTEGER NOT NULL,
+    $colChapter INTEGER NOT NULL,
+    $colVerse INTEGER NOT NULL,
+    $colText TEXT NOT NULL,
+    $colType INTEGER NOT NULL,
+    $colFormat INTEGER,
+    $colFootnote TEXT
+  )
+  ''';
+
+  // Interlinear table
+  static const String interlinearTable = "interlinear";
+
+  // Interlinear column names
+  static const String ilColId = '_id';
+  static const String ilColBookId = 'book';
+  static const String ilColChapter = 'chapter';
+  static const String ilColVerse = 'verse';
+  static const String ilColLanguage = 'language'; // 1 Hebrew, 2 Aramaic, 3 Greek
+  static const String ilColOriginal = 'original';
+  static const String ilColTransliteration = 'translit';
+  static const String ilColPartOfSpeech = 'pos'; // foreign key to part of speech table
+  static const String ilColStrongsNumber = 'strongs';
+  static const String ilColEnglish = 'english';
+  static const String ilColPunctuation = 'punct';
+
+  // SQL statements
+  static const String createInterlinearTable = '''
+  CREATE TABLE IF NOT EXISTS $interlinearTable (
+    $ilColId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $ilColBookId INTEGER NOT NULL,
+    $ilColChapter INTEGER NOT NULL,
+    $ilColVerse INTEGER NOT NULL,
+    $ilColLanguage INTEGER NOT NULL,
+    $ilColOriginal TEXT NOT NULL,
+    $ilColTransliteration TEXT NOT NULL,
+    $ilColPartOfSpeech INTEGER NOT NULL,
+    $ilColStrongsNumber INTEGER NOT NULL,
+    $ilColEnglish TEXT NOT NULL,
+    $ilColPunctuation TEXT
+  )
+  ''';
+
+  // Part of speech table
+  static const String partOfSpeechTable = "pos";
+
+  static const String posColId = '_id';
+  static const String posColName = 'name';
+
+  static const String createPartOfSpeechTable = '''
+  CREATE TABLE IF NOT EXISTS $partOfSpeechTable (
+    $posColId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $posColName TEXT NOT NULL
+  )
+  ''';
+}
+
+// colType values
+enum TextType {
+  v(0), // verse
+  d(1), // Descriptive Title (Psalms "Of David")
+  r(2), // Cross Reference
+  s1(3), // Section Heading Level 1
+  s2(4), // Section Heading Level 2
+  ms(5), // major section (Psalms)
+  mr(6), // major section range (Psalms)
+  qa(7); // Acrostic Heading (Psalm 119)
+
+  final int id;
+  const TextType(this.id);
+
+  static TextType fromString(String value) {
+    return TextType.values.firstWhere(
+      (type) => type.name == value,
+    );
+  }
+
+  static TextType fromInt(int value) {
+    return TextType.values.firstWhere(
+      (type) => type.id == value,
+    );
+  }
+}
+
+enum Format {
+  m(0), // margin, no indentation
+  q1(1), // poetry indentation level 1
+  q2(2), // poetry indentation level 2
+  pmo(3), // Embedded text opening
+  li1(4), // list item level 1
+  li2(5), // list item level 2
+  pc(6), // centered
+  qr(7); // right aligned
+
+  final int id;
+  const Format(this.id);
+
+  static Format fromString(String value) {
+    return Format.values.firstWhere(
+      (format) => format.name == value,
+    );
+  }
+
+  static Format fromInt(int value) {
+    return Format.values.firstWhere(
+      (format) => format.id == value,
+    );
+  }
+}
+
+enum Language {
+  hebrew(0),
+  aramaic(1),
+  greek(2);
+
+  final int id;
+  const Language(this.id);
+
+  static Language fromString(String value) {
+    return Language.values.firstWhere(
+      (language) => language.name == value.toLowerCase(),
+    );
+  }
+
+  static Language fromInt(int value) {
+    return Language.values.firstWhere(
+      (language) => language.id == value,
+    );
+  }
+}

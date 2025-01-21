@@ -3,7 +3,7 @@ import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:database_builder/bsb/database_builder.dart';
+import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";

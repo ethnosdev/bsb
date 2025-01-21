@@ -135,3 +135,7 @@ const bookIdToFullNameMap = {
   65: 'Jude',
   66: 'Revelation'
 };
+
+Map<String, int> fullNameToBookIdMap = Map.fromEntries(
+  bookIdToFullNameMap.entries.map((entry) => MapEntry(entry.value, entry.key)),
+);

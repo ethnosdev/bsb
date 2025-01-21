@@ -1,16 +1,11 @@
 import 'dart:io';
 
-import 'package:database_builder/bsb/database_helper.dart';
-import 'package:database_builder/bsb/schema.dart';
-import 'package:database_builder/bsb/utils/utils.dart';
-
 import 'book_id.dart';
+import 'database_helper.dart';
+import 'schema.dart';
+import 'utils/bsb_utils.dart';
 
-Future<void> createBsbDatabase() async {
-  final dbHelper = DatabaseHelper();
-  dbHelper.deleteDatabase();
-  dbHelper.init();
-
+Future<void> createBsbTable(DatabaseHelper dbHelper) async {
   final directory = Directory('bsb_usfm');
 
   if (!await directory.exists()) {
@@ -140,7 +135,7 @@ Future<void> createBsbDatabase() async {
         return;
       }
 
-      dbHelper.insert(
+      dbHelper.insertBsbLine(
         bookId: bookId,
         chapter: chapter,
         verse: verse,

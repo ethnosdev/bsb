@@ -1,4 +1,4 @@
-import 'package:database_builder/bsb/database_builder.dart';
+import 'package:database_builder/database_builder.dart';
 
 class VerseLine {
   VerseLine({
