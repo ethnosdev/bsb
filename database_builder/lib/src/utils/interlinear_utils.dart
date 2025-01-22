@@ -45,6 +45,26 @@ void uniqueLanguageValues() {
   }
 }
 
+void uniqueOriginalValues() {
+  final file = File('bsb_tables/bsb_tables.csv');
+  final lines = file.readAsLinesSync();
+  int column = 18;
+
+  final Set<String> uniqueValues = {};
+
+  for (var line in lines) {
+    final columns = line.split('\t');
+    if (columns.length > column) {
+      final value = columns[column].trim();
+      if (value.isNotEmpty && !uniqueValues.contains(value)) {
+        uniqueValues.add(value);
+        // print(value);
+      }
+    }
+  }
+  print('unique original: ${uniqueValues.length}');
+}
+
 void uniquePosValues() {
   final file = File('bsb_tables/bsb_tables.csv');
   final lines = file.readAsLinesSync();

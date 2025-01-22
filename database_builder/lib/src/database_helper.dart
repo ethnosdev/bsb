@@ -11,6 +11,8 @@ class DatabaseHelper {
   void init() {
     _database = sqlite3.open(_databaseName);
     _createBsbTable();
+    _createOriginalLanguageTable();
+    _createEnglishTable();
     _createPartOfSpeechTable();
     _createInterlinearTable();
   }
@@ -25,6 +27,14 @@ class DatabaseHelper {
 
   void _createBsbTable() {
     _database.execute(Schema.createBsbTable);
+  }
+
+  void _createOriginalLanguageTable() {
+    _database.execute(Schema.createOriginalLanguageTable);
+  }
+
+  void _createEnglishTable() {
+    _database.execute(Schema.createEnglishTable);
   }
 
   void _createPartOfSpeechTable() {
@@ -60,6 +70,28 @@ class DatabaseHelper {
       ''', [bookId, chapter, verse, text, type, format, footnote]);
   }
 
+  int insertOriginalLanguage({
+    required String word,
+  }) {
+    _database.execute('''
+      INSERT INTO ${Schema.originalLanguageTable} (
+        ${Schema.olColWord}
+      ) VALUES (?)
+      ''', [word]);
+    return _database.lastInsertRowId;
+  }
+
+  int insertEnglish({
+    required String word,
+  }) {
+    _database.execute('''
+      INSERT INTO ${Schema.englishTable} (
+        ${Schema.engColWord}
+      ) VALUES (?)
+      ''', [word]);
+    return _database.lastInsertRowId;
+  }
+
   int insertPartOfSpeech({
     required String name,
   }) {
@@ -76,11 +108,10 @@ class DatabaseHelper {
     required int chapter,
     required int verse,
     required int language,
-    required String original,
-    required String transliteration,
+    required int original,
     required int partOfSpeech,
     required int strongsNumber,
-    required String english,
+    required int english,
     String? punctuation,
   }) async {
     _database.execute('''
@@ -90,23 +121,11 @@ class DatabaseHelper {
           ${Schema.ilColVerse},
           ${Schema.ilColLanguage},
           ${Schema.ilColOriginal},
-          ${Schema.ilColTransliteration},
           ${Schema.ilColPartOfSpeech},
           ${Schema.ilColStrongsNumber},
           ${Schema.ilColEnglish},
           ${Schema.ilColPunctuation}
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', [
-      bookId,
-      chapter,
-      verse,
-      language,
-      original,
-      transliteration,
-      partOfSpeech,
-      strongsNumber,
-      english,
-      punctuation
-    ]);
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', [bookId, chapter, verse, language, original, partOfSpeech, strongsNumber, english, punctuation]);
   }
 }

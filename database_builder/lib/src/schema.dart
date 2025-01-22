@@ -36,11 +36,11 @@ class Schema {
   static const String ilColChapter = 'chapter';
   static const String ilColVerse = 'verse';
   static const String ilColLanguage = 'language'; // 1 Hebrew, 2 Aramaic, 3 Greek
-  static const String ilColOriginal = 'original';
-  static const String ilColTransliteration = 'translit';
+  static const String ilColOriginal = 'original'; // foreign key to original language table
+  // static const String ilColTransliteration = 'translit';
   static const String ilColPartOfSpeech = 'pos'; // foreign key to part of speech table
   static const String ilColStrongsNumber = 'strongs';
-  static const String ilColEnglish = 'english';
+  static const String ilColEnglish = 'english'; // foreign key to english table
   static const String ilColPunctuation = 'punct';
 
   // SQL statements
@@ -51,11 +51,10 @@ class Schema {
     $ilColChapter INTEGER NOT NULL,
     $ilColVerse INTEGER NOT NULL,
     $ilColLanguage INTEGER NOT NULL,
-    $ilColOriginal TEXT NOT NULL,
-    $ilColTransliteration TEXT NOT NULL,
+    $ilColOriginal INTEGER NOT NULL,
     $ilColPartOfSpeech INTEGER NOT NULL,
     $ilColStrongsNumber INTEGER NOT NULL,
-    $ilColEnglish TEXT NOT NULL,
+    $ilColEnglish INTEGER NOT NULL,
     $ilColPunctuation TEXT
   )
   ''';
@@ -70,6 +69,32 @@ class Schema {
   CREATE TABLE IF NOT EXISTS $partOfSpeechTable (
     $posColId INTEGER PRIMARY KEY AUTOINCREMENT,
     $posColName TEXT NOT NULL
+  )
+  ''';
+
+  // Original language table
+  static const String originalLanguageTable = "original";
+
+  static const String olColId = '_id';
+  static const String olColWord = 'word';
+
+  static const String createOriginalLanguageTable = '''
+  CREATE TABLE IF NOT EXISTS $originalLanguageTable (
+    $olColId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $olColWord TEXT NOT NULL
+  )
+  ''';
+
+  // English language table
+  static const String englishTable = "english";
+
+  static const String engColId = '_id';
+  static const String engColWord = 'word';
+
+  static const String createEnglishTable = '''
+  CREATE TABLE IF NOT EXISTS $englishTable (
+    $engColId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $engColWord TEXT NOT NULL
   )
   ''';
 }
