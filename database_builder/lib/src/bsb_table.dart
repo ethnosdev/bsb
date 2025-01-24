@@ -16,7 +16,6 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
   int bookId = -1;
   int chapter = -1;
   int verse = -1;
-  // int line = -1;
   String? text;
   TextType? type;
   Format? format;
@@ -49,7 +48,6 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         case 'c': // chapter
           chapter = _getChapter(remainder);
           verse = -1;
-          // line = -1;
           continue;
         case 's1': // section heading level 1
         case 's2': // section heading level 2
@@ -69,11 +67,9 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
             continue;
           }
           text = remainder;
-        // line++;
         case 'v': // verse
           type = TextType.v;
           (verse, text) = _getVerse(remainder);
-        // line = 1;
         case 'd': // descriptive title
           type = TextType.d;
           if (remainder.isEmpty) {
@@ -81,7 +77,6 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           }
           text = remainder;
           verse = 0;
-        // line = 1;
         case 'b': // break
           if (type != TextType.v) {
             continue;
@@ -110,13 +105,21 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           }
           text = remainder;
         case 'pc': // centered
-          type = TextType.v;
-          format = Format.pc;
-          if (remainder.isEmpty) {
-            continue;
+          const habakkuk = 35;
+          if (bookId == habakkuk && chapter == 3 && verse == 19) {
+            // This should really be fixed in the original USFM file,
+            // but we need to make it centered and italic like TextType.d.
+            type = TextType.d;
+            format = Format.pc; // unused
+            text = _removeItalicMarkers(remainder);
+          } else {
+            type = TextType.v;
+            format = Format.pc;
+            if (remainder.isEmpty) {
+              continue;
+            }
+            text = remainder;
           }
-          text = remainder;
-        // TODO: there is a centered itallic line in Habakkuk. Need to figure out what to do with it.
         case 'qr': // right aligned
           type = TextType.v;
           format = Format.qr;
@@ -211,4 +214,11 @@ int _getChapter(String textAfterMarker) {
   }
 
   return (modifiedText.trim(), footnotes.join('\n'));
+}
+
+String _removeItalicMarkers(String text) {
+  // Original: \it For the choirmaster. With stringed instruments. \it*
+  // Desired: For the choirmaster. With stringed instruments.
+  final modifiedText = text.replaceAll(r'\it', '').replaceAll(r'\it*', '');
+  return modifiedText.trim();
 }
