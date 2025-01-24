@@ -25,6 +25,7 @@ class _TextPageState extends State<TextPage> {
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
+  int _pageIndex = 0;
 
   @override
   void initState() {
@@ -51,19 +52,26 @@ class _TextPageState extends State<TextPage> {
     return Scaffold(
       appBar: AppBar(
         title: ValueListenableBuilder<String>(
-            valueListenable: textManager.titleNotifier,
-            builder: (context, title, child) {
-              return Text(title);
-            }),
+          valueListenable: textManager.titleNotifier,
+          builder: (context, title, child) {
+            return GestureDetector(
+              onTap: () {
+                final (bookId, chapterCount) = textManager.currentBookAndChapterCount(_pageIndex);
+                _chapterNotifier.value = (bookId, chapterCount);
+              },
+              child: Text(title),
+            );
+          },
+        ),
       ),
       body: Stack(
         children: [
           PageView.builder(
             controller: _pageController,
             itemBuilder: (context, index) {
-              final pageIndex = index - _initialPageOffset;
+              _pageIndex = index - _initialPageOffset;
               textManager.requestText(
-                index: pageIndex,
+                index: _pageIndex,
                 textColor: Theme.of(context).textTheme.bodyMedium!.color!,
                 footnoteColor: Theme.of(context).colorScheme.primary,
                 onVerseLongPress: (verseNumber) {
@@ -87,7 +95,7 @@ class _TextPageState extends State<TextPage> {
                 },
               );
               return ValueListenableBuilder<TextParagraph>(
-                valueListenable: textManager.notifier(pageIndex),
+                valueListenable: textManager.notifier(_pageIndex),
                 builder: (context, paragraph, child) {
                   return SingleChildScrollView(
                     child: Padding(
@@ -95,10 +103,6 @@ class _TextPageState extends State<TextPage> {
                       child: ChapterLayout(
                         paragraphs: paragraph,
                         paragraphSpacing: textManager.paragraphSpacing,
-                        onDoubleTap: () {
-                          final (bookId, chapterCount) = textManager.currentBookAndChapterCount(pageIndex);
-                          _chapterNotifier.value = (bookId, chapterCount);
-                        },
                       ),
                     ),
                   );
@@ -134,9 +138,7 @@ class _TextPageState extends State<TextPage> {
   }
 
   Future<String?> _showVerseLongPressDialog({
-    // required BuildContext listTileContext,
     required int verseNumber,
-    // required int numberOfCollections,
   }) async {
     return showDialog(
       context: context,

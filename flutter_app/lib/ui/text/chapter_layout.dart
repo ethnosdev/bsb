@@ -6,13 +6,11 @@ class ChapterLayout extends StatefulWidget {
     super.key,
     required this.paragraphs,
     required this.paragraphSpacing,
-    required this.onDoubleTap,
   });
 
   /// The paragraphs will be rendered in order
   final List<(TextSpan, TextType, Format?)> paragraphs;
   final double paragraphSpacing;
-  final void Function() onDoubleTap;
 
   @override
   State<ChapterLayout> createState() => _ChapterLayoutState();
@@ -68,12 +66,9 @@ class _ChapterLayoutState extends State<ChapterLayout> {
       index++;
     }
     sections.add(const SizedBox(height: 100));
-    return GestureDetector(
-      onDoubleTap: widget.onDoubleTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: sections,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: sections,
     );
   }
 
