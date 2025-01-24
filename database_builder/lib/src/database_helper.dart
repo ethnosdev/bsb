@@ -11,8 +11,8 @@ class DatabaseHelper {
   void init() {
     _database = sqlite3.open(_databaseName);
     _createBsbTable();
-    // _createOriginalLanguageTable();
-    // _createEnglishTable();
+    _createOriginalLanguageTable();
+    _createEnglishTable();
     _createPartOfSpeechTable();
     _createInterlinearTable();
   }
@@ -29,13 +29,13 @@ class DatabaseHelper {
     _database.execute(Schema.createBsbTable);
   }
 
-  // void _createOriginalLanguageTable() {
-  //   _database.execute(Schema.createOriginalLanguageTable);
-  // }
+  void _createOriginalLanguageTable() {
+    _database.execute(Schema.createOriginalLanguageTable);
+  }
 
-  // void _createEnglishTable() {
-  //   _database.execute(Schema.createEnglishTable);
-  // }
+  void _createEnglishTable() {
+    _database.execute(Schema.createEnglishTable);
+  }
 
   void _createPartOfSpeechTable() {
     _database.execute(Schema.createPartOfSpeechTable);
@@ -70,27 +70,27 @@ class DatabaseHelper {
       ''', [bookId, chapter, verse, text, type, format, footnote]);
   }
 
-  // int insertOriginalLanguage({
-  //   required String word,
-  // }) {
-  //   _database.execute('''
-  //     INSERT INTO ${Schema.originalLanguageTable} (
-  //       ${Schema.olColWord}
-  //     ) VALUES (?)
-  //     ''', [word]);
-  //   return _database.lastInsertRowId;
-  // }
+  int insertOriginalLanguage({
+    required String word,
+  }) {
+    _database.execute('''
+      INSERT INTO ${Schema.originalLanguageTable} (
+        ${Schema.olColWord}
+      ) VALUES (?)
+      ''', [word]);
+    return _database.lastInsertRowId;
+  }
 
-  // int insertEnglish({
-  //   required String word,
-  // }) {
-  //   _database.execute('''
-  //     INSERT INTO ${Schema.englishTable} (
-  //       ${Schema.engColWord}
-  //     ) VALUES (?)
-  //     ''', [word]);
-  //   return _database.lastInsertRowId;
-  // }
+  int insertEnglish({
+    required String word,
+  }) {
+    _database.execute('''
+      INSERT INTO ${Schema.englishTable} (
+        ${Schema.engColWord}
+      ) VALUES (?)
+      ''', [word]);
+    return _database.lastInsertRowId;
+  }
 
   int insertPartOfSpeech({
     required String name,
@@ -108,10 +108,10 @@ class DatabaseHelper {
     required int chapter,
     required int verse,
     required int language,
-    required String original,
+    required int original,
     required int partOfSpeech,
     required int strongsNumber,
-    required String english,
+    required int english,
     String? punctuation,
   }) async {
     _database.execute('''

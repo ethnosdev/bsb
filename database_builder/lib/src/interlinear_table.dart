@@ -6,126 +6,55 @@ import 'book_id.dart';
 import 'database_helper.dart';
 
 /// Returns maps of original/pos/english values and their corresponding row IDs
-// (Map<String, int>, Map<String, int>, Map<String, int>) createForeignTables(DatabaseHelper dbHelper) {
-//   final file = File('bsb_tables/bsb_tables.csv');
-//   final lines = file.readAsLinesSync();
-
-//   final Map<String, int> originalMap = {};
-//   final Set<String> uniqueOriginal = {};
-//   int originalColumn = 5;
-
-//   final Map<String, int> posMap = {};
-//   final Set<String> uniquePos = {};
-//   int posColumn = 9;
-
-//   final Map<String, int> englishMap = {};
-//   final Set<String> uniqueEnglish = {};
-//   int englishColumn = 18;
-
-//   // Collect unique POS values
-//   for (int i = 1; i < lines.length; i++) {
-//     if (i % 50000 == 0) {
-//       print('Processing line $i');
-//     }
-//     final line = lines[i];
-//     final columns = line.split('\t');
-//     if (columns.length > englishColumn) {
-//       final original = columns[originalColumn].trim();
-//       if (original.isNotEmpty) {
-//         uniqueOriginal.add(original);
-//       }
-//       final pos = columns[posColumn].trim();
-//       if (pos.isNotEmpty) {
-//         uniquePos.add(pos);
-//       }
-//       final english = columns[englishColumn].trim();
-//       if (english.isNotEmpty) {
-//         uniqueEnglish.add(english);
-//       }
-//     }
-//   }
-
-//   int progress = 0;
-//   print('Inserting original values into the database');
-//   for (var original in uniqueOriginal) {
-//     if (progress % 10000 == 0) {
-//       print('Inserting original values: $progress');
-//     }
-//     final rowId = dbHelper.insertOriginalLanguage(word: original);
-//     originalMap[original] = rowId;
-//     progress++;
-//   }
-
-//   print('Inserting POS values into the database');
-//   for (var pos in uniquePos) {
-//     final rowId = dbHelper.insertPartOfSpeech(name: pos);
-//     posMap[pos] = rowId;
-//   }
-
-//   print('Inserting English values into the database');
-//   progress = 0;
-//   for (var english in uniqueEnglish) {
-//     if (progress % 10000 == 0) {
-//       print('Inserting English values: $progress');
-//     }
-//     final rowId = dbHelper.insertEnglish(word: english);
-//     englishMap[english] = rowId;
-//     progress++;
-//   }
-
-//   return (originalMap, posMap, englishMap);
-// }
-
-/// Returns maps of POS values and their corresponding row IDs
-Map<String, int> createPosTable(DatabaseHelper dbHelper) {
+(Map<String, int>, Map<String, int>, Map<String, int>) createForeignTables(DatabaseHelper dbHelper) {
   final file = File('bsb_tables/bsb_tables.csv');
   final lines = file.readAsLinesSync();
 
-  // final Map<String, int> originalMap = {};
-  // final Set<String> uniqueOriginal = {};
-  // int originalColumn = 5;
+  final Map<String, int> originalMap = {};
+  final Set<String> uniqueOriginal = {};
+  int originalColumn = 5;
 
   final Map<String, int> posMap = {};
   final Set<String> uniquePos = {};
   int posColumn = 9;
 
-  // final Map<String, int> englishMap = {};
-  // final Set<String> uniqueEnglish = {};
-  // int englishColumn = 18;
+  final Map<String, int> englishMap = {};
+  final Set<String> uniqueEnglish = {};
+  int englishColumn = 18;
 
   // Collect unique POS values
   for (int i = 1; i < lines.length; i++) {
-    // if (i % 50000 == 0) {
-    //   print('Processing line $i');
-    // }
+    if (i % 50000 == 0) {
+      print('Processing line $i');
+    }
     final line = lines[i];
     final columns = line.split('\t');
-    if (columns.length > posColumn) {
-      // final original = columns[originalColumn].trim();
-      // if (original.isNotEmpty) {
-      //   uniqueOriginal.add(original);
-      // }
+    if (columns.length > englishColumn) {
+      final original = columns[originalColumn].trim();
+      if (original.isNotEmpty) {
+        uniqueOriginal.add(original);
+      }
       final pos = columns[posColumn].trim();
       if (pos.isNotEmpty) {
         uniquePos.add(pos);
       }
-      // final english = columns[englishColumn].trim();
-      // if (english.isNotEmpty) {
-      //   uniqueEnglish.add(english);
-      // }
+      final english = columns[englishColumn].trim();
+      if (english.isNotEmpty) {
+        uniqueEnglish.add(english);
+      }
     }
   }
 
-  // int progress = 0;
-  // print('Inserting original values into the database');
-  // for (var original in uniqueOriginal) {
-  //   if (progress % 10000 == 0) {
-  //     print('Inserting original values: $progress');
-  //   }
-  //   final rowId = dbHelper.insertOriginalLanguage(word: original);
-  //   originalMap[original] = rowId;
-  //   progress++;
-  // }
+  int progress = 0;
+  print('Inserting original values into the database');
+  for (var original in uniqueOriginal) {
+    if (progress % 10000 == 0) {
+      print('Inserting original values: $progress');
+    }
+    final rowId = dbHelper.insertOriginalLanguage(word: original);
+    originalMap[original] = rowId;
+    progress++;
+  }
 
   print('Inserting POS values into the database');
   for (var pos in uniquePos) {
@@ -133,26 +62,25 @@ Map<String, int> createPosTable(DatabaseHelper dbHelper) {
     posMap[pos] = rowId;
   }
 
-  // print('Inserting English values into the database');
-  // progress = 0;
-  // for (var english in uniqueEnglish) {
-  //   if (progress % 10000 == 0) {
-  //     print('Inserting English values: $progress');
-  //   }
-  //   final rowId = dbHelper.insertEnglish(word: english);
-  //   englishMap[english] = rowId;
-  //   progress++;
-  // }
+  print('Inserting English values into the database');
+  progress = 0;
+  for (var english in uniqueEnglish) {
+    if (progress % 10000 == 0) {
+      print('Inserting English values: $progress');
+    }
+    final rowId = dbHelper.insertEnglish(word: english);
+    englishMap[english] = rowId;
+    progress++;
+  }
 
-  return posMap;
-  // return (originalMap, posMap, englishMap);
+  return (originalMap, posMap, englishMap);
 }
 
 Future<void> createInterlinearTable(
   DatabaseHelper dbHelper,
-  // Map<String, int> originalMap,
+  Map<String, int> originalMap,
   Map<String, int> posMap,
-  // Map<String, int> englishMap,
+  Map<String, int> englishMap,
 ) async {
   final file = File('bsb_tables/bsb_tables.csv');
   final lines = file.readAsLinesSync();
@@ -162,7 +90,7 @@ Future<void> createInterlinearTable(
   int verse = -1;
 
   for (int i = 1; i < lines.length; i++) {
-    if (i % 10000 == 0) {
+    if (i % 50000 == 0) {
       print('Processing line $i');
     }
     final line = lines[i];
@@ -171,8 +99,7 @@ Future<void> createInterlinearTable(
     if (columns[5].isEmpty) {
       continue;
     }
-    final original = columns[5].trim();
-    // final original = originalMap[columns[5].trim()]!;
+    final original = originalMap[columns[5].trim()]!;
     final language = Language.fromString(columns[4]);
     // final transliteration = columns[7];
     final partOfSpeech = posMap[columns[9].trim()] ?? -1;
@@ -193,7 +120,7 @@ Future<void> createInterlinearTable(
     if (english.isEmpty) {
       english = '-';
     }
-    // final englishId = englishMap[english]!;
+    final englishId = englishMap[english]!;
 
     final punctuation = columns[19];
 
@@ -206,7 +133,7 @@ Future<void> createInterlinearTable(
       // transliteration: transliteration,
       partOfSpeech: partOfSpeech,
       strongsNumber: strongsNumber,
-      english: english,
+      english: englishId,
       punctuation: punctuation.isEmpty ? null : punctuation,
     );
   }
