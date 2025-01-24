@@ -8,6 +8,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
   double baseFontSize,
   Color textColor,
   Color footnoteColor,
+  void Function(int) onVerseLongPress,
   void Function(String) onFootnoteTap,
 ) {
   final mrTitleSize = baseFontSize * 1.2;
@@ -58,26 +59,30 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         // add verse line text
         if (format == Format.qr) {
           _addVerseSpansWithFootnotes(
-            verseSpans,
-            text,
-            TextStyle(
+            verseSpans: verseSpans,
+            text: text,
+            style: TextStyle(
               fontSize: baseFontSize,
               fontStyle: FontStyle.italic,
             ),
-            footnote,
-            footnoteColor,
-            onFootnoteTap,
+            footnote: footnote,
+            footnoteColor: footnoteColor,
+            onFootnoteTap: onFootnoteTap,
+            verseNumber: verseNumber,
+            onVerseLongPress: onVerseLongPress,
           );
         } else {
           _addVerseSpansWithFootnotes(
-            verseSpans,
-            '$text ',
-            TextStyle(
+            verseSpans: verseSpans,
+            text: '$text ',
+            style: TextStyle(
               fontSize: baseFontSize,
             ),
-            footnote,
-            footnoteColor,
-            onFootnoteTap,
+            footnote: footnote,
+            footnoteColor: footnoteColor,
+            onFootnoteTap: onFootnoteTap,
+            verseNumber: verseNumber,
+            onVerseLongPress: onVerseLongPress,
           );
         }
 
@@ -91,15 +96,17 @@ List<(TextSpan, TextType, Format?)> formatVerses(
       case TextType.d:
         final spans = <TextSpan>[];
         _addVerseSpansWithFootnotes(
-          spans,
-          text,
-          TextStyle(
+          verseSpans: spans,
+          text: text,
+          style: TextStyle(
             fontSize: baseFontSize,
             fontStyle: FontStyle.italic,
           ),
-          footnote,
-          footnoteColor,
-          onFootnoteTap,
+          footnote: footnote,
+          footnoteColor: footnoteColor,
+          onFootnoteTap: onFootnoteTap,
+          verseNumber: verseNumber,
+          onVerseLongPress: onVerseLongPress,
         );
         paragraphs.add((
           TextSpan(children: spans),
@@ -224,18 +231,22 @@ List<(TextSpan, TextType, Format?)> formatVerses(
   return paragraphs;
 }
 
-void _addVerseSpansWithFootnotes(
-  List<TextSpan> verseSpans,
-  String text,
-  TextStyle style,
-  String? footnote,
-  Color footnoteColor,
-  void Function(String) onFootnoteTap,
-) {
+void _addVerseSpansWithFootnotes({
+  required List<TextSpan> verseSpans,
+  required String text,
+  required TextStyle style,
+  required String? footnote,
+  required Color footnoteColor,
+  required int verseNumber,
+  required void Function(int) onVerseLongPress,
+  required void Function(String) onFootnoteTap,
+}) {
   if (footnote == null) {
     verseSpans.add(TextSpan(
       text: text,
       style: style,
+      recognizer: LongPressGestureRecognizer() //
+        ..onLongPress = () => onVerseLongPress(verseNumber),
     ));
     return;
   }
@@ -271,6 +282,8 @@ void _addVerseSpansWithFootnotes(
         verseSpans.add(TextSpan(
           text: beforeText.substring(0, lastSpace + 1),
           style: style,
+          recognizer: LongPressGestureRecognizer() //
+            ..onLongPress = () => onVerseLongPress(verseNumber),
         ));
 
         // Add the last word and footnote marker together as tappable
@@ -333,6 +346,8 @@ void _addVerseSpansWithFootnotes(
     verseSpans.add(TextSpan(
       text: text.substring(lastIndex),
       style: style,
+      recognizer: LongPressGestureRecognizer() //
+        ..onLongPress = () => onVerseLongPress(verseNumber),
     ));
   }
 }

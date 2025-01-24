@@ -52,6 +52,7 @@ class TextManager {
     required int index,
     required Color textColor,
     required Color footnoteColor,
+    required void Function(int) onVerseLongPress,
     required void Function(String) onFootnoteTap,
   }) async {
     final (bookId, chapter) = _currentBookAndChapter(index);
@@ -80,6 +81,7 @@ class TextManager {
       _normalTextSize,
       textColor,
       footnoteColor,
+      onVerseLongPress,
       onFootnoteTap,
     );
 

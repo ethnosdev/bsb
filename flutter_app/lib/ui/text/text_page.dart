@@ -66,6 +66,12 @@ class _TextPageState extends State<TextPage> {
                 index: pageIndex,
                 textColor: Theme.of(context).textTheme.bodyMedium!.color!,
                 footnoteColor: Theme.of(context).colorScheme.primary,
+                onVerseLongPress: (verseNumber) {
+                  print('Verse $verseNumber');
+                  _showVerseLongPressDialog(
+                    verseNumber: verseNumber,
+                  );
+                },
                 onFootnoteTap: (note) {
                   showDialog(
                     context: context,
@@ -124,6 +130,38 @@ class _TextPageState extends State<TextPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<String?> _showVerseLongPressDialog({
+    // required BuildContext listTileContext,
+    required int verseNumber,
+    // required int numberOfCollections,
+  }) async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext buildContext) {
+        return Dialog(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                title: const Text('See Hebrew/Greek source'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('Copy'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  print('Copy');
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
