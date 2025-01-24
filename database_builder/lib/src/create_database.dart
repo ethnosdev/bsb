@@ -12,7 +12,7 @@ Future<void> createDatabase() async {
   dbHelper.init();
 
   // print('Creating BSB Table');
-  // await createBsbTable(dbHelper);
+  await createBsbTable(dbHelper);
 
   print('Creating Foreign Table');
   final (originalMap, posMap, englishMap) = createForeignTables(dbHelper);

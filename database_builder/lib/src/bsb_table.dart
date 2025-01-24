@@ -219,6 +219,6 @@ int _getChapter(String textAfterMarker) {
 String _removeItalicMarkers(String text) {
   // Original: \it For the choirmaster. With stringed instruments. \it*
   // Desired: For the choirmaster. With stringed instruments.
-  final modifiedText = text.replaceAll(r'\it', '').replaceAll(r'\it*', '');
+  final modifiedText = text.replaceAll(r'\it*', '').replaceAll(r'\it', '');
   return modifiedText.trim();
 }
