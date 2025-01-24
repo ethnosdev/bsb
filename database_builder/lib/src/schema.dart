@@ -51,10 +51,10 @@ class Schema {
     $ilColChapter INTEGER NOT NULL,
     $ilColVerse INTEGER NOT NULL,
     $ilColLanguage INTEGER NOT NULL,
-    $ilColOriginal INTEGER NOT NULL,
+    $ilColOriginal TEXT NOT NULL,
     $ilColPartOfSpeech INTEGER NOT NULL,
     $ilColStrongsNumber INTEGER NOT NULL,
-    $ilColEnglish INTEGER NOT NULL,
+    $ilColEnglish TEXT NOT NULL,
     $ilColPunctuation TEXT
   )
   ''';
@@ -73,30 +73,30 @@ class Schema {
   ''';
 
   // Original language table
-  static const String originalLanguageTable = "original";
+  // static const String originalLanguageTable = "original";
 
-  static const String olColId = '_id';
-  static const String olColWord = 'word';
+  // static const String olColId = '_id';
+  // static const String olColWord = 'word';
 
-  static const String createOriginalLanguageTable = '''
-  CREATE TABLE IF NOT EXISTS $originalLanguageTable (
-    $olColId INTEGER PRIMARY KEY AUTOINCREMENT,
-    $olColWord TEXT NOT NULL
-  )
-  ''';
+  // static const String createOriginalLanguageTable = '''
+  // CREATE TABLE IF NOT EXISTS $originalLanguageTable (
+  //   $olColId INTEGER PRIMARY KEY AUTOINCREMENT,
+  //   $olColWord TEXT NOT NULL
+  // )
+  // ''';
 
   // English language table
-  static const String englishTable = "english";
+  // static const String englishTable = "english";
 
-  static const String engColId = '_id';
-  static const String engColWord = 'word';
+  // static const String engColId = '_id';
+  // static const String engColWord = 'word';
 
-  static const String createEnglishTable = '''
-  CREATE TABLE IF NOT EXISTS $englishTable (
-    $engColId INTEGER PRIMARY KEY AUTOINCREMENT,
-    $engColWord TEXT NOT NULL
-  )
-  ''';
+  // static const String createEnglishTable = '''
+  // CREATE TABLE IF NOT EXISTS $englishTable (
+  //   $engColId INTEGER PRIMARY KEY AUTOINCREMENT,
+  //   $engColWord TEXT NOT NULL
+  // )
+  // ''';
 }
 
 // colType values
