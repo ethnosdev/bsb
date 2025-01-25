@@ -1,10 +1,12 @@
 enum Language {
-  hebrew(0),
-  aramaic(1),
-  greek(2);
+  hebrew(0, 'Hebrew'),
+  aramaic(1, 'Aramaic'),
+  greek(2, 'Greek');
 
   final int id;
-  const Language(this.id);
+  final String displayName;
+
+  const Language(this.id, this.displayName);
 
   static Language fromString(String value) {
     return Language.values.firstWhere(
@@ -69,10 +71,7 @@ Language languageForVerse({
     if (chapter == 2 && verse >= 4) {
       return Language.aramaic;
     }
-    if (chapter == 5 || chapter == 6) {
-      return Language.aramaic;
-    }
-    if (chapter == 7 && verse <= 28) {
+    if (chapter >= 3 && chapter <= 7) {
       return Language.aramaic;
     }
   }

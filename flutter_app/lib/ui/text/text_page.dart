@@ -26,6 +26,8 @@ class _TextPageState extends State<TextPage> {
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
   int _pageIndex = 0;
+  // late int _currentBookId = widget.bookId;
+  // late int _currentChapter = widget.chapter;
 
   @override
   void initState() {
@@ -140,6 +142,7 @@ class _TextPageState extends State<TextPage> {
   Future<String?> _showVerseLongPressDialog({
     required int verseNumber,
   }) async {
+    final languageLabel = textManager.verseLanguageLabel(_pageIndex, verseNumber);
     return showDialog(
       context: context,
       builder: (BuildContext buildContext) {
@@ -148,18 +151,18 @@ class _TextPageState extends State<TextPage> {
             shrinkWrap: true,
             children: [
               ListTile(
-                title: const Text('See Hebrew/Greek source'),
+                title: Text(languageLabel),
                 onTap: () async {
                   Navigator.of(context).pop();
                 },
               ),
-              ListTile(
-                title: const Text('Copy'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  print('Copy');
-                },
-              ),
+              // ListTile(
+              //   title: const Text('Copy'),
+              //   onTap: () async {
+              //     Navigator.of(context).pop();
+              //     print('Copy');
+              //   },
+              // ),
             ],
           ),
         );
