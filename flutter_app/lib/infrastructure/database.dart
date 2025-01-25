@@ -77,4 +77,14 @@ class DatabaseHelper {
       },
     ).toList();
   }
+
+  Future<int> getVerseCount(int bookId, int chapter) async {
+    final result = await _database.rawQuery(
+      'SELECT MAX(${Schema.colVerse}) as max_verse '
+      'FROM ${Schema.bibleTextTable} '
+      'WHERE ${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',
+      [bookId, chapter],
+    );
+    return result.first['max_verse'] as int;
+  }
 }
