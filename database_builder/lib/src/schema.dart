@@ -151,24 +151,3 @@ enum Format {
     );
   }
 }
-
-enum Language {
-  hebrew(0),
-  aramaic(1),
-  greek(2);
-
-  final int id;
-  const Language(this.id);
-
-  static Language fromString(String value) {
-    return Language.values.firstWhere(
-      (language) => language.name == value.toLowerCase(),
-    );
-  }
-
-  static Language fromInt(int value) {
-    return Language.values.firstWhere(
-      (language) => language.id == value,
-    );
-  }
-}

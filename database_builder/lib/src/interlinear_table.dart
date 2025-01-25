@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:database_builder/src/schema.dart';
+import 'package:database_builder/src/language/language.dart';
 
 import 'book_id.dart';
 import 'database_helper.dart';
