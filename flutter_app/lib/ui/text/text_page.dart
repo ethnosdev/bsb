@@ -47,15 +47,7 @@ class _TextPageState extends State<TextPage> {
         );
       }
     });
-    // _findNumberOfVersesInChapter();
   }
-
-  // Future<void> _findNumberOfVersesInChapter() async {
-  //   _versesInChapter = await manager.versesInChapter(
-  //     bookId: widget.bookId,
-  //     chapter: widget.chapter,
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {

@@ -62,6 +62,8 @@ class _HebrewGreekPageState extends State<HebrewGreekPage> {
             itemCount: verseCount,
             itemBuilder: (context, index) {
               manager.requestVerseContent(
+                bookId: widget.bookId,
+                chapter: widget.chapter,
                 verse: index + 1,
               );
               return ValueListenableBuilder<OriginalLanguageData?>(

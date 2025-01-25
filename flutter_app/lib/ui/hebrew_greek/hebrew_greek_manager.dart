@@ -41,7 +41,15 @@ class HebrewGreekManager {
     return '$book $chapter:$verse';
   }
 
-  Future<void> requestVerseContent({required int verse}) async {}
+  Future<void> requestVerseContent({
+    required int bookId,
+    required int chapter,
+    required int verse,
+  }) async {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      titleNotifier.value = _formatTitle(bookId, chapter, verse);
+    });
+  }
 }
 
 class OriginalLanguageData {}
