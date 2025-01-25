@@ -1,4 +1,5 @@
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/hebrew_greek/hebrew_greek_page.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
@@ -154,15 +155,18 @@ class _TextPageState extends State<TextPage> {
                 title: Text(languageLabel),
                 onTap: () async {
                   Navigator.of(context).pop();
+                  final (bookId, chapter) = textManager.bookAndChapterForPageIndex(_pageIndex);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => HebrewGreekPage(
+                        bookId: bookId,
+                        chapter: chapter,
+                        verseNumber: verseNumber,
+                      ),
+                    ),
+                  );
                 },
               ),
-              // ListTile(
-              //   title: const Text('Copy'),
-              //   onTap: () async {
-              //     Navigator.of(context).pop();
-              //     print('Copy');
-              //   },
-              // ),
             ],
           ),
         );

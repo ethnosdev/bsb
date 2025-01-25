@@ -41,7 +41,7 @@ class TextManager {
     required int? index,
   }) {
     if (index == null) return;
-    final (bookId, chapter) = _bookAndChapterForPageIndex(index);
+    final (bookId, chapter) = bookAndChapterForPageIndex(index);
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       titleNotifier.value = _formatTitle(bookId, chapter);
@@ -55,7 +55,7 @@ class TextManager {
     required void Function(int) onVerseLongPress,
     required void Function(String) onFootnoteTap,
   }) async {
-    final (bookId, chapter) = _bookAndChapterForPageIndex(index);
+    final (bookId, chapter) = bookAndChapterForPageIndex(index);
 
     // Update book and chapter title
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -94,12 +94,12 @@ class TextManager {
   }
 
   (int bookId, int chapter) currentBookAndChapterCount(int index) {
-    final (bookId, _) = _bookAndChapterForPageIndex(index);
+    final (bookId, _) = bookAndChapterForPageIndex(index);
     final chapterCount = bookIdToChapterCountMap[bookId]!;
     return (bookId, chapterCount);
   }
 
-  (int bookId, int chapter) _bookAndChapterForPageIndex(
+  (int bookId, int chapter) bookAndChapterForPageIndex(
     int index,
   ) {
     int pageIndex = index % (maxPageIndex + 1);
@@ -162,7 +162,7 @@ class TextManager {
   }
 
   String verseLanguageLabel(int pageIndex, int verseNumber) {
-    final (bookId, chapter) = _bookAndChapterForPageIndex(pageIndex);
+    final (bookId, chapter) = bookAndChapterForPageIndex(pageIndex);
     final language = languageForVerse(
       bookId: bookId,
       chapter: chapter,
