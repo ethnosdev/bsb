@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
@@ -86,5 +87,41 @@ class DatabaseHelper {
       [bookId, chapter],
     );
     return result.first['max_verse'] as int;
+  }
+
+  Future<List<VerseElement>> getOriginalLanguageData(
+    int bookId,
+    int chapter,
+    int verse,
+  ) async {
+    final result = await _database.rawQuery(
+      'SELECT o.${Schema.olColWord} as ${Schema.ilColOriginal}, '
+      'e.${Schema.engColWord} as ${Schema.ilColEnglish}, '
+      'i.${Schema.ilColStrongsNumber}, '
+      'p.${Schema.posColName} as ${Schema.ilColPartOfSpeech}, '
+      'i.${Schema.ilColLanguage}, '
+      'i.${Schema.ilColPunctuation} '
+      'FROM ${Schema.interlinearTable} i '
+      'JOIN ${Schema.englishTable} e ON i.${Schema.ilColEnglish} = e.${Schema.engColId} '
+      'JOIN ${Schema.partOfSpeechTable} p ON i.${Schema.ilColPartOfSpeech} = p.${Schema.posColId} '
+      'JOIN ${Schema.originalLanguageTable} o ON i.${Schema.ilColOriginal} = o.${Schema.olColId} '
+      'WHERE i.${Schema.ilColBookId} = ? AND i.${Schema.ilColChapter} = ? AND i.${Schema.ilColVerse} = ? '
+      'ORDER BY i.${Schema.ilColId}',
+      [bookId, chapter, verse],
+    );
+    return result.map((row) {
+      final text = row[Schema.ilColOriginal] as String;
+      if (row[Schema.ilColPunctuation] == 1) {
+        return Punctuation(punctuation: text);
+      } else {
+        return OriginalWord(
+          language: Language.fromInt(row[Schema.ilColLanguage] as int),
+          word: text,
+          englishGloss: row[Schema.ilColEnglish] as String,
+          strongsNumber: row[Schema.ilColStrongsNumber] as int,
+          partOfSpeech: row[Schema.ilColPartOfSpeech] as String,
+        );
+      }
+    }).toList();
   }
 }

@@ -62,7 +62,6 @@ class TextManager {
       titleNotifier.value = _formatTitle(bookId, chapter);
     });
 
-    final key = '${bookId}_$chapter';
     final targetNotifier = notifier(index);
 
     // Check if content is already in the target notifier
@@ -86,6 +85,7 @@ class TextManager {
     );
 
     // Update cache
+    final key = '${bookId}_$chapter';
     _chapterCache[key] = formattedContent;
     _trackUsage(key);
 

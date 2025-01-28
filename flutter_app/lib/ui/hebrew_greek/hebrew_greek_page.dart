@@ -1,4 +1,5 @@
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
+import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
 import 'package:flutter/material.dart';
 
 class HebrewGreekPage extends StatefulWidget {
@@ -61,25 +62,32 @@ class _HebrewGreekPageState extends State<HebrewGreekPage> {
             controller: _pageController,
             itemCount: verseCount,
             itemBuilder: (context, index) {
-              manager.requestVerseContent(
+              final pageManager = VersePageManager();
+              pageManager.requestVerseContent(
                 bookId: widget.bookId,
                 chapter: widget.chapter,
                 verse: index + 1,
+                textColor: Theme.of(context).colorScheme.onSurface,
               );
-              return ValueListenableBuilder<OriginalLanguageData?>(
-                valueListenable: manager.notifier(index),
-                builder: (context, data, child) {
-                  if (data == null) {
-                    return const SizedBox();
-                  }
-                  return const SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: SizedBox(),
-                    ),
-                  );
-                },
+              return Container(
+                width: 100,
+                height: 100,
+                color: Colors.amber,
               );
+              // return ValueListenableBuilder<OriginalLanguageData?>(
+              //   valueListenable: manager.notifier(index),
+              //   builder: (context, data, child) {
+              //     if (data == null) {
+              //       return const SizedBox();
+              //     }
+              //     return const SingleChildScrollView(
+              //       child: Padding(
+              //         padding: const EdgeInsets.all(16.0),
+              //         child: SizedBox(),
+              //       ),
+              //     );
+              //   },
+              // );
             },
           );
         },

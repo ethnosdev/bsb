@@ -8,7 +8,6 @@ class Schema {
   static const String colBookId = 'book';
   static const String colChapter = 'chapter';
   static const String colVerse = 'verse';
-  // static const String colLine = 'line';
   static const String colText = 'text';
   static const String colFormat = 'format'; // m, q1, q2, pmo, li1, li2, pc, qr
   static const String colFootnote = 'footnote';
