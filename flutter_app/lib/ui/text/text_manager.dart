@@ -161,14 +161,14 @@ class TextManager {
     return bookIdToIndexMap[bookId]! + chapter - 1;
   }
 
-  String verseLanguageLabel(int pageIndex, int verseNumber) {
+  Language verseLanguageLabel(int pageIndex, int verseNumber) {
     final (bookId, chapter) = bookAndChapterForPageIndex(pageIndex);
     final language = languageForVerse(
       bookId: bookId,
       chapter: chapter,
       verse: verseNumber,
     );
-    return 'View ${language.displayName} source';
+    return language;
   }
 }
 

@@ -150,7 +150,8 @@ class _TextPageState extends State<TextPage> {
   Future<String?> _showVerseLongPressDialog({
     required int verseNumber,
   }) async {
-    final languageLabel = manager.verseLanguageLabel(_pageIndex, verseNumber);
+    final language = manager.verseLanguageLabel(_pageIndex, verseNumber);
+    final languageLabel = 'View ${language.displayName} source';
     return showDialog(
       context: context,
       builder: (BuildContext buildContext) {
@@ -169,7 +170,7 @@ class _TextPageState extends State<TextPage> {
                         bookId: bookId,
                         chapter: chapter,
                         verse: verseNumber,
-                        // versesInChapter: _versesInChapter,
+                        language: language,
                       ),
                     ),
                   );

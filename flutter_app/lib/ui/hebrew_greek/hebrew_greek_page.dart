@@ -1,5 +1,6 @@
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
+import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
 class HebrewGreekPage extends StatefulWidget {
@@ -8,11 +9,13 @@ class HebrewGreekPage extends StatefulWidget {
     required this.bookId,
     required this.chapter,
     required this.verse,
+    required this.language,
   });
 
   final int bookId;
   final int chapter;
   final int verse;
+  final Language language;
 
   @override
   State<HebrewGreekPage> createState() => _HebrewGreekPageState();
@@ -25,7 +28,7 @@ class _HebrewGreekPageState extends State<HebrewGreekPage> {
   @override
   void initState() {
     super.initState();
-    manager.init(widget.bookId, widget.chapter);
+    manager.init(widget.bookId, widget.chapter, widget.verse);
     _pageController = PageController(
       initialPage: widget.verse - 1,
     );
@@ -62,32 +65,41 @@ class _HebrewGreekPageState extends State<HebrewGreekPage> {
             controller: _pageController,
             itemCount: verseCount,
             itemBuilder: (context, index) {
-              final pageManager = VersePageManager();
-              pageManager.requestVerseContent(
+              final verseManager = VersePageManager();
+              verseManager.requestVerseContent(
                 bookId: widget.bookId,
                 chapter: widget.chapter,
                 verse: index + 1,
-                textColor: Theme.of(context).colorScheme.onSurface,
+                textColor: Theme.of(context).textTheme.bodyMedium!.color!,
+                highlightColor: Theme.of(context).colorScheme.primary,
               );
-              return Container(
-                width: 100,
-                height: 100,
-                color: Colors.amber,
+              return ListenableBuilder(
+                listenable: verseManager,
+                builder: (context, child) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text.rich(
+                            verseManager.interlinearText,
+                            textDirection: (widget.language.isRTL) ? TextDirection.rtl : TextDirection.ltr,
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            verseManager.originalWord?.word ?? '',
+                            style: const TextStyle(fontSize: 50),
+                          ),
+                        ),
+                        Text(verseManager.originalWord?.englishGloss ?? ''),
+                        Text(verseManager.originalWord?.partOfSpeech ?? ''),
+                        Text(verseManager.originalWord?.strongsNumber.toString() ?? ''),
+                      ],
+                    ),
+                  );
+                },
               );
-              // return ValueListenableBuilder<OriginalLanguageData?>(
-              //   valueListenable: manager.notifier(index),
-              //   builder: (context, data, child) {
-              //     if (data == null) {
-              //       return const SizedBox();
-              //     }
-              //     return const SingleChildScrollView(
-              //       child: Padding(
-              //         padding: const EdgeInsets.all(16.0),
-              //         child: SizedBox(),
-              //       ),
-              //     );
-              //   },
-              // );
             },
           );
         },

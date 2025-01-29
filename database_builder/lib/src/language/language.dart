@@ -19,6 +19,10 @@ enum Language {
       (language) => language.id == value,
     );
   }
+
+  bool get isRTL {
+    return this != greek;
+  }
 }
 
 const _ezra = 15;
