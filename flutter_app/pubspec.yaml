@@ -1,7 +1,7 @@
 name: bsb
 description: "Berean Standard Bible"
 publish_to: 'none' 
-version: 1.0.0+13
+version: 1.1.0+14
 
 environment:
   sdk: ^3.5.4
@@ -33,10 +33,22 @@ flutter:
 
   # The printed version uses Cambria, but this apparently isn't free to use in an app.
   fonts:
+
+    # English
     - family: Charis
       fonts:
-        - asset: assets/fonts/CharisSIL-Regular.ttf
-        - asset: assets/fonts/CharisSIL-Italic.ttf
+        - asset: assets/fonts/charis/CharisSIL-Regular.ttf
+        - asset: assets/fonts/charis/CharisSIL-Italic.ttf
           style: italic
-        - asset: assets/fonts/CharisSIL-Bold.ttf
+        - asset: assets/fonts/charis/CharisSIL-Bold.ttf
           weight: 700 # bold
+
+    # Hebrew and Aramaic
+    - family: Ezra
+      fonts:
+        - asset: assets/fonts/ezra/SILEOTSR.ttf
+    
+    # Greek
+    - family: Galatia
+      fonts:
+        - asset: assets/fonts/galatia/GalSILR.ttf

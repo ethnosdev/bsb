@@ -2,6 +2,7 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -44,10 +45,12 @@ class VersePageManager extends ChangeNotifier {
     final spans = <TextSpan>[];
     for (final element in data) {
       if (element is OriginalWord) {
+        final fontFamily = (element.language == Language.greek) ? 'Galatia' : 'Ezra';
         spans.add(
           TextSpan(
             text: element.word,
             style: TextStyle(
+              fontFamily: fontFamily,
               fontSize: textSize,
               color: highlightColor,
             ),

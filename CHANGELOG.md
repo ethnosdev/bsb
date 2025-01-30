@@ -1,4 +1,4 @@
-# 1.1.0
+# 1.1.0 - 2025.01.29
 
 - Hebrew/Greek interlinear on long press. Storing the Hebrew/Greek/English in foreign tables to cut down the database size by about 2MB. Auto-generating the transliteration as needed to save about 5MB.
 - Fix italics formatting in Habakkuk 3:19.

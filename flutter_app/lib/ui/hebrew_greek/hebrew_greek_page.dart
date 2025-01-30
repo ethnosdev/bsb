@@ -1,3 +1,4 @@
+import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
 import 'package:database_builder/database_builder.dart';
@@ -79,22 +80,9 @@ class _HebrewGreekPageState extends State<HebrewGreekPage> {
                   return SingleChildScrollView(
                     child: Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text.rich(
-                            verseManager.interlinearText,
-                            textDirection: (widget.language.isRTL) ? TextDirection.rtl : TextDirection.ltr,
-                          ),
-                        ),
-                        Center(
-                          child: Text(
-                            verseManager.originalWord?.word ?? '',
-                            style: const TextStyle(fontSize: 50),
-                          ),
-                        ),
-                        Text(verseManager.originalWord?.englishGloss ?? ''),
-                        Text(verseManager.originalWord?.partOfSpeech ?? ''),
-                        Text(verseManager.originalWord?.strongsNumber.toString() ?? ''),
+                        _buildInterlinearText(verseManager.interlinearText),
+                        if (verseManager.originalWord != null) //
+                          ..._buildOriginalWordDetails(verseManager.originalWord!),
                       ],
                     ),
                   );
@@ -105,5 +93,33 @@ class _HebrewGreekPageState extends State<HebrewGreekPage> {
         },
       ),
     );
+  }
+
+  Widget _buildInterlinearText(TextSpan text) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text.rich(
+        text,
+        textDirection: (widget.language.isRTL) //
+            ? TextDirection.rtl
+            : TextDirection.ltr,
+      ),
+    );
+  }
+
+  List<Widget> _buildOriginalWordDetails(OriginalWord word) {
+    final fontFamily = (word.language == Language.greek) ? 'Galatia' : 'Ezra';
+    return [
+      Text(
+        word.word,
+        style: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 50,
+        ),
+      ),
+      Text(word.englishGloss),
+      Text(word.partOfSpeech),
+      Text(word.strongsNumber.toString()),
+    ];
   }
 }
