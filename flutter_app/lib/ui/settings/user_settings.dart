@@ -32,4 +32,12 @@ class UserSettings {
     final isDark = mode == ThemeMode.dark;
     await _prefs.setBool(_isDarkModeKey, isDark);
   }
+
+  static const _showInterlinearEnglishKey = 'showInterlinearEnglish';
+
+  bool get showInterlinearEnglish => _prefs.getBool(_showInterlinearEnglishKey) ?? true;
+
+  Future<void> setShowInterlinearEnglish(bool show) async {
+    await _prefs.setBool(_showInterlinearEnglishKey, show);
+  }
 }

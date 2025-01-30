@@ -10,6 +10,15 @@ class VersePageManager extends ChangeNotifier {
   final _dbHelper = getIt<DatabaseHelper>();
   var interlinearText = const TextSpan();
   OriginalWord? originalWord;
+  final Language language;
+
+  VersePageManager(this.language);
+
+  TextDirection get textDirection {
+    final showEnglish = getIt<UserSettings>().showInterlinearEnglish;
+    final isLtr = language.isLTR;
+    return (showEnglish || isLtr) ? TextDirection.ltr : TextDirection.rtl;
+  }
 
   Future<void> requestVerseContent({
     required int bookId,
@@ -17,6 +26,7 @@ class VersePageManager extends ChangeNotifier {
     required int verse,
     required Color textColor,
     required Color highlightColor,
+    required bool showEnglish,
   }) async {
     final data = await _dbHelper.getOriginalLanguageData(bookId, chapter, verse);
     final textSize = getIt<UserSettings>().textSize;
@@ -26,6 +36,7 @@ class VersePageManager extends ChangeNotifier {
       textColor,
       highlightColor,
       _onWordTap,
+      showEnglish,
     );
     notifyListeners();
   }
@@ -41,6 +52,7 @@ class VersePageManager extends ChangeNotifier {
     Color textColor,
     Color highlightColor,
     void Function(OriginalWord) onWordTap,
+    bool showEnglish,
   ) {
     final spans = <TextSpan>[];
     for (final element in data) {
@@ -48,7 +60,7 @@ class VersePageManager extends ChangeNotifier {
         final fontFamily = (element.language == Language.greek) ? 'Galatia' : 'Ezra';
         spans.add(
           TextSpan(
-            text: element.word,
+            text: '${element.word} ',
             style: TextStyle(
               fontFamily: fontFamily,
               fontSize: textSize,
@@ -58,15 +70,17 @@ class VersePageManager extends ChangeNotifier {
               ..onTap = () => onWordTap(element),
           ),
         );
-        spans.add(
-          TextSpan(
-            text: ' (${element.englishGloss}) ',
-            style: TextStyle(
-              fontSize: textSize,
-              color: textColor,
+        if (showEnglish) {
+          spans.add(
+            TextSpan(
+              text: '(${element.englishGloss}) ',
+              style: TextStyle(
+                fontSize: textSize,
+                color: textColor,
+              ),
             ),
-          ),
-        );
+          );
+        }
       } else if (element is Punctuation) {
         spans.add(
           TextSpan(

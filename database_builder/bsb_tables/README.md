@@ -1,0 +1,1 @@
+Don't forget to make sure the table is sorted in Hebrew and Greek order rather than BSB order.

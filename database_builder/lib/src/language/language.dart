@@ -20,9 +20,9 @@ enum Language {
     );
   }
 
-  bool get isRTL {
-    return this != greek;
-  }
+  bool get isLTR => this == greek;
+
+  bool get isRTL => !isLTR;
 }
 
 const _ezra = 15;

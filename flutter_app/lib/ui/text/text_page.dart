@@ -1,5 +1,5 @@
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:bsb/ui/hebrew_greek/hebrew_greek_page.dart';
+import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
@@ -166,7 +166,7 @@ class _TextPageState extends State<TextPage> {
                   final (bookId, chapter) = manager.bookAndChapterForPageIndex(_pageIndex);
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => HebrewGreekPage(
+                      builder: (context) => HebrewGreekScreen(
                         bookId: bookId,
                         chapter: chapter,
                         verse: verseNumber,
