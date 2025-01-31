@@ -1,3 +1,7 @@
+# 1.1.2 - 2025.01.31
+
+- List verses with the same Strong's number.
+
 # 1.1.1 - 2025.01.30
 
 - Put Hebrew/Greek in the correct word order.

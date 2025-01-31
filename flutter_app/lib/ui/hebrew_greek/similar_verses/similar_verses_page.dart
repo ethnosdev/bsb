@@ -1,7 +1,6 @@
 import 'package:bsb/core/font_family.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
-import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
 import 'similar_verse_manager.dart';

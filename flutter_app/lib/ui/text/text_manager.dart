@@ -3,6 +3,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -170,7 +171,148 @@ class TextManager {
     );
     return language;
   }
+
+  TextSpan formatFootnote({
+    required String note,
+    required void Function(String tappedKeyword) onTapKeyword,
+  }) {
+    print('Formatting footnote: $note');
+    // Build a regex like: \b(keyword1|keyword2|keyword3)\b
+    final xReference = RegExp(
+      r'(?:(?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+\d+:\d+(?:–\d+)?',
+      caseSensitive: true,
+    );
+
+    final pattern = [xReference.pattern, ..._sourceTexts.keys.map((kw) => RegExp.escape(kw))].join('|');
+    final regex = RegExp('($pattern)');
+
+    final List<TextSpan> spans = [];
+    int start = 0;
+
+    for (final match in regex.allMatches(note)) {
+      // Add text before the match
+      if (match.start > start) {
+        spans.add(TextSpan(text: note.substring(start, match.start)));
+      }
+
+      // Add the matched keyword as a tappable span
+      final matchedText = match.group(0)!;
+      spans.add(
+        TextSpan(
+          text: matchedText,
+          style: const TextStyle(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              onTapKeyword(matchedText);
+            },
+        ),
+      );
+
+      start = match.end;
+    }
+
+    // Add remaining text after the last match
+    if (start < note.length) {
+      spans.add(TextSpan(text: note.substring(start)));
+    }
+
+    return TextSpan(children: spans);
+  }
 }
+
+// List<String> _bookNames = [
+//   'Genesis',
+//   'Exodus',
+//   'Leviticus',
+//   'Numbers',
+//   'Deuteronomy',
+//   'Joshua',
+//   'Judges',
+//   'Ruth',
+//   '1 Samuel',
+//   '2 Samuel',
+//   '1 Kings',
+//   '2 Kings',
+//   '1 Chronicles',
+//   '2 Chronicles',
+//   'Ezra',
+//   'Nehemiah',
+//   'Esther',
+//   'Job',
+//   'Psalms',
+//   'Proverbs',
+//   'Ecclesiastes',
+//   'Song of Solomon',
+//   'Isaiah',
+//   'Jeremiah',
+//   'Lamentations',
+//   'Ezekiel',
+//   'Daniel',
+//   'Hosea',
+//   'Joel',
+//   'Amos',
+//   'Obadiah',
+//   'Jonah',
+//   'Micah',
+//   'Nahum',
+//   'Habakkuk',
+//   'Zephaniah',
+//   'Haggai',
+//   'Zechariah',
+//   'Malachi',
+//   'Matthew',
+//   'Mark',
+//   'Luke',
+//   'John',
+//   'Acts',
+//   'Romans',
+//   '1 Corinthians',
+//   '2 Corinthians',
+//   'Galatians',
+//   'Ephesians',
+//   'Philippians',
+//   'Colossians',
+//   '1 Thessalonians',
+//   '2 Thessalonians',
+//   '1 Timothy',
+//   '2 Timothy',
+//   'Titus',
+//   'Philemon',
+//   'Hebrews',
+//   'James',
+//   '1 Peter',
+//   '2 Peter',
+//   '1 John',
+//   '2 John',
+//   '3 John',
+//   'Jude',
+//   'Revelation',
+// ];
+
+final Map<String, String> _sourceTexts = {
+  'NA': 'Nestle Aland, Novum Testamentum Graece',
+  'SBL': 'Society of Biblical Literature, Greek New Testament',
+  'ECM': 'Editio Critica Maior, Novum Testamentum Graecum',
+  'NE': 'Eberhard Nestle Novum Testamentum Graece',
+  'WH': 'Westcott and Hort, New Testament in the Original Greek',
+  'BYZ': 'The New Testament in the Original Greek: Byzantine Textform',
+  'GOC': 'Greek Orthodox Church, New Testament',
+  'TR': 'Scrivener\'s Textus Receptus; Stephanus Textus Receptus',
+  'DSS': 'Dead Sea Scrolls',
+  'MT': 'Hebrew Masoretic Text: Westminster Leningrad Codex; Hebrew Masoretic Text: Biblia Hebraica Stuttgartensia',
+  'LXX': 'Greek OT Septuagint: Rahlfs-Hanhart Septuaginta; Greek OT Septuagint: Swete\'s Septuagint',
+  'SP': 'Samaritan Pentateuch',
+};
+
+// RegExp _keywords() {
+//   return RegExp(
+//     r'(?:(?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+\d+:\d+(?:-\d+)?',
+//     caseSensitive: true,
+//   );
+// }
 
 final bookIdToIndexMap = {
   1: 0, // Genesis

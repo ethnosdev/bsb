@@ -92,8 +92,13 @@ class _TextPageState extends State<TextPage> {
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
-                content: SelectableText(
-                  note,
+                content: SelectableText.rich(
+                  manager.formatFootnote(
+                    note: note,
+                    onTapKeyword: (tappedKeyword) {
+                      print('tapped keyword: $tappedKeyword');
+                    },
+                  ),
                   style: TextStyle(
                     fontSize: getIt<UserSettings>().textSize,
                   ),
@@ -162,7 +167,6 @@ class _TextPageState extends State<TextPage> {
                 onTap: () async {
                   Navigator.of(context).pop();
                   final (bookId, chapter) = manager.bookAndChapterForPageIndex(_pageIndex);
-                  print('bookId: $bookId, chapter: $chapter, pageIndex: $_pageIndex');
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => HebrewGreekScreen(
