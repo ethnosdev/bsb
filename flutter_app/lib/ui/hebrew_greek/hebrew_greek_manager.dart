@@ -5,6 +5,8 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
+/// This class manages the overall state of the Hebrew/Greek screen.
+/// See the verse page manager for the state of a single PageView page.
 class HebrewGreekManager {
   final _dbHelper = getIt<DatabaseHelper>();
   final titleNotifier = ValueNotifier('');

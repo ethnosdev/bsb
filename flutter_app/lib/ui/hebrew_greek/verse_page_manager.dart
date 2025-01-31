@@ -1,4 +1,6 @@
+import 'package:bsb/core/font_family.dart';
 import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -6,6 +8,7 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+/// This class manages a single page of the PageView for swiping between verses.
 class VersePageManager extends ChangeNotifier {
   final _dbHelper = getIt<DatabaseHelper>();
   var interlinearText = const TextSpan();
@@ -28,7 +31,8 @@ class VersePageManager extends ChangeNotifier {
     required Color highlightColor,
     required bool showEnglish,
   }) async {
-    final data = await _dbHelper.getOriginalLanguageData(bookId, chapter, verse);
+    final reference = Reference(bookId: bookId, chapter: chapter, verse: verse);
+    final data = await _dbHelper.getOriginalLanguageData(reference);
     final textSize = getIt<UserSettings>().textSize;
     interlinearText = formatVerse(
       data,
@@ -57,7 +61,7 @@ class VersePageManager extends ChangeNotifier {
     final spans = <TextSpan>[];
     for (final element in data) {
       if (element is OriginalWord) {
-        final fontFamily = (element.language == Language.greek) ? 'Galatia' : 'Ezra';
+        final fontFamily = fontFamilyForLanguage(element.language);
         spans.add(
           TextSpan(
             text: '${element.word} ',

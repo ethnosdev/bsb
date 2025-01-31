@@ -1,5 +1,7 @@
+import 'package:bsb/core/font_family.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
+import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
@@ -128,7 +130,7 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
   }
 
   List<Widget> _buildOriginalWordDetails(OriginalWord word) {
-    final fontFamily = (word.language == Language.greek) ? 'Galatia' : 'Ezra';
+    final fontFamily = fontFamilyForLanguage(word.language);
     return [
       const SizedBox(height: 16),
       Center(
@@ -142,11 +144,12 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
       ),
       const SizedBox(height: 16),
       Center(
-        child: SelectableText(word.englishGloss,
-            style: const TextStyle(
-              // fontFamily: fontFamily,
-              fontSize: 20,
-            )),
+        child: SelectableText(
+          word.englishGloss,
+          style: const TextStyle(
+            fontSize: 20,
+          ),
+        ),
       ),
       const SizedBox(height: 16),
       SelectableText(
@@ -172,7 +175,24 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
               _launch('https://biblehub.com/$language/${word.strongsNumber}.htm');
             },
         ),
-      ]))
+      ])),
+      const SizedBox(height: 16),
+      TextButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SimilarVersesPage(
+                word: word,
+                showEnglish: manager.showInterlinearEnglish,
+              ),
+            ),
+          );
+        },
+        child: const Text(
+          'See use in other verses',
+        ),
+      ),
     ];
   }
 

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:flutter/services.dart';
@@ -90,9 +91,7 @@ class DatabaseHelper {
   }
 
   Future<List<VerseElement>> getOriginalLanguageData(
-    int bookId,
-    int chapter,
-    int verse,
+    Reference reference,
   ) async {
     final result = await _database.rawQuery(
       'SELECT o.${Schema.olColWord} as ${Schema.ilColOriginal}, '
@@ -107,7 +106,7 @@ class DatabaseHelper {
       'JOIN ${Schema.originalLanguageTable} o ON i.${Schema.ilColOriginal} = o.${Schema.olColId} '
       'WHERE i.${Schema.ilColBookId} = ? AND i.${Schema.ilColChapter} = ? AND i.${Schema.ilColVerse} = ? '
       'ORDER BY i.${Schema.ilColId}',
-      [bookId, chapter, verse],
+      [reference.bookId, reference.chapter, reference.verse],
     );
     return result.map((row) {
       final text = row[Schema.ilColOriginal] as String;
@@ -123,5 +122,26 @@ class DatabaseHelper {
         );
       }
     }).toList();
+  }
+
+  Future<List<Reference>> getVersesWithStrongNumber(
+    Language language,
+    int strongsNumber,
+  ) async {
+    final result = await _database.rawQuery(
+      'SELECT DISTINCT ${Schema.ilColBookId}, ${Schema.ilColChapter}, ${Schema.ilColVerse} '
+      'FROM ${Schema.interlinearTable} '
+      'WHERE ${Schema.ilColStrongsNumber} = ? AND ${Schema.ilColLanguage} = ? '
+      'ORDER BY ${Schema.ilColBookId}, ${Schema.ilColChapter}, ${Schema.ilColVerse}',
+      [strongsNumber, language.id],
+    );
+
+    return result
+        .map((row) => Reference(
+              bookId: row[Schema.ilColBookId] as int,
+              chapter: row[Schema.ilColChapter] as int,
+              verse: row[Schema.ilColVerse] as int,
+            ))
+        .toList();
   }
 }

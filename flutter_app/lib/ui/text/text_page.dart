@@ -79,7 +79,6 @@ class _TextPageState extends State<TextPage> {
       controller: _pageController,
       itemBuilder: (context, index) {
         final pageIndex = index - _initialPageOffset;
-        print('building page: $pageIndex');
         manager.requestText(
           index: pageIndex,
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
