@@ -27,23 +27,22 @@ class _TextPageState extends State<TextPage> {
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
   int _pageIndex = 0;
-  // late int _versesInChapter;
 
   @override
   void initState() {
     super.initState();
-    final index = manager.pageIndexForBookAndChapter(
+    _pageIndex = manager.pageIndexForBookAndChapter(
       bookId: widget.bookId,
       chapter: widget.chapter,
     );
     _pageController = PageController(
-      initialPage: _initialPageOffset + index,
+      initialPage: _initialPageOffset + _pageIndex,
     );
     _pageController.addListener(() {
       if (_pageController.page?.truncateToDouble() == _pageController.page) {
-        final index = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
+        _pageIndex = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
         manager.updateTitle(
-          index: index,
+          index: _pageIndex,
         );
       }
     });
@@ -79,13 +78,13 @@ class _TextPageState extends State<TextPage> {
     return PageView.builder(
       controller: _pageController,
       itemBuilder: (context, index) {
-        _pageIndex = index - _initialPageOffset;
+        final pageIndex = index - _initialPageOffset;
+        print('building page: $pageIndex');
         manager.requestText(
-          index: _pageIndex,
+          index: pageIndex,
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           footnoteColor: Theme.of(context).colorScheme.primary,
           onVerseLongPress: (verseNumber) {
-            print('Verse $verseNumber');
             _showVerseLongPressDialog(
               verseNumber: verseNumber,
             );
@@ -164,6 +163,7 @@ class _TextPageState extends State<TextPage> {
                 onTap: () async {
                   Navigator.of(context).pop();
                   final (bookId, chapter) = manager.bookAndChapterForPageIndex(_pageIndex);
+                  print('bookId: $bookId, chapter: $chapter, pageIndex: $_pageIndex');
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => HebrewGreekScreen(
