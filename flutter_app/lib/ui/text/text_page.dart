@@ -3,6 +3,7 @@ import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
+import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
 
 import 'text_manager.dart';
@@ -22,7 +23,7 @@ class TextPage extends StatefulWidget {
 }
 
 class _TextPageState extends State<TextPage> {
-  final manager = TextManager();
+  final screenManager = TextManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
@@ -31,19 +32,20 @@ class _TextPageState extends State<TextPage> {
   @override
   void initState() {
     super.initState();
-    _pageIndex = manager.pageIndexForBookAndChapter(
+    _pageIndex = screenManager.pageIndexForBookAndChapter(
       bookId: widget.bookId,
       chapter: widget.chapter,
     );
-    print('initial page index: $_pageIndex');
+    screenManager.updateTitle(index: _pageIndex);
     _pageController = PageController(
       initialPage: _initialPageOffset + _pageIndex,
     );
     _pageController.addListener(() {
-      if (_pageController.page?.truncateToDouble() == _pageController.page) {
-        _pageIndex = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
-        print('page index: $_pageIndex');
-        manager.updateTitle(
+      final page = _pageController.page ?? _initialPageOffset;
+      final currentIndex = (page - _initialPageOffset).round();
+      if (currentIndex != _pageIndex) {
+        _pageIndex = currentIndex;
+        screenManager.updateTitle(
           index: _pageIndex,
         );
       }
@@ -61,11 +63,11 @@ class _TextPageState extends State<TextPage> {
     return Scaffold(
       appBar: AppBar(
         title: ValueListenableBuilder<String>(
-          valueListenable: manager.titleNotifier,
+          valueListenable: screenManager.titleNotifier,
           builder: (context, title, child) {
             return GestureDetector(
               onTap: () {
-                final (bookId, chapterCount) = manager.currentBookAndChapterCount(_pageIndex);
+                final (bookId, chapterCount) = screenManager.currentBookAndChapterCount(_pageIndex);
                 _chapterNotifier.value = (bookId, chapterCount);
               },
               child: Text(title),
@@ -87,30 +89,29 @@ class _TextPageState extends State<TextPage> {
       controller: _pageController,
       itemBuilder: (context, index) {
         final pageIndex = index - _initialPageOffset;
-        manager.requestText(
-          index: pageIndex,
+        final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(pageIndex);
+        final pageManager = TextPageManager();
+        pageManager.requestText(
+          bookId: bookId,
+          chapter: chapter,
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           footnoteColor: Theme.of(context).colorScheme.primary,
-          onVerseLongPress: (verseNumber) {
-            _showVerseLongPressDialog(
-              verseNumber: verseNumber,
-            );
-          },
+          onVerseLongPress: _showVerseLongPressDialog,
           onFootnoteTap: (note) {
+            final details = pageManager.formatFootnote(
+              footnote: note,
+              highlightColor: Theme.of(context).colorScheme.primary,
+              onTapKeyword: (keyword) async {
+                final text = await pageManager.lookupFootnoteDetails(keyword);
+                if (text == null) return;
+                _showDetailsDialog(keyword, text);
+              },
+            );
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
                 content: SelectableText.rich(
-                  manager.formatFootnote(
-                    footnote: note,
-                    highlightColor: Theme.of(context).colorScheme.primary,
-                    onTapKeyword: (keyword) async {
-                      final text = await manager.lookupFootnoteDetails(keyword);
-                      // print(text);
-                      if (text == null) return;
-                      _showDetailsDialog(keyword, text);
-                    },
-                  ),
+                  details,
                   style: TextStyle(
                     fontSize: getIt<UserSettings>().textSize,
                   ),
@@ -119,15 +120,17 @@ class _TextPageState extends State<TextPage> {
             );
           },
         );
+
         return ValueListenableBuilder<TextParagraph>(
-          valueListenable: manager.notifier(_pageIndex),
+          valueListenable: pageManager.textParagraphNotifier,
+          // valueListenable: manager.notifier(_pageIndex),
           builder: (context, paragraph, child) {
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: ChapterLayout(
                   paragraphs: paragraph,
-                  paragraphSpacing: manager.paragraphSpacing,
+                  paragraphSpacing: pageManager.paragraphSpacing,
                 ),
               ),
             );
@@ -150,7 +153,7 @@ class _TextPageState extends State<TextPage> {
           onChapterSelected: (chapter) {
             _chapterNotifier.value = null;
             if (chapter == null) return;
-            final pageIndex = manager.pageIndexForBookAndChapter(
+            final pageIndex = screenManager.pageIndexForBookAndChapter(
               bookId: bookId,
               chapter: chapter,
             );
@@ -162,10 +165,8 @@ class _TextPageState extends State<TextPage> {
     );
   }
 
-  Future<String?> _showVerseLongPressDialog({
-    required int verseNumber,
-  }) async {
-    final language = manager.verseLanguageLabel(_pageIndex, verseNumber);
+  Future<String?> _showVerseLongPressDialog(int verseNumber) async {
+    final language = screenManager.verseLanguageLabel(_pageIndex, verseNumber);
     final languageLabel = 'View ${language.displayName} source';
     return showDialog(
       context: context,
@@ -178,7 +179,7 @@ class _TextPageState extends State<TextPage> {
                 title: Text(languageLabel),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  final (bookId, chapter) = manager.bookAndChapterForPageIndex(_pageIndex);
+                  final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => HebrewGreekScreen(

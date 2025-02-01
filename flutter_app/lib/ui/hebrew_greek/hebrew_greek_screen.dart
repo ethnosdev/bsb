@@ -29,21 +29,24 @@ class HebrewGreekScreen extends StatefulWidget {
 class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
   final manager = HebrewGreekManager();
   late final PageController _pageController;
+  int _pageIndex = 0;
 
   @override
   void initState() {
     super.initState();
     manager.init(widget.bookId, widget.chapter, widget.verse);
+    _pageIndex = widget.verse - 1;
     _pageController = PageController(
-      initialPage: widget.verse - 1,
+      initialPage: _pageIndex,
     );
     _pageController.addListener(() {
-      if (_pageController.page?.truncateToDouble() == _pageController.page) {
-        final index = _pageController.page?.toInt() ?? 0;
+      final currentIndex = (_pageController.page ?? widget.verse - 1).round();
+      if (_pageIndex != currentIndex) {
+        _pageIndex = currentIndex;
         manager.updateTitle(
           bookId: widget.bookId,
           chapter: widget.chapter,
-          verse: index + 1,
+          verse: _pageIndex + 1,
         );
       }
     });
