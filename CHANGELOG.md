@@ -1,3 +1,21 @@
+# 1.1.6 - 2025.02.01
+
+- Make swiping between pages snappier.
+
+# 1.1.5 - 2025.02.01
+
+- Change title for chapter and verse halfway between swipe.
+- Refactor chapter PageView logic to simplify and fix display error.
+
+# 1.1.4 - 2025.02.01
+
+- Fix footnote cross reference.
+
+# 1.1.3 - 2025.02.01
+
+- Tapping footnote cross reference shows the passage.
+- Tapping footnote source text abbreviation shows the meaning.
+
 # 1.1.2 - 2025.01.31
 
 - List verses with the same Strong's number.

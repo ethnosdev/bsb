@@ -100,15 +100,31 @@ class Schema {
 
 // colType values
 enum TextType {
-  v(0), // verse
-  d(1), // Descriptive Title (Psalms "Of David")
-  r(2), // Cross Reference
-  s1(3), // Section Heading Level 1
-  s2(4), // Section Heading Level 2
-  ms(5), // major section (Psalms)
-  mr(6), // major section range (Psalms)
-  qa(7); // Acrostic Heading (Psalm 119)
+  /// Verse
+  v(0),
 
+  /// Descriptive Title (Psalms "Of David")
+  d(1),
+
+  /// Cross Reference
+  r(2),
+
+  /// Section Heading Level 1
+  s1(3),
+
+  /// Section Heading Level 2
+  s2(4),
+
+  /// major section (Psalms)
+  ms(5),
+
+  /// major section range (Psalms)
+  mr(6),
+
+  /// Acrostic Heading (Psalm 119)
+  qa(7);
+
+  /// The integer value of the enum, used for database storage.
   final int id;
   const TextType(this.id);
 
