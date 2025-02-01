@@ -234,7 +234,6 @@ class _RenderChapterChooser extends RenderBox {
       _updateHighlightedChapter(event.localPosition, true);
     } else if (event is PointerUpEvent) {
       final chapter = _getChapterAtPosition(event.localPosition);
-      print('chapter: $chapter');
       onChapterSelected?.call(chapter);
       _highlightedChapter = null;
       _showOffsetTile = false;

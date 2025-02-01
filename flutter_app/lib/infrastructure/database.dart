@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
@@ -18,17 +19,17 @@ class DatabaseHelper {
     var exists = await databaseExists(path);
 
     if (!exists) {
-      print("Creating new copy from asset");
+      log("Creating new copy from asset");
       await _copyDatabaseFromAssets(path);
     } else {
       // Check if database needs update
       var currentVersion = await getDatabaseVersion(path);
       if (currentVersion != _databaseVersion) {
-        print("Updating database from version $currentVersion to $_databaseVersion");
+        log("Updating database from version $currentVersion to $_databaseVersion");
         await deleteDatabase(path);
         await _copyDatabaseFromAssets(path);
       } else {
-        print("Opening existing database");
+        log("Opening existing database");
       }
     }
     _database = await openDatabase(path, version: _databaseVersion);
@@ -49,7 +50,6 @@ class DatabaseHelper {
   }
 
   Future<List<VerseLine>> getChapter(int bookId, int chapter) async {
-    print('bookId: $bookId, chapter: $chapter');
     final verses = await _database.query(
       Schema.bibleTextTable,
       columns: [
@@ -146,7 +146,6 @@ class DatabaseHelper {
   }
 
   Future<List<VerseLine>> getRange(Reference reference) async {
-    print('Reference: $reference');
     final verses = await _database.query(
       Schema.bibleTextTable,
       columns: [

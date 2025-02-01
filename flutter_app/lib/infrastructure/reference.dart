@@ -19,7 +19,7 @@ class Reference {
 
   static Reference? tryParse(String reference) {
     // reference is in the form: "1 Corinthians 1:1" or "Romans 1:1–3"
-    final match = referenceRegex.firstMatch(reference);
+    final match = regex.firstMatch(reference);
     if (match == null) {
       return null;
     }
@@ -42,13 +42,13 @@ class Reference {
     );
   }
 
-  static final referenceRegex = RegExp(
-    r'^((?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+(\d+):(\d+)(?:–(\d+))?$',
+  static final regex = RegExp(
+    r'((?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+(\d+):(\d+)(?:–(\d+))?',
     caseSensitive: true,
   );
 
   static bool isValid(String reference) {
-    return referenceRegex.hasMatch(reference);
+    return regex.hasMatch(reference);
   }
 
   @override

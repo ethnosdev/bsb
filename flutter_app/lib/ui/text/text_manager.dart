@@ -189,7 +189,7 @@ class TextManager {
     final note = footnote.replaceAll('; ', ';\n');
 
     final patterns = [
-      Reference.referenceRegex.pattern,
+      Reference.regex.pattern,
       ...sourceTexts.keys.map((kw) => RegExp.escape(kw)),
     ].join('|');
     final regex = RegExp('($patterns)');

@@ -35,12 +35,14 @@ class _TextPageState extends State<TextPage> {
       bookId: widget.bookId,
       chapter: widget.chapter,
     );
+    print('initial page index: $_pageIndex');
     _pageController = PageController(
       initialPage: _initialPageOffset + _pageIndex,
     );
     _pageController.addListener(() {
       if (_pageController.page?.truncateToDouble() == _pageController.page) {
         _pageIndex = (_pageController.page?.toInt() ?? _initialPageOffset) - _initialPageOffset;
+        print('page index: $_pageIndex');
         manager.updateTitle(
           index: _pageIndex,
         );
@@ -104,6 +106,7 @@ class _TextPageState extends State<TextPage> {
                     highlightColor: Theme.of(context).colorScheme.primary,
                     onTapKeyword: (keyword) async {
                       final text = await manager.lookupFootnoteDetails(keyword);
+                      // print(text);
                       if (text == null) return;
                       _showDetailsDialog(keyword, text);
                     },
