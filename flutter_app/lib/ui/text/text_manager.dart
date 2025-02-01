@@ -173,17 +173,20 @@ class TextManager {
   }
 
   TextSpan formatFootnote({
-    required String note,
+    required String footnote,
+    required Color highlightColor,
     required void Function(String tappedKeyword) onTapKeyword,
   }) {
-    print('Formatting footnote: $note');
-    // Build a regex like: \b(keyword1|keyword2|keyword3)\b
-    final xReference = RegExp(
+    // Make semicolon-separated content display on new lines
+    final note = footnote.replaceAll('; ', ';\n');
+
+    // (1-3) Book Name + Chapter:Verse(-Range)
+    final crossReference = RegExp(
       r'(?:(?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+\d+:\d+(?:–\d+)?',
       caseSensitive: true,
     );
 
-    final pattern = [xReference.pattern, ..._sourceTexts.keys.map((kw) => RegExp.escape(kw))].join('|');
+    final pattern = [crossReference.pattern, ..._sourceTexts.keys.map((kw) => RegExp.escape(kw))].join('|');
     final regex = RegExp('($pattern)');
 
     final List<TextSpan> spans = [];
@@ -200,10 +203,7 @@ class TextManager {
       spans.add(
         TextSpan(
           text: matchedText,
-          style: const TextStyle(
-            color: Colors.blue,
-            decoration: TextDecoration.underline,
-          ),
+          style: TextStyle(color: highlightColor),
           recognizer: TapGestureRecognizer()
             ..onTap = () {
               onTapKeyword(matchedText);

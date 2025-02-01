@@ -94,7 +94,8 @@ class _TextPageState extends State<TextPage> {
               builder: (context) => AlertDialog(
                 content: SelectableText.rich(
                   manager.formatFootnote(
-                    note: note,
+                    footnote: note,
+                    highlightColor: Theme.of(context).colorScheme.primary,
                     onTapKeyword: (tappedKeyword) {
                       print('tapped keyword: $tappedKeyword');
                     },
