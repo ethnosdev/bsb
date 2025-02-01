@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 
 typedef TextParagraph = List<(TextSpan, TextType, Format?)>;
 
+/// This class manages one PageView page while TextScreenManager manages
+/// the entire screen.
 class TextPageManager {
   final _dbHelper = getIt<DatabaseHelper>();
   final textParagraphNotifier = ValueNotifier<TextParagraph>([]);

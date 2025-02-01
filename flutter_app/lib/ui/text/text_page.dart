@@ -6,10 +6,10 @@ import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
 
-import 'text_manager.dart';
+import 'text_screen_manager.dart';
 
-class TextPage extends StatefulWidget {
-  const TextPage({
+class TextScreen extends StatefulWidget {
+  const TextScreen({
     super.key,
     required this.bookId,
     required this.chapter,
@@ -19,11 +19,11 @@ class TextPage extends StatefulWidget {
   final int chapter;
 
   @override
-  State<TextPage> createState() => _TextPageState();
+  State<TextScreen> createState() => _TextScreenState();
 }
 
-class _TextPageState extends State<TextPage> {
-  final screenManager = TextManager();
+class _TextScreenState extends State<TextScreen> {
+  final screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);

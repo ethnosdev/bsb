@@ -3,7 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-class TextManager {
+/// This class manages the whole screen while TextPageManager only
+/// handles one PageView page.
+class TextScreenManager {
   static const _chaptersInBible = 1189;
   static const maxPageIndex = _chaptersInBible - 1;
 
