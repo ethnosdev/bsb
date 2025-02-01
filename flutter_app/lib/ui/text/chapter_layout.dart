@@ -6,11 +6,13 @@ class ChapterLayout extends StatefulWidget {
     super.key,
     required this.paragraphs,
     required this.paragraphSpacing,
+    this.bottomSpace = 300,
   });
 
   /// The paragraphs will be rendered in order
   final List<(TextSpan, TextType, Format?)> paragraphs;
   final double paragraphSpacing;
+  final double bottomSpace;
 
   @override
   State<ChapterLayout> createState() => _ChapterLayoutState();
@@ -65,7 +67,7 @@ class _ChapterLayoutState extends State<ChapterLayout> {
       }
       index++;
     }
-    sections.add(const SizedBox(height: 100));
+    sections.add(SizedBox(height: widget.bottomSpace));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: sections,

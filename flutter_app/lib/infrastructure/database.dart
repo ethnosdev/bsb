@@ -144,4 +144,43 @@ class DatabaseHelper {
             ))
         .toList();
   }
+
+  Future<List<VerseLine>> getRange(Reference reference) async {
+    print('Reference: $reference');
+    final verses = await _database.query(
+      Schema.bibleTextTable,
+      columns: [
+        Schema.colVerse,
+        Schema.colText,
+        Schema.colType,
+        Schema.colFormat,
+      ],
+      where: '${Schema.colBookId} = ? '
+          'AND ${Schema.colChapter} = ? '
+          'AND ${Schema.colVerse} >= ? '
+          'AND ${Schema.colVerse} <= ?',
+      whereArgs: [
+        reference.bookId,
+        reference.chapter,
+        reference.verse,
+        reference.endVerse ?? reference.verse,
+      ],
+      orderBy: '${Schema.colId} ASC',
+    );
+
+    return verses.map(
+      (verse) {
+        final format = verse[Schema.colFormat] as int?;
+        return VerseLine(
+          bookId: reference.bookId,
+          chapter: reference.chapter,
+          verse: verse[Schema.colVerse] as int,
+          text: verse[Schema.colText] as String,
+          footnote: null,
+          format: (format == null) ? null : Format.fromInt(format),
+          type: TextType.fromInt(verse[Schema.colType] as int),
+        );
+      },
+    ).toList();
+  }
 }

@@ -49,6 +49,12 @@ class _TextPageState extends State<TextPage> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -96,8 +102,10 @@ class _TextPageState extends State<TextPage> {
                   manager.formatFootnote(
                     footnote: note,
                     highlightColor: Theme.of(context).colorScheme.primary,
-                    onTapKeyword: (tappedKeyword) {
-                      print('tapped keyword: $tappedKeyword');
+                    onTapKeyword: (keyword) async {
+                      final text = await manager.lookupFootnoteDetails(keyword);
+                      if (text == null) return;
+                      _showDetailsDialog(keyword, text);
                     },
                   ),
                   style: TextStyle(
@@ -187,9 +195,37 @@ class _TextPageState extends State<TextPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  Future<void> _showDetailsDialog(String title, TextParagraph passage) async {
+    print('showing details dialog for $title');
+    final fontSize = getIt<UserSettings>().textSize;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: ChapterLayout(paragraphs: passage, paragraphSpacing: 8.0, bottomSpace: 0.0),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

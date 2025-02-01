@@ -1,4 +1,5 @@
 import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
@@ -77,12 +78,12 @@ class TextManager {
     _normalTextSize = getIt<UserSettings>().textSize;
 
     final formattedContent = formatVerses(
-      content,
-      _normalTextSize,
-      textColor,
-      footnoteColor,
-      onVerseLongPress,
-      onFootnoteTap,
+      verseLines: content,
+      baseFontSize: _normalTextSize,
+      textColor: textColor,
+      footnoteColor: footnoteColor,
+      onVerseLongPress: onVerseLongPress,
+      onFootnoteTap: onFootnoteTap,
     );
 
     // Update cache
@@ -172,6 +173,12 @@ class TextManager {
     return language;
   }
 
+  // (1-3) Book Name + Chapter:Verse(-Range)
+  // final _crossReference = RegExp(
+  //   r'(?:(?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+\d+:\d+(?:–\d+)?',
+  //   caseSensitive: true,
+  // );
+
   TextSpan formatFootnote({
     required String footnote,
     required Color highlightColor,
@@ -180,14 +187,11 @@ class TextManager {
     // Make semicolon-separated content display on new lines
     final note = footnote.replaceAll('; ', ';\n');
 
-    // (1-3) Book Name + Chapter:Verse(-Range)
-    final crossReference = RegExp(
-      r'(?:(?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+\d+:\d+(?:–\d+)?',
-      caseSensitive: true,
-    );
-
-    final pattern = [crossReference.pattern, ..._sourceTexts.keys.map((kw) => RegExp.escape(kw))].join('|');
-    final regex = RegExp('($pattern)');
+    final patterns = [
+      Reference.referenceRegex.pattern,
+      ..._sourceTexts.keys.map((kw) => RegExp.escape(kw)),
+    ].join('|');
+    final regex = RegExp('($patterns)');
 
     final List<TextSpan> spans = [];
     int start = 0;
@@ -221,76 +225,38 @@ class TextManager {
 
     return TextSpan(children: spans);
   }
-}
 
-// List<String> _bookNames = [
-//   'Genesis',
-//   'Exodus',
-//   'Leviticus',
-//   'Numbers',
-//   'Deuteronomy',
-//   'Joshua',
-//   'Judges',
-//   'Ruth',
-//   '1 Samuel',
-//   '2 Samuel',
-//   '1 Kings',
-//   '2 Kings',
-//   '1 Chronicles',
-//   '2 Chronicles',
-//   'Ezra',
-//   'Nehemiah',
-//   'Esther',
-//   'Job',
-//   'Psalms',
-//   'Proverbs',
-//   'Ecclesiastes',
-//   'Song of Solomon',
-//   'Isaiah',
-//   'Jeremiah',
-//   'Lamentations',
-//   'Ezekiel',
-//   'Daniel',
-//   'Hosea',
-//   'Joel',
-//   'Amos',
-//   'Obadiah',
-//   'Jonah',
-//   'Micah',
-//   'Nahum',
-//   'Habakkuk',
-//   'Zephaniah',
-//   'Haggai',
-//   'Zechariah',
-//   'Malachi',
-//   'Matthew',
-//   'Mark',
-//   'Luke',
-//   'John',
-//   'Acts',
-//   'Romans',
-//   '1 Corinthians',
-//   '2 Corinthians',
-//   'Galatians',
-//   'Ephesians',
-//   'Philippians',
-//   'Colossians',
-//   '1 Thessalonians',
-//   '2 Thessalonians',
-//   '1 Timothy',
-//   '2 Timothy',
-//   'Titus',
-//   'Philemon',
-//   'Hebrews',
-//   'James',
-//   '1 Peter',
-//   '2 Peter',
-//   '1 John',
-//   '2 John',
-//   '3 John',
-//   'Jude',
-//   'Revelation',
-// ];
+  // Returns the title and text body for a given tapped keyword.
+  // They keyword can either be a cross reference or a source text name.
+  // If a cross reference, then show the source text.
+  // If a source text abbreviation, then show the full name.
+  Future<TextParagraph?> lookupFootnoteDetails(String keyword) async {
+    if (Reference.isValid(keyword)) {
+      final reference = Reference.tryParse(keyword)!;
+      final content = await _dbHelper.getRange(reference);
+
+      // Format content
+      _normalTextSize = getIt<UserSettings>().textSize;
+      return formatVerses(
+        verseLines: content,
+        baseFontSize: _normalTextSize,
+        showSectionTitles: false,
+        showVerseNumbers: false,
+      );
+    } else if (_isSourceTextAbbreviation(keyword)) {
+      // Show the full name of the source text
+    }
+    return null;
+  }
+
+  // bool _isReference(String text) {
+  //   return _crossReference.hasMatch(text);
+  // }
+
+  bool _isSourceTextAbbreviation(String text) {
+    return _sourceTexts.containsKey(text);
+  }
+}
 
 final Map<String, String> _sourceTexts = {
   'NA': 'Nestle Aland, Novum Testamentum Graece',

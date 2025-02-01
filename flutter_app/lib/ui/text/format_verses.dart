@@ -3,25 +3,27 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
-List<(TextSpan, TextType, Format?)> formatVerses(
-  List<VerseLine> content,
-  double baseFontSize,
-  Color textColor,
-  Color footnoteColor,
-  void Function(int) onVerseLongPress,
-  void Function(String) onFootnoteTap,
-) {
+List<(TextSpan, TextType, Format?)> formatVerses({
+  required List<VerseLine> verseLines,
+  required double baseFontSize,
+  Color? textColor,
+  Color? footnoteColor,
+  void Function(int)? onVerseLongPress,
+  void Function(String)? onFootnoteTap,
+  bool showVerseNumbers = true,
+  bool showSectionTitles = true,
+}) {
   final mrTitleSize = baseFontSize * 1.2;
   final msTitleSize = baseFontSize * 1.5;
-  final lightTextColor = textColor.withAlpha(150);
+  final lightTextColor = textColor?.withAlpha(150);
 
   final paragraphs = <(TextSpan, TextType, Format?)>[];
   var verseSpans = <TextSpan>[];
   int oldVerseNumber = 0;
   Format oldFormat = Format.m;
 
-  for (var i = 0; i < content.length; i++) {
-    final row = content[i];
+  for (var i = 0; i < verseLines.length; i++) {
+    final row = verseLines[i];
     final type = row.type;
     final format = row.format;
     final text = row.text;
@@ -41,7 +43,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
           break;
         }
         // add verse number
-        if (oldVerseNumber != verseNumber) {
+        if (showVerseNumbers && oldVerseNumber != verseNumber) {
           oldVerseNumber = verseNumber;
           verseSpans.add(
             TextSpan(
@@ -115,15 +117,16 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         ));
 
       case TextType.r:
-        // Skip as references are now handled in TextType.s1
+        // Skip because cross references are now handled in TextType.s1
         break;
 
       case TextType.s1:
+        if (!showSectionTitles) break;
         final spans = <TextSpan>[];
         String? reference;
         // Check if next row is a reference
-        if (i + 1 < content.length && content[i + 1].type == TextType.r) {
-          reference = content[i + 1].text;
+        if (i + 1 < verseLines.length && verseLines[i + 1].type == TextType.r) {
+          reference = verseLines[i + 1].text;
           i++; // Skip the reference row since we're handling it here
         }
         if (reference != null) {
@@ -138,7 +141,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
               ),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
-                  onFootnoteTap(reference!);
+                  onFootnoteTap?.call(reference!);
                 },
             ),
             TextSpan(
@@ -150,7 +153,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
               ),
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
-                  onFootnoteTap(reference!);
+                  onFootnoteTap?.call(reference!);
                 },
             ),
           ]);
@@ -170,6 +173,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         ));
 
       case TextType.s2:
+        if (!showSectionTitles) break;
         paragraphs.add((
           TextSpan(
             text: text,
@@ -183,6 +187,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         ));
 
       case TextType.ms:
+        if (!showSectionTitles) break;
         paragraphs.add((
           TextSpan(
             text: text,
@@ -196,6 +201,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         ));
 
       case TextType.mr:
+        if (!showSectionTitles) break;
         paragraphs.add((
           TextSpan(
             text: text,
@@ -210,6 +216,7 @@ List<(TextSpan, TextType, Format?)> formatVerses(
         ));
 
       case TextType.qa:
+        if (!showSectionTitles) break;
         paragraphs.add((
           TextSpan(
             text: text,
@@ -236,17 +243,21 @@ void _addVerseSpansWithFootnotes({
   required String text,
   required TextStyle style,
   required String? footnote,
-  required Color footnoteColor,
+  required Color? footnoteColor,
   required int verseNumber,
-  required void Function(int) onVerseLongPress,
-  required void Function(String) onFootnoteTap,
+  required void Function(int)? onVerseLongPress,
+  required void Function(String)? onFootnoteTap,
 }) {
-  if (footnote == null) {
+  final longPressCallback = (onVerseLongPress == null) //
+      ? null
+      : LongPressGestureRecognizer()
+    ?..onLongPress = () => onVerseLongPress?.call(verseNumber);
+
+  if (footnote == null || onFootnoteTap == null) {
     verseSpans.add(TextSpan(
       text: text,
       style: style,
-      recognizer: LongPressGestureRecognizer() //
-        ..onLongPress = () => onVerseLongPress(verseNumber),
+      recognizer: longPressCallback,
     ));
     return;
   }
@@ -282,8 +293,7 @@ void _addVerseSpansWithFootnotes({
         verseSpans.add(TextSpan(
           text: beforeText.substring(0, lastSpace + 1),
           style: style,
-          recognizer: LongPressGestureRecognizer() //
-            ..onLongPress = () => onVerseLongPress(verseNumber),
+          recognizer: longPressCallback,
         ));
 
         // Add the last word and footnote marker together as tappable
@@ -346,8 +356,7 @@ void _addVerseSpansWithFootnotes({
     verseSpans.add(TextSpan(
       text: text.substring(lastIndex),
       style: style,
-      recognizer: LongPressGestureRecognizer() //
-        ..onLongPress = () => onVerseLongPress(verseNumber),
+      recognizer: longPressCallback,
     ));
   }
 }
