@@ -196,7 +196,6 @@ class _TextPageState extends State<TextPage> {
   }
 
   Future<void> _showDetailsDialog(String title, TextParagraph passage) async {
-    print('showing details dialog for $title');
     final fontSize = getIt<UserSettings>().textSize;
     await showDialog(
       context: context,

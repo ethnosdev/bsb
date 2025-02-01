@@ -1,6 +1,7 @@
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/infrastructure/source_texts.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
@@ -160,7 +161,7 @@ class TextManager {
     required int bookId,
     required int chapter,
   }) {
-    return bookIdToIndexMap[bookId]! + chapter - 1;
+    return bookIdToChapterIndexMap[bookId]! + chapter - 1;
   }
 
   Language verseLanguageLabel(int pageIndex, int verseNumber) {
@@ -189,7 +190,7 @@ class TextManager {
 
     final patterns = [
       Reference.referenceRegex.pattern,
-      ..._sourceTexts.keys.map((kw) => RegExp.escape(kw)),
+      ...sourceTexts.keys.map((kw) => RegExp.escape(kw)),
     ].join('|');
     final regex = RegExp('($patterns)');
 
@@ -234,186 +235,23 @@ class TextManager {
     if (Reference.isValid(keyword)) {
       final reference = Reference.tryParse(keyword)!;
       final content = await _dbHelper.getRange(reference);
-
-      // Format content
-      _normalTextSize = getIt<UserSettings>().textSize;
       return formatVerses(
         verseLines: content,
         baseFontSize: _normalTextSize,
         showSectionTitles: false,
         showVerseNumbers: false,
       );
-    } else if (_isSourceTextAbbreviation(keyword)) {
-      // Show the full name of the source text
+    } else if (sourceTexts.containsKey(keyword)) {
+      final source = sourceTexts[keyword]!;
+      final withNewLine = source.replaceAll('; ', '\n');
+      final formattedSource = TextSpan(
+        text: withNewLine,
+        style: TextStyle(
+          fontSize: _normalTextSize,
+        ),
+      );
+      return [(formattedSource, TextType.v, null)];
     }
     return null;
   }
-
-  // bool _isReference(String text) {
-  //   return _crossReference.hasMatch(text);
-  // }
-
-  bool _isSourceTextAbbreviation(String text) {
-    return _sourceTexts.containsKey(text);
-  }
 }
-
-final Map<String, String> _sourceTexts = {
-  'NA': 'Nestle Aland, Novum Testamentum Graece',
-  'SBL': 'Society of Biblical Literature, Greek New Testament',
-  'ECM': 'Editio Critica Maior, Novum Testamentum Graecum',
-  'NE': 'Eberhard Nestle Novum Testamentum Graece',
-  'WH': 'Westcott and Hort, New Testament in the Original Greek',
-  'BYZ': 'The New Testament in the Original Greek: Byzantine Textform',
-  'GOC': 'Greek Orthodox Church, New Testament',
-  'TR': 'Scrivener\'s Textus Receptus; Stephanus Textus Receptus',
-  'DSS': 'Dead Sea Scrolls',
-  'MT': 'Hebrew Masoretic Text: Westminster Leningrad Codex; Hebrew Masoretic Text: Biblia Hebraica Stuttgartensia',
-  'LXX': 'Greek OT Septuagint: Rahlfs-Hanhart Septuaginta; Greek OT Septuagint: Swete\'s Septuagint',
-  'SP': 'Samaritan Pentateuch',
-};
-
-// RegExp _keywords() {
-//   return RegExp(
-//     r'(?:(?:[1-3]\s)?[A-Z][a-z]+(?:\s[a-zA-Z]+)?)\s+\d+:\d+(?:-\d+)?',
-//     caseSensitive: true,
-//   );
-// }
-
-final bookIdToIndexMap = {
-  1: 0, // Genesis
-  2: 50, // Exodus
-  3: 90, // Leviticus
-  4: 117, // Numbers
-  5: 153, // Deuteronomy
-  6: 187, // Joshua
-  7: 211, // Judges
-  8: 232, // Ruth
-  9: 236, // 1 Samuel
-  10: 267, // 2 Samuel
-  11: 291, // 1 Kings
-  12: 313, // 2 Kings
-  13: 338, // 1 Chronicles
-  14: 367, // 2 Chronicles
-  15: 403, // Ezra
-  16: 413, // Nehemiah
-  17: 426, // Esther
-  18: 436, // Job
-  19: 478, // Psalms
-  20: 628, // Proverbs
-  21: 659, // Ecclesiastes
-  22: 671, // Song of Solomon
-  23: 679, // Isaiah
-  24: 745, // Jeremiah
-  25: 797, // Lamentations
-  26: 802, // Ezekiel
-  27: 850, // Daniel
-  28: 862, // Hosea
-  29: 876, // Joel
-  30: 879, // Amos
-  31: 888, // Obadiah
-  32: 889, // Jonah
-  33: 893, // Micah
-  34: 900, // Nahum
-  35: 903, // Habakkuk
-  36: 906, // Zephaniah
-  37: 909, // Haggai
-  38: 911, // Zechariah
-  39: 925, // Malachi
-  40: 929, // Matthew
-  41: 957, // Mark
-  42: 973, // Luke
-  43: 997, // John
-  44: 1018, // Acts
-  45: 1046, // Romans
-  46: 1062, // 1 Corinthians
-  47: 1078, // 2 Corinthians
-  48: 1091, // Galatians
-  49: 1097, // Ephesians
-  50: 1103, // Philippians
-  51: 1107, // Colossians
-  52: 1111, // 1 Thessalonians
-  53: 1116, // 2 Thessalonians
-  54: 1119, // 1 Timothy
-  55: 1125, // 2 Timothy
-  56: 1129, // Titus
-  57: 1132, // Philemon
-  58: 1133, // Hebrews
-  59: 1146, // James
-  60: 1151, // 1 Peter
-  61: 1156, // 2 Peter
-  62: 1159, // 1 John
-  63: 1164, // 2 John
-  64: 1165, // 3 John
-  65: 1166, // Jude
-  66: 1167, // Revelation
-};
-
-final Map<int, int> bookIdToChapterCountMap = {
-  1: 50, // Genesis
-  2: 40, // Exodus
-  3: 27, // Leviticus
-  4: 36, // Numbers
-  5: 34, // Deuteronomy
-  6: 24, // Joshua
-  7: 21, // Judges
-  8: 4, // Ruth
-  9: 31, // 1 Samuel
-  10: 24, // 2 Samuel
-  11: 22, // 1 Kings
-  12: 25, // 2 Kings
-  13: 29, // 1 Chronicles
-  14: 36, // 2 Chronicles
-  15: 10, // Ezra
-  16: 13, // Nehemiah
-  17: 10, // Esther
-  18: 42, // Job
-  19: 150, // Psalms
-  20: 31, // Proverbs
-  21: 12, // Ecclesiastes
-  22: 8, // Song of Solomon
-  23: 66, // Isaiah
-  24: 52, // Jeremiah
-  25: 5, // Lamentations
-  26: 48, // Ezekiel
-  27: 12, // Daniel
-  28: 14, // Hosea
-  29: 3, // Joel
-  30: 9, // Amos
-  31: 1, // Obadiah
-  32: 4, // Jonah
-  33: 7, // Micah
-  34: 3, // Nahum
-  35: 3, // Habakkuk
-  36: 3, // Zephaniah
-  37: 2, // Haggai
-  38: 14, // Zechariah
-  39: 4, // Malachi
-  40: 28, // Matthew
-  41: 16, // Mark
-  42: 24, // Luke
-  43: 21, // John
-  44: 28, // Acts
-  45: 16, // Romans
-  46: 16, // 1 Corinthians
-  47: 13, // 2 Corinthians
-  48: 6, // Galatians
-  49: 6, // Ephesians
-  50: 4, // Philippians
-  51: 4, // Colossians
-  52: 5, // 1 Thessalonians
-  53: 3, // 2 Thessalonians
-  54: 6, // 1 Timothy
-  55: 4, // 2 Timothy
-  56: 3, // Titus
-  57: 1, // Philemon
-  58: 13, // Hebrews
-  59: 5, // James
-  60: 5, // 1 Peter
-  61: 3, // 2 Peter
-  62: 5, // 1 John
-  63: 1, // 2 John
-  64: 1, // 3 John
-  65: 1, // Jude
-  66: 22, // Revelation
-};
