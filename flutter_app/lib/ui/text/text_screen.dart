@@ -2,6 +2,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
@@ -87,6 +88,7 @@ class _TextScreenState extends State<TextScreen> {
   PageView _buildChapterTextPageView() {
     return PageView.builder(
       controller: _pageController,
+      physics: const SnappyScrollPhysics(),
       itemBuilder: (context, index) {
         final pageIndex = index - _initialPageOffset;
         final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(pageIndex);

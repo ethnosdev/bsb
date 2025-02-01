@@ -3,6 +3,7 @@ import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
+import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -85,6 +86,7 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
           }
           return PageView.builder(
             controller: _pageController,
+            physics: const SnappyScrollPhysics(),
             itemCount: verseCount,
             itemBuilder: (context, index) {
               final verseManager = VersePageManager(widget.language);

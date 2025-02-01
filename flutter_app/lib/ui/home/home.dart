@@ -1,6 +1,6 @@
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
-import 'package:bsb/ui/text/text_page.dart';
+import 'package:bsb/ui/text/text_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
