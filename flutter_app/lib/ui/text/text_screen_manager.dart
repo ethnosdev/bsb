@@ -18,7 +18,7 @@ class TextScreenManager {
     final (bookId, chapter) = bookAndChapterForPageIndex(index);
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      titleNotifier.value = formatTitle(bookId, chapter);
+      titleNotifier.value = _formatTitle(bookId, chapter);
     });
   }
 
@@ -50,7 +50,7 @@ class TextScreenManager {
     return (currentBookId, currentChapter);
   }
 
-  String formatTitle(int bookId, int chapter, [int? verse]) {
+  String _formatTitle(int bookId, int chapter, [int? verse]) {
     final book = bookIdToFullNameMap[bookId]!;
     return verse != null ? '$book $chapter:$verse' : '$book $chapter';
   }
@@ -70,5 +70,18 @@ class TextScreenManager {
       verse: verseNumber,
     );
     return language;
+  }
+
+  String bibleHubUrl({
+    required int bookId,
+    required int chapter,
+    required int verse,
+  }) {
+    final book = bookIdToFullNameMap[bookId]!;
+    var formatted = book.replaceAll(' ', '_').toLowerCase();
+    formatted = formatted.replaceAll('psalm', 'psalms');
+    formatted = formatted.replaceAll('song_of_solomon', 'songs');
+
+    return 'https://biblehub.com/$formatted/$chapter-$verse.htm';
   }
 }

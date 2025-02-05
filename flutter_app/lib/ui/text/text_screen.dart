@@ -6,6 +6,7 @@ import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'text_screen_manager.dart';
 
@@ -170,9 +171,9 @@ class _TextScreenState extends State<TextScreen> {
   Future<String?> _showVerseLongPressDialog(int verseNumber) async {
     final language = screenManager.verseLanguageLabel(_pageIndex, verseNumber);
     final languageLabel = 'View ${language.displayName} source';
-    final fontSize = getIt<UserSettings>().textSize;
+    // final fontSize = getIt<UserSettings>().textSize;
     final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
-    final title = screenManager.formatTitle(bookId, chapter, verseNumber);
+    // final title = screenManager.formatTitle(bookId, chapter, verseNumber);
     return showDialog(
       context: context,
       builder: (BuildContext buildContext) {
@@ -180,18 +181,19 @@ class _TextScreenState extends State<TextScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
+              // const SizedBox(height: 16),
+              // Text(
+              //   title,
+              //   style: const TextStyle(
+              //     fontSize: 20.0,
+              //     fontWeight: FontWeight.bold,
+              //   ),
+              // ),
+              // const SizedBox(height: 16),
               ListTile(
                 title: Text(
                   languageLabel,
-                  style: TextStyle(fontSize: fontSize),
+                  // style: TextStyle(fontSize: fontSize),
                 ),
                 onTap: () async {
                   Navigator.of(context).pop();
@@ -206,6 +208,21 @@ class _TextScreenState extends State<TextScreen> {
                       ),
                     ),
                   );
+                },
+              ),
+              ListTile(
+                title: const Text(
+                  'Compare translations',
+                  // style: TextStyle(fontSize: fontSize),
+                ),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final url = screenManager.bibleHubUrl(
+                    bookId: bookId,
+                    chapter: chapter,
+                    verse: verseNumber,
+                  );
+                  _launch(url);
                 },
               ),
             ],
@@ -246,5 +263,12 @@ class _TextScreenState extends State<TextScreen> {
         );
       },
     );
+  }
+
+  Future<void> _launch(String webpage) async {
+    final url = Uri.parse(webpage);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 }
