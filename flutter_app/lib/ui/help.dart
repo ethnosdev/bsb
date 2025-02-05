@@ -40,7 +40,8 @@ class _HelpPageState extends State<HelpPage> {
           _HelpCard(
             title: 'Chapter selection',
             content: 'On the main screen, tap any book to select a chapter and then go to the text. '
-                'Alternatively, double tap a book to go to chapter 1.',
+                'Alternatively, swipe up on a book to go to the first chapter '
+                'or swipe down to go to the last chapter.',
             titleStyle: _titleStyle,
             contentStyle: _contentStyle,
           ),
@@ -48,8 +49,8 @@ class _HelpPageState extends State<HelpPage> {
           _HelpCard(
             title: 'Navigation',
             content: 'While in the chapter text screen, swipe to the right or left '
-                'to go to the next or previous chapter. You can also double tap the '
-                'text to show the chapter chooser dialog.',
+                'to go to the next or previous chapter. You can also tap book name '
+                'on the app bar to show the chapter chooser dialog.',
             titleStyle: _titleStyle,
             contentStyle: _contentStyle,
           ),
@@ -57,6 +58,14 @@ class _HelpPageState extends State<HelpPage> {
           _HelpCard(
             title: 'Footnotes',
             content: 'If you see an asterisk (*) in the text, tap it to learn additional information.',
+            titleStyle: _titleStyle,
+            contentStyle: _contentStyle,
+          ),
+          const SizedBox(height: 16),
+          _HelpCard(
+            title: 'Additional tools',
+            content: 'Long press on the text of a verse to copy, view the '
+                'original Hebrew/Greek, or compare with other translations.',
             titleStyle: _titleStyle,
             contentStyle: _contentStyle,
           ),
