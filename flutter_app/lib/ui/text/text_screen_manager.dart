@@ -18,7 +18,7 @@ class TextScreenManager {
     final (bookId, chapter) = bookAndChapterForPageIndex(index);
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      titleNotifier.value = _formatTitle(bookId, chapter);
+      titleNotifier.value = formatTitle(bookId, chapter);
     });
   }
 
@@ -50,9 +50,9 @@ class TextScreenManager {
     return (currentBookId, currentChapter);
   }
 
-  String _formatTitle(int bookId, int chapter) {
+  String formatTitle(int bookId, int chapter, [int? verse]) {
     final book = bookIdToFullNameMap[bookId]!;
-    return '$book $chapter';
+    return verse != null ? '$book $chapter:$verse' : '$book $chapter';
   }
 
   int pageIndexForBookAndChapter({

@@ -170,18 +170,32 @@ class _TextScreenState extends State<TextScreen> {
   Future<String?> _showVerseLongPressDialog(int verseNumber) async {
     final language = screenManager.verseLanguageLabel(_pageIndex, verseNumber);
     final languageLabel = 'View ${language.displayName} source';
+    final fontSize = getIt<UserSettings>().textSize;
+    final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
+    final title = screenManager.formatTitle(bookId, chapter, verseNumber);
     return showDialog(
       context: context,
       builder: (BuildContext buildContext) {
         return Dialog(
-          child: ListView(
-            shrinkWrap: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
               ListTile(
-                title: Text(languageLabel),
+                title: Text(
+                  languageLabel,
+                  style: TextStyle(fontSize: fontSize),
+                ),
                 onTap: () async {
                   Navigator.of(context).pop();
-                  final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
+
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => HebrewGreekScreen(
