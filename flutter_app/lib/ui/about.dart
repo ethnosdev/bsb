@@ -139,7 +139,7 @@ class _AboutPageState extends State<AboutPage> {
                   style: _contentStyle,
                   children: [
                     const TextSpan(
-                        text: "In the same spirit, EthosDev also dedicates this "
+                        text: "In the same spirit, EthnosDev also dedicates this "
                             "app to the public domain. You can find "
                             "the source code on "),
                     TextSpan(
@@ -164,7 +164,10 @@ class _AboutPageState extends State<AboutPage> {
               ),
               SizedBox(height: paragraphSpacing),
               Text(
-                "This app does not collect any personal information about you. ",
+                "This app does not collect any personal information about you "
+                "or share anything with third parties. Clicking a link may take "
+                "you to a third party website (such as Bible Hub), which will "
+                "have its own privacy policy.",
                 style: _contentStyle,
               ),
               SizedBox(height: paragraphSpacing),
@@ -176,7 +179,7 @@ class _AboutPageState extends State<AboutPage> {
               Text(
                 "Many new features are being planned. "
                 "These include selection and highlighting, full-text search, "
-                "and looking up verses in the original Hebrew and Greek. ",
+                "and opening multiple chapters simultaneously. ",
                 style: _contentStyle,
               ),
               SizedBox(height: paragraphSpacing),
