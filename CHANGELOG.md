@@ -1,3 +1,9 @@
+# 1.2.0 - 2025.02.05
+
+- Swipe up/down on book chooser to go to first/last chapter.
+- Long press verse menu: Compare translations on Bible Hub.
+- Long press verse menu: Copy verse to clipboard.
+
 # 1.1.6 - 2025.02.01
 
 - Make swiping between pages snappier.

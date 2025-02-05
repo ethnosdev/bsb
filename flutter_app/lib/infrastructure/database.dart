@@ -182,4 +182,6 @@ class DatabaseHelper {
       },
     ).toList();
   }
+
+  getVerse(int bookId, int chapter, int verseNumber) {}
 }

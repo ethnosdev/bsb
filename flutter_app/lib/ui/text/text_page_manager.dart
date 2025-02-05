@@ -114,4 +114,25 @@ class TextPageManager {
     }
     return null;
   }
+
+  Future<String> verseTextForClipboard(
+    int bookId,
+    int chapter,
+    int verseNumber,
+  ) async {
+    final reference = Reference(
+      bookId: bookId,
+      chapter: chapter,
+      verse: verseNumber,
+    );
+    final verse = await _dbHelper.getRange(reference);
+    final verseString = StringBuffer();
+    for (final line in verse) {
+      if (line.text == '\n') continue;
+      verseString.write(line.text);
+      verseString.write(' ');
+    }
+    verseString.write('($reference)');
+    return verseString.toString();
+  }
 }

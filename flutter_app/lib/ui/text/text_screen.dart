@@ -6,6 +6,7 @@ import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'text_screen_manager.dart';
@@ -99,7 +100,7 @@ class _TextScreenState extends State<TextScreen> {
           chapter: chapter,
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           footnoteColor: Theme.of(context).colorScheme.primary,
-          onVerseLongPress: _showVerseLongPressDialog,
+          onVerseLongPress: (verse) => _showVerseLongPressDialog(verse, pageManager),
           onFootnoteTap: (note) {
             final details = pageManager.formatFootnote(
               footnote: note,
@@ -168,12 +169,10 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
-  Future<String?> _showVerseLongPressDialog(int verseNumber) async {
+  Future<String?> _showVerseLongPressDialog(int verseNumber, TextPageManager manager) async {
     final language = screenManager.verseLanguageLabel(_pageIndex, verseNumber);
     final languageLabel = 'View ${language.displayName} source';
-    // final fontSize = getIt<UserSettings>().textSize;
     final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
-    // final title = screenManager.formatTitle(bookId, chapter, verseNumber);
     return showDialog(
       context: context,
       builder: (BuildContext buildContext) {
@@ -181,23 +180,26 @@ class _TextScreenState extends State<TextScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // const SizedBox(height: 16),
-              // Text(
-              //   title,
-              //   style: const TextStyle(
-              //     fontSize: 20.0,
-              //     fontWeight: FontWeight.bold,
-              //   ),
-              // ),
-              // const SizedBox(height: 16),
               ListTile(
-                title: Text(
-                  languageLabel,
-                  // style: TextStyle(fontSize: fontSize),
+                title: const Text(
+                  'Copy',
                 ),
                 onTap: () async {
                   Navigator.of(context).pop();
-
+                  final verse = await manager.verseTextForClipboard(
+                    bookId,
+                    chapter,
+                    verseNumber,
+                  );
+                  await Clipboard.setData(ClipboardData(text: verse));
+                },
+              ),
+              ListTile(
+                title: Text(
+                  languageLabel,
+                ),
+                onTap: () async {
+                  Navigator.of(context).pop();
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => HebrewGreekScreen(
