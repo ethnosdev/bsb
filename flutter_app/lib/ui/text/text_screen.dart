@@ -105,7 +105,10 @@ class _TextScreenState extends State<TextScreen> {
             final details = pageManager.formatFootnote(
               footnote: note,
               highlightColor: Theme.of(context).colorScheme.primary,
-              onTapKeyword: (keyword) async {
+              onTapKeyword: (keyword, count) async {
+                if (count == 1) {
+                  Navigator.of(context).pop();
+                }
                 final text = await pageManager.lookupFootnoteDetails(keyword);
                 if (text == null) return;
                 _showDetailsDialog(keyword, text);

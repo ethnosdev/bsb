@@ -2,6 +2,7 @@
 
 - Fix some footnote links and cross references not working.
 - Add footnote cross reference text for extrabiblical sources.
+- Hide the original footnote dialog when a link is tapped if there is only one link.
 
 # 1.2.0 - 2025.02.05
 

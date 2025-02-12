@@ -44,7 +44,7 @@ class TextPageManager {
   TextSpan formatFootnote({
     required String footnote,
     required Color highlightColor,
-    required void Function(String tappedKeyword) onTapKeyword,
+    required void Function(String tappedKeyword, int keywordCount) onTapKeyword,
   }) {
     // Make semicolon-separated content display on new lines
     final note = footnote.replaceAll('; ', ';\n');
@@ -76,7 +76,7 @@ class TextPageManager {
           style: TextStyle(color: highlightColor),
           recognizer: TapGestureRecognizer()
             ..onTap = () {
-              onTapKeyword(matchedText);
+              onTapKeyword(matchedText, matches.length);
             },
         ),
       );
