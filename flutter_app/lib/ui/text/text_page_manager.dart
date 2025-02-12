@@ -52,7 +52,7 @@ class TextPageManager {
     const verseRange = '\\d+:\\d+(?:–\\d+)?';
     final patterns = [
       ...validBookNames.map((kw) => '$kw $verseRange'),
-      ...sourceTexts.keys.map((kw) => RegExp.escape(kw)),
+      ...sourceTexts.keys.map((kw) => '\\b$kw\\b'),
       ...validExtraBiblicalTexts.keys,
     ].join('|');
     final regex = RegExp('($patterns)');

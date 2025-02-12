@@ -1,3 +1,8 @@
+# 1.2.1
+
+- Fix some footnote links and cross references not working.
+- Add footnote cross reference text for extrabiblical sources.
+
 # 1.2.0 - 2025.02.05
 
 - Swipe up/down on book chooser to go to first/last chapter.
