@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
+import 'package:bsb/infrastructure/extrabiblical_texts.dart';
 import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/infrastructure/source_texts.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:flutter/services.dart';
@@ -183,5 +185,61 @@ class DatabaseHelper {
     ).toList();
   }
 
-  getVerse(int bookId, int chapter, int verseNumber) {}
+  // This method is for checking footnote references. Make sure that we have
+  // footnote links for extra biblical texts.
+  Future<void> analyzeFootnotes() async {
+    final footnotes = await _database.query(
+      Schema.bibleTextTable,
+      columns: [
+        Schema.colBookId,
+        Schema.colChapter,
+        Schema.colVerse,
+        Schema.colFootnote,
+      ],
+      where: '${Schema.colFootnote} IS NOT NULL',
+      orderBy: '${Schema.colId} ASC',
+    );
+
+    const verseRange = '\\d+:\\d+(?:–\\d+)?';
+    final patterns = [
+      ...validBookNames.map((kw) => '$kw $verseRange'),
+      ...sourceTexts.keys.map((kw) => RegExp.escape(kw)),
+      ...validExtraBiblicalTexts.keys,
+    ].join('|');
+    final regex = RegExp('($patterns)');
+
+    final Set<(String, Reference)> references = {};
+
+    for (final footnote in footnotes) {
+      final note = footnote[Schema.colFootnote] as String;
+      final bookId = footnote[Schema.colBookId] as int;
+      final chapter = footnote[Schema.colChapter] as int;
+      final verse = footnote[Schema.colVerse] as int;
+      final reference = Reference(bookId: bookId, chapter: chapter, verse: verse);
+      final matches = regex.allMatches(note);
+      for (final match in matches) {
+        final start = match.start;
+        final end = match.end;
+        references.add((note.substring(start, end), reference));
+      }
+    }
+
+    final Set<String> bookNames = {};
+    for (final ref in references) {
+      final (referenced, source) = ref;
+      if (referenced.contains('Jasher') || referenced.contains('Enoch') || referenced.contains('Esdras')) {
+        log('$referenced: $source');
+      }
+      final index = referenced.lastIndexOf(' ');
+      if (index > 0) {
+        final bookName = referenced.substring(0, index);
+        bookNames.add(bookName);
+      }
+    }
+
+    final sortedBooks = bookNames.toList()..sort();
+    for (final book in sortedBooks) {
+      log(book);
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/extrabiblical_texts.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/source_texts.dart';
@@ -48,16 +49,20 @@ class TextPageManager {
     // Make semicolon-separated content display on new lines
     final note = footnote.replaceAll('; ', ';\n');
 
+    const verseRange = '\\d+:\\d+(?:–\\d+)?';
     final patterns = [
-      Reference.regex.pattern,
+      ...validBookNames.map((kw) => '$kw $verseRange'),
       ...sourceTexts.keys.map((kw) => RegExp.escape(kw)),
+      ...validExtraBiblicalTexts.keys,
     ].join('|');
     final regex = RegExp('($patterns)');
 
     final List<TextSpan> spans = [];
     int start = 0;
 
-    for (final match in regex.allMatches(note)) {
+    final matches = regex.allMatches(note);
+
+    for (final match in matches) {
       // Add text before the match
       if (match.start > start) {
         spans.add(TextSpan(text: note.substring(start, match.start)));
@@ -88,12 +93,12 @@ class TextPageManager {
   }
 
   // Returns the title and text body for a given tapped keyword.
-  // They keyword can either be a cross reference or a source text name.
   // If a cross reference, then show the source text.
   // If a source text abbreviation, then show the full name.
+  // If extrabiblical text, then show the source text.
   Future<TextParagraph?> lookupFootnoteDetails(String keyword) async {
-    if (Reference.isValid(keyword)) {
-      final reference = Reference.tryParse(keyword)!;
+    final reference = Reference.tryParse(keyword);
+    if (reference != null) {
       final content = await _dbHelper.getRange(reference);
       return formatVerses(
         verseLines: content,
@@ -101,7 +106,9 @@ class TextPageManager {
         showSectionTitles: false,
         showVerseNumbers: false,
       );
-    } else if (sourceTexts.containsKey(keyword)) {
+    }
+
+    if (sourceTexts.containsKey(keyword)) {
       final source = sourceTexts[keyword]!;
       final withNewLine = source.replaceAll('; ', '\n');
       final formattedSource = TextSpan(
@@ -112,7 +119,40 @@ class TextPageManager {
       );
       return [(formattedSource, TextType.v, null)];
     }
-    return null;
+
+    return _extrabiblicalContent(keyword);
+  }
+
+  TextParagraph? _extrabiblicalContent(String keyword) {
+    String? content;
+    switch (keyword) {
+      case 'Jasher 79:27':
+        content = jasher7927;
+      case 'Jasher 88:63':
+        content = jasher8863;
+      case 'Jasher 88:64':
+        content = jasher8864;
+      case '1 Esdras 8:32':
+        content = esdras832;
+      case '1 Esdras 8:36':
+        content = esdras836;
+      case '1 Enoch 1:9':
+        content = enoch1;
+      case '1 Enoch 13:1–11':
+        content = enoch13;
+      case '1 Enoch 20:1–4':
+        content = enoch20;
+      default:
+        content = null;
+    }
+    if (content == null) return null;
+    final formattedSource = TextSpan(
+      text: content,
+      style: TextStyle(
+        fontSize: _normalTextSize,
+      ),
+    );
+    return [(formattedSource, TextType.v, null)];
   }
 
   Future<String> verseTextForClipboard(
