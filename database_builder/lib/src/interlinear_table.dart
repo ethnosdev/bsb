@@ -89,17 +89,32 @@ Future<void> createInterlinearTable(
   int chapter = -1;
   int verse = -1;
 
+  List<InterlinearWord> verseWords = [];
+
   for (int i = 1; i < lines.length; i++) {
-    if (i % 50000 == 0) {
+    if (i % 10000 == 0) {
       print('Processing line $i');
     }
     final line = lines[i];
     final columns = line.split('\t');
 
     if (columns[5].isEmpty) {
+      if (verseWords.isNotEmpty) {
+        dbHelper.insertInterlinearVerse(verseWords, bookId, chapter, verse);
+        verseWords = [];
+        bookId = -1;
+        chapter = -1;
+        verse = -1;
+      }
       continue;
     }
     final original = originalMap[columns[5].trim()]!;
+
+    final reference = columns[12];
+    if (reference.isNotEmpty) {
+      (bookId, chapter, verse) = _parseReference(reference);
+    }
+
     final language = Language.fromString(columns[4]);
     // final transliteration = columns[7];
     final partOfSpeech = posMap[columns[9].trim()] ?? -1;
@@ -111,11 +126,6 @@ Future<void> createInterlinearTable(
     if (strongsNumber == -1) {
       // print('No strongs number for $original ($bookId, $chapter, $verse)');
     }
-    final reference = columns[12];
-    if (reference.isNotEmpty) {
-      (bookId, chapter, verse) = _parseReference(reference);
-    }
-    // print('columns[18] = "${columns[18]}", englishMap: ${englishMap[columns[18].trim()]}');
     var english = columns[18].trim();
     if (english.isEmpty) {
       english = '-';
@@ -124,18 +134,19 @@ Future<void> createInterlinearTable(
 
     final punctuation = columns[19];
 
-    await dbHelper.insertInterlinearLine(
-      bookId: bookId,
-      chapter: chapter,
-      verse: verse,
-      language: language.id,
-      original: original,
-      // transliteration: transliteration,
-      partOfSpeech: partOfSpeech,
-      strongsNumber: strongsNumber,
-      english: englishId,
-      punctuation: punctuation.isEmpty ? null : punctuation,
+    verseWords.add(
+      InterlinearWord(
+        language: language.id,
+        original: original,
+        partOfSpeech: partOfSpeech,
+        strongsNumber: strongsNumber,
+        english: englishId,
+        punctuation: punctuation.isEmpty ? null : punctuation,
+      ),
     );
+  }
+  if (verseWords.isNotEmpty) {
+    dbHelper.insertInterlinearVerse(verseWords, bookId, chapter, verse);
   }
 }
 

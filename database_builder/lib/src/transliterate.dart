@@ -10,21 +10,47 @@ void transliterate() {
   // }
 }
 
-Set<String> uniqueGreekWords() {
+void mapTransliteration() {
+  final uniqueWords = uniqueGreekWords();
+  final frequencyMap = <String, int>{};
+  final mismatch = <(String, String)>{};
+  for (final (greek, translit) in uniqueWords) {
+    if (greek.length == translit.length) {
+      for (int i = 0; i < greek.length; i++) {
+        final key = '${greek[i]}-${translit[i]}';
+        if (frequencyMap.containsKey(key)) {
+          frequencyMap[key] = frequencyMap[key]! + 1;
+        } else {
+          frequencyMap[key] = 1;
+        }
+      }
+    } else {
+      mismatch.add((greek, translit));
+    }
+  }
+  print(frequencyMap);
+  print(mismatch.length);
+}
+
+// For the return value, the first string is the greek word
+// and the second string is the transliteration.
+Set<(String, String)> uniqueGreekWords() {
   final file = File('bsb_tables/bsb_tables.csv');
   final lines = file.readAsLinesSync();
   int colLanguage = 4;
   int colGreek = 5;
+  int translitCol = 7;
 
-  final Set<String> uniqueValues = {};
+  final Set<(String, String)> uniqueValues = {};
 
   for (var line in lines) {
     final columns = line.split('\t');
     if (columns[colLanguage] != 'Greek') continue;
 
     final word = columns[colGreek].trim();
-    if (word.isNotEmpty && !uniqueValues.contains(word)) {
-      uniqueValues.add(word);
+    final transliteration = columns[translitCol].trim();
+    if (word.isNotEmpty && !uniqueValues.contains((word, transliteration))) {
+      uniqueValues.add((word, transliteration));
     }
   }
 
@@ -32,10 +58,10 @@ Set<String> uniqueGreekWords() {
   return uniqueValues;
 }
 
-Set<String> uniqueGreekChars(Set<String> uniqueWords) {
+Set<String> uniqueGreekChars(Set<(String, String)> uniqueWords) {
   final uniqueChars = <String>{};
   for (var word in uniqueWords) {
-    for (var char in word.split('')) {
+    for (var char in word.$1.split('')) {
       if (!uniqueChars.contains(char)) {
         uniqueChars.add(char);
       }

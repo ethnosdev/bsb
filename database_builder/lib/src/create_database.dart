@@ -11,12 +11,11 @@ Future<void> createDatabase() async {
   print('Creating new database');
   dbHelper.init();
 
-  // print('Creating BSB Table');
+  print('Creating BSB Table');
   await createBsbTable(dbHelper);
 
   print('Creating Foreign Table');
   final (originalMap, posMap, englishMap) = createForeignTables(dbHelper);
-
   print('Creating Interlinear Table');
   await createInterlinearTable(dbHelper, originalMap, posMap, englishMap);
 }

@@ -155,6 +155,7 @@ const fullNameToBookIdMap = {
   'Nehemiah': 16,
   'Esther': 17,
   'Job': 18,
+  'Psalm': 19,
   'Psalms': 19,
   'Proverbs': 20,
   'Ecclesiastes': 21,

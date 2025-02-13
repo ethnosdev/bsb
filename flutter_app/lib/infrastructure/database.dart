@@ -12,7 +12,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 8;
+  static const _databaseVersion = 9;
   late Database _database;
 
   Future<void> init() async {

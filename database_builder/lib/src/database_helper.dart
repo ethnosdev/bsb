@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart';
@@ -103,18 +104,17 @@ class DatabaseHelper {
     return _database.lastInsertRowId;
   }
 
-  Future<void> insertInterlinearLine({
-    required int bookId,
-    required int chapter,
-    required int verse,
-    required int language,
-    required int original,
-    required int partOfSpeech,
-    required int strongsNumber,
-    required int english,
-    String? punctuation,
-  }) async {
-    _database.execute('''
+  void insertInterlinearVerse(
+    List<InterlinearWord> words,
+    int bookId,
+    int chapter,
+    int verse,
+  ) {
+    if (bookId == -1 || chapter == -1 || verse == -1) {
+      log('Invalid bookId, chapter, or verse: $bookId, $chapter, $verse');
+    }
+    for (var word in words) {
+      _database.execute('''
         INSERT INTO ${Schema.interlinearTable} (
           ${Schema.ilColBookId},
           ${Schema.ilColChapter},
@@ -126,6 +126,34 @@ class DatabaseHelper {
           ${Schema.ilColEnglish},
           ${Schema.ilColPunctuation}
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', [bookId, chapter, verse, language, original, partOfSpeech, strongsNumber, english, punctuation]);
+        ''', [
+        bookId,
+        chapter,
+        verse,
+        word.language,
+        word.original,
+        word.partOfSpeech,
+        word.strongsNumber,
+        word.english,
+        word.punctuation,
+      ]);
+    }
   }
+}
+
+class InterlinearWord {
+  InterlinearWord({
+    required this.language,
+    required this.original,
+    required this.partOfSpeech,
+    required this.strongsNumber,
+    required this.english,
+    required this.punctuation,
+  });
+  final int language;
+  final int original;
+  final int partOfSpeech;
+  final int strongsNumber;
+  final int english;
+  final String? punctuation;
 }

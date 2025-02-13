@@ -3,6 +3,7 @@
 - Fix some footnote links and cross references not working.
 - Add footnote cross reference text for extrabiblical sources.
 - Hide the original footnote dialog when a link is tapped if there is only one link.
+- Fix Hebrew/Greek: words from some verses were getting added to adjacent verses.
 
 # 1.2.0 - 2025.02.05
 
