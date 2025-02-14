@@ -147,6 +147,16 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
           ),
         ),
       ),
+      if (word.language == Language.greek)
+        Center(
+          child: SelectableText(
+            word.transliteration,
+            style: TextStyle(
+              fontSize: 20,
+              color: Theme.of(context).textTheme.bodyMedium!.color!.withAlpha(160),
+            ),
+          ),
+        ),
       const SizedBox(height: 16),
       Center(
         child: SelectableText(

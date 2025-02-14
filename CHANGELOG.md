@@ -1,5 +1,6 @@
-# 1.2.1
+# 1.3.0 - 2025.02.14
 
+- Greek transliteration.
 - Fix some footnote links and cross references not working.
 - Add footnote cross reference text for extrabiblical sources.
 - Hide the original footnote dialog when a link is tapped if there is only one link.

@@ -115,9 +115,12 @@ class DatabaseHelper {
       if (row[Schema.ilColPunctuation] == 1) {
         return Punctuation(punctuation: text);
       } else {
+        final language = Language.fromInt(row[Schema.ilColLanguage] as int);
+        final translit = (language == Language.greek) ? transliterateGreek(text) : '';
         return OriginalWord(
-          language: Language.fromInt(row[Schema.ilColLanguage] as int),
+          language: language,
           word: text,
+          transliteration: translit,
           englishGloss: row[Schema.ilColEnglish] as String,
           strongsNumber: row[Schema.ilColStrongsNumber] as int,
           partOfSpeech: row[Schema.ilColPartOfSpeech] as String,

@@ -7,6 +7,7 @@ class OriginalWord extends VerseElement {
   OriginalWord({
     required this.language,
     required this.word,
+    required this.transliteration,
     required this.englishGloss,
     required this.strongsNumber,
     required this.partOfSpeech,
@@ -14,6 +15,7 @@ class OriginalWord extends VerseElement {
 
   final Language language;
   final String word;
+  final String transliteration;
   final String englishGloss;
   final int strongsNumber;
   final String partOfSpeech;
