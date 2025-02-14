@@ -4,11 +4,12 @@ import 'package:database_builder/src/transliterate.dart';
 void main(List<String> arguments) {
   // printAllFilenames();
   // printAllParatextMarkers();
-  createDatabase();
+  // createDatabase();
 
   // transliterate();
+  // mapTransliteration();
   // createInterlinearText();
-  // testTransliterator();
+  testTransliterator();
 
   // compareColumns();
   // uniqueLanguageValues();
