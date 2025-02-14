@@ -1,5 +1,5 @@
-import 'package:database_builder/src/create_database.dart';
-import 'package:database_builder/src/transliterate.dart';
+// import 'package:database_builder/src/create_database.dart';
+// import 'package:database_builder/src/transliterate.dart';
 
 void main(List<String> arguments) {
   // printAllFilenames();
@@ -9,7 +9,7 @@ void main(List<String> arguments) {
   // transliterate();
   // mapTransliteration();
   // createInterlinearText();
-  testTransliterator();
+  // testTransliterator();
 
   // compareColumns();
   // uniqueLanguageValues();
