@@ -82,12 +82,13 @@ class _TextScreenState extends State<TextScreen> {
         children: [
           _buildChapterTextPageView(),
           _buildChapterChooserOverlay(),
+          _buildBottomMenuBar(),
         ],
       ),
     );
   }
 
-  PageView _buildChapterTextPageView() {
+  Widget _buildChapterTextPageView() {
     return PageView.builder(
       controller: _pageController,
       physics: const SnappyScrollPhysics(),
@@ -100,7 +101,10 @@ class _TextScreenState extends State<TextScreen> {
           chapter: chapter,
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           footnoteColor: Theme.of(context).colorScheme.primary,
-          onVerseLongPress: (verse) => _showVerseLongPressDialog(verse, pageManager),
+          onVerseLongPress: (verse) {
+            _showBottomMenuBar(verse, pageManager);
+            // _showVerseLongPressDialog(verse, pageManager);
+          },
           onFootnoteTap: (note) {
             final details = pageManager.formatFootnote(
               footnote: note,
@@ -147,7 +151,7 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
-  ValueListenableBuilder<(int, int)?> _buildChapterChooserOverlay() {
+  Widget _buildChapterChooserOverlay() {
     return ValueListenableBuilder<(int, int)?>(
       valueListenable: _chapterNotifier,
       builder: (context, bookChapter, child) {
@@ -170,6 +174,40 @@ class _TextScreenState extends State<TextScreen> {
         );
       },
     );
+  }
+
+  Widget _buildBottomMenuBar() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.content_copy),
+            label: 'Copy',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.highlight),
+            label: 'Highlight',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.language),
+            label: 'Greek',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.compare),
+            label: 'Compare',
+          ),
+        ],
+        onTap: (index) {
+          // Handle taps for each menu item
+        },
+      ),
+    );
+  }
+
+  Future<void> _showBottomMenuBar(int verseNumber, TextPageManager manager) async {
+    final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
   }
 
   Future<String?> _showVerseLongPressDialog(int verseNumber, TextPageManager manager) async {
@@ -218,7 +256,6 @@ class _TextScreenState extends State<TextScreen> {
               ListTile(
                 title: const Text(
                   'Compare translations',
-                  // style: TextStyle(fontSize: fontSize),
                 ),
                 onTap: () async {
                   Navigator.of(context).pop();
