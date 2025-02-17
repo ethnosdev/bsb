@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.cxx/
 
 # Untracked supplemental files
 bsb_tables.xlsx

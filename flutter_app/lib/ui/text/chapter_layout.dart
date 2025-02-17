@@ -30,19 +30,19 @@ class _ChapterLayoutState extends State<ChapterLayout> {
         case TextType.v:
           _applyFormat(sections, span, format);
         case TextType.d:
-          sections.add(SelectableText.rich(
+          sections.add(Text.rich(
             span,
             textAlign: TextAlign.center,
           ));
           sections.add(_paragraphSpacing);
         case TextType.r:
-          sections.add(SelectableText.rich(span));
+          sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
         case TextType.s1:
           if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
             sections.add(_paragraphSpacing);
           }
-          sections.add(SelectableText.rich(span));
+          sections.add(Text.rich(span));
           if (index < widget.paragraphs.length - 1 && //
               widget.paragraphs[index + 1].$2 != TextType.r) {
             sections.add(_paragraphSpacing);
@@ -51,31 +51,33 @@ class _ChapterLayoutState extends State<ChapterLayout> {
           if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
             sections.add(_paragraphSpacing);
           }
-          sections.add(SelectableText.rich(span));
+          sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
         case TextType.ms:
           sections.add(Center(
-            child: SelectableText.rich(span),
+            child: Text.rich(span),
           ));
         case TextType.mr:
           sections.add(Center(
-            child: SelectableText.rich(span),
+            child: Text.rich(span),
           ));
           sections.add(_paragraphSpacing);
         case TextType.qa:
-          sections.add(SelectableText.rich(span));
+          sections.add(Text.rich(span));
       }
       index++;
     }
     sections.add(SizedBox(height: widget.bottomSpace));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: sections,
+    return SelectionArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: sections,
+      ),
     );
   }
 
   void _applyFormat(List<Widget> sections, TextSpan span, Format? format) {
-    Widget text = SelectableText.rich(span);
+    Widget text = Text.rich(span);
     if (format != null) {
       switch (format) {
         case Format.m:
