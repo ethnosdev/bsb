@@ -26,11 +26,13 @@ class TextScreen extends StatefulWidget {
 }
 
 class _TextScreenState extends State<TextScreen> {
+  final _selectionKey = GlobalKey<SelectionAreaState>();
   final screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
   int _pageIndex = 0;
+  final _showBottomBarNotifier = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -58,6 +60,8 @@ class _TextScreenState extends State<TextScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _showBottomBarNotifier.dispose();
+    screenManager.dispose();
     super.dispose();
   }
 
@@ -82,7 +86,13 @@ class _TextScreenState extends State<TextScreen> {
         children: [
           _buildChapterTextPageView(),
           _buildChapterChooserOverlay(),
-          _buildBottomMenuBar(),
+          ValueListenableBuilder<bool>(
+            valueListenable: _showBottomBarNotifier,
+            builder: (context, showBar, child) {
+              if (!showBar) return const SizedBox();
+              return _buildBottomMenuBar();
+            },
+          ),
         ],
       ),
     );
@@ -102,8 +112,8 @@ class _TextScreenState extends State<TextScreen> {
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           footnoteColor: Theme.of(context).colorScheme.primary,
           onVerseLongPress: (verse) {
+            _showBottomBarNotifier.value = true;
             _showBottomMenuBar(verse, pageManager);
-            // _showVerseLongPressDialog(verse, pageManager);
           },
           onFootnoteTap: (note) {
             final details = pageManager.formatFootnote(
@@ -134,7 +144,6 @@ class _TextScreenState extends State<TextScreen> {
 
         return ValueListenableBuilder<TextParagraph>(
           valueListenable: pageManager.textParagraphNotifier,
-          // valueListenable: manager.notifier(_pageIndex),
           builder: (context, paragraph, child) {
             return SingleChildScrollView(
               child: Padding(
@@ -201,6 +210,7 @@ class _TextScreenState extends State<TextScreen> {
         ],
         onTap: (index) {
           // Handle taps for each menu item
+          _showBottomBarNotifier.value = false;
         },
       ),
     );

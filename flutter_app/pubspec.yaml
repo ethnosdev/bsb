@@ -18,6 +18,7 @@ dependencies:
   shared_preferences: ^2.3.5
   url_launcher: ^6.3.1
   package_info_plus: ^8.1.2
+  super_text_layout: ^0.1.18
 
 dev_dependencies:
   flutter_test: 

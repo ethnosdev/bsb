@@ -84,4 +84,8 @@ class TextScreenManager {
 
     return 'https://biblehub.com/$formatted/$chapter-$verse.htm';
   }
+
+  void dispose() {
+    titleNotifier.dispose();
+  }
 }
