@@ -10,20 +10,19 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  sqflite: ^2.4.1
+  sqflite: ^2.4.2
   get_it: ^8.0.3
-  path: ^1.9.0
+  path: ^1.9.1
   database_builder: 
     path: ../database_builder
-  shared_preferences: ^2.3.5
+  shared_preferences: ^2.5.3
   url_launcher: ^6.3.1
-  package_info_plus: ^8.1.2
-  super_text_layout: ^0.1.18
+  package_info_plus: ^8.3.0
 
 dev_dependencies:
   flutter_test: 
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

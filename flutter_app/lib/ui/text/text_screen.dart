@@ -26,7 +26,6 @@ class TextScreen extends StatefulWidget {
 }
 
 class _TextScreenState extends State<TextScreen> {
-  final _selectionKey = GlobalKey<SelectionAreaState>();
   final screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
@@ -217,9 +216,9 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
-  Future<void> _showBottomMenuBar(int verseNumber, TextPageManager manager) async {
-    final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
-  }
+  // Future<void> _showBottomMenuBar(int verseNumber, TextPageManager manager) async {
+  //   final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
+  // }
 
   Future<String?> _showVerseLongPressDialog(int verseNumber, TextPageManager manager) async {
     final language = screenManager.verseLanguageLabel(_pageIndex, verseNumber);
