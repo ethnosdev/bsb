@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -89,6 +91,7 @@ class RenderUsfmText extends RenderBox {
   @override
   Size computeDryLayout(BoxConstraints constraints) {
     // Break the text into chunks at every space.
+    final chunks = _breakTextIntoChunks(paragraphs);
     // There should be no newline characters in the text.
     // Measure every chunk.
     // Measure the width of a space.
@@ -98,6 +101,11 @@ class RenderUsfmText extends RenderBox {
     final desiredWidth = TODO;
     final desiredHeight = TODO;
     return Size(desiredWidth, desiredHeight);
+  }
+
+  List<ChunkedParagraph> _breakTextIntoChunks(TextParagraphs paragraphs) {
+    // TODO: implement _breakTextIntoChunks
+    return [];
   }
 
   // TODO: set this to the width of the longest chunk.
@@ -120,4 +128,11 @@ class RenderUsfmText extends RenderBox {
   void paint(PaintingContext context, Offset offset) {
     // TODO: implement paint
   }
+}
+
+class ChunkedParagraph {
+  ChunkedParagraph(this.chunks, this.type, this.format);
+  final List<Paragraph> chunks;
+  final TextType type;
+  final Format? format;
 }
