@@ -200,7 +200,7 @@ class _AboutPageState extends State<AboutPage> {
               ),
               SizedBox(height: paragraphSpacing),
               Text(
-                "BSB version: 3rd printing",
+                "BSB version: 3rd printing, February 7, 2025",
                 style: _contentStyle,
               ),
               ValueListenableBuilder<String>(
