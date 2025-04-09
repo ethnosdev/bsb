@@ -112,8 +112,9 @@ class _TextScreenState extends State<TextScreen> {
           textColor: Theme.of(context).textTheme.bodyMedium!.color!,
           footnoteColor: Theme.of(context).colorScheme.primary,
           onVerseLongPress: (verse) {
-            _showBottomBarNotifier.value = true;
-            _showBottomMenuBar(verse, pageManager);
+            // _showBottomBarNotifier.value = true;
+            // _showBottomMenuBar(verse, pageManager);
+            _showVerseLongPressDialog(verse, pageManager);
           },
           onFootnoteTap: (note) {
             final details = pageManager.formatFootnote(

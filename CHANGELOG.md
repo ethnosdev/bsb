@@ -1,3 +1,7 @@
+# 1.4.0 - 2025.04.09
+
+- Update BSB source text for 2025.02.07 update. See BSB [changelog](https://bereanbible.com/changelog.txt) for details.
+
 # 1.3.0 - 2025.02.14
 
 - Greek transliteration.
