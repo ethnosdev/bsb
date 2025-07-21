@@ -1,3 +1,7 @@
+# 1.4.1 - 2025.07.21
+
+- Fix home screen for Android 15 where bottom system buttons covering the last row of books.
+
 # 1.4.0 - 2025.04.09
 
 - Update BSB source text for 2025.02.07 update. See BSB [changelog](https://bereanbible.com/changelog.txt) for details.

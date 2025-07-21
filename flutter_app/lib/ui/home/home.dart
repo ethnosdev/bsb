@@ -18,18 +18,20 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Berean Standard Bible'),
       ),
       drawer: const AppDrawer(),
-      body: BookChooser(
-        onSelected: (bookId, chapter) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TextScreen(
-                bookId: bookId,
-                chapter: chapter,
+      body: SafeArea(
+        child: BookChooser(
+          onSelected: (bookId, chapter) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TextScreen(
+                  bookId: bookId,
+                  chapter: chapter,
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
