@@ -1,3 +1,7 @@
+# 1.4.2 - 2025.07.22
+
+- Fix chapter text not snapping into place when swiping between chapters.
+
 # 1.4.1 - 2025.07.21
 
 - Fix home screen for Android 15 where bottom system buttons covering the last row of books.
