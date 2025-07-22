@@ -34,10 +34,13 @@ class Schema {
   static const String ilColBookId = 'book';
   static const String ilColChapter = 'chapter';
   static const String ilColVerse = 'verse';
-  static const String ilColLanguage = 'language'; // 1 Hebrew, 2 Aramaic, 3 Greek
-  static const String ilColOriginal = 'original'; // foreign key to original language table
+  static const String ilColLanguage =
+      'language'; // 1 Hebrew, 2 Aramaic, 3 Greek
+  static const String ilColOriginal =
+      'original'; // foreign key to original language table
   // static const String ilColTransliteration = 'translit';
-  static const String ilColPartOfSpeech = 'pos'; // foreign key to part of speech table
+  static const String ilColPartOfSpeech =
+      'pos'; // foreign key to part of speech table
   static const String ilColStrongsNumber = 'strongs';
   static const String ilColEnglish = 'english'; // foreign key to english table
   static const String ilColPunctuation = 'punct';

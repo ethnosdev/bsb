@@ -51,8 +51,10 @@ class SimilarVerseManager {
     for (final element in data) {
       if (element is OriginalWord) {
         final fontFamily = fontFamilyForLanguage(element.language);
-        final color = (element.strongsNumber == strongsNumber) ? highlightColor : null;
-        final bold = (element.strongsNumber == strongsNumber) ? FontWeight.bold : null;
+        final color =
+            (element.strongsNumber == strongsNumber) ? highlightColor : null;
+        final bold =
+            (element.strongsNumber == strongsNumber) ? FontWeight.bold : null;
         spans.add(
           TextSpan(
             text: '${element.word} ',

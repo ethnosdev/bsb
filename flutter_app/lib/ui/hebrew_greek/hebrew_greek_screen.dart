@@ -112,7 +112,8 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
                             verseManager.textDirection,
                           ),
                           if (verseManager.originalWord != null) //
-                            ..._buildOriginalWordDetails(verseManager.originalWord!),
+                            ..._buildOriginalWordDetails(
+                                verseManager.originalWord!),
                         ],
                       ),
                     ),
@@ -153,7 +154,8 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
             word.transliteration,
             style: TextStyle(
               fontSize: 20,
-              color: Theme.of(context).textTheme.bodyMedium!.color!.withAlpha(160),
+              color:
+                  Theme.of(context).textTheme.bodyMedium!.color!.withAlpha(160),
             ),
           ),
         ),
@@ -186,8 +188,10 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () {
-              final language = (word.language == Language.greek) ? 'greek' : 'hebrew';
-              _launch('https://biblehub.com/$language/${word.strongsNumber}.htm');
+              final language =
+                  (word.language == Language.greek) ? 'greek' : 'hebrew';
+              _launch(
+                  'https://biblehub.com/$language/${word.strongsNumber}.htm');
             },
         ),
       ])),

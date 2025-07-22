@@ -6,7 +6,8 @@ import 'book_id.dart';
 import 'database_helper.dart';
 
 /// Returns maps of original/pos/english values and their corresponding row IDs
-(Map<String, int>, Map<String, int>, Map<String, int>) createForeignTables(DatabaseHelper dbHelper) {
+(Map<String, int>, Map<String, int>, Map<String, int>) createForeignTables(
+    DatabaseHelper dbHelper) {
   final file = File('bsb_tables/bsb_tables.csv');
   final lines = file.readAsLinesSync();
 

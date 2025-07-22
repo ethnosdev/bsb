@@ -18,7 +18,9 @@ class AppDrawer extends StatelessWidget {
             DrawerHeader(
               child: Center(
                 child: ColorFiltered(
-                  colorFilter: ColorFilter.mode(Theme.of(context).textTheme.titleMedium!.color!, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(
+                      Theme.of(context).textTheme.titleMedium!.color!,
+                      BlendMode.srcIn),
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,

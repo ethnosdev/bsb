@@ -73,7 +73,8 @@ class _TextScreenState extends State<TextScreen> {
           builder: (context, title, child) {
             return GestureDetector(
               onTap: () {
-                final (bookId, chapterCount) = screenManager.currentBookAndChapterCount(_pageIndex);
+                final (bookId, chapterCount) =
+                    screenManager.currentBookAndChapterCount(_pageIndex);
                 _chapterNotifier.value = (bookId, chapterCount);
               },
               child: Text(title),
@@ -103,7 +104,8 @@ class _TextScreenState extends State<TextScreen> {
       physics: const SnappyScrollPhysics(),
       itemBuilder: (context, index) {
         final pageIndex = index - _initialPageOffset;
-        final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(pageIndex);
+        final (bookId, chapter) =
+            screenManager.bookAndChapterForPageIndex(pageIndex);
         final pageManager = TextPageManager();
         pageManager.requestText(
           bookId: bookId,
@@ -220,10 +222,12 @@ class _TextScreenState extends State<TextScreen> {
   //   final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
   // }
 
-  Future<String?> _showVerseLongPressDialog(int verseNumber, TextPageManager manager) async {
+  Future<String?> _showVerseLongPressDialog(
+      int verseNumber, TextPageManager manager) async {
     final language = screenManager.verseLanguageLabel(_pageIndex, verseNumber);
     final languageLabel = 'View ${language.displayName} source';
-    final (bookId, chapter) = screenManager.bookAndChapterForPageIndex(_pageIndex);
+    final (bookId, chapter) =
+        screenManager.bookAndChapterForPageIndex(_pageIndex);
     return showDialog(
       context: context,
       builder: (BuildContext buildContext) {
@@ -306,7 +310,10 @@ class _TextScreenState extends State<TextScreen> {
                 const SizedBox(height: 16),
                 Flexible(
                   child: SingleChildScrollView(
-                    child: ChapterLayout(paragraphs: passage, paragraphSpacing: 8.0, bottomSpace: 0.0),
+                    child: ChapterLayout(
+                        paragraphs: passage,
+                        paragraphSpacing: 8.0,
+                        bottomSpace: 0.0),
                   ),
                 ),
               ],

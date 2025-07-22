@@ -18,7 +18,8 @@ class HebrewGreekManager {
     updateTitle(bookId: bookId, chapter: chapter, verse: verse);
   }
 
-  bool get showInterlinearEnglish => getIt<UserSettings>().showInterlinearEnglish;
+  bool get showInterlinearEnglish =>
+      getIt<UserSettings>().showInterlinearEnglish;
 
   void toggleShowInterlinearEnglish() {
     final settings = getIt<UserSettings>();

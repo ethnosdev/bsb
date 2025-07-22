@@ -8,7 +8,9 @@ final Map<String, String> sourceTexts = {
   'GOC': 'Greek Orthodox Church, New Testament',
   'TR': 'Scrivener\'s Textus Receptus; Stephanus Textus Receptus',
   'DSS': 'Dead Sea Scrolls',
-  'MT': 'Hebrew Masoretic Text: Westminster Leningrad Codex; Hebrew Masoretic Text: Biblia Hebraica Stuttgartensia',
-  'LXX': 'Greek OT Septuagint: Rahlfs-Hanhart Septuaginta; Greek OT Septuagint: Swete\'s Septuagint',
+  'MT':
+      'Hebrew Masoretic Text: Westminster Leningrad Codex; Hebrew Masoretic Text: Biblia Hebraica Stuttgartensia',
+  'LXX':
+      'Greek OT Septuagint: Rahlfs-Hanhart Septuaginta; Greek OT Septuagint: Swete\'s Septuagint',
   'SP': 'Samaritan Pentateuch',
 };

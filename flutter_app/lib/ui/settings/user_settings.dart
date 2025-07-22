@@ -35,7 +35,8 @@ class UserSettings {
 
   static const _showInterlinearEnglishKey = 'showInterlinearEnglish';
 
-  bool get showInterlinearEnglish => _prefs.getBool(_showInterlinearEnglishKey) ?? true;
+  bool get showInterlinearEnglish =>
+      _prefs.getBool(_showInterlinearEnglishKey) ?? true;
 
   Future<void> setShowInterlinearEnglish(bool show) async {
     await _prefs.setBool(_showInterlinearEnglishKey, show);

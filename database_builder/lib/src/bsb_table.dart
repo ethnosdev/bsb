@@ -85,7 +85,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
             continue;
           }
           if (format == null) {
-            print('Missing format for break, book: $bookId, chapter $chapter, verse $verse');
+            print(
+                'Missing format for break, book: $bookId, chapter $chapter, verse $verse');
             continue;
           }
           text = '\n';
@@ -128,7 +129,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           }
           text = remainder;
         default:
-          throw Exception('Unknown marker: $marker (chapter: $chapter, verse: $verse)');
+          throw Exception(
+              'Unknown marker: $marker (chapter: $chapter, verse: $verse)');
       }
 
       (text, footnote) = extractFootnote(text);
@@ -207,10 +209,13 @@ int _getChapter(String textAfterMarker) {
     if (footnoteIndex > 0 && modifiedText[footnoteIndex - 1] == ' ') {
       footnoteIndex--;
     }
-    final footnoteText = footnote.substring(ftIndex + 4, footnote.length - 3).trim();
+    final footnoteText =
+        footnote.substring(ftIndex + 4, footnote.length - 3).trim();
     footnotes.add('$footnoteIndex#$footnoteText');
     // Remove footnote from text
-    modifiedText = modifiedText.replaceRange(startIndex, endIndex, '').replaceAll('  ', ' ');
+    modifiedText = modifiedText
+        .replaceRange(startIndex, endIndex, '')
+        .replaceAll('  ', ' ');
   }
 
   return (modifiedText.trim(), footnotes.join('\n'));

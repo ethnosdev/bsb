@@ -118,7 +118,8 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            _launch('https://creativecommons.org/publicdomain/zero/1.0/');
+                            _launch(
+                                'https://creativecommons.org/publicdomain/zero/1.0/');
                           },
                       ),
                       const TextSpan(text: "."),
@@ -139,7 +140,8 @@ class _AboutPageState extends State<AboutPage> {
                   style: _contentStyle,
                   children: [
                     const TextSpan(
-                        text: "In the same spirit, EthnosDev also dedicates this "
+                        text:
+                            "In the same spirit, EthnosDev also dedicates this "
                             "app to the public domain. You can find "
                             "the source code on "),
                     TextSpan(

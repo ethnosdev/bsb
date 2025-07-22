@@ -89,7 +89,9 @@ void _addU(
   if (nextLetter != null) {
     nextLetter = _directReplacements[nextLetter];
   }
-  if (_previousLetterIsVowel(transliteration) || transliteration.isEmpty || nextLetter == 'i') {
+  if (_previousLetterIsVowel(transliteration) ||
+      transliteration.isEmpty ||
+      nextLetter == 'i') {
     transliteration.add(isUpper ? 'U' : 'u');
   } else {
     transliteration.add(isUpper ? 'Y' : 'y');

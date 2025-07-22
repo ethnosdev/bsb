@@ -52,7 +52,11 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
                   child: Text(
                     '${verseList.length} results',
                     style: TextStyle(
-                      color: Theme.of(context).textTheme.bodyLarge?.color?.withAlpha(100),
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.color
+                          ?.withAlpha(100),
                     ),
                   ),
                 );
