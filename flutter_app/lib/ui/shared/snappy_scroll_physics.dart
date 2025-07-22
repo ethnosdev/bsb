@@ -10,10 +10,6 @@ class SnappyScrollPhysics extends ScrollPhysics {
 
   @override
   SpringDescription get spring {
-    return const SpringDescription(
-      mass: 100,
-      stiffness: 100,
-      damping: 1.0,
-    );
+    return SpringDescription.withDurationAndBounce(duration: Duration(milliseconds: 300));
   }
 }
