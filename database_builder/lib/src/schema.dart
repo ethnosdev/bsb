@@ -26,6 +26,13 @@ class Schema {
   )
   ''';
 
+  static const String insertBsbLine = '''
+    INSERT INTO $bibleTextTable (
+      $colBookId, $colChapter, $colVerse, $colText,
+      $colType, $colFormat, $colFootnote
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  ''';
+
   // Interlinear table
   static const String interlinearTable = "interlinear";
 
@@ -61,6 +68,14 @@ class Schema {
   )
   ''';
 
+  static const String insertInterlinear = '''
+    INSERT INTO $interlinearTable (
+      $ilColBookId, $ilColChapter, $ilColVerse, $ilColLanguage,
+      $ilColOriginal, $ilColPartOfSpeech, $ilColStrongsNumber,
+      $ilColEnglish, $ilColPunctuation
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ''';
+
   // Part of speech table
   static const String partOfSpeechTable = "pos";
 
@@ -72,6 +87,10 @@ class Schema {
     $posColId INTEGER PRIMARY KEY AUTOINCREMENT,
     $posColName TEXT NOT NULL
   )
+  ''';
+
+  static const String insertPartOfSpeech = '''
+    INSERT INTO $partOfSpeechTable ($posColName) VALUES (?)
   ''';
 
   // Original language table
@@ -87,6 +106,10 @@ class Schema {
   )
   ''';
 
+  static const String insertOriginalLanguage = '''
+    INSERT INTO $originalLanguageTable ($olColWord) VALUES (?)
+  ''';
+
   // English language table
   static const String englishTable = "english";
 
@@ -98,6 +121,10 @@ class Schema {
     $engColId INTEGER PRIMARY KEY AUTOINCREMENT,
     $engColWord TEXT NOT NULL
   )
+  ''';
+
+  static const String insertEnglish = '''
+    INSERT INTO $englishTable ($engColWord) VALUES (?)
   ''';
 }
 

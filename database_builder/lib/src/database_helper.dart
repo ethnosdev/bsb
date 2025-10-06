@@ -9,13 +9,41 @@ class DatabaseHelper {
   final String _databaseName = "database.db";
   late Database _database;
 
+  // Prepared statements
+  late PreparedStatement _insertBsbStmt;
+  late PreparedStatement _insertOriginalStmt;
+  late PreparedStatement _insertEnglishStmt;
+  late PreparedStatement _insertPosStmt;
+  late PreparedStatement _insertInterlinearStmt;
+
   void init() {
     _database = sqlite3.open(_databaseName);
-    _createBsbTable();
-    _createOriginalLanguageTable();
-    _createEnglishTable();
-    _createPartOfSpeechTable();
-    _createInterlinearTable();
+    _createTables();
+    _prepareStatements();
+  }
+
+  void _createTables() {
+    _database.execute(Schema.createBsbTable);
+    _database.execute(Schema.createOriginalLanguageTable);
+    _database.execute(Schema.createEnglishTable);
+    _database.execute(Schema.createPartOfSpeechTable);
+    _database.execute(Schema.createInterlinearTable);
+  }
+
+  void _prepareStatements() {
+    _insertBsbStmt = _database.prepare(Schema.insertBsbLine);
+    _insertOriginalStmt = _database.prepare(Schema.insertOriginalLanguage);
+    _insertEnglishStmt = _database.prepare(Schema.insertEnglish);
+    _insertPosStmt = _database.prepare(Schema.insertPartOfSpeech);
+    _insertInterlinearStmt = _database.prepare(Schema.insertInterlinear);
+  }
+
+  void beginTransaction() {
+    _database.execute('BEGIN TRANSACTION;');
+  }
+
+  void commitTransaction() {
+    _database.execute('COMMIT;');
   }
 
   void deleteDatabase() {
@@ -26,27 +54,7 @@ class DatabaseHelper {
     }
   }
 
-  void _createBsbTable() {
-    _database.execute(Schema.createBsbTable);
-  }
-
-  void _createOriginalLanguageTable() {
-    _database.execute(Schema.createOriginalLanguageTable);
-  }
-
-  void _createEnglishTable() {
-    _database.execute(Schema.createEnglishTable);
-  }
-
-  void _createPartOfSpeechTable() {
-    _database.execute(Schema.createPartOfSpeechTable);
-  }
-
-  void _createInterlinearTable() {
-    _database.execute(Schema.createInterlinearTable);
-  }
-
-  Future<void> insertBsbLine({
+  void insertBsbLine({
     required int bookId,
     required int chapter,
     required int verse,
@@ -54,53 +62,32 @@ class DatabaseHelper {
     required int type,
     required int? format,
     required String? footnote,
-  }) async {
+  }) {
     if (text.isEmpty) {
       throw Exception('Empty text for $bookId, $chapter, $verse');
     }
-    _database.execute('''
-      INSERT INTO ${Schema.bibleTextTable} (
-        ${Schema.colBookId},
-        ${Schema.colChapter},
-        ${Schema.colVerse},
-        ${Schema.colText},
-        ${Schema.colType},
-        ${Schema.colFormat},
-        ${Schema.colFootnote}
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      ''', [bookId, chapter, verse, text, type, format, footnote]);
+    _insertBsbStmt
+        .execute([bookId, chapter, verse, text, type, format, footnote]);
   }
 
   int insertOriginalLanguage({
     required String word,
   }) {
-    _database.execute('''
-      INSERT INTO ${Schema.originalLanguageTable} (
-        ${Schema.olColWord}
-      ) VALUES (?)
-      ''', [word]);
+    _insertOriginalStmt.execute([word]);
     return _database.lastInsertRowId;
   }
 
   int insertEnglish({
     required String word,
   }) {
-    _database.execute('''
-      INSERT INTO ${Schema.englishTable} (
-        ${Schema.engColWord}
-      ) VALUES (?)
-      ''', [word]);
+    _insertEnglishStmt.execute([word]);
     return _database.lastInsertRowId;
   }
 
   int insertPartOfSpeech({
     required String name,
   }) {
-    _database.execute('''
-      INSERT INTO ${Schema.partOfSpeechTable} (
-        ${Schema.posColName}
-      ) VALUES (?)
-      ''', [name]);
+    _insertPosStmt.execute([name]);
     return _database.lastInsertRowId;
   }
 
@@ -114,19 +101,7 @@ class DatabaseHelper {
       log('Invalid bookId, chapter, or verse: $bookId, $chapter, $verse');
     }
     for (var word in words) {
-      _database.execute('''
-        INSERT INTO ${Schema.interlinearTable} (
-          ${Schema.ilColBookId},
-          ${Schema.ilColChapter},
-          ${Schema.ilColVerse},
-          ${Schema.ilColLanguage},
-          ${Schema.ilColOriginal},
-          ${Schema.ilColPartOfSpeech},
-          ${Schema.ilColStrongsNumber},
-          ${Schema.ilColEnglish},
-          ${Schema.ilColPunctuation}
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', [
+      _insertInterlinearStmt.execute([
         bookId,
         chapter,
         verse,
@@ -138,6 +113,15 @@ class DatabaseHelper {
         word.punctuation,
       ]);
     }
+  }
+
+  void dispose() {
+    _insertBsbStmt.dispose();
+    _insertOriginalStmt.dispose();
+    _insertEnglishStmt.dispose();
+    _insertPosStmt.dispose();
+    _insertInterlinearStmt.dispose();
+    _database.dispose();
   }
 }
 

@@ -16,6 +16,12 @@ Future<void> createDatabase() async {
 
   print('Creating Foreign Table');
   final (originalMap, posMap, englishMap) = createForeignTables(dbHelper);
+
   print('Creating Interlinear Table');
   await createInterlinearTable(dbHelper, originalMap, posMap, englishMap);
+
+  print('Cleaning up resources');
+  dbHelper.dispose();
+
+  print('Database creation complete!');
 }

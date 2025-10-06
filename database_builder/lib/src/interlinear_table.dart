@@ -48,6 +48,7 @@ import 'database_helper.dart';
 
   int progress = 0;
   print('Inserting original values into the database');
+  dbHelper.beginTransaction();
   for (var original in uniqueOriginal) {
     if (progress % 10000 == 0) {
       print('Inserting original values: $progress');
@@ -56,14 +57,18 @@ import 'database_helper.dart';
     originalMap[original] = rowId;
     progress++;
   }
+  dbHelper.commitTransaction();
 
   print('Inserting POS values into the database');
+  dbHelper.beginTransaction();
   for (var pos in uniquePos) {
     final rowId = dbHelper.insertPartOfSpeech(name: pos);
     posMap[pos] = rowId;
   }
+  dbHelper.commitTransaction();
 
   print('Inserting English values into the database');
+  dbHelper.beginTransaction();
   progress = 0;
   for (var english in uniqueEnglish) {
     if (progress % 10000 == 0) {
@@ -73,6 +78,7 @@ import 'database_helper.dart';
     englishMap[english] = rowId;
     progress++;
   }
+  dbHelper.commitTransaction();
 
   return (originalMap, posMap, englishMap);
 }
@@ -92,6 +98,7 @@ Future<void> createInterlinearTable(
 
   List<InterlinearWord> verseWords = [];
 
+  dbHelper.beginTransaction();
   for (int i = 1; i < lines.length; i++) {
     if (i % 10000 == 0) {
       print('Processing line $i');
@@ -149,6 +156,7 @@ Future<void> createInterlinearTable(
   if (verseWords.isNotEmpty) {
     dbHelper.insertInterlinearVerse(verseWords, bookId, chapter, verse);
   }
+  dbHelper.commitTransaction();
 }
 
 (int bookId, int chapter, int verse) _parseReference(String reference) {

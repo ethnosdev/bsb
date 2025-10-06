@@ -13,6 +13,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
     return;
   }
 
+  dbHelper.beginTransaction();
+
   int bookId = -1;
   int chapter = -1;
   int verse = -1;
@@ -157,6 +159,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
     // Uncomment this for testing the first book only:
     // break;
   }
+
+  dbHelper.commitTransaction();
 }
 
 int _getBookId(String textAfterMarker) {
