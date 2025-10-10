@@ -92,9 +92,9 @@ Future<void> createInterlinearTable(
   final file = File('bsb_tables/bsb_tables.csv');
   final lines = file.readAsLinesSync();
 
-  int bookId = -1;
-  int chapter = -1;
-  int verse = -1;
+  int bookId = 0;
+  int chapter = 0;
+  int verse = 0;
 
   List<InterlinearWord> verseWords = [];
 
@@ -110,9 +110,9 @@ Future<void> createInterlinearTable(
       if (verseWords.isNotEmpty) {
         dbHelper.insertInterlinearVerse(verseWords, bookId, chapter, verse);
         verseWords = [];
-        bookId = -1;
-        chapter = -1;
-        verse = -1;
+        bookId = 0;
+        chapter = 0;
+        verse = 0;
       }
       continue;
     }

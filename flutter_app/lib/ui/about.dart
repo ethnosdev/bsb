@@ -1,6 +1,5 @@
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -14,7 +13,6 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  late final List<(TextSpan, TextType, Format?)> paragraphs;
   late double paragraphSpacing;
   late double fontSize;
   late TextStyle _titleStyle;

@@ -22,7 +22,7 @@ Future<void> printAllParatextMarkers() async {
     return;
   }
 
-  for (String bookFilename in bibleBooks) {
+  for (String bookFilename in bibleBookFilenames) {
     print('Processing: $bookFilename');
     final file = File('${directory.path}/$bookFilename');
 
@@ -46,7 +46,7 @@ Future<void> printAllParatextMarkers() async {
   }
 }
 
-const List<String> bibleBooks = [
+const List<String> bibleBookFilenames = [
   '01GENBSB.SFM', // Genesis
   '02EXOBSB.SFM', // Exodus
   '03LEVBSB.SFM', // Leviticus

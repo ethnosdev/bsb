@@ -59,15 +59,19 @@ class DatabaseHelper {
     required int chapter,
     required int verse,
     required String text,
-    required int type,
-    required int? format,
+    required int format,
     required String? footnote,
   }) {
     if (text.isEmpty) {
       throw Exception('Empty text for $bookId, $chapter, $verse');
     }
-    _insertBsbStmt
-        .execute([bookId, chapter, verse, text, type, format, footnote]);
+    final reference = _packReference(bookId, chapter, verse);
+    _insertBsbStmt.execute([reference, text, format, footnote]);
+  }
+
+  // BBCCCVVV packed int
+  int _packReference(int bookId, int chapter, int verse) {
+    return bookId * 1000000 + chapter * 1000 + verse;
   }
 
   int insertOriginalLanguage({
@@ -97,14 +101,13 @@ class DatabaseHelper {
     int chapter,
     int verse,
   ) {
-    if (bookId == -1 || chapter == -1 || verse == -1) {
+    if (bookId <= 0 || chapter <= 0 || verse <= 0) {
       log('Invalid bookId, chapter, or verse: $bookId, $chapter, $verse');
     }
+    final reference = _packReference(bookId, chapter, verse);
     for (var word in words) {
       _insertInterlinearStmt.execute([
-        bookId,
-        chapter,
-        verse,
+        reference,
         word.language,
         word.original,
         word.partOfSpeech,

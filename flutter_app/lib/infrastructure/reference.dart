@@ -10,12 +10,26 @@ class Reference {
         assert(chapter >= 1 && chapter <= 150),
         assert(endVerse == null || verse <= endVerse);
 
+  factory Reference.from({required int packedInt}) {
+    const int bookMultiplier = 1000000;
+    const int chapterMultiplier = 1000;
+    final bookId = packedInt ~/ bookMultiplier;
+    final chapter = (packedInt % bookMultiplier) ~/ chapterMultiplier;
+    final verse = packedInt % chapterMultiplier;
+    return Reference(bookId: bookId, chapter: chapter, verse: verse);
+  }
+
   final int bookId;
   final int chapter;
   final int verse;
 
+  int get packedVerse => bookId * 1000000 + chapter * 1000 + verse;
+
   /// If not null, the reference is a range of verses.
   final int? endVerse;
+
+  int? get packedEndVerse =>
+      (endVerse == null) ? null : bookId * 1000000 + chapter * 1000 + endVerse!;
 
   static Reference? tryParse(String reference) {
     // reference is in the form: "1 Corinthians 1:1" or "Romans 1:1–3"

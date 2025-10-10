@@ -3,7 +3,7 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
-List<(TextSpan, TextType, Format?)> formatVerses({
+List<(TextSpan, ParagraphFormat)> formatVerses({
   required List<VerseLine> verseLines,
   required double baseFontSize,
   Color? textColor,
@@ -17,88 +17,48 @@ List<(TextSpan, TextType, Format?)> formatVerses({
   final msTitleSize = baseFontSize * 1.5;
   final lightTextColor = textColor?.withAlpha(150);
 
-  final paragraphs = <(TextSpan, TextType, Format?)>[];
+  final paragraphs = <(TextSpan, ParagraphFormat)>[];
   var verseSpans = <TextSpan>[];
   int oldVerseNumber = 0;
-  Format oldFormat = Format.m;
+  ParagraphFormat oldFormat = ParagraphFormat.m;
 
   for (var i = 0; i < verseLines.length; i++) {
     final row = verseLines[i];
-    final type = row.type;
     final format = row.format;
     final text = row.text;
     final verseNumber = row.verse;
     final footnote = row.footnote;
 
-    if (type != TextType.v && verseSpans.isNotEmpty) {
-      paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
+    if (!format.isBiblicalText && verseSpans.isNotEmpty) {
+      paragraphs.add((TextSpan(children: verseSpans), oldFormat));
       verseSpans = [];
     }
 
-    switch (type) {
-      case TextType.v:
-        if (text == '\n') {
-          paragraphs.add((TextSpan(children: verseSpans), type, oldFormat));
-          verseSpans = [];
-          break;
-        }
-        // add verse number
-        if (showVerseNumbers && oldVerseNumber != verseNumber) {
-          oldVerseNumber = verseNumber;
-          verseSpans.add(
-            TextSpan(
-              // Use NNBSP so the verse number is not separated from the verse text.
-              text: '$verseNumber\u202f',
-              style: TextStyle(
-                fontSize: baseFontSize,
-                color: lightTextColor,
-                fontWeight: FontWeight.bold,
-                fontFeatures: const [FontFeature.superscripts()],
-              ),
-            ),
-          );
-        }
-        // add verse line text
-        if (format == Format.qr) {
-          _addVerseSpansWithFootnotes(
-            verseSpans: verseSpans,
-            text: text,
+    if (format == ParagraphFormat.b) {
+      paragraphs.add((TextSpan(children: verseSpans), oldFormat));
+      verseSpans = [];
+      break;
+    } else if (format.isBiblicalText) {
+      // add verse number
+      if (showVerseNumbers && oldVerseNumber != verseNumber) {
+        oldVerseNumber = verseNumber;
+        verseSpans.add(
+          TextSpan(
+            // Use NNBSP so the verse number is not separated from the verse text.
+            text: '$verseNumber\u202f',
             style: TextStyle(
               fontSize: baseFontSize,
-              fontStyle: FontStyle.italic,
+              color: lightTextColor,
+              fontWeight: FontWeight.bold,
+              fontFeatures: const [FontFeature.superscripts()],
             ),
-            footnote: footnote,
-            footnoteColor: footnoteColor,
-            onFootnoteTap: onFootnoteTap,
-            verseNumber: verseNumber,
-            onVerseLongPress: onVerseLongPress,
-          );
-        } else {
-          _addVerseSpansWithFootnotes(
-            verseSpans: verseSpans,
-            text: '$text ',
-            style: TextStyle(
-              fontSize: baseFontSize,
-            ),
-            footnote: footnote,
-            footnoteColor: footnoteColor,
-            onFootnoteTap: onFootnoteTap,
-            verseNumber: verseNumber,
-            onVerseLongPress: onVerseLongPress,
-          );
-        }
-
-        // handle poetry
-        if (format == Format.q1 || format == Format.q2 || format == Format.qr) {
-          paragraphs.add((TextSpan(children: verseSpans), type, format));
-          verseSpans = [];
-        }
-        oldFormat = format ?? Format.m;
-
-      case TextType.d:
-        final spans = <TextSpan>[];
+          ),
+        );
+      }
+      // add verse line text
+      if (format == ParagraphFormat.qr) {
         _addVerseSpansWithFootnotes(
-          verseSpans: spans,
+          verseSpans: verseSpans,
           text: text,
           style: TextStyle(
             fontSize: baseFontSize,
@@ -110,129 +70,156 @@ List<(TextSpan, TextType, Format?)> formatVerses({
           verseNumber: verseNumber,
           onVerseLongPress: onVerseLongPress,
         );
-        paragraphs.add((
-          TextSpan(children: spans),
-          type,
-          format,
-        ));
-
-      case TextType.r:
-        // Skip because cross references are now handled in TextType.s1
-        break;
-
-      case TextType.s1:
-        if (!showSectionTitles) break;
-        final spans = <TextSpan>[];
-        String? reference;
-        // Check if next row is a reference
-        if (i + 1 < verseLines.length && verseLines[i + 1].type == TextType.r) {
-          reference = verseLines[i + 1].text;
-          i++; // Skip the reference row since we're handling it here
-        }
-        if (reference != null) {
-          // Strip parentheses from reference
-          reference = reference.replaceAll(RegExp(r'[()]'), '');
-          spans.addAll([
-            TextSpan(
-              text: text,
-              style: TextStyle(
-                fontSize: baseFontSize,
-                fontWeight: FontWeight.bold,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () {
-                  onFootnoteTap?.call(reference!);
-                },
-            ),
-            TextSpan(
-              text: '*',
-              style: TextStyle(
-                fontSize: baseFontSize,
-                fontWeight: FontWeight.bold,
-                color: footnoteColor,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () {
-                  onFootnoteTap?.call(reference!);
-                },
-            ),
-          ]);
-        } else {
-          spans.add(TextSpan(
-            text: text,
-            style: TextStyle(
-              fontSize: baseFontSize,
-              fontWeight: FontWeight.bold,
-            ),
-          ));
-        }
-        paragraphs.add((
-          TextSpan(children: spans),
-          type,
-          format,
-        ));
-
-      case TextType.s2:
-        if (!showSectionTitles) break;
-        paragraphs.add((
-          TextSpan(
-            text: text,
-            style: TextStyle(
-              fontSize: baseFontSize,
-              fontStyle: FontStyle.italic,
-            ),
+      } else {
+        _addVerseSpansWithFootnotes(
+          verseSpans: verseSpans,
+          text: '$text ',
+          style: TextStyle(
+            fontSize: baseFontSize,
           ),
-          type,
-          format,
-        ));
+          footnote: footnote,
+          footnoteColor: footnoteColor,
+          onFootnoteTap: onFootnoteTap,
+          verseNumber: verseNumber,
+          onVerseLongPress: onVerseLongPress,
+        );
+      }
 
-      case TextType.ms:
-        if (!showSectionTitles) break;
-        paragraphs.add((
-          TextSpan(
-            text: text,
-            style: TextStyle(
-              fontSize: msTitleSize,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          type,
-          format,
-        ));
-
-      case TextType.mr:
-        if (!showSectionTitles) break;
-        paragraphs.add((
-          TextSpan(
-            text: text,
-            style: TextStyle(
-              fontSize: mrTitleSize,
-              color: lightTextColor,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          type,
-          format,
-        ));
-
-      case TextType.qa:
-        if (!showSectionTitles) break;
-        paragraphs.add((
+      // handle poetry
+      if (format == ParagraphFormat.q1 ||
+          format == ParagraphFormat.q2 ||
+          format == ParagraphFormat.qr) {
+        paragraphs.add((TextSpan(children: verseSpans), format));
+        verseSpans = [];
+      }
+      oldFormat = format;
+    } else if (format == ParagraphFormat.d) {
+      final spans = <TextSpan>[];
+      _addVerseSpansWithFootnotes(
+        verseSpans: spans,
+        text: text,
+        style: TextStyle(
+          fontSize: baseFontSize,
+          fontStyle: FontStyle.italic,
+        ),
+        footnote: footnote,
+        footnoteColor: footnoteColor,
+        onFootnoteTap: onFootnoteTap,
+        verseNumber: verseNumber,
+        onVerseLongPress: onVerseLongPress,
+      );
+      paragraphs.add((
+        TextSpan(children: spans),
+        format,
+      ));
+    } else if (format == ParagraphFormat.r) {
+      // Skip because cross references are now handled in TextType.s1
+      break;
+    } else if (format == ParagraphFormat.s1) {
+      if (!showSectionTitles) break;
+      final spans = <TextSpan>[];
+      String? reference;
+      // Check if next row is a reference
+      if (i + 1 < verseLines.length &&
+          verseLines[i + 1].format == ParagraphFormat.r) {
+        reference = verseLines[i + 1].text;
+        i++; // Skip the reference row since we're handling it here
+      }
+      if (reference != null) {
+        // Strip parentheses from reference
+        reference = reference.replaceAll(RegExp(r'[()]'), '');
+        spans.addAll([
           TextSpan(
             text: text,
             style: TextStyle(
               fontSize: baseFontSize,
               fontWeight: FontWeight.bold,
             ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onFootnoteTap?.call(reference!);
+              },
           ),
-          type,
-          format,
+          TextSpan(
+            text: '*',
+            style: TextStyle(
+              fontSize: baseFontSize,
+              fontWeight: FontWeight.bold,
+              color: footnoteColor,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                onFootnoteTap?.call(reference!);
+              },
+          ),
+        ]);
+      } else {
+        spans.add(TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: baseFontSize,
+            fontWeight: FontWeight.bold,
+          ),
         ));
+      }
+      paragraphs.add((
+        TextSpan(children: spans),
+        format,
+      ));
+    } else if (format == ParagraphFormat.s2) {
+      if (!showSectionTitles) break;
+      paragraphs.add((
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: baseFontSize,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        format,
+      ));
+    } else if (format == ParagraphFormat.ms) {
+      if (!showSectionTitles) break;
+      paragraphs.add((
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: msTitleSize,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        format,
+      ));
+    } else if (format == ParagraphFormat.mr) {
+      if (!showSectionTitles) break;
+      paragraphs.add((
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: mrTitleSize,
+            color: lightTextColor,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        format,
+      ));
+    } else if (format == ParagraphFormat.qa) {
+      if (!showSectionTitles) break;
+      paragraphs.add((
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: baseFontSize,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        format,
+      ));
     }
   }
 
   if (verseSpans.isNotEmpty) {
-    paragraphs.add((TextSpan(children: verseSpans), TextType.v, oldFormat));
+    paragraphs.add((TextSpan(children: verseSpans), oldFormat));
   }
 
   return paragraphs;

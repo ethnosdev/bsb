@@ -15,31 +15,31 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
 
   dbHelper.beginTransaction();
 
-  int bookId = -1;
-  int chapter = -1;
-  int verse = -1;
+  int bookId = 0;
+  int chapter = 0;
+  int verse = 0;
   String? text;
-  TextType? type;
-  Format? format;
+  ParagraphFormat? format;
   String? footnote;
 
-  for (String bookFilename in bibleBooks) {
+  for (String bookFilename in bibleBookFilenames) {
     print('Processing: $bookFilename');
     final file = File('${directory.path}/$bookFilename');
 
     if (!file.existsSync()) {
-      continue;
+      throw Exception('${file.path} does not exist');
     }
 
     final lines = await file.readAsLines();
     for (String newLine in lines) {
-      var marker = newLine.split(RegExp(r'[ \n]'))[0];
+      // split at a space or a newline and take the text before it
+      String marker = newLine.split(RegExp(r'[ \n]'))[0];
       final remainder = newLine.substring(marker.length).trim();
       marker = marker.replaceAll(r'\', '');
       switch (marker) {
         case 'id': // book
           bookId = _getBookId(remainder);
-          type = null;
+          format = null;
           continue;
         case 'h': // book title
         case 'toc1': // book title
@@ -49,7 +49,7 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           continue;
         case 'c': // chapter
           chapter = _getChapter(remainder);
-          verse = -1;
+          verse = 0;
           continue;
         case 's1': // section heading level 1
         case 's2': // section heading level 2
@@ -57,52 +57,35 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         case 'ms': // major section (Psalms)
         case 'mr': // major section range (Psalms)
         case 'qa': // Acrostic heading (Psalm 119)
-          type = TextType.fromString(marker);
-          text = remainder;
         case 'm': // margin
         case 'pmo': // indented paragraph margin opening
         case 'li1': // list item level 1
         case 'li2': // list item level 2
-          type = TextType.v;
-          format = Format.fromString(marker);
+          format = ParagraphFormat.fromString(marker);
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
         case 'v': // verse
-          type = TextType.v;
           (verse, text) = _getVerse(remainder);
         case 'd': // descriptive title
-          type = TextType.d;
+          format = ParagraphFormat.d;
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
           verse = 0;
         case 'b': // break
-          if (type != TextType.v) {
-            continue;
-          }
-          if (verse == -1) {
-            continue;
-          }
-          if (format == null) {
-            print(
-                'Missing format for break, book: $bookId, chapter $chapter, verse $verse');
-            continue;
-          }
+          format = ParagraphFormat.b;
           text = '\n';
-          format = null;
         case 'q1': // poetry indentation level 1
-          type = TextType.v;
-          format = Format.q1;
+          format = ParagraphFormat.q1;
           if (remainder.isEmpty) {
             continue;
           }
           text = remainder;
         case 'q2': // poetry indentation level 2
-          type = TextType.v;
-          format = Format.q2;
+          format = ParagraphFormat.q2;
           if (remainder.isEmpty) {
             continue;
           }
@@ -112,20 +95,17 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           if (bookId == habakkuk && chapter == 3 && verse == 19) {
             // This should really be fixed in the original USFM file,
             // but we need to make it centered and italic like TextType.d.
-            type = TextType.d;
-            format = Format.pc; // unused
+            format = ParagraphFormat.d;
             text = _removeItalicMarkers(remainder);
           } else {
-            type = TextType.v;
-            format = Format.pc;
+            format = ParagraphFormat.pc;
             if (remainder.isEmpty) {
               continue;
             }
             text = remainder;
           }
         case 'qr': // right aligned
-          type = TextType.v;
-          format = Format.qr;
+          format = ParagraphFormat.qr;
           if (remainder.isEmpty) {
             continue;
           }
@@ -137,8 +117,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
 
       (text, footnote) = extractFootnote(text);
 
-      if (type == null) {
-        print('Type null at: $marker (chapter: $chapter, verse: $verse)');
+      if (format == null) {
+        print('Format null at: $marker (chapter: $chapter, verse: $verse)');
         return;
       }
 
@@ -147,8 +127,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         chapter: chapter,
         verse: verse,
         text: text,
-        type: type.id,
-        format: format?.id,
+        // type: type.id,
+        format: format.id,
         footnote: footnote,
       );
 

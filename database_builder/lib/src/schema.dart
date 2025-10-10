@@ -4,23 +4,18 @@ class Schema {
 
   // BSB column names
   static const String colId = '_id';
-  static const String colType = 'type'; // ms, mr, d, s1, s2, qa, r, v
-  static const String colBookId = 'book';
-  static const String colChapter = 'chapter';
-  static const String colVerse = 'verse';
+  // BBCCCVVV packed integer
+  static const String colReference = 'reference';
   static const String colText = 'text';
-  static const String colFormat = 'format'; // m, q1, q2, pmo, li1, li2, pc, qr
+  // paragraph format
+  static const String colFormat = 'format';
   static const String colFootnote = 'footnote';
 
-  // SQL statements
   static const String createBsbTable = '''
   CREATE TABLE IF NOT EXISTS $bibleTextTable (
     $colId INTEGER PRIMARY KEY AUTOINCREMENT,
-    $colBookId INTEGER NOT NULL,
-    $colChapter INTEGER NOT NULL,
-    $colVerse INTEGER NOT NULL,
+    $colReference INTEGER NOT NULL,
     $colText TEXT NOT NULL,
-    $colType INTEGER NOT NULL,
     $colFormat INTEGER,
     $colFootnote TEXT
   )
@@ -28,9 +23,8 @@ class Schema {
 
   static const String insertBsbLine = '''
     INSERT INTO $bibleTextTable (
-      $colBookId, $colChapter, $colVerse, $colText,
-      $colType, $colFormat, $colFootnote
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      $colReference, $colText, $colFormat, $colFootnote
+    ) VALUES (?, ?, ?, ?)
   ''';
 
   // Interlinear table
@@ -38,27 +32,24 @@ class Schema {
 
   // Interlinear column names
   static const String ilColId = '_id';
-  static const String ilColBookId = 'book';
-  static const String ilColChapter = 'chapter';
-  static const String ilColVerse = 'verse';
-  static const String ilColLanguage =
-      'language'; // 1 Hebrew, 2 Aramaic, 3 Greek
-  static const String ilColOriginal =
-      'original'; // foreign key to original language table
-  // static const String ilColTransliteration = 'translit';
-  static const String ilColPartOfSpeech =
-      'pos'; // foreign key to part of speech table
+  // BBCCCVVV packed integer
+  static const String ilColReference = 'reference';
+  // 1 Hebrew, 2 Aramaic, 3 Greek
+  static const String ilColLanguage = 'language';
+  // foreign key to original language table
+  static const String ilColOriginal = 'original';
+  // foreign key to part of speech table
+  static const String ilColPartOfSpeech = 'pos';
   static const String ilColStrongsNumber = 'strongs';
-  static const String ilColEnglish = 'english'; // foreign key to english table
+  // foreign key to english table
+  static const String ilColEnglish = 'english';
   static const String ilColPunctuation = 'punct';
 
   // SQL statements
   static const String createInterlinearTable = '''
   CREATE TABLE IF NOT EXISTS $interlinearTable (
     $ilColId INTEGER PRIMARY KEY AUTOINCREMENT,
-    $ilColBookId INTEGER NOT NULL,
-    $ilColChapter INTEGER NOT NULL,
-    $ilColVerse INTEGER NOT NULL,
+    $ilColReference INTEGER NOT NULL,
     $ilColLanguage INTEGER NOT NULL,
     $ilColOriginal INTEGER NOT NULL,
     $ilColPartOfSpeech INTEGER NOT NULL,
@@ -70,10 +61,10 @@ class Schema {
 
   static const String insertInterlinear = '''
     INSERT INTO $interlinearTable (
-      $ilColBookId, $ilColChapter, $ilColVerse, $ilColLanguage,
+      $ilColReference, $ilColLanguage,
       $ilColOriginal, $ilColPartOfSpeech, $ilColStrongsNumber,
       $ilColEnglish, $ilColPunctuation
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
   ''';
 
   // Part of speech table
@@ -128,71 +119,139 @@ class Schema {
   ''';
 }
 
-// colType values
-enum TextType {
-  /// Verse
-  v(0),
+enum ParagraphFormat {
+  /// margin, no indentation
+  m(0),
+
+  /// break, blank vertical space
+  b(1),
+
+  /// poetry indentation level 1
+  q1(2),
+
+  /// poetry indentation level 2
+  q2(3),
+
+  /// Embedded text opening
+  pmo(4),
+
+  /// list item level 1
+  li1(5),
+
+  /// list item level 2
+  li2(6),
+
+  /// centered
+  pc(7),
+
+  /// right aligned
+  qr(8),
 
   /// Descriptive Title (Psalms "Of David")
-  d(1),
+  d(9),
 
   /// Cross Reference
-  r(2),
+  r(10),
 
   /// Section Heading Level 1
-  s1(3),
+  s1(11),
 
   /// Section Heading Level 2
-  s2(4),
+  s2(12),
 
   /// major section (Psalms)
-  ms(5),
+  ms(13),
 
   /// major section range (Psalms)
-  mr(6),
+  mr(14),
 
   /// Acrostic Heading (Psalm 119)
-  qa(7);
+  qa(15);
 
   /// The integer value of the enum, used for database storage.
   final int id;
-  const TextType(this.id);
+  const ParagraphFormat(this.id);
 
-  static TextType fromString(String value) {
-    return TextType.values.firstWhere(
+  bool get isBiblicalText => id < 10;
+
+  static ParagraphFormat fromString(String value) {
+    return ParagraphFormat.values.firstWhere(
       (type) => type.name == value,
     );
   }
 
-  static TextType fromInt(int value) {
-    return TextType.values.firstWhere(
+  static ParagraphFormat fromInt(int value) {
+    return ParagraphFormat.values.firstWhere(
       (type) => type.id == value,
     );
   }
 }
 
-enum Format {
-  m(0), // margin, no indentation
-  q1(1), // poetry indentation level 1
-  q2(2), // poetry indentation level 2
-  pmo(3), // Embedded text opening
-  li1(4), // list item level 1
-  li2(5), // list item level 2
-  pc(6), // centered
-  qr(7); // right aligned
+// // colType values
+// enum TextType {
+//   /// Verse
+//   v(0),
 
-  final int id;
-  const Format(this.id);
+//   /// Descriptive Title (Psalms "Of David")
+//   d(1),
 
-  static Format fromString(String value) {
-    return Format.values.firstWhere(
-      (format) => format.name == value,
-    );
-  }
+//   /// Cross Reference
+//   r(2),
 
-  static Format fromInt(int value) {
-    return Format.values.firstWhere(
-      (format) => format.id == value,
-    );
-  }
-}
+//   /// Section Heading Level 1
+//   s1(3),
+
+//   /// Section Heading Level 2
+//   s2(4),
+
+//   /// major section (Psalms)
+//   ms(5),
+
+//   /// major section range (Psalms)
+//   mr(6),
+
+//   /// Acrostic Heading (Psalm 119)
+//   qa(7);
+
+//   /// The integer value of the enum, used for database storage.
+//   final int id;
+//   const TextType(this.id);
+
+//   static TextType fromString(String value) {
+//     return TextType.values.firstWhere(
+//       (type) => type.name == value,
+//     );
+//   }
+
+//   static TextType fromInt(int value) {
+//     return TextType.values.firstWhere(
+//       (type) => type.id == value,
+//     );
+//   }
+// }
+
+// enum Format {
+//   m(0), // margin, no indentation
+//   q1(1), // poetry indentation level 1
+//   q2(2), // poetry indentation level 2
+//   pmo(3), // Embedded text opening
+//   li1(4), // list item level 1
+//   li2(5), // list item level 2
+//   pc(6), // centered
+//   qr(7); // right aligned
+
+//   final int id;
+//   const Format(this.id);
+
+//   static Format fromString(String value) {
+//     return Format.values.firstWhere(
+//       (format) => format.name == value,
+//     );
+//   }
+
+//   static Format fromInt(int value) {
+//     return Format.values.firstWhere(
+//       (format) => format.id == value,
+//     );
+//   }
+// }

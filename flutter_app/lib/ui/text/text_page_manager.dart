@@ -9,7 +9,7 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-typedef TextParagraph = List<(TextSpan, TextType, Format?)>;
+typedef TextParagraph = List<(TextSpan, ParagraphFormat)>;
 
 /// This class manages one PageView page while TextScreenManager manages
 /// the entire screen.
@@ -117,7 +117,7 @@ class TextPageManager {
           fontSize: _normalTextSize,
         ),
       );
-      return [(formattedSource, TextType.v, null)];
+      return [(formattedSource, ParagraphFormat.m)];
     }
 
     return _extrabiblicalContent(keyword);
@@ -152,7 +152,7 @@ class TextPageManager {
         fontSize: _normalTextSize,
       ),
     );
-    return [(formattedSource, TextType.v, null)];
+    return [(formattedSource, ParagraphFormat.m)];
   }
 
   Future<String> verseTextForClipboard(

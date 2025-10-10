@@ -8,7 +8,6 @@ class VerseLine {
     required this.text,
     required this.footnote,
     required this.format,
-    required this.type,
   });
 
   final int bookId;
@@ -16,8 +15,7 @@ class VerseLine {
   final int verse;
   final String text;
   final String? footnote;
-  final Format? format;
-  final TextType type;
+  final ParagraphFormat format;
 
   @override
   bool operator ==(Object other) {
@@ -28,8 +26,7 @@ class VerseLine {
         other.verse == verse &&
         other.text == text &&
         other.footnote == footnote &&
-        other.format == format &&
-        other.type == type;
+        other.format == format;
   }
 
   @override
@@ -40,6 +37,5 @@ class VerseLine {
         text,
         footnote,
         format,
-        type,
       );
 }

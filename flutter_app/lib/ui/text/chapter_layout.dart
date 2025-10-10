@@ -10,7 +10,7 @@ class ChapterLayout extends StatefulWidget {
   });
 
   /// The paragraphs will be rendered in order
-  final List<(TextSpan, TextType, Format?)> paragraphs;
+  final List<(TextSpan, ParagraphFormat)> paragraphs;
   final double paragraphSpacing;
   final double bottomSpace;
 
@@ -25,45 +25,45 @@ class _ChapterLayoutState extends State<ChapterLayout> {
   Widget build(BuildContext context) {
     final sections = <Widget>[];
     int index = 0;
-    for (final (span, type, format) in widget.paragraphs) {
-      switch (type) {
-        case TextType.v:
-          _applyFormat(sections, span, format);
-        case TextType.d:
+    for (final (span, format) in widget.paragraphs) {
+      switch (format) {
+        case ParagraphFormat.d:
           sections.add(Text.rich(
             span,
             textAlign: TextAlign.center,
           ));
           sections.add(_paragraphSpacing);
-        case TextType.r:
+        case ParagraphFormat.r:
           sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
-        case TextType.s1:
+        case ParagraphFormat.s1:
           if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
             sections.add(_paragraphSpacing);
           }
           sections.add(Text.rich(span));
           if (index < widget.paragraphs.length - 1 && //
-              widget.paragraphs[index + 1].$2 != TextType.r) {
+              widget.paragraphs[index + 1].$2 != ParagraphFormat.r) {
             sections.add(_paragraphSpacing);
           }
-        case TextType.s2:
+        case ParagraphFormat.s2:
           if (sections.isNotEmpty && sections.last != _paragraphSpacing) {
             sections.add(_paragraphSpacing);
           }
           sections.add(Text.rich(span));
           sections.add(_paragraphSpacing);
-        case TextType.ms:
+        case ParagraphFormat.ms:
           sections.add(Center(
             child: Text.rich(span),
           ));
-        case TextType.mr:
+        case ParagraphFormat.mr:
           sections.add(Center(
             child: Text.rich(span),
           ));
           sections.add(_paragraphSpacing);
-        case TextType.qa:
+        case ParagraphFormat.qa:
           sections.add(Text.rich(span));
+        default:
+          _applyFormat(sections, span, format);
       }
       index++;
     }
@@ -76,37 +76,40 @@ class _ChapterLayoutState extends State<ChapterLayout> {
     );
   }
 
-  void _applyFormat(List<Widget> sections, TextSpan span, Format? format) {
+  void _applyFormat(
+      List<Widget> sections, TextSpan span, ParagraphFormat format) {
     Widget text = Text.rich(span);
-    if (format != null) {
-      switch (format) {
-        case Format.m:
-          // No padding needed for margin
-          break;
-        case Format.q1:
-          text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
-        case Format.q2:
-          text = Padding(padding: const EdgeInsets.only(left: 60), child: text);
-        case Format.pmo:
-          text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
-        case Format.li1:
-          text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
-        case Format.li2:
-          text = Padding(padding: const EdgeInsets.only(left: 60), child: text);
-        case Format.pc:
-          text = Align(alignment: Alignment.center, child: text);
-        case Format.qr:
-          text = Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 20),
-              child: text,
-            ),
-          );
-      }
+
+    switch (format) {
+      case ParagraphFormat.m:
+        // No padding needed for margin
+        break;
+      case ParagraphFormat.q1:
+        text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
+      case ParagraphFormat.q2:
+        text = Padding(padding: const EdgeInsets.only(left: 60), child: text);
+      case ParagraphFormat.pmo:
+        text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
+      case ParagraphFormat.li1:
+        text = Padding(padding: const EdgeInsets.only(left: 20), child: text);
+      case ParagraphFormat.li2:
+        text = Padding(padding: const EdgeInsets.only(left: 60), child: text);
+      case ParagraphFormat.pc:
+        text = Align(alignment: Alignment.center, child: text);
+      case ParagraphFormat.qr:
+        text = Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: text,
+          ),
+        );
+      default:
+      // do nothing?
     }
+
     sections.add(text);
-    if (format != Format.q1 && format != Format.q2) {
+    if (format != ParagraphFormat.q1 && format != ParagraphFormat.q2) {
       sections.add(_paragraphSpacing);
     }
   }

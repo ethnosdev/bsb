@@ -53,44 +53,61 @@ class DatabaseHelper {
   }
 
   Future<List<VerseLine>> getChapter(int bookId, int chapter) async {
+    final (upperBound, lowerBound) = _chapterBounds(bookId, chapter);
+
     final verses = await _database.query(
       Schema.bibleTextTable,
       columns: [
-        Schema.colVerse,
+        Schema.colReference,
         Schema.colText,
         Schema.colFootnote,
-        Schema.colType,
         Schema.colFormat,
       ],
-      where: '${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',
-      whereArgs: [bookId, chapter],
+      where: '${Schema.colReference} >= ? AND ${Schema.colReference} < ?',
+      whereArgs: [lowerBound, upperBound],
       orderBy: '${Schema.colId} ASC',
     );
 
     return verses.map(
       (verse) {
-        final format = verse[Schema.colFormat] as int?;
+        final format = verse[Schema.colFormat] as int;
+        final verseNumber = (verse[Schema.colReference] as int) % 1000;
         return VerseLine(
           bookId: bookId,
           chapter: chapter,
-          verse: verse[Schema.colVerse] as int,
+          verse: verseNumber,
           text: verse[Schema.colText] as String,
           footnote: verse[Schema.colFootnote] as String?,
-          format: (format == null) ? null : Format.fromInt(format),
-          type: TextType.fromInt(verse[Schema.colType] as int),
+          format: ParagraphFormat.fromInt(format),
         );
       },
     ).toList();
   }
 
+  (int, int) _chapterBounds(int bookId, int chapter) {
+    const int bookMultiplier = 1000000;
+    const int chapterMultiplier = 1000;
+    final int lowerBound =
+        bookId * bookMultiplier + chapter * chapterMultiplier;
+    final int upperBound =
+        bookId * bookMultiplier + (chapter + 1) * chapterMultiplier;
+    return (lowerBound, upperBound);
+  }
+
   Future<int> getVerseCount(int bookId, int chapter) async {
+    final (upperBound, lowerBound) = _chapterBounds(bookId, chapter);
     final result = await _database.rawQuery(
-      'SELECT MAX(${Schema.colVerse}) as max_verse '
+      'SELECT MAX(${Schema.colReference}) as max_ref '
       'FROM ${Schema.bibleTextTable} '
-      'WHERE ${Schema.colBookId} = ? AND ${Schema.colChapter} = ?',
-      [bookId, chapter],
+      'WHERE ${Schema.colReference} >= ? AND ${Schema.colReference} < ?',
+      [lowerBound, upperBound],
     );
-    return result.first['max_verse'] as int;
+
+    final maxRef = result.first['max_ref'];
+    if (maxRef == null) {
+      return 0;
+    }
+    return (maxRef as int) % 1000;
   }
 
   Future<List<VerseElement>> getOriginalLanguageData(
@@ -107,9 +124,9 @@ class DatabaseHelper {
       'JOIN ${Schema.englishTable} e ON i.${Schema.ilColEnglish} = e.${Schema.engColId} '
       'JOIN ${Schema.partOfSpeechTable} p ON i.${Schema.ilColPartOfSpeech} = p.${Schema.posColId} '
       'JOIN ${Schema.originalLanguageTable} o ON i.${Schema.ilColOriginal} = o.${Schema.olColId} '
-      'WHERE i.${Schema.ilColBookId} = ? AND i.${Schema.ilColChapter} = ? AND i.${Schema.ilColVerse} = ? '
+      'WHERE i.${Schema.ilColReference} = ? '
       'ORDER BY i.${Schema.ilColId}',
-      [reference.bookId, reference.chapter, reference.verse],
+      [reference.packedVerse],
     );
     return result.map((row) {
       final text = row[Schema.ilColOriginal] as String;
@@ -136,18 +153,16 @@ class DatabaseHelper {
     int strongsNumber,
   ) async {
     final result = await _database.rawQuery(
-      'SELECT DISTINCT ${Schema.ilColBookId}, ${Schema.ilColChapter}, ${Schema.ilColVerse} '
+      'SELECT DISTINCT ${Schema.ilColReference} '
       'FROM ${Schema.interlinearTable} '
       'WHERE ${Schema.ilColStrongsNumber} = ? AND ${Schema.ilColLanguage} = ? '
-      'ORDER BY ${Schema.ilColBookId}, ${Schema.ilColChapter}, ${Schema.ilColVerse}',
+      'ORDER BY ${Schema.ilColReference}',
       [strongsNumber, language.id],
     );
 
     return result
-        .map((row) => Reference(
-              bookId: row[Schema.ilColBookId] as int,
-              chapter: row[Schema.ilColChapter] as int,
-              verse: row[Schema.ilColVerse] as int,
+        .map((row) => Reference.from(
+              packedInt: row[Schema.ilColReference] as int,
             ))
         .toList();
   }
@@ -156,35 +171,30 @@ class DatabaseHelper {
     final verses = await _database.query(
       Schema.bibleTextTable,
       columns: [
-        Schema.colVerse,
+        Schema.colReference,
         Schema.colText,
-        Schema.colType,
         Schema.colFormat,
       ],
-      where: '${Schema.colBookId} = ? '
-          'AND ${Schema.colChapter} = ? '
-          'AND ${Schema.colVerse} >= ? '
-          'AND ${Schema.colVerse} <= ?',
+      where: '${Schema.colReference} >= ? '
+          'AND ${Schema.colReference} <= ?',
       whereArgs: [
-        reference.bookId,
-        reference.chapter,
-        reference.verse,
-        reference.endVerse ?? reference.verse,
+        reference.packedVerse,
+        reference.packedEndVerse ?? reference.packedVerse,
       ],
       orderBy: '${Schema.colId} ASC',
     );
 
     return verses.map(
       (verse) {
-        final format = verse[Schema.colFormat] as int?;
+        final format = verse[Schema.colFormat] as int;
+        final verseNumber = (verse[Schema.colReference] as int) % 1000;
         return VerseLine(
           bookId: reference.bookId,
           chapter: reference.chapter,
-          verse: verse[Schema.colVerse] as int,
+          verse: verseNumber,
           text: verse[Schema.colText] as String,
           footnote: null,
-          format: (format == null) ? null : Format.fromInt(format),
-          type: TextType.fromInt(verse[Schema.colType] as int),
+          format: ParagraphFormat.fromInt(format),
         );
       },
     ).toList();
@@ -196,9 +206,7 @@ class DatabaseHelper {
     final footnotes = await _database.query(
       Schema.bibleTextTable,
       columns: [
-        Schema.colBookId,
-        Schema.colChapter,
-        Schema.colVerse,
+        Schema.colReference,
         Schema.colFootnote,
       ],
       where: '${Schema.colFootnote} IS NOT NULL',
@@ -217,11 +225,8 @@ class DatabaseHelper {
 
     for (final footnote in footnotes) {
       final note = footnote[Schema.colFootnote] as String;
-      final bookId = footnote[Schema.colBookId] as int;
-      final chapter = footnote[Schema.colChapter] as int;
-      final verse = footnote[Schema.colVerse] as int;
-      final reference =
-          Reference(bookId: bookId, chapter: chapter, verse: verse);
+      final packedReference = footnote[Schema.colReference] as int;
+      final reference = Reference.from(packedInt: packedReference);
       final matches = regex.allMatches(note);
       for (final match in matches) {
         final start = match.start;
