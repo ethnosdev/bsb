@@ -1,5 +1,5 @@
-import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
+import 'package:scripture/scripture_core.dart';
 
 class ChapterLayout extends StatefulWidget {
   const ChapterLayout({

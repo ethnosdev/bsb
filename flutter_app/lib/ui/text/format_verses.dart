@@ -1,10 +1,10 @@
 import 'package:bsb/infrastructure/verse_line.dart';
-import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
+import 'package:scripture/scripture_core.dart';
 
 List<(TextSpan, ParagraphFormat)> formatVerses({
-  required List<VerseLine> verseLines,
+  required List<UsfmLine> verseLines,
   required double baseFontSize,
   Color? textColor,
   Color? footnoteColor,

@@ -1,8 +1,9 @@
 import 'dart:io';
 
+import 'package:scripture/scripture_core.dart';
+
 import 'book_id.dart';
 import 'database_helper.dart';
-import 'schema.dart';
 import 'utils/bsb_utils.dart';
 
 Future<void> createBsbTable(DatabaseHelper dbHelper) async {
@@ -61,7 +62,7 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         case 'pmo': // indented paragraph margin opening
         case 'li1': // list item level 1
         case 'li2': // list item level 2
-          format = ParagraphFormat.fromString(marker);
+          format = ParagraphFormat.fromJson(marker);
           if (remainder.isEmpty) {
             continue;
           }

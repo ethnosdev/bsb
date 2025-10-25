@@ -7,12 +7,13 @@ import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
+import 'package:scripture/scripture_core.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 10;
+  static const _databaseVersion = 12;
   late Database _database;
 
   Future<void> init() async {
@@ -52,8 +53,8 @@ class DatabaseHelper {
     await File(path).writeAsBytes(bytes, flush: true);
   }
 
-  Future<List<VerseLine>> getChapter(int bookId, int chapter) async {
-    final (upperBound, lowerBound) = _chapterBounds(bookId, chapter);
+  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async {
+    final (lowerBound, upperBound) = _chapterBounds(bookId, chapter);
 
     final verses = await _database.query(
       Schema.bibleTextTable,
@@ -70,15 +71,12 @@ class DatabaseHelper {
 
     return verses.map(
       (verse) {
-        final format = verse[Schema.colFormat] as int;
-        final verseNumber = (verse[Schema.colReference] as int) % 1000;
-        return VerseLine(
-          bookId: bookId,
-          chapter: chapter,
-          verse: verseNumber,
+        final format = verse[Schema.colFormat] as String;
+        return UsfmLine(
+          bookChapterVerse: verse[Schema.colReference] as int,
           text: verse[Schema.colText] as String,
           footnote: verse[Schema.colFootnote] as String?,
-          format: ParagraphFormat.fromInt(format),
+          format: ParagraphFormat.fromJson(format),
         );
       },
     ).toList();
@@ -95,7 +93,7 @@ class DatabaseHelper {
   }
 
   Future<int> getVerseCount(int bookId, int chapter) async {
-    final (upperBound, lowerBound) = _chapterBounds(bookId, chapter);
+    final (lowerBound, upperBound) = _chapterBounds(bookId, chapter);
     final result = await _database.rawQuery(
       'SELECT MAX(${Schema.colReference}) as max_ref '
       'FROM ${Schema.bibleTextTable} '
@@ -167,7 +165,7 @@ class DatabaseHelper {
         .toList();
   }
 
-  Future<List<VerseLine>> getRange(Reference reference) async {
+  Future<List<UsfmLine>> getRange(Reference reference) async {
     final verses = await _database.query(
       Schema.bibleTextTable,
       columns: [
@@ -186,15 +184,12 @@ class DatabaseHelper {
 
     return verses.map(
       (verse) {
-        final format = verse[Schema.colFormat] as int;
-        final verseNumber = (verse[Schema.colReference] as int) % 1000;
-        return VerseLine(
-          bookId: reference.bookId,
-          chapter: reference.chapter,
-          verse: verseNumber,
+        final format = verse[Schema.colFormat] as String;
+        return UsfmLine(
+          bookChapterVerse: verse[Schema.colReference] as int,
           text: verse[Schema.colText] as String,
           footnote: null,
-          format: ParagraphFormat.fromInt(format),
+          format: ParagraphFormat.fromJson(format),
         );
       },
     ).toList();

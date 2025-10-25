@@ -18,6 +18,9 @@ dependencies:
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.1
   package_info_plus: ^8.3.0
+  # TODO: publish this as a real package when working
+  scripture:
+    path: ../../scripture
 
 dev_dependencies:
   flutter_test: 

@@ -1,29 +1,28 @@
-import 'package:database_builder/database_builder.dart';
+import 'package:scripture/scripture_core.dart';
 
-class VerseLine {
-  VerseLine({
-    required this.bookId,
-    required this.chapter,
-    required this.verse,
+class UsfmLine {
+  UsfmLine({
+    required this.bookChapterVerse,
     required this.text,
     required this.footnote,
     required this.format,
   });
 
-  final int bookId;
-  final int chapter;
-  final int verse;
+  /// BBCCCVVV
+  final int bookChapterVerse;
   final String text;
   final String? footnote;
   final ParagraphFormat format;
 
+  int get bookId => bookChapterVerse ~/ 1000000;
+  int get chapter => (bookChapterVerse ~/ 1000) % 1000;
+  int get verse => bookChapterVerse % 1000;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is VerseLine &&
-        other.bookId == bookId &&
-        other.chapter == chapter &&
-        other.verse == verse &&
+    return other is UsfmLine &&
+        other.bookChapterVerse == bookChapterVerse &&
         other.text == text &&
         other.footnote == footnote &&
         other.format == format;
@@ -31,9 +30,7 @@ class VerseLine {
 
   @override
   int get hashCode => Object.hash(
-        bookId,
-        chapter,
-        verse,
+        bookChapterVerse,
         text,
         footnote,
         format,

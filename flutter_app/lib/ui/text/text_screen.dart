@@ -1,4 +1,5 @@
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -7,6 +8,8 @@ import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:scripture/scripture.dart';
+import 'package:scripture/scripture_core.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'text_screen_manager.dart';
@@ -110,56 +113,62 @@ class _TextScreenState extends State<TextScreen> {
         pageManager.requestText(
           bookId: bookId,
           chapter: chapter,
-          textColor: Theme.of(context).textTheme.bodyMedium!.color!,
-          footnoteColor: Theme.of(context).colorScheme.primary,
-          onVerseLongPress: (verse) {
-            // _showBottomBarNotifier.value = true;
-            // _showBottomMenuBar(verse, pageManager);
-            _showVerseLongPressDialog(verse, pageManager);
-          },
-          onFootnoteTap: (note) {
-            final details = pageManager.formatFootnote(
-              footnote: note,
-              highlightColor: Theme.of(context).colorScheme.primary,
-              onTapKeyword: (keyword, count) async {
-                if (count == 1) {
-                  Navigator.of(context).pop();
-                }
-                final text = await pageManager.lookupFootnoteDetails(keyword);
-                if (text == null) return;
-                _showDetailsDialog(keyword, text);
-              },
-            );
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                content: SelectableText.rich(
-                  details,
-                  style: TextStyle(
-                    fontSize: getIt<UserSettings>().textSize,
-                  ),
-                ),
-              ),
-            );
-          },
+          // textColor: Theme.of(context).textTheme.bodyMedium!.color!,
+          // footnoteColor: Theme.of(context).colorScheme.primary,
+          // onVerseLongPress: (verse) {
+          //   // _showBottomBarNotifier.value = true;
+          //   // _showBottomMenuBar(verse, pageManager);
+          //   _showVerseLongPressDialog(verse, pageManager);
+          // },
+          // onFootnoteTap: (note) {
+          //   final details = pageManager.formatFootnote(
+          //     footnote: note,
+          //     highlightColor: Theme.of(context).colorScheme.primary,
+          //     onTapKeyword: (keyword, count) async {
+          //       if (count == 1) {
+          //         Navigator.of(context).pop();
+          //       }
+          //       final text = await pageManager.lookupFootnoteDetails(keyword);
+          //       if (text == null) return;
+          //       _showDetailsDialog(keyword, text);
+          //     },
+          //   );
+          //   showDialog(
+          //     context: context,
+          //     builder: (context) => AlertDialog(
+          //       content: SelectableText.rich(
+          //         details,
+          //         style: TextStyle(
+          //           fontSize: getIt<UserSettings>().textSize,
+          //         ),
+          //       ),
+          //     ),
+          //   );
+          // },
         );
 
-        return ValueListenableBuilder<TextParagraph>(
+        return ValueListenableBuilder<List<UsfmLine>>(
           valueListenable: pageManager.textParagraphNotifier,
-          builder: (context, paragraph, child) {
+          builder: (context, verseLines, child) {
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: ChapterLayout(
-                  paragraphs: paragraph,
-                  paragraphSpacing: pageManager.paragraphSpacing,
-                ),
+                child: _buildPassage(verseLines),
               ),
             );
           },
         );
       },
     );
+  }
+
+  PassageWidget _buildPassage(List<UsfmLine> verseLines) {
+    for (final line in verseLines) {
+      final paragraph = UsfmParagraph(content: [], format: line.format);
+      final words = line.text.split(' ');
+      for (final word in words) {}
+    }
+    return buildPassageWidget([]);
   }
 
   Widget _buildChapterChooserOverlay() {
@@ -288,41 +297,41 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
-  Future<void> _showDetailsDialog(String title, TextParagraph passage) async {
-    final fontSize = getIt<UserSettings>().textSize;
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            constraints: const BoxConstraints(maxHeight: 400),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: ChapterLayout(
-                        paragraphs: passage,
-                        paragraphSpacing: 8.0,
-                        bottomSpace: 0.0),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  // Future<void> _showDetailsDialog(String title, TextParagraph passage) async {
+  //   final fontSize = getIt<UserSettings>().textSize;
+  //   await showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return Dialog(
+  //         child: Container(
+  //           padding: const EdgeInsets.all(16.0),
+  //           constraints: const BoxConstraints(maxHeight: 400),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text(
+  //                 title,
+  //                 style: TextStyle(
+  //                   fontSize: fontSize,
+  //                   fontWeight: FontWeight.bold,
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 16),
+  //               Flexible(
+  //                 child: SingleChildScrollView(
+  //                   child: ChapterLayout(
+  //                       paragraphs: passage,
+  //                       paragraphSpacing: 8.0,
+  //                       bottomSpace: 0.0),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Future<void> _launch(String webpage) async {
     final url = Uri.parse(webpage);

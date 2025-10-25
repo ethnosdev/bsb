@@ -59,7 +59,7 @@ class DatabaseHelper {
     required int chapter,
     required int verse,
     required String text,
-    required int format,
+    required String format,
     required String? footnote,
   }) {
     if (text.isEmpty) {

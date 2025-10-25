@@ -16,7 +16,7 @@ class Schema {
     $colId INTEGER PRIMARY KEY AUTOINCREMENT,
     $colReference INTEGER NOT NULL,
     $colText TEXT NOT NULL,
-    $colFormat INTEGER,
+    $colFormat TEXT NOT NULL,
     $colFootnote TEXT
   )
   ''';
@@ -119,73 +119,73 @@ class Schema {
   ''';
 }
 
-enum ParagraphFormat {
-  /// margin, no indentation
-  m(0),
+// enum ParagraphFormat {
+//   /// margin, no indentation
+//   m(0),
 
-  /// break, blank vertical space
-  b(1),
+//   /// break, blank vertical space
+//   b(1),
 
-  /// poetry indentation level 1
-  q1(2),
+//   /// poetry indentation level 1
+//   q1(2),
 
-  /// poetry indentation level 2
-  q2(3),
+//   /// poetry indentation level 2
+//   q2(3),
 
-  /// Embedded text opening
-  pmo(4),
+//   /// Embedded text opening
+//   pmo(4),
 
-  /// list item level 1
-  li1(5),
+//   /// list item level 1
+//   li1(5),
 
-  /// list item level 2
-  li2(6),
+//   /// list item level 2
+//   li2(6),
 
-  /// centered
-  pc(7),
+//   /// centered
+//   pc(7),
 
-  /// right aligned
-  qr(8),
+//   /// right aligned
+//   qr(8),
 
-  /// Descriptive Title (Psalms "Of David")
-  d(9),
+//   /// Descriptive Title (Psalms "Of David")
+//   d(9),
 
-  /// Cross Reference
-  r(10),
+//   /// Cross Reference
+//   r(10),
 
-  /// Section Heading Level 1
-  s1(11),
+//   /// Section Heading Level 1
+//   s1(11),
 
-  /// Section Heading Level 2
-  s2(12),
+//   /// Section Heading Level 2
+//   s2(12),
 
-  /// major section (Psalms)
-  ms(13),
+//   /// major section (Psalms)
+//   ms(13),
 
-  /// major section range (Psalms)
-  mr(14),
+//   /// major section range (Psalms)
+//   mr(14),
 
-  /// Acrostic Heading (Psalm 119)
-  qa(15);
+//   /// Acrostic Heading (Psalm 119)
+//   qa(15);
 
-  /// The integer value of the enum, used for database storage.
-  final int id;
-  const ParagraphFormat(this.id);
+//   /// The integer value of the enum, used for database storage.
+//   final int id;
+//   const ParagraphFormat(this.id);
 
-  bool get isBiblicalText => id < 10;
+//   bool get isBiblicalText => id < 10;
 
-  static ParagraphFormat fromString(String value) {
-    return ParagraphFormat.values.firstWhere(
-      (type) => type.name == value,
-    );
-  }
+//   static ParagraphFormat fromString(String value) {
+//     return ParagraphFormat.values.firstWhere(
+//       (type) => type.name == value,
+//     );
+//   }
 
-  static ParagraphFormat fromInt(int value) {
-    return ParagraphFormat.values.firstWhere(
-      (type) => type.id == value,
-    );
-  }
-}
+//   static ParagraphFormat fromInt(int value) {
+//     return ParagraphFormat.values.firstWhere(
+//       (type) => type.id == value,
+//     );
+//   }
+// }
 
 // // colType values
 // enum TextType {
