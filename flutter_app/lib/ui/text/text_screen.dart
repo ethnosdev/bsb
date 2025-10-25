@@ -163,12 +163,22 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   PassageWidget _buildPassage(List<UsfmLine> verseLines) {
+    final themeTextStyle = Theme.of(context).textTheme.bodyMedium;
+    final paragraphs = <UsfmParagraph>[];
     for (final line in verseLines) {
       final paragraph = UsfmParagraph(content: [], format: line.format);
       final words = line.text.split(' ');
-      for (final word in words) {}
+      int wordId = line.bookChapterVerse * 1000;
+      for (final word in words) {
+        paragraph.content.add(Word(text: word, id: wordId.toString()));
+        wordId++;
+      }
+      paragraphs.add(paragraph);
     }
-    return buildPassageWidget([]);
+    return buildPassageWidget(
+      paragraphs,
+      style: themeTextStyle!,
+    );
   }
 
   Widget _buildChapterChooserOverlay() {
