@@ -165,20 +165,45 @@ class _TextScreenState extends State<TextScreen> {
   PassageWidget _buildPassage(List<UsfmLine> verseLines) {
     final themeTextStyle = Theme.of(context).textTheme.bodyMedium;
     final paragraphs = <UsfmParagraph>[];
+    UsfmParagraph? biblicalParagraph;
     for (final line in verseLines) {
-      final paragraph = UsfmParagraph(content: [], format: line.format);
-      final words = line.text.split(' ');
-      int wordId = line.bookChapterVerse * 1000;
-      for (final word in words) {
-        paragraph.content.add(Word(text: word, id: wordId.toString()));
-        wordId++;
+      if (line.format.isBiblicalText) {
+        if (line.format != biblicalParagraph?.format) {}
+        biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
+        biblicalParagraph.content
+            .addAll(_getWords(line.text, line.bookChapterVerse));
+      } else {
+        if (biblicalParagraph != null) {
+          paragraphs.add(biblicalParagraph);
+          biblicalParagraph = null;
+        }
+        final content = _getWords(line.text, line.bookChapterVerse);
+        paragraphs.add(UsfmParagraph(content: content, format: line.format));
       }
-      paragraphs.add(paragraph);
+    }
+    if (biblicalParagraph != null) {
+      paragraphs.add(biblicalParagraph);
+      biblicalParagraph = null;
     }
     return buildPassageWidget(
       paragraphs,
       style: themeTextStyle!,
     );
+  }
+
+  List<Word> _getWords(String text, int id) {
+    final list = <Word>[];
+
+    // 1. Use a regular expression to split by one or more whitespace characters.
+    // 2. Use .where() to filter out any empty strings that might result.
+    final words = text.split(RegExp(r'\s+')).where((s) => s.isNotEmpty);
+
+    int wordId = id * 1000;
+    for (final word in words) {
+      list.add(Word(text: word, id: wordId.toString()));
+      wordId++;
+    }
+    return list;
   }
 
   Widget _buildChapterChooserOverlay() {
