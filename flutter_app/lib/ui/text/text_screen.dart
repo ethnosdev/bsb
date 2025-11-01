@@ -166,13 +166,25 @@ class _TextScreenState extends State<TextScreen> {
     final themeTextStyle = Theme.of(context).textTheme.bodyMedium;
     final paragraphs = <UsfmParagraph>[];
     UsfmParagraph? biblicalParagraph;
+    int verseNumber = 0;
     for (final line in verseLines) {
-      if (line.format.isBiblicalText) {
-        if (line.format != biblicalParagraph?.format) {}
+      // new line marker breaks a paragraph
+      if (line.text == '\n' && biblicalParagraph != null) {
+        paragraphs.add(biblicalParagraph);
+        biblicalParagraph = null;
+      }
+      // add words for biblical text
+      else if (line.format.isBiblicalText) {
         biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
+        if (line.verse != verseNumber) {
+          biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+          verseNumber = line.verse;
+        }
         biblicalParagraph.content
             .addAll(_getWords(line.text, line.bookChapterVerse));
-      } else {
+      }
+      // add headings, etc.
+      else {
         if (biblicalParagraph != null) {
           paragraphs.add(biblicalParagraph);
           biblicalParagraph = null;
