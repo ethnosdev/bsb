@@ -4,6 +4,7 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 // import 'package:bsb/infrastructure/source_texts.dart';
 import 'package:bsb/infrastructure/verse_line.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 // import 'package:bsb/ui/settings/user_settings.dart';
 // import 'package:bsb/ui/text/format_verses.dart';
 // import 'package:database_builder/database_builder.dart';
@@ -19,8 +20,8 @@ class TextPageManager {
   final _dbHelper = getIt<DatabaseHelper>();
   final textParagraphNotifier = ValueNotifier<List<UsfmLine>>([]);
 
-  double _normalTextSize = 14.0;
-  double get paragraphSpacing => _normalTextSize * 0.6;
+  // double normalTextSize = getIt<UserSettings>().textSize;
+  // double get paragraphSpacing => normalTextSize * 0.6;
 
   Future<void> requestText({
     required int bookId,

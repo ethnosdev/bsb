@@ -4,7 +4,6 @@ import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
-import 'package:bsb/ui/text/chapter_layout.dart';
 import 'package:bsb/ui/text/text_page_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -163,13 +162,12 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   PassageWidget _buildPassage(List<UsfmLine> verseLines) {
-    final themeTextStyle = Theme.of(context).textTheme.bodyMedium;
     final paragraphs = <UsfmParagraph>[];
     UsfmParagraph? biblicalParagraph;
     int verseNumber = 0;
     for (final line in verseLines) {
       // new line marker breaks a paragraph
-      if (line.text == '\n' && biblicalParagraph != null) {
+      if (line.format == ParagraphFormat.b && biblicalParagraph != null) {
         paragraphs.add(biblicalParagraph);
         biblicalParagraph = null;
       }
@@ -197,9 +195,8 @@ class _TextScreenState extends State<TextScreen> {
       paragraphs.add(biblicalParagraph);
       biblicalParagraph = null;
     }
-    return buildPassageWidget(
+    return _buildPassageWidget(
       paragraphs,
-      style: themeTextStyle!,
     );
   }
 
@@ -216,6 +213,117 @@ class _TextScreenState extends State<TextScreen> {
       wordId++;
     }
     return list;
+  }
+
+  PassageWidget _buildPassageWidget(List<UsfmParagraph> paragraphs) {
+    final passageChildren = <ParagraphWidget>[];
+    for (final paragraph in paragraphs) {
+      final style = _getStyleForParagraphType(paragraph.format);
+      final paragraphChildren = <Widget>[];
+      for (final element in paragraph.content) {
+        if (element is Word) {
+          final word = WordWidget(
+            text: element.text,
+            id: element.id,
+            style: style,
+            onTap: (text, id) {
+              print('Tapped word: "$text" (id: $id)');
+            },
+          );
+          paragraphChildren.add(word);
+        } else if (element is VerseNumber) {
+          final verse = VerseNumberWidget(
+            number: element.number,
+            style: style,
+            scale: 0.7,
+            padding: const EdgeInsets.only(right: 4.0),
+          );
+          paragraphChildren.add(verse);
+        } else if (element is Footnote) {
+          print('Footnote: ${element.text}');
+        } else {
+          // do nothing for now.
+        }
+      }
+      final (level1, level2) = _getIndentsForFormat(paragraph.format);
+
+      final paragraphWidget = ParagraphWidget(
+        firstLineIndent: level1,
+        subsequentLinesIndent: level2,
+        children: paragraphChildren,
+      );
+      passageChildren.add(paragraphWidget);
+    }
+
+    return PassageWidget(children: passageChildren);
+  }
+
+  TextStyle _getStyleForParagraphType(
+    ParagraphFormat format,
+  ) {
+    double normalTextSize = getIt<UserSettings>().textSize;
+    final defaultStyle = Theme.of(context)
+        .textTheme
+        .bodyMedium!
+        .copyWith(fontSize: normalTextSize);
+    switch (format) {
+      case ParagraphFormat.b:
+      case ParagraphFormat.m:
+      case ParagraphFormat.q1:
+      case ParagraphFormat.q2:
+      case ParagraphFormat.li1:
+      case ParagraphFormat.li2:
+      case ParagraphFormat.pmo:
+        return defaultStyle;
+      case ParagraphFormat.pc:
+        print('pc');
+        return defaultStyle;
+      case ParagraphFormat.qr:
+        print('qr');
+        return defaultStyle;
+      case ParagraphFormat.d:
+        print('d');
+        return defaultStyle;
+      case ParagraphFormat.r:
+      case ParagraphFormat.s2:
+        return defaultStyle.copyWith(fontStyle: FontStyle.italic);
+      case ParagraphFormat.s1:
+        return defaultStyle.copyWith(fontWeight: FontWeight.bold);
+      case ParagraphFormat.ms:
+        print('ms');
+        return defaultStyle;
+      case ParagraphFormat.mr:
+        print('mr');
+        return defaultStyle;
+      case ParagraphFormat.qa:
+        print('qa');
+        return defaultStyle;
+    }
+  }
+
+  (double, double) _getIndentsForFormat(ParagraphFormat format) {
+    switch (format) {
+      case ParagraphFormat.b:
+      case ParagraphFormat.m:
+        return (0, 0);
+      case ParagraphFormat.q1:
+      case ParagraphFormat.li1:
+      case ParagraphFormat.pmo:
+        return (20, 100);
+      case ParagraphFormat.q2:
+      case ParagraphFormat.li2:
+        return (60, 100);
+      case ParagraphFormat.pc:
+      case ParagraphFormat.qr:
+      case ParagraphFormat.d:
+      case ParagraphFormat.r:
+      case ParagraphFormat.s1:
+      case ParagraphFormat.s2:
+      case ParagraphFormat.ms:
+      case ParagraphFormat.mr:
+      case ParagraphFormat.qa:
+        return (0, 0);
+    }
   }
 
   Widget _buildChapterChooserOverlay() {
