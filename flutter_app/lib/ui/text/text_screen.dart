@@ -162,42 +162,53 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   PassageWidget _buildPassage(List<UsfmLine> verseLines) {
-    final paragraphs = <UsfmParagraph>[];
-    UsfmParagraph? biblicalParagraph;
+    // final paragraphs = <UsfmParagraph>[];
+    // UsfmParagraph? biblicalParagraph;
+    UsfmPassage passage = UsfmPassage([]);
     int verseNumber = 0;
     for (final line in verseLines) {
+      print('format: ${line.format}, verse: ${line.verse}, text: ${line.text}');
       switch (line.format) {
         case ParagraphFormat.b:
-          if (biblicalParagraph != null) {
-            paragraphs.add(biblicalParagraph);
-            biblicalParagraph = null;
-          }
+          passage.commit([], ParagraphFormat.b);
+        //;
+        // if (biblicalParagraph != null) {
+        //   paragraphs.add(biblicalParagraph);
+        //   biblicalParagraph = null;
+        // }
         case ParagraphFormat.m:
         case ParagraphFormat.pmo:
-          biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
           if (line.verse != verseNumber) {
-            biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+            passage.append([VerseNumber(line.verse.toString())], line.format);
             verseNumber = line.verse;
           }
-          biblicalParagraph.content
-              .addAll(_getWords(line.text, line.bookChapterVerse));
+          final words = _getWords(line.text, line.bookChapterVerse);
+          passage.append(words, line.format);
         case ParagraphFormat.q1:
         case ParagraphFormat.q2:
         case ParagraphFormat.li1:
         case ParagraphFormat.li2:
         case ParagraphFormat.qr:
         case ParagraphFormat.pc:
-          if (biblicalParagraph != null) {
-            paragraphs.add(biblicalParagraph);
-            biblicalParagraph = null;
-          }
-          biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
           if (line.verse != verseNumber) {
-            biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+            passage.append([VerseNumber(line.verse.toString())], line.format);
             verseNumber = line.verse;
           }
-          final content = _getWords(line.text, line.bookChapterVerse);
-          paragraphs.add(UsfmParagraph(content: content, format: line.format));
+          final words = _getWords(line.text, line.bookChapterVerse);
+          passage.append(words, line.format);
+          passage.commit();
+
+        // if (biblicalParagraph != null) {
+        //   paragraphs.add(biblicalParagraph);
+        //   biblicalParagraph = null;
+        // }
+        // biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
+        // if (line.verse != verseNumber) {
+        //   biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+        //   verseNumber = line.verse;
+        // }
+        // final content = _getWords(line.text, line.bookChapterVerse);
+        // paragraphs.add(UsfmParagraph(content: content, format: line.format));
         case ParagraphFormat.d:
         case ParagraphFormat.r:
         case ParagraphFormat.s1:
@@ -205,44 +216,23 @@ class _TextScreenState extends State<TextScreen> {
         case ParagraphFormat.ms:
         case ParagraphFormat.mr:
         case ParagraphFormat.qa:
-          if (biblicalParagraph != null) {
-            paragraphs.add(biblicalParagraph);
-            biblicalParagraph = null;
-          }
-          final content = _getWords(line.text, line.bookChapterVerse);
-          paragraphs.add(UsfmParagraph(content: content, format: line.format));
+          // if (biblicalParagraph != null) {
+          //   paragraphs.add(biblicalParagraph);
+          //   biblicalParagraph = null;
+          // }
+          // final content = _getWords(line.text, line.bookChapterVerse);
+          // paragraphs.add(UsfmParagraph(content: content, format: line.format));
+          final words = _getWords(line.text, line.bookChapterVerse);
+          passage.commit(words, line.format);
       }
-      // new line marker breaks a paragraph
-      // if (line.format == ParagraphFormat.b && biblicalParagraph != null) {
-      //   paragraphs.add(biblicalParagraph);
-      //   biblicalParagraph = null;
-      // }
-      // // add words for biblical text
-      // else if (line.format.isBiblicalText) {
-      //   biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
-      //   if (line.verse != verseNumber) {
-      //     biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
-      //     verseNumber = line.verse;
-      //   }
-      //   biblicalParagraph.content
-      //       .addAll(_getWords(line.text, line.bookChapterVerse));
-      // }
-      // // add headings, etc.
-      // else {
-      //   if (biblicalParagraph != null) {
-      //     paragraphs.add(biblicalParagraph);
-      //     biblicalParagraph = null;
-      //   }
-      //   final content = _getWords(line.text, line.bookChapterVerse);
-      //   paragraphs.add(UsfmParagraph(content: content, format: line.format));
-      // }
     }
-    if (biblicalParagraph != null) {
-      paragraphs.add(biblicalParagraph);
-      biblicalParagraph = null;
-    }
+    // if (biblicalParagraph != null) {
+    //   paragraphs.add(biblicalParagraph);
+    //   biblicalParagraph = null;
+    // }
+    passage.commit();
     return _buildPassageWidget(
-      paragraphs,
+      passage.paragraphs,
     );
   }
 
@@ -262,51 +252,158 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   PassageWidget _buildPassageWidget(List<UsfmParagraph> paragraphs) {
-    final passageChildren = <ParagraphWidget>[];
+    // final paragraphSpacing = 8.0;
+    final passageChildren = <Widget>[];
+    // ParagraphFormat lastFormat = ParagraphFormat.b;
     for (final paragraph in paragraphs) {
-      final style = _getStyleForParagraphType(paragraph.format);
-      final paragraphChildren = <Widget>[];
-      for (final element in paragraph.content) {
-        if (element is Word) {
-          final word = WordWidget(
-            text: element.text,
-            id: element.id,
-            style: style,
-            onTap: (text, id) {
-              print('Tapped word: "$text" (id: $id)');
-            },
-          );
-          paragraphChildren.add(word);
-        } else if (element is VerseNumber) {
-          final verse = VerseNumberWidget(
-            number: element.number,
-            style: style,
-            scale: 0.7,
-            padding: const EdgeInsets.only(right: 4.0),
-          );
-          paragraphChildren.add(verse);
-        } else if (element is Footnote) {
-          print('Footnote: ${element.text}');
-        } else {
-          // do nothing for now.
-        }
+      final paragraphChildren = _getParagraphChildren(paragraph);
+      switch (paragraph.format) {
+        case ParagraphFormat.b:
+          _addParagraphSpacing(passageChildren, paragraph.format);
+        case ParagraphFormat.m:
+        case ParagraphFormat.pc:
+        case ParagraphFormat.qr:
+          passageChildren.add(ParagraphWidget(
+            children: paragraphChildren,
+          ));
+        case ParagraphFormat.q1:
+        case ParagraphFormat.li1:
+          passageChildren.add(ParagraphWidget(
+            firstLineIndent: 20,
+            subsequentLinesIndent: 100,
+            children: paragraphChildren,
+          ));
+        case ParagraphFormat.q2:
+        case ParagraphFormat.li2:
+          passageChildren.add(ParagraphWidget(
+            firstLineIndent: 60,
+            subsequentLinesIndent: 100,
+            children: paragraphChildren,
+          ));
+        case ParagraphFormat.pmo:
+          passageChildren.add(ParagraphWidget(
+            firstLineIndent: 20,
+            subsequentLinesIndent: 20,
+            children: paragraphChildren,
+          ));
+        case ParagraphFormat.d:
+        case ParagraphFormat.r:
+        case ParagraphFormat.mr:
+          passageChildren.add(ParagraphWidget(
+            children: paragraphChildren,
+          ));
+          _addParagraphSpacing(passageChildren, paragraph.format);
+        case ParagraphFormat.s1:
+        case ParagraphFormat.s2:
+          _addParagraphSpacing(passageChildren, paragraph.format);
+          passageChildren.add(ParagraphWidget(
+            children: paragraphChildren,
+          ));
+          _addParagraphSpacing(passageChildren, paragraph.format);
+        case ParagraphFormat.ms:
+        case ParagraphFormat.qa:
+          passageChildren.add(ParagraphWidget(
+            children: paragraphChildren,
+          ));
       }
-      final (level1, level2) = _getIndentsForFormat(paragraph.format);
 
-      final paragraphWidget = ParagraphWidget(
-        firstLineIndent: level1,
-        subsequentLinesIndent: level2,
-        lineSpacing: 0,
-        children: paragraphChildren,
-      );
-      passageChildren.add(paragraphWidget);
+      // if (paragraph.format == ParagraphFormat.b) {
+      //   _addParagraphSpacing(passageChildren, paragraph.format);
+      //   // lastFormat = paragraph.format;
+      //   continue;
+      // }
+
+      // final (level1, level2) = _getIndentsForFormat(paragraph.format);
+
+      // final paragraphWidget = ParagraphWidget(
+      //   firstLineIndent: level1,
+      //   subsequentLinesIndent: level2,
+      //   lineSpacing: 0,
+      //   children: paragraphChildren,
+      // );
+      // passageChildren.add(paragraphWidget);
+      // _addParagraphSpacing(passageChildren, paragraph.format);
+      // lastFormat = paragraph.format;
     }
 
-    final spacing = getIt<UserSettings>().textSize * 0.6;
+    // remove last paragraph space
+    if (passageChildren.isNotEmpty && passageChildren.last is SizedBox) {
+      passageChildren.removeLast();
+    }
+
+    //
+
+    // final spacing = getIt<UserSettings>().textSize * 0.6;
     return PassageWidget(
-      paragraphSpacing: spacing,
+      // paragraphSpacing: spacing,
       children: passageChildren,
     );
+  }
+
+  List<Widget> _getParagraphChildren(UsfmParagraph paragraph) {
+    final style = _getStyleForParagraphType(paragraph.format);
+    final paragraphChildren = <Widget>[];
+    for (final element in paragraph.content) {
+      if (element is Word) {
+        final word = WordWidget(
+          text: element.text,
+          id: element.id,
+          style: style,
+          onTap: (text, id) {
+            print('Tapped word: "$text" (id: $id)');
+          },
+        );
+        paragraphChildren.add(word);
+      } else if (element is VerseNumber) {
+        final verse = VerseNumberWidget(
+          number: element.number,
+          style: style,
+          scale: 0.7,
+          padding: const EdgeInsets.only(right: 4.0),
+        );
+        paragraphChildren.add(verse);
+      } else if (element is Footnote) {
+        print('Footnote: ${element.text}');
+      } else {
+        // do nothing for now.
+      }
+    }
+    return paragraphChildren;
+  }
+
+  void _addParagraphSpacing(List<Widget> paragraphs, ParagraphFormat format) {
+    const spacing = 16.0;
+    if (paragraphs.isEmpty || paragraphs.last is SizedBox) {
+      return;
+    }
+    paragraphs.add(const SizedBox(height: spacing));
+
+    // switch (format) {
+    //   case ParagraphFormat.m:
+    //   case ParagraphFormat.q1:
+    //   case ParagraphFormat.q2:
+    //   case ParagraphFormat.pmo:
+    //   case ParagraphFormat.li1:
+    //   case ParagraphFormat.li2:
+    //   case ParagraphFormat.pc:
+    //     break;
+    //   case ParagraphFormat.b:
+    //   case ParagraphFormat.qr:
+    //   case ParagraphFormat.d:
+    //   case ParagraphFormat.r:
+    //   case ParagraphFormat.s1:
+    //   case ParagraphFormat.s2:
+    //   case ParagraphFormat.ms:
+    //   case ParagraphFormat.mr:
+    //   case ParagraphFormat.qa:
+    //     paragraphs.add(const SizedBox(height: spacing));
+    // }
+    // if ((lastFormat == ParagraphFormat.q1 ||
+    //         lastFormat == ParagraphFormat.q2) &&
+    //     (currentFormat == ParagraphFormat.q1 ||
+    //         currentFormat == ParagraphFormat.q2)) {
+    //   return;
+    // }
   }
 
   TextStyle _getStyleForParagraphType(
@@ -352,31 +449,31 @@ class _TextScreenState extends State<TextScreen> {
     }
   }
 
-  (double, double) _getIndentsForFormat(ParagraphFormat format) {
-    switch (format) {
-      case ParagraphFormat.b:
-      case ParagraphFormat.m:
-        return (0, 0);
-      case ParagraphFormat.q1:
-      case ParagraphFormat.li1:
-        return (20, 100);
-      case ParagraphFormat.pmo:
-        return (20, 20);
-      case ParagraphFormat.q2:
-      case ParagraphFormat.li2:
-        return (60, 100);
-      case ParagraphFormat.pc:
-      case ParagraphFormat.qr:
-      case ParagraphFormat.d:
-      case ParagraphFormat.r:
-      case ParagraphFormat.s1:
-      case ParagraphFormat.s2:
-      case ParagraphFormat.ms:
-      case ParagraphFormat.mr:
-      case ParagraphFormat.qa:
-        return (0, 0);
-    }
-  }
+  // (double, double) _getIndentsForFormat(ParagraphFormat format) {
+  //   switch (format) {
+  //     case ParagraphFormat.b:
+  //     case ParagraphFormat.m:
+  //       return (0, 0);
+  //     case ParagraphFormat.q1:
+  //     case ParagraphFormat.li1:
+  //       return (20, 100);
+  //     case ParagraphFormat.pmo:
+  //       return (20, 20);
+  //     case ParagraphFormat.q2:
+  //     case ParagraphFormat.li2:
+  //       return (60, 100);
+  //     case ParagraphFormat.pc:
+  //     case ParagraphFormat.qr:
+  //     case ParagraphFormat.d:
+  //     case ParagraphFormat.r:
+  //     case ParagraphFormat.s1:
+  //     case ParagraphFormat.s2:
+  //     case ParagraphFormat.ms:
+  //     case ParagraphFormat.mr:
+  //     case ParagraphFormat.qa:
+  //       return (0, 0);
+  //   }
+  // }
 
   Widget _buildChapterChooserOverlay() {
     return ValueListenableBuilder<(int, int)?>(
