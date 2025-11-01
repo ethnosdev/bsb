@@ -166,30 +166,76 @@ class _TextScreenState extends State<TextScreen> {
     UsfmParagraph? biblicalParagraph;
     int verseNumber = 0;
     for (final line in verseLines) {
+      switch (line.format) {
+        case ParagraphFormat.b:
+          if (biblicalParagraph != null) {
+            paragraphs.add(biblicalParagraph);
+            biblicalParagraph = null;
+          }
+        case ParagraphFormat.m:
+        case ParagraphFormat.pmo:
+          biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
+          if (line.verse != verseNumber) {
+            biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+            verseNumber = line.verse;
+          }
+          biblicalParagraph.content
+              .addAll(_getWords(line.text, line.bookChapterVerse));
+        case ParagraphFormat.q1:
+        case ParagraphFormat.q2:
+        case ParagraphFormat.li1:
+        case ParagraphFormat.li2:
+        case ParagraphFormat.qr:
+        case ParagraphFormat.pc:
+          if (biblicalParagraph != null) {
+            paragraphs.add(biblicalParagraph);
+            biblicalParagraph = null;
+          }
+          biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
+          if (line.verse != verseNumber) {
+            biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+            verseNumber = line.verse;
+          }
+          final content = _getWords(line.text, line.bookChapterVerse);
+          paragraphs.add(UsfmParagraph(content: content, format: line.format));
+        case ParagraphFormat.d:
+        case ParagraphFormat.r:
+        case ParagraphFormat.s1:
+        case ParagraphFormat.s2:
+        case ParagraphFormat.ms:
+        case ParagraphFormat.mr:
+        case ParagraphFormat.qa:
+          if (biblicalParagraph != null) {
+            paragraphs.add(biblicalParagraph);
+            biblicalParagraph = null;
+          }
+          final content = _getWords(line.text, line.bookChapterVerse);
+          paragraphs.add(UsfmParagraph(content: content, format: line.format));
+      }
       // new line marker breaks a paragraph
-      if (line.format == ParagraphFormat.b && biblicalParagraph != null) {
-        paragraphs.add(biblicalParagraph);
-        biblicalParagraph = null;
-      }
-      // add words for biblical text
-      else if (line.format.isBiblicalText) {
-        biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
-        if (line.verse != verseNumber) {
-          biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
-          verseNumber = line.verse;
-        }
-        biblicalParagraph.content
-            .addAll(_getWords(line.text, line.bookChapterVerse));
-      }
-      // add headings, etc.
-      else {
-        if (biblicalParagraph != null) {
-          paragraphs.add(biblicalParagraph);
-          biblicalParagraph = null;
-        }
-        final content = _getWords(line.text, line.bookChapterVerse);
-        paragraphs.add(UsfmParagraph(content: content, format: line.format));
-      }
+      // if (line.format == ParagraphFormat.b && biblicalParagraph != null) {
+      //   paragraphs.add(biblicalParagraph);
+      //   biblicalParagraph = null;
+      // }
+      // // add words for biblical text
+      // else if (line.format.isBiblicalText) {
+      //   biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
+      //   if (line.verse != verseNumber) {
+      //     biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
+      //     verseNumber = line.verse;
+      //   }
+      //   biblicalParagraph.content
+      //       .addAll(_getWords(line.text, line.bookChapterVerse));
+      // }
+      // // add headings, etc.
+      // else {
+      //   if (biblicalParagraph != null) {
+      //     paragraphs.add(biblicalParagraph);
+      //     biblicalParagraph = null;
+      //   }
+      //   final content = _getWords(line.text, line.bookChapterVerse);
+      //   paragraphs.add(UsfmParagraph(content: content, format: line.format));
+      // }
     }
     if (biblicalParagraph != null) {
       paragraphs.add(biblicalParagraph);
@@ -308,8 +354,9 @@ class _TextScreenState extends State<TextScreen> {
         return (0, 0);
       case ParagraphFormat.q1:
       case ParagraphFormat.li1:
-      case ParagraphFormat.pmo:
         return (20, 100);
+      case ParagraphFormat.pmo:
+        return (20, 20);
       case ParagraphFormat.q2:
       case ParagraphFormat.li2:
         return (60, 100);
