@@ -296,12 +296,17 @@ class _TextScreenState extends State<TextScreen> {
       final paragraphWidget = ParagraphWidget(
         firstLineIndent: level1,
         subsequentLinesIndent: level2,
+        lineSpacing: 0,
         children: paragraphChildren,
       );
       passageChildren.add(paragraphWidget);
     }
 
-    return PassageWidget(children: passageChildren);
+    final spacing = getIt<UserSettings>().textSize * 0.6;
+    return PassageWidget(
+      paragraphSpacing: spacing,
+      children: passageChildren,
+    );
   }
 
   TextStyle _getStyleForParagraphType(
