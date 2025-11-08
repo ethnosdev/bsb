@@ -169,6 +169,21 @@ class _TextScreenState extends State<TextScreen> {
       switch (line.format) {
         case ParagraphFormat.b:
           passage.commit([], ParagraphFormat.b);
+        case ParagraphFormat.r:
+          // A cross-reference should not be its own paragraph.
+          // Instead, we will attach it as a footnote to the previous paragraph.
+          if (passage.paragraphs.isNotEmpty &&
+              passage.paragraphs.last.content.isNotEmpty) {
+            // 1. Create a Footnote element from the cross-reference text.
+            //    We'll prepend a conventional footnote marker like a star (*)
+            //    so the FootnoteWidget has something to render.
+            final footnote = Footnote(line.text);
+
+            // 2. Add this footnote to the content list of the PREVIOUS paragraph.
+            passage.paragraphs.last.content.add(footnote);
+
+            // 3. Do NOT create a new paragraph. The work for this line is done.
+          }
         case ParagraphFormat.m:
         case ParagraphFormat.pmo:
           if (line.verse != verseNumber) {
@@ -191,7 +206,6 @@ class _TextScreenState extends State<TextScreen> {
           passage.append(words, line.format);
           passage.commit();
         case ParagraphFormat.d:
-        case ParagraphFormat.r:
         case ParagraphFormat.s1:
         case ParagraphFormat.s2:
         case ParagraphFormat.ms:
@@ -207,8 +221,8 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
-  List<Word> _getWords(String text, int id) {
-    final list = <Word>[];
+  List<ParagraphElement> _getWords(String text, int id) {
+    final list = <ParagraphElement>[];
 
     // 1. Use a regular expression to split by one or more whitespace characters.
     // 2. Use .where() to filter out any empty strings that might result.
@@ -225,18 +239,19 @@ class _TextScreenState extends State<TextScreen> {
   PassageWidget _buildPassageWidget(List<UsfmParagraph> paragraphs) {
     final passageChildren = <Widget>[];
     for (final paragraph in paragraphs) {
-      final paragraphChildren = _getParagraphChildren(paragraph);
       switch (paragraph.format) {
         case ParagraphFormat.b:
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.m:
         case ParagraphFormat.pc:
         case ParagraphFormat.qr:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           passageChildren.add(ParagraphWidget(
             children: paragraphChildren,
           ));
         case ParagraphFormat.q1:
         case ParagraphFormat.li1:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           passageChildren.add(ParagraphWidget(
             firstLineIndent: 20,
             subsequentLinesIndent: 100,
@@ -244,12 +259,14 @@ class _TextScreenState extends State<TextScreen> {
           ));
         case ParagraphFormat.q2:
         case ParagraphFormat.li2:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           passageChildren.add(ParagraphWidget(
             firstLineIndent: 60,
             subsequentLinesIndent: 100,
             children: paragraphChildren,
           ));
         case ParagraphFormat.pmo:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           passageChildren.add(ParagraphWidget(
             firstLineIndent: 20,
             subsequentLinesIndent: 20,
@@ -258,12 +275,14 @@ class _TextScreenState extends State<TextScreen> {
         case ParagraphFormat.d:
         case ParagraphFormat.r:
         case ParagraphFormat.mr:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           passageChildren.add(ParagraphWidget(
             children: paragraphChildren,
           ));
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.s1:
         case ParagraphFormat.s2:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           _addParagraphSpacing(passageChildren, paragraph.format);
           passageChildren.add(ParagraphWidget(
             children: paragraphChildren,
@@ -271,6 +290,7 @@ class _TextScreenState extends State<TextScreen> {
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.ms:
         case ParagraphFormat.qa:
+          final paragraphChildren = _getParagraphChildren(paragraph);
           passageChildren.add(ParagraphWidget(
             children: paragraphChildren,
           ));
@@ -286,40 +306,6 @@ class _TextScreenState extends State<TextScreen> {
       children: passageChildren,
     );
   }
-
-  // List<Widget> _getParagraphChildren(UsfmParagraph paragraph) {
-  //   final style = _getStyleForParagraphType(paragraph.format);
-  //   final paragraphChildren = <Widget>[];
-  //   for (final element in paragraph.content) {
-  //     if (element is Word) {
-  //       final word = WordWidget(
-  //         text: element.text,
-  //         id: element.id,
-  //         style: style,
-  //         onTap: (text, id) {
-  //           print('Tapped word: "$text" (id: $id)');
-  //         },
-  //       );
-  //       paragraphChildren.add(word);
-  //       paragraphChildren.add(SpaceWidget(
-  //         width: 4,
-  //       ));
-  //     } else if (element is VerseNumber) {
-  //       final verse = VerseNumberWidget(
-  //         number: element.number,
-  //         style: style,
-  //         scale: 0.7,
-  //         padding: const EdgeInsets.only(right: 4.0),
-  //       );
-  //       paragraphChildren.add(verse);
-  //     } else if (element is Footnote) {
-  //       print('Footnote: ${element.text}');
-  //     } else {
-  //       // do nothing for now.
-  //     }
-  //   }
-  //   return paragraphChildren;
-  // }
 
   List<Widget> _getParagraphChildren(
     UsfmParagraph paragraph,
@@ -357,17 +343,31 @@ class _TextScreenState extends State<TextScreen> {
           elements[i + 1] is Footnote) {
         // Case: Word followed by a footnote. Bundle them.
         final nextFootnote = elements[i + 1] as Footnote;
+
+        // --- NEW LOGIC: Define the shared callback ---
+        // This callback captures the full text of the footnote.
+        final footnoteCallback = (String footnoteText) {
+          print('Tapped footnote: $footnoteText');
+          // Here is where you would show a dialog, bottom sheet, etc.
+        };
+
         atom = TextAtomWidget(
           children: [
             WordWidget(
-                text: currentElement.text, id: currentElement.id, style: style),
-            // It's good practice to create a dedicated FootnoteWidget for styling.
-            // This allows for superscript or color changes.
+              text: currentElement.text,
+              id: currentElement.id,
+              style: style,
+              // Assign the callback to the preceding Word.
+              // We adapt our new callback to the WordWidget's expected signature.
+              onTap: (wordText, wordId) => footnoteCallback(nextFootnote.text),
+            ),
             FootnoteWidget(
+              marker: '*', // Or use another marker like '¹', '²', etc.
               text: nextFootnote.text,
-              style: style.copyWith(
-                  fontSize: style.fontSize! * 0.7,
-                  color: Colors.blue), // Example styling
+              style:
+                  style, // The RenderFootnote will apply its own modifications
+              // Assign the SAME callback to the FootnoteWidget.
+              onTap: footnoteCallback,
             ),
           ],
         );
