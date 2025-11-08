@@ -162,8 +162,6 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   PassageWidget _buildPassage(List<UsfmLine> verseLines) {
-    // final paragraphs = <UsfmParagraph>[];
-    // UsfmParagraph? biblicalParagraph;
     UsfmPassage passage = UsfmPassage([]);
     int verseNumber = 0;
     for (final line in verseLines) {
@@ -171,11 +169,6 @@ class _TextScreenState extends State<TextScreen> {
       switch (line.format) {
         case ParagraphFormat.b:
           passage.commit([], ParagraphFormat.b);
-        //;
-        // if (biblicalParagraph != null) {
-        //   paragraphs.add(biblicalParagraph);
-        //   biblicalParagraph = null;
-        // }
         case ParagraphFormat.m:
         case ParagraphFormat.pmo:
           if (line.verse != verseNumber) {
@@ -197,18 +190,6 @@ class _TextScreenState extends State<TextScreen> {
           final words = _getWords(line.text, line.bookChapterVerse);
           passage.append(words, line.format);
           passage.commit();
-
-        // if (biblicalParagraph != null) {
-        //   paragraphs.add(biblicalParagraph);
-        //   biblicalParagraph = null;
-        // }
-        // biblicalParagraph ??= UsfmParagraph(content: [], format: line.format);
-        // if (line.verse != verseNumber) {
-        //   biblicalParagraph.content.add(VerseNumber(line.verse.toString()));
-        //   verseNumber = line.verse;
-        // }
-        // final content = _getWords(line.text, line.bookChapterVerse);
-        // paragraphs.add(UsfmParagraph(content: content, format: line.format));
         case ParagraphFormat.d:
         case ParagraphFormat.r:
         case ParagraphFormat.s1:
@@ -216,20 +197,10 @@ class _TextScreenState extends State<TextScreen> {
         case ParagraphFormat.ms:
         case ParagraphFormat.mr:
         case ParagraphFormat.qa:
-          // if (biblicalParagraph != null) {
-          //   paragraphs.add(biblicalParagraph);
-          //   biblicalParagraph = null;
-          // }
-          // final content = _getWords(line.text, line.bookChapterVerse);
-          // paragraphs.add(UsfmParagraph(content: content, format: line.format));
           final words = _getWords(line.text, line.bookChapterVerse);
           passage.commit(words, line.format);
       }
     }
-    // if (biblicalParagraph != null) {
-    //   paragraphs.add(biblicalParagraph);
-    //   biblicalParagraph = null;
-    // }
     passage.commit();
     return _buildPassageWidget(
       passage.paragraphs,
@@ -252,9 +223,7 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   PassageWidget _buildPassageWidget(List<UsfmParagraph> paragraphs) {
-    // final paragraphSpacing = 8.0;
     final passageChildren = <Widget>[];
-    // ParagraphFormat lastFormat = ParagraphFormat.b;
     for (final paragraph in paragraphs) {
       final paragraphChildren = _getParagraphChildren(paragraph);
       switch (paragraph.format) {
@@ -306,24 +275,6 @@ class _TextScreenState extends State<TextScreen> {
             children: paragraphChildren,
           ));
       }
-
-      // if (paragraph.format == ParagraphFormat.b) {
-      //   _addParagraphSpacing(passageChildren, paragraph.format);
-      //   // lastFormat = paragraph.format;
-      //   continue;
-      // }
-
-      // final (level1, level2) = _getIndentsForFormat(paragraph.format);
-
-      // final paragraphWidget = ParagraphWidget(
-      //   firstLineIndent: level1,
-      //   subsequentLinesIndent: level2,
-      //   lineSpacing: 0,
-      //   children: paragraphChildren,
-      // );
-      // passageChildren.add(paragraphWidget);
-      // _addParagraphSpacing(passageChildren, paragraph.format);
-      // lastFormat = paragraph.format;
     }
 
     // remove last paragraph space
@@ -331,44 +282,140 @@ class _TextScreenState extends State<TextScreen> {
       passageChildren.removeLast();
     }
 
-    //
-
-    // final spacing = getIt<UserSettings>().textSize * 0.6;
     return PassageWidget(
-      // paragraphSpacing: spacing,
       children: passageChildren,
     );
   }
 
-  List<Widget> _getParagraphChildren(UsfmParagraph paragraph) {
+  // List<Widget> _getParagraphChildren(UsfmParagraph paragraph) {
+  //   final style = _getStyleForParagraphType(paragraph.format);
+  //   final paragraphChildren = <Widget>[];
+  //   for (final element in paragraph.content) {
+  //     if (element is Word) {
+  //       final word = WordWidget(
+  //         text: element.text,
+  //         id: element.id,
+  //         style: style,
+  //         onTap: (text, id) {
+  //           print('Tapped word: "$text" (id: $id)');
+  //         },
+  //       );
+  //       paragraphChildren.add(word);
+  //       paragraphChildren.add(SpaceWidget(
+  //         width: 4,
+  //       ));
+  //     } else if (element is VerseNumber) {
+  //       final verse = VerseNumberWidget(
+  //         number: element.number,
+  //         style: style,
+  //         scale: 0.7,
+  //         padding: const EdgeInsets.only(right: 4.0),
+  //       );
+  //       paragraphChildren.add(verse);
+  //     } else if (element is Footnote) {
+  //       print('Footnote: ${element.text}');
+  //     } else {
+  //       // do nothing for now.
+  //     }
+  //   }
+  //   return paragraphChildren;
+  // }
+
+  List<Widget> _getParagraphChildren(
+    UsfmParagraph paragraph,
+  ) {
     final style = _getStyleForParagraphType(paragraph.format);
     final paragraphChildren = <Widget>[];
-    for (final element in paragraph.content) {
-      if (element is Word) {
-        final word = WordWidget(
-          text: element.text,
-          id: element.id,
-          style: style,
-          onTap: (text, id) {
-            print('Tapped word: "$text" (id: $id)');
-          },
+    final List<ParagraphElement> elements = paragraph.content;
+
+    // Use an index-based loop to allow for look-ahead.
+    for (int i = 0; i < elements.length; i++) {
+      final currentElement = elements[i];
+      Widget? atom;
+
+      // --- 1. ATOM CREATION LOGIC ---
+      // This logic groups elements that must stick together.
+
+      if (currentElement is VerseNumber &&
+          i + 1 < elements.length &&
+          elements[i + 1] is Word) {
+        // Case: Verse number followed by a word. Bundle them.
+        final nextWord = elements[i + 1] as Word;
+        atom = TextAtomWidget(
+          children: [
+            VerseNumberWidget(
+              number: currentElement.number,
+              style: style,
+              padding: const EdgeInsets.only(right: 4.0),
+            ),
+            WordWidget(text: nextWord.text, id: nextWord.id, style: style),
+          ],
         );
-        paragraphChildren.add(word);
-      } else if (element is VerseNumber) {
-        final verse = VerseNumberWidget(
-          number: element.number,
-          style: style,
-          scale: 0.7,
-          padding: const EdgeInsets.only(right: 4.0),
+        i++; // CRITICAL: Skip the next element as it's now in the atom.
+      } else if (currentElement is Word &&
+          i + 1 < elements.length &&
+          elements[i + 1] is Footnote) {
+        // Case: Word followed by a footnote. Bundle them.
+        final nextFootnote = elements[i + 1] as Footnote;
+        atom = TextAtomWidget(
+          children: [
+            WordWidget(
+                text: currentElement.text, id: currentElement.id, style: style),
+            // It's good practice to create a dedicated FootnoteWidget for styling.
+            // This allows for superscript or color changes.
+            FootnoteWidget(
+              text: nextFootnote.text,
+              style: style.copyWith(
+                  fontSize: style.fontSize! * 0.7,
+                  color: Colors.blue), // Example styling
+            ),
+          ],
         );
-        paragraphChildren.add(verse);
-      } else if (element is Footnote) {
-        print('Footnote: ${element.text}');
-      } else {
-        // do nothing for now.
+        i++; // CRITICAL: Skip the next element.
+      } else if (currentElement is Word) {
+        // Case: A standalone word becomes an atom of one.
+        atom = TextAtomWidget(children: [
+          WordWidget(
+              text: currentElement.text, id: currentElement.id, style: style),
+        ]);
+      } else if (currentElement is VerseNumber) {
+        // Case: A standalone verse number (edge case).
+        atom = TextAtomWidget(children: [
+          VerseNumberWidget(number: currentElement.number, style: style),
+        ]);
+      }
+      // Note: You might add other elements like cross-references here later.
+
+      if (atom != null) {
+        paragraphChildren.add(atom);
+      }
+
+      // --- 2. SPACING LOGIC ---
+      // After adding an atom, decide if a space is needed BEFORE the *next* one.
+      if (i + 1 < elements.length) {
+        if (_shouldInsertSpace(currentElement, elements[i + 1])) {
+          paragraphChildren.add(const SpaceWidget(width: 4.0));
+        }
       }
     }
+
     return paragraphChildren;
+  }
+
+  /// Helper function to encapsulate spacing rules.
+  bool _shouldInsertSpace(ParagraphElement current, ParagraphElement next) {
+    // Rule 1: Never insert a space before a footnote.
+    if (next is Footnote) {
+      return false;
+    }
+
+    // Rule 2 (for CJK etc.): You could add a language check here.
+    // if (isCJK(current.text)) {
+    //   return false;
+    // }
+
+    // Default Rule: Add a space.
+    return true;
   }
 
   void _addParagraphSpacing(List<Widget> paragraphs, ParagraphFormat format) {
