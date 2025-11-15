@@ -1,5 +1,6 @@
 import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -322,29 +323,107 @@ class _ChapterTextState extends State<ChapterText> {
   }
 
   void _onFootnoteTapped(String footnoteText) {
-    print(footnoteText);
-    // final details = formatFootnote(
-    //   footnote: footnoteText,
-    //   highlightColor: Theme.of(context).colorScheme.primary,
-    //   onTapKeyword: (keyword, count) async {
-    //     if (count == 1) {
-    //       Navigator.of(context).pop();
-    //     }
-    //     final text = await lookupFootnoteDetails(keyword);
-    //     if (text == null) return;
-    //     _showDetailsDialog(keyword, text);
-    //   },
-    // );
+    // print(footnoteText);
+    // footnoteText = footnoteText.replaceAll('; ', ';\n');
+    final details = formatFootnote(
+      footnote: footnoteText,
+      highlightColor: Theme.of(context).colorScheme.primary,
+      onTapKeyword: (keyword, count) async {
+        if (count == 1) {
+          Navigator.of(context).pop();
+        }
+        final text = await manager.lookupFootnoteDetails(keyword);
+        if (text == null) return;
+        _showDetailsDialog(keyword, text);
+      },
+    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        content: SelectableText(
-          footnoteText,
+        content: SelectableText.rich(
+          details,
           style: TextStyle(
             fontSize: manager.textSize,
           ),
         ),
       ),
+    );
+  }
+
+  TextSpan formatFootnote({
+    required String footnote,
+    required Color highlightColor,
+    required void Function(String tappedKeyword, int keywordCount) onTapKeyword,
+  }) {
+    // Make semicolon-separated content display on new lines
+    final note = footnote.replaceAll('; ', ';\n');
+
+    final List<TextSpan> spans = [];
+    int start = 0;
+
+    final keywords = manager.footnoteKeywords();
+    final matches = keywords.allMatches(note);
+
+    for (final match in matches) {
+      // Add text before the match
+      if (match.start > start) {
+        spans.add(TextSpan(text: note.substring(start, match.start)));
+      }
+
+      // Add the matched keyword as a tappable span
+      final matchedText = match.group(0)!;
+      spans.add(
+        TextSpan(
+          text: matchedText,
+          style: TextStyle(color: highlightColor),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              onTapKeyword(matchedText, matches.length);
+            },
+        ),
+      );
+
+      start = match.end;
+    }
+
+    // Add remaining text after the last match
+    if (start < note.length) {
+      spans.add(TextSpan(text: note.substring(start)));
+    }
+
+    return TextSpan(children: spans);
+  }
+
+  Future<void> _showDetailsDialog(String title, List<UsfmLine> passage) async {
+    final fontSize = manager.textSize;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            constraints: const BoxConstraints(maxHeight: 400),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: _buildPassage(passage),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
