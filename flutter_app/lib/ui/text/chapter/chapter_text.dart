@@ -39,7 +39,8 @@ class _ChapterTextState extends State<ChapterText> {
     );
   }
 
-  PassageWidget _buildPassage(List<UsfmLine> verseLines) {
+  PassageWidget _buildPassage(List<UsfmLine> verseLines,
+      {bool showHeadings = true}) {
     UsfmPassage passage = UsfmPassage([]);
     int verseNumber = 0;
     for (final line in verseLines) {
@@ -74,11 +75,17 @@ class _ChapterTextState extends State<ChapterText> {
           passage.append(words, line.format);
           passage.commit();
         case ParagraphFormat.d:
+          final words = _getWords(line.text, line.bookChapterVerse);
+          passage.commit(words, line.format);
         case ParagraphFormat.s1:
         case ParagraphFormat.s2:
         case ParagraphFormat.ms:
         case ParagraphFormat.mr:
         case ParagraphFormat.qa:
+          if (!showHeadings) {
+            passage.commit();
+            continue;
+          }
           final words = _getWords(line.text, line.bookChapterVerse);
           passage.commit(words, line.format);
       }
@@ -416,7 +423,7 @@ class _ChapterTextState extends State<ChapterText> {
                 const SizedBox(height: 16),
                 Flexible(
                   child: SingleChildScrollView(
-                    child: _buildPassage(passage),
+                    child: _buildPassage(passage, showHeadings: false),
                   ),
                 ),
               ],
