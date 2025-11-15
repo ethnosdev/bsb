@@ -23,6 +23,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
   ParagraphFormat? format;
   String? footnote;
 
+  final parentheses = RegExp(r'[()]');
+
   for (String bookFilename in bibleBookFilenames) {
     print('Processing: $bookFilename');
     final file = File('${directory.path}/$bookFilename');
@@ -32,6 +34,7 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
     }
 
     final lines = await file.readAsLines();
+    String oldMarker = '';
     for (String newLine in lines) {
       // split at a space or a newline and take the text before it
       String marker = newLine.split(RegExp(r'[ \n]'))[0];
@@ -52,9 +55,15 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           chapter = _getChapter(remainder);
           verse = 0;
           continue;
+        case 'r': // cross reference
+          format = ParagraphFormat.r;
+          if (remainder.isEmpty) {
+            continue;
+          }
+          // Strip parentheses from reference
+          text = remainder.replaceAll(parentheses, '');
         case 's1': // section heading level 1
         case 's2': // section heading level 2
-        case 'r': // cross reference
         case 'ms': // major section (Psalms)
         case 'mr': // major section range (Psalms)
         case 'qa': // Acrostic heading (Psalm 119)
@@ -62,6 +71,9 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         case 'pmo': // indented paragraph margin opening
         case 'li1': // list item level 1
         case 'li2': // list item level 2
+        case 'q1': // poetry indentation level 1
+        case 'q2': // poetry indentation level 2
+        case 'qr': // right aligned
           format = ParagraphFormat.fromJson(marker);
           if (remainder.isEmpty) {
             continue;
@@ -77,20 +89,12 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
           text = remainder;
           verse = 0;
         case 'b': // break
+          // ignore unnecessary breaks after section headings
+          if (oldMarker == 's1' || oldMarker == 's2') {
+            continue;
+          }
           format = ParagraphFormat.b;
-          text = '\n';
-        case 'q1': // poetry indentation level 1
-          format = ParagraphFormat.q1;
-          if (remainder.isEmpty) {
-            continue;
-          }
-          text = remainder;
-        case 'q2': // poetry indentation level 2
-          format = ParagraphFormat.q2;
-          if (remainder.isEmpty) {
-            continue;
-          }
-          text = remainder;
+          text = '';
         case 'pc': // centered
           const habakkuk = 35;
           if (bookId == habakkuk && chapter == 3 && verse == 19) {
@@ -105,12 +109,6 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
             }
             text = remainder;
           }
-        case 'qr': // right aligned
-          format = ParagraphFormat.qr;
-          if (remainder.isEmpty) {
-            continue;
-          }
-          text = remainder;
         default:
           throw Exception(
               'Unknown marker: $marker (chapter: $chapter, verse: $verse)');
@@ -128,13 +126,13 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         chapter: chapter,
         verse: verse,
         text: text,
-        // type: type.id,
         format: format.id,
         footnote: footnote,
       );
 
       footnote = null;
       text = null;
+      oldMarker = marker;
     }
 
     // Uncomment this for testing the first book only:

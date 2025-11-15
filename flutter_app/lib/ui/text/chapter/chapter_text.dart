@@ -335,16 +335,16 @@ class _ChapterTextState extends State<ChapterText> {
     //     _showDetailsDialog(keyword, text);
     //   },
     // );
-    // showDialog(
-    //   context: context,
-    //   builder: (context) => AlertDialog(
-    //     content: SelectableText.rich(
-    //       'details',
-    //       style: TextStyle(
-    //         fontSize: manager.textSize,
-    //       ),
-    //     ),
-    //   ),
-    // );
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: SelectableText(
+          footnoteText,
+          style: TextStyle(
+            fontSize: manager.textSize,
+          ),
+        ),
+      ),
+    );
   }
 }
