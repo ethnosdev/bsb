@@ -61,23 +61,11 @@ class ChapterManager {
     final reference = Reference.tryParse(keyword);
     if (reference != null) {
       return await _dbHelper.getRange(reference);
-      // return formatVerses(
-      //   verseLines: content,
-      //   baseFontSize: _normalTextSize,
-      //   showSectionTitles: false,
-      //   showVerseNumbers: false,
-      // );
     }
 
     if (sourceTexts.containsKey(keyword)) {
       final source = sourceTexts[keyword]!;
       final withNewLine = source.replaceAll('; ', '\n');
-      // final formattedSource = TextSpan(
-      //   text: withNewLine,
-      //   style: TextStyle(
-      //     fontSize: _normalTextSize,
-      //   ),
-      // );
       return [
         UsfmLine(
             bookChapterVerse: 0,
@@ -85,7 +73,6 @@ class ChapterManager {
             footnote: null,
             format: ParagraphFormat.m)
       ];
-      // return [(formattedSource, TextType.v, null)];
     }
 
     return _extrabiblicalContent(keyword);
@@ -114,12 +101,6 @@ class ChapterManager {
         content = null;
     }
     if (content == null) return null;
-    // final formattedSource = TextSpan(
-    //   text: content,
-    //   style: TextStyle(
-    //     fontSize: _normalTextSize,
-    //   ),
-    // );
     return [
       UsfmLine(
           bookChapterVerse: 0,
@@ -127,6 +108,5 @@ class ChapterManager {
           footnote: null,
           format: ParagraphFormat.m)
     ];
-    // return [(formattedSource, TextType.v, null)];
   }
 }

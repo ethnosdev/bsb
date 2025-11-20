@@ -59,7 +59,7 @@ class _ChapterTextState extends State<ChapterText> {
             passage.append([VerseNumber(line.verse.toString())], line.format);
             verseNumber = line.verse;
           }
-          final words = _getWords(line.text, line.bookChapterVerse);
+          final words = _getWords(line);
           passage.append(words, line.format);
         case ParagraphFormat.q1:
         case ParagraphFormat.q2:
@@ -71,11 +71,11 @@ class _ChapterTextState extends State<ChapterText> {
             passage.append([VerseNumber(line.verse.toString())], line.format);
             verseNumber = line.verse;
           }
-          final words = _getWords(line.text, line.bookChapterVerse);
+          final words = _getWords(line);
           passage.append(words, line.format);
           passage.commit();
         case ParagraphFormat.d:
-          final words = _getWords(line.text, line.bookChapterVerse);
+          final words = _getWords(line);
           passage.commit(words, line.format);
         case ParagraphFormat.s1:
         case ParagraphFormat.s2:
@@ -86,7 +86,7 @@ class _ChapterTextState extends State<ChapterText> {
             passage.commit();
             continue;
           }
-          final words = _getWords(line.text, line.bookChapterVerse);
+          final words = _getWords(line);
           passage.commit(words, line.format);
       }
     }
@@ -94,7 +94,9 @@ class _ChapterTextState extends State<ChapterText> {
     return _buildPassageWidget(passage.paragraphs, manager);
   }
 
-  List<ParagraphElement> _getWords(String text, int id) {
+  List<ParagraphElement> _getWords(UsfmLine line) {
+    final text = line.text;
+    final id = line.bookChapterVerse;
     final list = <ParagraphElement>[];
 
     // 1. Use a regular expression to split by one or more whitespace characters.
@@ -330,8 +332,6 @@ class _ChapterTextState extends State<ChapterText> {
   }
 
   void _onFootnoteTapped(String footnoteText) {
-    // print(footnoteText);
-    // footnoteText = footnoteText.replaceAll('; ', ';\n');
     final details = formatFootnote(
       footnote: footnoteText,
       highlightColor: Theme.of(context).colorScheme.primary,
