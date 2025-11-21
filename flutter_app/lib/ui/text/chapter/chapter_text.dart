@@ -343,30 +343,27 @@ class _ChapterTextState extends State<ChapterText> {
       case ParagraphFormat.li1:
       case ParagraphFormat.li2:
       case ParagraphFormat.pmo:
-        return defaultStyle;
       case ParagraphFormat.pc:
-        print('pc');
         return defaultStyle;
       case ParagraphFormat.qr:
-        print('qr');
-        return defaultStyle;
       case ParagraphFormat.d:
-        print('d');
-        return defaultStyle;
       case ParagraphFormat.r:
       case ParagraphFormat.s2:
         return defaultStyle.copyWith(fontStyle: FontStyle.italic);
+      case ParagraphFormat.qa:
       case ParagraphFormat.s1:
         return defaultStyle.copyWith(fontWeight: FontWeight.bold);
       case ParagraphFormat.ms:
-        print('ms');
-        return defaultStyle;
+        return defaultStyle.copyWith(
+          fontSize: 1.5 * normalTextSize,
+          fontWeight: FontWeight.bold,
+        );
       case ParagraphFormat.mr:
-        print('mr');
-        return defaultStyle;
-      case ParagraphFormat.qa:
-        print('qa');
-        return defaultStyle;
+        return defaultStyle.copyWith(
+          fontSize: 1.2 * normalTextSize,
+          fontStyle: FontStyle.italic,
+          color: defaultStyle.color!.withAlpha(150),
+        );
     }
   }
 
