@@ -60,13 +60,12 @@ class DatabaseHelper {
     required int verse,
     required String text,
     required String format,
-    required String? footnote,
   }) {
     if (text.isEmpty && format != 'b') {
       throw Exception('Empty text for $bookId, $chapter, $verse');
     }
     final reference = _packReference(bookId, chapter, verse);
-    _insertBsbStmt.execute([reference, text, format, footnote]);
+    _insertBsbStmt.execute([reference, text, format]);
   }
 
   // BBCCCVVV packed int

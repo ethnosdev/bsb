@@ -4,14 +4,12 @@ class UsfmLine {
   UsfmLine({
     required this.bookChapterVerse,
     required this.text,
-    required this.footnote,
     required this.format,
   });
 
   /// BBCCCVVV
   final int bookChapterVerse;
   final String text;
-  final String? footnote;
   final ParagraphFormat format;
 
   int get bookId => bookChapterVerse ~/ 1000000;
@@ -24,7 +22,6 @@ class UsfmLine {
     return other is UsfmLine &&
         other.bookChapterVerse == bookChapterVerse &&
         other.text == text &&
-        other.footnote == footnote &&
         other.format == format;
   }
 
@@ -32,7 +29,6 @@ class UsfmLine {
   int get hashCode => Object.hash(
         bookChapterVerse,
         text,
-        footnote,
         format,
       );
 }

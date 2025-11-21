@@ -68,10 +68,7 @@ class ChapterManager {
       final withNewLine = source.replaceAll('; ', '\n');
       return [
         UsfmLine(
-            bookChapterVerse: 0,
-            text: withNewLine,
-            footnote: null,
-            format: ParagraphFormat.m)
+            bookChapterVerse: 0, text: withNewLine, format: ParagraphFormat.m)
       ];
     }
 
@@ -102,11 +99,7 @@ class ChapterManager {
     }
     if (content == null) return null;
     return [
-      UsfmLine(
-          bookChapterVerse: 0,
-          text: content,
-          footnote: null,
-          format: ParagraphFormat.m)
+      UsfmLine(bookChapterVerse: 0, text: content, format: ParagraphFormat.m)
     ];
   }
 }

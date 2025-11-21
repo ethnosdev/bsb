@@ -9,22 +9,20 @@ class Schema {
   static const String colText = 'text';
   // paragraph format
   static const String colFormat = 'format';
-  static const String colFootnote = 'footnote';
 
   static const String createBsbTable = '''
   CREATE TABLE IF NOT EXISTS $bibleTextTable (
     $colId INTEGER PRIMARY KEY AUTOINCREMENT,
     $colReference INTEGER NOT NULL,
     $colText TEXT NOT NULL,
-    $colFormat TEXT NOT NULL,
-    $colFootnote TEXT
+    $colFormat TEXT NOT NULL
   )
   ''';
 
   static const String insertBsbLine = '''
     INSERT INTO $bibleTextTable (
-      $colReference, $colText, $colFormat, $colFootnote
-    ) VALUES (?, ?, ?, ?)
+      $colReference, $colText, $colFormat
+    ) VALUES (?, ?, ?)
   ''';
 
   // Interlinear table

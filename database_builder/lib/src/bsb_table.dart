@@ -21,7 +21,6 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
   int verse = 0;
   String? text;
   ParagraphFormat? format;
-  String? footnote;
 
   final parentheses = RegExp(r'[()]');
 
@@ -114,8 +113,6 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
               'Unknown marker: $marker (chapter: $chapter, verse: $verse)');
       }
 
-      (text, footnote) = extractFootnote(text);
-
       if (format == null) {
         print('Format null at: $marker (chapter: $chapter, verse: $verse)');
         return;
@@ -127,10 +124,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
         verse: verse,
         text: text,
         format: format.id,
-        footnote: footnote,
       );
 
-      footnote = null;
       text = null;
       oldMarker = marker;
     }
@@ -157,51 +152,6 @@ int _getChapter(String textAfterMarker) {
   final verseNumber = int.parse(textAfterMarker.substring(0, index));
   final remainder = textAfterMarker.substring(index).trim();
   return (verseNumber, remainder);
-}
-
-/// Extracts the footnote from the text.
-///
-/// The text may contain multiple footnotes. Each footnote is separated
-/// by a \n newline. The index and the footnote text are separated by a #.
-/// Example: "But springs \f + \fr 2:6 \ft Or mist\f* welled up from the earth \f + \fr 2:6 \ft Or land\f* and watered the whole surface of the ground. "
-/// New text: "But springs welled up from the earth and watered the whole surface of the ground. "
-/// The output will be:
-/// footnote: 11#Or mist\n36#Or land
-/// The indexes are exclusive, meaning the footnote text should be inserted before the index.
-(String outputText, String? footnote) extractFootnote(String text) {
-  if (!text.contains('\\f')) {
-    return (text, null);
-  }
-
-  final footnotes = <String>[];
-  var modifiedText = text;
-
-  while (modifiedText.contains('\\f')) {
-    final startIndex = modifiedText.indexOf('\\f');
-    final endIndex = modifiedText.indexOf('\\f*', startIndex) + 3;
-
-    if (endIndex == -1) {
-      throw Exception('Malformed footnote: missing closing tag');
-    }
-
-    final footnote = modifiedText.substring(startIndex, endIndex);
-    final ftIndex = footnote.indexOf('\\ft');
-    var footnoteIndex = modifiedText.indexOf('\\f', startIndex);
-    // if a footnote comes after a space, the index is shifted by one to the left.
-    // This is so that footnote markers may be inserted directly after a word.
-    if (footnoteIndex > 0 && modifiedText[footnoteIndex - 1] == ' ') {
-      footnoteIndex--;
-    }
-    final footnoteText =
-        footnote.substring(ftIndex + 4, footnote.length - 3).trim();
-    footnotes.add('$footnoteIndex#$footnoteText');
-    // Remove footnote from text
-    modifiedText = modifiedText
-        .replaceRange(startIndex, endIndex, '')
-        .replaceAll('  ', ' ');
-  }
-
-  return (modifiedText.trim(), footnotes.join('\n'));
 }
 
 String _removeItalicMarkers(String text) {

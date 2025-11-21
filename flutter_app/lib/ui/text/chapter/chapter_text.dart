@@ -98,68 +98,56 @@ class _ChapterTextState extends State<ChapterText> {
     final text = line.text;
     final id = line.bookChapterVerse;
     final list = <ParagraphElement>[];
-
-    // 1. Parse footnotes into a Map<Offset, NoteText>
-    // Format: "35#Cited in...\n40#Another note"
-    final footnoteMap = <int, String>{};
-    if (line.footnote != null && line.footnote!.isNotEmpty) {
-      final notes = line.footnote!.split('\n');
-      for (final note in notes) {
-        final separatorIndex = note.indexOf('#');
-        if (separatorIndex != -1) {
-          final offsetPart = note.substring(0, separatorIndex);
-          final contentPart = note.substring(separatorIndex + 1);
-
-          final offset = int.tryParse(offsetPart);
-          if (offset != null) {
-            // If multiple footnotes land on the same index, combine them
-            if (footnoteMap.containsKey(offset)) {
-              footnoteMap[offset] = '${footnoteMap[offset]!}\n$contentPart';
-            } else {
-              footnoteMap[offset] = contentPart;
-            }
-          }
-        }
-      }
-    }
-
-    // 2. Find all words (non-whitespace sequences) with their indices
-    final wordMatches = RegExp(r'\S+').allMatches(text);
-
     int wordId = id * 1000;
-    int lastProcessedIndex = -1;
 
-    for (final match in wordMatches) {
-      final wordText = match.group(0)!;
+    // Regex Breakdown:
+    // 1. (\\f.+?\\f\*) -> Matches USFM footnote blocks like \f ... \f*
+    // 2. (\s+)         -> Matches whitespace (separators)
+    // 3. ([^\s\\]+)    -> Matches words (non-space, non-backslash)
+    // Note: We use dotAll check or [\s\S] if footnotes span newlines,
+    // but typically UsfmLine is single-line.
+    final tokenizer = RegExp(r'(\\f.+?\\f\*)|(\s+)|([^\s\\]+)');
 
-      // Add the Word
-      list.add(Word(text: wordText, id: wordId.toString()));
-      wordId++;
+    final matches = tokenizer.allMatches(text);
 
-      // 3. Check if any footnotes belong to this word.
-      // We look for offsets that occur after the previous word ended,
-      // up to and including the end of the current word.
-      // Example: "light," (ends at 35). Footnote at 35 belongs here.
-      final relevantOffsets = footnoteMap.keys
-          .where((offset) => offset > lastProcessedIndex && offset <= match.end)
-          .toList();
+    for (final match in matches) {
+      final fullMatch = match.group(0)!;
 
-      // Sort to maintain order if multiple footnotes exist in this span
-      relevantOffsets.sort();
-
-      if (relevantOffsets.isNotEmpty) {
-        // Combine texts if there are multiple footnotes for this single word
-        final combinedNoteText =
-            relevantOffsets.map((offset) => footnoteMap[offset]).join('\n');
-
-        // Add the Footnote immediately after the Word
-        list.add(Footnote(combinedNoteText));
+      if (match.group(1) != null) {
+        // --- IT IS A FOOTNOTE ---
+        // Raw: \f + \fr 1:3 \ft Cited in 2 Corinthians 4:6\f*
+        final cleanText = _extractUsfmFootnoteText(fullMatch);
+        if (cleanText.isNotEmpty) {
+          list.add(Footnote(cleanText));
+        }
+      } else if (match.group(3) != null) {
+        // --- IT IS A WORD ---
+        // We trim to be safe, though regex usually handles it
+        list.add(Word(text: fullMatch, id: wordId.toString()));
+        wordId++;
       }
-
-      lastProcessedIndex = match.end;
+      // If group(2) matches, it's whitespace; we loop to the next item.
     }
 
     return list;
+  }
+
+  /// Helper to clean USFM tags out of the footnote string.
+  /// Turns: "\f + \fr 1:3 \ft Cited in 2 Cor 4:6\f*"
+  /// Into:  "Cited in 2 Cor 4:6"
+  String _extractUsfmFootnoteText(String rawUsfm) {
+    // 1. Remove opening \f, closing \f*, and the caller + or -
+    var content = rawUsfm.replaceAll(RegExp(r'^\\f\s*[+-]?\s*|\\f\*$'), '');
+
+    // 2. Remove the Reference tag (\fr) AND its content entirely.
+    content = content.replaceAll(RegExp(r'\\fr\s*[^\\\\]*'), '');
+
+    // 3. Remove other tag markers (like \ft, \fq) but KEEP their content.
+    // This removes "\ft " but leaves "Cited in..."
+    content = content.replaceAll(RegExp(r'\\[a-z0-9]+\s*'), '');
+
+    // 4. Clean up double spaces and trim
+    return content.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   PassageWidget _buildPassageWidget(
