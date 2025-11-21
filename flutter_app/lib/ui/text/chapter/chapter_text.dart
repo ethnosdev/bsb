@@ -17,12 +17,19 @@ class ChapterText extends StatefulWidget {
 
 class _ChapterTextState extends State<ChapterText> {
   final manager = ChapterManager();
+  final _selectionController = ScriptureSelectionController();
   static const lightTextOpacity = 0.6;
 
   @override
   void initState() {
     super.initState();
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
+  }
+
+  @override
+  void dispose() {
+    _selectionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -40,10 +47,11 @@ class _ChapterTextState extends State<ChapterText> {
     );
   }
 
-  PassageWidget _buildPassage(List<UsfmLine> verseLines,
-      {bool showHeadings = true}) {
+  Widget _buildPassage(List<UsfmLine> verseLines, {bool showHeadings = true}) {
     UsfmPassage passage = UsfmPassage([]);
-    int verseNumber = 0;
+    int currentVerseNum = -1;
+    int currentWordOffset = 0;
+
     for (final line in verseLines) {
       switch (line.format) {
         case ParagraphFormat.b:
@@ -56,11 +64,13 @@ class _ChapterTextState extends State<ChapterText> {
           }
         case ParagraphFormat.m:
         case ParagraphFormat.pmo:
-          if (line.verse != verseNumber) {
+          if (line.verse != currentVerseNum) {
             passage.append([VerseNumber(line.verse.toString())], line.format);
-            verseNumber = line.verse;
+            currentVerseNum = line.verse;
+            currentWordOffset = 0;
           }
-          final words = _getWords(line);
+          final words = _getWords(line, currentWordOffset);
+          currentWordOffset += words.whereType<Word>().length;
           passage.append(words, line.format);
         case ParagraphFormat.q1:
         case ParagraphFormat.q2:
@@ -68,15 +78,20 @@ class _ChapterTextState extends State<ChapterText> {
         case ParagraphFormat.li2:
         case ParagraphFormat.qr:
         case ParagraphFormat.pc:
-          if (line.verse != verseNumber) {
+          if (line.verse != currentVerseNum) {
             passage.append([VerseNumber(line.verse.toString())], line.format);
-            verseNumber = line.verse;
+            currentVerseNum = line.verse;
+            currentWordOffset = 0;
           }
-          final words = _getWords(line);
+          final words = _getWords(line, currentWordOffset);
+          currentWordOffset += words.whereType<Word>().length;
           passage.append(words, line.format);
           passage.commit();
         case ParagraphFormat.d:
-          final words = _getWords(line);
+          // Titles usually don't change verse numbers, but we should still
+          // respect the offset logic if they share a verse ID.
+          final words = _getWords(line, currentWordOffset);
+          currentWordOffset += words.whereType<Word>().length;
           passage.commit(words, line.format);
         case ParagraphFormat.s1:
         case ParagraphFormat.s2:
@@ -87,7 +102,9 @@ class _ChapterTextState extends State<ChapterText> {
             passage.commit();
             continue;
           }
-          final words = _getWords(line);
+          // Increment offset in case a heading technically shares a verse ID
+          final words = _getWords(line, currentWordOffset);
+          currentWordOffset += words.whereType<Word>().length;
           passage.commit(words, line.format);
       }
     }
@@ -95,11 +112,11 @@ class _ChapterTextState extends State<ChapterText> {
     return _buildPassageWidget(passage.paragraphs, manager);
   }
 
-  List<ParagraphElement> _getWords(UsfmLine line) {
+  List<ParagraphElement> _getWords(UsfmLine line, int startOffset) {
     final text = line.text;
     final id = line.bookChapterVerse;
     final list = <ParagraphElement>[];
-    int wordId = id * 1000;
+    int wordId = (id * 1000) + startOffset;
 
     // Regex Breakdown:
     // 1. (\\f.+?\\f\*) -> Matches USFM footnote blocks like \f ... \f*
@@ -151,10 +168,12 @@ class _ChapterTextState extends State<ChapterText> {
     return content.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
-  PassageWidget _buildPassageWidget(
+  Widget _buildPassageWidget(
       List<UsfmParagraph> paragraphs, ChapterManager manager) {
     final passageChildren = <Widget>[];
+
     for (final paragraph in paragraphs) {
+      // final isSelectable = _isFormatSelectable(paragraph.format);
       final paragraphChildren =
           _getParagraphChildren(paragraph, _onFootnoteTapped);
       switch (paragraph.format) {
@@ -162,15 +181,18 @@ class _ChapterTextState extends State<ChapterText> {
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.m:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
             children: paragraphChildren,
           ));
         case ParagraphFormat.pc:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
             textAlign: TextAlign.center,
             children: paragraphChildren,
           ));
         case ParagraphFormat.qr:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
             textAlign: TextAlign.right,
             children: paragraphChildren,
           ));
@@ -178,6 +200,7 @@ class _ChapterTextState extends State<ChapterText> {
         case ParagraphFormat.q1:
         case ParagraphFormat.li1:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
             firstLineIndent: 20,
             subsequentLinesIndent: 100,
             children: paragraphChildren,
@@ -185,20 +208,30 @@ class _ChapterTextState extends State<ChapterText> {
         case ParagraphFormat.q2:
         case ParagraphFormat.li2:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
             firstLineIndent: 60,
             subsequentLinesIndent: 100,
             children: paragraphChildren,
           ));
         case ParagraphFormat.pmo:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
             firstLineIndent: 20,
             subsequentLinesIndent: 20,
             children: paragraphChildren,
           ));
         case ParagraphFormat.d:
+          passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
+            textAlign: TextAlign.center,
+            children: paragraphChildren,
+          ));
+          _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.r:
         case ParagraphFormat.mr:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
+            selectable: false,
             textAlign: TextAlign.center,
             children: paragraphChildren,
           ));
@@ -207,16 +240,22 @@ class _ChapterTextState extends State<ChapterText> {
         case ParagraphFormat.s2:
           _addParagraphSpacing(passageChildren, paragraph.format);
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
+            selectable: false,
             children: paragraphChildren,
           ));
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.ms:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
+            selectable: false,
             textAlign: TextAlign.center,
             children: paragraphChildren,
           ));
         case ParagraphFormat.qa:
           passageChildren.add(ParagraphWidget(
+            selectionController: _selectionController,
+            selectable: false,
             children: paragraphChildren,
           ));
       }
@@ -227,8 +266,11 @@ class _ChapterTextState extends State<ChapterText> {
       passageChildren.removeLast();
     }
 
-    return PassageWidget(
-      children: passageChildren,
+    return SelectableScripture(
+      controller: _selectionController,
+      child: PassageWidget(
+        children: passageChildren,
+      ),
     );
   }
 
@@ -270,7 +312,13 @@ class _ChapterTextState extends State<ChapterText> {
               style: verseNumberStyle,
               padding: const EdgeInsets.only(right: 4.0),
             ),
-            WordWidget(text: nextWord.text, id: nextWord.id, style: style),
+            WordWidget(
+              text: nextWord.text,
+              id: nextWord.id,
+              style: style,
+              onLongPress: _handleWordLongPress,
+              selectionController: _selectionController,
+            ),
           ],
         );
         i++; // CRITICAL: Skip the next element as it's now in the atom.
@@ -288,6 +336,8 @@ class _ChapterTextState extends State<ChapterText> {
               // Assign the callback to the preceding Word.
               // We adapt our new callback to the WordWidget's expected signature.
               onTap: (wordText, wordId) => onFootnoteTapped(nextFootnote.text),
+              onLongPress: _handleWordLongPress,
+              selectionController: _selectionController,
             ),
             FootnoteWidget(
               marker: '*',
@@ -303,7 +353,12 @@ class _ChapterTextState extends State<ChapterText> {
         // Case: A standalone word becomes an atom of one.
         atom = TextAtomWidget(children: [
           WordWidget(
-              text: currentElement.text, id: currentElement.id, style: style),
+            text: currentElement.text,
+            id: currentElement.id,
+            style: style,
+            onLongPress: _handleWordLongPress,
+            selectionController: _selectionController,
+          ),
         ]);
       } else if (currentElement is VerseNumber) {
         // Case: A standalone verse number (edge case).
@@ -342,6 +397,84 @@ class _ChapterTextState extends State<ChapterText> {
 
     // Default Rule: Add a space.
     return true;
+  }
+
+  void _handleWordLongPress(String unusedText, String wordIdText) {
+    final wordId = int.tryParse(wordIdText);
+    if (wordId == null) return;
+
+    final targetVerseRef = wordId ~/ 1000;
+
+    String? startId;
+    String? endId;
+
+    final lines = manager.textParagraphNotifier.value;
+
+    // 1. Tracking State (Must mirror _buildPassage exactly)
+    int currentVerseNum = -1;
+    int currentWordOffset = 0;
+
+    for (final line in lines) {
+      // 2. SKIP formats that _buildPassage skips (b, r)
+      // If we don't skip these, we might try to process them and mess up IDs
+      if (line.format == ParagraphFormat.b ||
+          line.format == ParagraphFormat.r) {
+        continue;
+      }
+
+      // 3. Handle State Resets based on Format
+      // In _buildPassage, 'm', 'q1', etc update the verse counter.
+      // 'd', 's1', etc DO NOT update the verse counter.
+
+      bool isBiblicalText = false;
+      switch (line.format) {
+        case ParagraphFormat.m:
+        case ParagraphFormat.pmo:
+        case ParagraphFormat.q1:
+        case ParagraphFormat.q2:
+        case ParagraphFormat.li1:
+        case ParagraphFormat.li2:
+        case ParagraphFormat.qr:
+        case ParagraphFormat.pc:
+          isBiblicalText = true;
+        default:
+          isBiblicalText = false;
+      }
+
+      if (isBiblicalText) {
+        // Only these formats trigger a check for verse change
+        if (line.verse != currentVerseNum) {
+          currentVerseNum = line.verse;
+          currentWordOffset = 0;
+        }
+      }
+      // Note: If format is 'd' or 's1', we DO NOT update currentVerseNum
+      // This ensures that if a title is inserted in the middle of a verse,
+      // the offset continues accumulating correctly for the next part of the verse.
+
+      // 4. Check if this line matches our Target Verse
+      // We check line.bookChapterVerse directly.
+      if (line.bookChapterVerse == targetVerseRef) {
+        final words = _getWords(line, currentWordOffset);
+
+        for (final w in words) {
+          if (w is Word) {
+            startId ??= w.id; // First matching word
+            endId = w.id; // Continuously update to capture the very last one
+          }
+        }
+      }
+
+      // 5. Increment Offset for the next iteration
+      // We calculate the word count exactly as _getWords does
+      final wordCount = _getWords(line, 0).whereType<Word>().length;
+      currentWordOffset += wordCount;
+    }
+
+    // 6. Apply Selection
+    if (startId != null && endId != null) {
+      _selectionController.selectRange(startId, endId);
+    }
   }
 
   TextStyle _getStyleForParagraphType(
