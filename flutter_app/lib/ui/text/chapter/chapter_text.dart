@@ -99,15 +99,66 @@ class _ChapterTextState extends State<ChapterText> {
     final id = line.bookChapterVerse;
     final list = <ParagraphElement>[];
 
-    // 1. Use a regular expression to split by one or more whitespace characters.
-    // 2. Use .where() to filter out any empty strings that might result.
-    final words = text.split(RegExp(r'\s+')).where((s) => s.isNotEmpty);
+    // 1. Parse footnotes into a Map<Offset, NoteText>
+    // Format: "35#Cited in...\n40#Another note"
+    final footnoteMap = <int, String>{};
+    if (line.footnote != null && line.footnote!.isNotEmpty) {
+      final notes = line.footnote!.split('\n');
+      for (final note in notes) {
+        final separatorIndex = note.indexOf('#');
+        if (separatorIndex != -1) {
+          final offsetPart = note.substring(0, separatorIndex);
+          final contentPart = note.substring(separatorIndex + 1);
+
+          final offset = int.tryParse(offsetPart);
+          if (offset != null) {
+            // If multiple footnotes land on the same index, combine them
+            if (footnoteMap.containsKey(offset)) {
+              footnoteMap[offset] = '${footnoteMap[offset]!}\n$contentPart';
+            } else {
+              footnoteMap[offset] = contentPart;
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Find all words (non-whitespace sequences) with their indices
+    final wordMatches = RegExp(r'\S+').allMatches(text);
 
     int wordId = id * 1000;
-    for (final word in words) {
-      list.add(Word(text: word, id: wordId.toString()));
+    int lastProcessedIndex = -1;
+
+    for (final match in wordMatches) {
+      final wordText = match.group(0)!;
+
+      // Add the Word
+      list.add(Word(text: wordText, id: wordId.toString()));
       wordId++;
+
+      // 3. Check if any footnotes belong to this word.
+      // We look for offsets that occur after the previous word ended,
+      // up to and including the end of the current word.
+      // Example: "light," (ends at 35). Footnote at 35 belongs here.
+      final relevantOffsets = footnoteMap.keys
+          .where((offset) => offset > lastProcessedIndex && offset <= match.end)
+          .toList();
+
+      // Sort to maintain order if multiple footnotes exist in this span
+      relevantOffsets.sort();
+
+      if (relevantOffsets.isNotEmpty) {
+        // Combine texts if there are multiple footnotes for this single word
+        final combinedNoteText =
+            relevantOffsets.map((offset) => footnoteMap[offset]).join('\n');
+
+        // Add the Footnote immediately after the Word
+        list.add(Footnote(combinedNoteText));
+      }
+
+      lastProcessedIndex = match.end;
     }
+
     return list;
   }
 
