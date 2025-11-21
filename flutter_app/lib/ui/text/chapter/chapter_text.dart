@@ -268,6 +268,8 @@ class _ChapterTextState extends State<ChapterText> {
 
     return SelectableScripture(
       controller: _selectionController,
+      onWordTapped: (id) => print(id),
+      onSelectionRequested: _handleWordLongPress,
       child: PassageWidget(
         children: passageChildren,
       ),
@@ -316,8 +318,6 @@ class _ChapterTextState extends State<ChapterText> {
               text: nextWord.text,
               id: nextWord.id,
               style: style,
-              onLongPress: _handleWordLongPress,
-              selectionController: _selectionController,
             ),
           ],
         );
@@ -333,11 +333,7 @@ class _ChapterTextState extends State<ChapterText> {
               text: currentElement.text,
               id: currentElement.id,
               style: style,
-              // Assign the callback to the preceding Word.
-              // We adapt our new callback to the WordWidget's expected signature.
-              onTap: (wordText, wordId) => onFootnoteTapped(nextFootnote.text),
-              onLongPress: _handleWordLongPress,
-              selectionController: _selectionController,
+              // onTap: (wordText, wordId) => onFootnoteTapped(nextFootnote.text),
             ),
             FootnoteWidget(
               marker: '*',
@@ -356,8 +352,6 @@ class _ChapterTextState extends State<ChapterText> {
             text: currentElement.text,
             id: currentElement.id,
             style: style,
-            onLongPress: _handleWordLongPress,
-            selectionController: _selectionController,
           ),
         ]);
       } else if (currentElement is VerseNumber) {
@@ -399,7 +393,7 @@ class _ChapterTextState extends State<ChapterText> {
     return true;
   }
 
-  void _handleWordLongPress(String unusedText, String wordIdText) {
+  void _handleWordLongPress(String wordIdText) {
     final wordId = int.tryParse(wordIdText);
     if (wordId == null) return;
 
