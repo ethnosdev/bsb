@@ -160,11 +160,20 @@ class _ChapterTextState extends State<ChapterText> {
         case ParagraphFormat.b:
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.m:
-        case ParagraphFormat.pc:
-        case ParagraphFormat.qr:
           passageChildren.add(ParagraphWidget(
             children: paragraphChildren,
           ));
+        case ParagraphFormat.pc:
+          passageChildren.add(ParagraphWidget(
+            textAlign: TextAlign.center,
+            children: paragraphChildren,
+          ));
+        case ParagraphFormat.qr:
+          passageChildren.add(ParagraphWidget(
+            textAlign: TextAlign.right,
+            children: paragraphChildren,
+          ));
+          _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.q1:
         case ParagraphFormat.li1:
           passageChildren.add(ParagraphWidget(
@@ -189,6 +198,7 @@ class _ChapterTextState extends State<ChapterText> {
         case ParagraphFormat.r:
         case ParagraphFormat.mr:
           passageChildren.add(ParagraphWidget(
+            textAlign: TextAlign.center,
             children: paragraphChildren,
           ));
           _addParagraphSpacing(passageChildren, paragraph.format);
@@ -200,6 +210,10 @@ class _ChapterTextState extends State<ChapterText> {
           ));
           _addParagraphSpacing(passageChildren, paragraph.format);
         case ParagraphFormat.ms:
+          passageChildren.add(ParagraphWidget(
+            textAlign: TextAlign.center,
+            children: paragraphChildren,
+          ));
         case ParagraphFormat.qa:
           passageChildren.add(ParagraphWidget(
             children: paragraphChildren,
