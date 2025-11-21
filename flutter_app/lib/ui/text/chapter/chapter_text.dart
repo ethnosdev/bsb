@@ -17,6 +17,7 @@ class ChapterText extends StatefulWidget {
 
 class _ChapterTextState extends State<ChapterText> {
   final manager = ChapterManager();
+  static const lightTextOpacity = 0.6;
 
   @override
   void initState() {
@@ -244,6 +245,8 @@ class _ChapterTextState extends State<ChapterText> {
     void Function(String) onFootnoteTapped,
   ) {
     final style = _getStyleForParagraphType(paragraph.format);
+    final verseNumberStyle =
+        style.copyWith(color: style.color!.withValues(alpha: lightTextOpacity));
     final paragraphChildren = <Widget>[];
     final List<ParagraphElement> elements = paragraph.content;
 
@@ -264,7 +267,7 @@ class _ChapterTextState extends State<ChapterText> {
           children: [
             VerseNumberWidget(
               number: currentElement.number,
-              style: style,
+              style: verseNumberStyle,
               padding: const EdgeInsets.only(right: 4.0),
             ),
             WordWidget(text: nextWord.text, id: nextWord.id, style: style),
@@ -376,7 +379,7 @@ class _ChapterTextState extends State<ChapterText> {
         return defaultStyle.copyWith(
           fontSize: 1.2 * normalTextSize,
           fontStyle: FontStyle.italic,
-          color: defaultStyle.color!.withAlpha(150),
+          color: defaultStyle.color!.withValues(alpha: lightTextOpacity),
         );
     }
   }
