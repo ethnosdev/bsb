@@ -3,10 +3,10 @@ import 'package:bsb/infrastructure/extrabiblical_texts.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/source_texts.dart';
-import 'package:bsb/infrastructure/verse_line.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
 class ChapterManager {
