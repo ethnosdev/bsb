@@ -6,6 +6,8 @@
 - Put reference above copied text.
 - Fix bug where copied text includes section titles.
 - Optimized database storage.
+- Added more empty space below chapter to allow scrolling end of chapter higher.
+- Remember scroll position for adjacent chapters.
 
 # 1.4.2 - 2025.07.22
 

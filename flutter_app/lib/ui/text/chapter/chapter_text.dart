@@ -20,9 +20,13 @@ class ChapterText extends StatefulWidget {
   State<ChapterText> createState() => _ChapterTextState();
 }
 
-class _ChapterTextState extends State<ChapterText> {
+class _ChapterTextState extends State<ChapterText>
+    with AutomaticKeepAliveClientMixin {
   final manager = ChapterManager();
   final _selectionController = ScriptureSelectionController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -46,6 +50,7 @@ class _ChapterTextState extends State<ChapterText> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final screenHeight = MediaQuery.sizeOf(context).height;
     return ValueListenableBuilder<List<UsfmLine>>(
       valueListenable: manager.textParagraphNotifier,

@@ -47,6 +47,8 @@ class _TextScreenState extends State<TextScreen> {
     _screenManager.updateTitle(index: _pageIndex);
     _pageController = PageController(
       initialPage: _initialPageOffset + _pageIndex,
+      // trick to keep adjacent page scroll position in memory
+      viewportFraction: 0.99,
     );
     _pageController.addListener(() {
       final page = _pageController.page ?? _initialPageOffset;
