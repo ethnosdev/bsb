@@ -4,10 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:scripture/scripture.dart';
 
 class ChapterText extends StatefulWidget {
-  const ChapterText({super.key, required this.bookId, required this.chapter});
+  const ChapterText({
+    super.key,
+    required this.bookId,
+    required this.chapter,
+    this.onSelectionChanged,
+  });
 
   final int bookId;
   final int chapter;
+  final void Function(ScriptureSelectionController controller)?
+      onSelectionChanged;
 
   @override
   State<ChapterText> createState() => _ChapterTextState();
@@ -21,12 +28,20 @@ class _ChapterTextState extends State<ChapterText> {
   void initState() {
     super.initState();
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
+    _selectionController.addListener(_handleSelectionChange);
   }
 
   @override
   void dispose() {
+    _selectionController.removeListener(_handleSelectionChange);
     _selectionController.dispose();
     super.dispose();
+  }
+
+  void _handleSelectionChange() {
+    if (mounted && widget.onSelectionChanged != null) {
+      widget.onSelectionChanged!(_selectionController);
+    }
   }
 
   @override

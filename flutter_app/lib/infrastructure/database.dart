@@ -128,12 +128,12 @@ class DatabaseHelper {
         return Punctuation(punctuation: text);
       } else {
         final language = Language.fromInt(row[Schema.ilColLanguage] as int);
-        final translit =
+        final transliteration =
             (language == Language.greek) ? transliterateGreek(text) : '';
         return OriginalWord(
           language: language,
           word: text,
-          transliteration: translit,
+          transliteration: transliteration,
           englishGloss: row[Schema.ilColEnglish] as String,
           strongsNumber: row[Schema.ilColStrongsNumber] as int,
           partOfSpeech: row[Schema.ilColPartOfSpeech] as String,
@@ -155,7 +155,7 @@ class DatabaseHelper {
     );
 
     return result
-        .map((row) => Reference.from(
+        .map((row) => Reference.fromVerseId(
               packedInt: row[Schema.ilColReference] as int,
             ))
         .toList();

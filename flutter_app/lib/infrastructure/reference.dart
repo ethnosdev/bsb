@@ -10,13 +10,35 @@ class Reference {
         assert(chapter >= 1 && chapter <= 150),
         assert(endVerse == null || verse <= endVerse);
 
-  factory Reference.from({required int packedInt}) {
+  /// [packedInt] is in the form BBCCCVVV
+  factory Reference.fromVerseId({required int packedInt, int? packedIntEnd}) {
     const int bookMultiplier = 1000000;
     const int chapterMultiplier = 1000;
     final bookId = packedInt ~/ bookMultiplier;
     final chapter = (packedInt % bookMultiplier) ~/ chapterMultiplier;
     final verse = packedInt % chapterMultiplier;
-    return Reference(bookId: bookId, chapter: chapter, verse: verse);
+    int? endVerse;
+    if (packedIntEnd != null) {
+      endVerse = packedIntEnd % chapterMultiplier;
+    }
+    return Reference(
+        bookId: bookId, chapter: chapter, verse: verse, endVerse: endVerse);
+  }
+
+  /// [packedInt] is in the form BBCCCVVVWWW
+  factory Reference.fromWordId({required int packedInt, int? packedIntEnd}) {
+    const int bookMultiplier = 1000000000;
+    const int chapterMultiplier = 1000000;
+    const int verseMultiplier = 1000;
+    final bookId = packedInt ~/ bookMultiplier;
+    final chapter = (packedInt % bookMultiplier) ~/ chapterMultiplier;
+    final verse = (packedInt % chapterMultiplier) ~/ verseMultiplier;
+    int? endVerse;
+    if (packedIntEnd != null) {
+      endVerse = (packedIntEnd % chapterMultiplier) ~/ verseMultiplier;
+    }
+    return Reference(
+        bookId: bookId, chapter: chapter, verse: verse, endVerse: endVerse);
   }
 
   final int bookId;
@@ -64,7 +86,10 @@ class Reference {
   @override
   String toString() {
     final bookName = bookIdToFullNameMap[bookId];
-    return '$bookName $chapter:$verse${endVerse == null ? '' : '–$endVerse'}';
+    if (endVerse != null && endVerse != verse) {
+      return '$bookName $chapter:$verse–$endVerse';
+    }
+    return '$bookName $chapter:$verse';
   }
 }
 

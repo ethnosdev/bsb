@@ -1,7 +1,10 @@
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:scripture/scripture.dart';
 
 import 'screen_manager.dart';
 
@@ -20,20 +23,22 @@ class TextScreen extends StatefulWidget {
 }
 
 class _TextScreenState extends State<TextScreen> {
-  final screenManager = TextScreenManager();
+  final _screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
+  final _showBottomBarNotifier = ValueNotifier<bool>(false);
   int _pageIndex = 0;
+  ScriptureSelectionController? _activeController;
 
   @override
   void initState() {
     super.initState();
-    _pageIndex = screenManager.pageIndexForBookAndChapter(
+    _pageIndex = _screenManager.pageIndexForBookAndChapter(
       bookId: widget.bookId,
       chapter: widget.chapter,
     );
-    screenManager.updateTitle(index: _pageIndex);
+    _screenManager.updateTitle(index: _pageIndex);
     _pageController = PageController(
       initialPage: _initialPageOffset + _pageIndex,
     );
@@ -42,9 +47,13 @@ class _TextScreenState extends State<TextScreen> {
       final currentIndex = (page - _initialPageOffset).round();
       if (currentIndex != _pageIndex) {
         _pageIndex = currentIndex;
-        screenManager.updateTitle(
+        _screenManager.updateTitle(
           index: _pageIndex,
         );
+        // Hide the bottom bar when swiping to a new page
+        if (_showBottomBarNotifier.value) {
+          _showBottomBarNotifier.value = false;
+        }
       }
     });
   }
@@ -52,7 +61,9 @@ class _TextScreenState extends State<TextScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    screenManager.dispose();
+    _showBottomBarNotifier.dispose();
+    _chapterNotifier.dispose();
+    _screenManager.dispose();
     super.dispose();
   }
 
@@ -61,12 +72,12 @@ class _TextScreenState extends State<TextScreen> {
     return Scaffold(
       appBar: AppBar(
         title: ValueListenableBuilder<String>(
-          valueListenable: screenManager.titleNotifier,
+          valueListenable: _screenManager.titleNotifier,
           builder: (context, title, child) {
             return GestureDetector(
               onTap: () {
                 final (bookId, chapterCount) =
-                    screenManager.currentBookAndChapterCount(_pageIndex);
+                    _screenManager.currentBookAndChapterCount(_pageIndex);
                 _chapterNotifier.value = (bookId, chapterCount);
               },
               child: Text(title),
@@ -78,6 +89,7 @@ class _TextScreenState extends State<TextScreen> {
         children: [
           _buildChapterTextPageView(),
           _buildChapterChooserOverlay(),
+          _buildBottomMenuBar(),
         ],
       ),
     );
@@ -90,8 +102,18 @@ class _TextScreenState extends State<TextScreen> {
       itemBuilder: (context, index) {
         final pageIndex = index - _initialPageOffset;
         final (bookId, chapter) =
-            screenManager.bookAndChapterForPageIndex(pageIndex);
-        return ChapterText(bookId: bookId, chapter: chapter);
+            _screenManager.bookAndChapterForPageIndex(pageIndex);
+        return ChapterText(
+          bookId: bookId,
+          chapter: chapter,
+          onSelectionChanged: (controller) {
+            _activeController = controller;
+            final hasSelection = controller.hasSelection;
+            if (_showBottomBarNotifier.value != hasSelection) {
+              _showBottomBarNotifier.value = hasSelection;
+            }
+          },
+        );
       },
     );
   }
@@ -109,7 +131,7 @@ class _TextScreenState extends State<TextScreen> {
           onChapterSelected: (chapter) {
             _chapterNotifier.value = null;
             if (chapter == null) return;
-            final pageIndex = screenManager.pageIndexForBookAndChapter(
+            final pageIndex = _screenManager.pageIndexForBookAndChapter(
               bookId: bookId,
               chapter: chapter,
             );
@@ -120,4 +142,87 @@ class _TextScreenState extends State<TextScreen> {
       },
     );
   }
+
+  Widget _buildBottomMenuBar() {
+    return ValueListenableBuilder(
+        valueListenable: _showBottomBarNotifier,
+        builder: (context, showBar, child) {
+          if (!showBar) return const SizedBox();
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: BottomNavigationBar(
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.content_copy),
+                  label: 'Copy',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.highlight),
+                  label: 'Highlight',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.language),
+                  label: 'Greek',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.compare),
+                  label: 'Compare',
+                ),
+              ],
+              onTap: _handleBottomBarTap,
+            ),
+          );
+        });
+  }
+
+  Future<void> _handleBottomBarTap(int index) async {
+    if (_activeController == null || !_activeController!.hasSelection) return;
+
+    final startId = _activeController!.startId!;
+
+    // Extract context using the Extension
+    final reference = Reference.fromWordId(packedInt: startId);
+
+    switch (index) {
+      case 0: // COPY
+        await _handleCopy();
+      case 1: // GREEK
+        _handleGreek(reference);
+      case 2: // COMPARE
+        _handleCompare(reference);
+    }
+
+    // Clear selection after action
+    _activeController?.clear();
+  }
+
+  Future<void> _handleCopy() async {
+    if (_activeController == null || !_activeController!.hasSelection) return;
+
+    final bodyText = _activeController!.getSelectedText();
+    final reference = Reference.fromWordId(
+      packedInt: _activeController!.startId!,
+      packedIntEnd: _activeController!.endId!,
+    );
+
+    final StringBuffer fullText = StringBuffer();
+    fullText.writeln(reference);
+    fullText.write(bodyText);
+
+    await Clipboard.setData(ClipboardData(text: fullText.toString()));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Copied to clipboard'),
+          duration: Duration(milliseconds: 300),
+        ),
+      );
+    }
+  }
+
+  void _handleGreek(Reference reference) {}
+
+  void _handleCompare(Reference reference) {}
 }
