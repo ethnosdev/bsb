@@ -194,6 +194,7 @@ class _ChapterTextState extends State<ChapterText>
                         );
                       },
                       showHeadings: false,
+                      showVerseNumbers: false,
                     ),
                   ),
                 ),
