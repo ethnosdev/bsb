@@ -34,10 +34,12 @@ class _TextScreenState extends State<TextScreen> {
   final _showBottomBarNotifier = ValueNotifier<bool>(false);
   int _pageIndex = 0;
   ScriptureSelectionController? _activeController;
+  late Language _currentLanguage;
 
   @override
   void initState() {
     super.initState();
+    _currentLanguage = widget.bookId >= 40 ? Language.greek : Language.hebrew;
     _pageIndex = _screenManager.pageIndexForBookAndChapter(
       bookId: widget.bookId,
       chapter: widget.chapter,
@@ -113,6 +115,17 @@ class _TextScreenState extends State<TextScreen> {
           onSelectionChanged: (controller) {
             _activeController = controller;
             final hasSelection = controller.hasSelection;
+            if (hasSelection && controller.startId != null) {
+              final startId = controller.startId!;
+              final reference = Reference.fromWordId(packedInt: startId);
+              setState(() {
+                _currentLanguage = languageForVerse(
+                  bookId: reference.bookId,
+                  chapter: reference.chapter,
+                  verse: reference.verse,
+                );
+              });
+            }
             if (_showBottomBarNotifier.value != hasSelection) {
               _showBottomBarNotifier.value = hasSelection;
             }
@@ -151,7 +164,7 @@ class _TextScreenState extends State<TextScreen> {
     return ValueListenableBuilder(
         valueListenable: _showBottomBarNotifier,
         builder: (context, showBar, child) {
-          final language = showBar ? _getCurrentLanguage() : Language.greek;
+          final language = _currentLanguage;
           return Align(
             alignment: Alignment.bottomCenter,
             child: AnimatedSlide(
@@ -183,13 +196,6 @@ class _TextScreenState extends State<TextScreen> {
             ),
           );
         });
-  }
-
-  Language _getCurrentLanguage() {
-    final wordId = _activeController!.startId!;
-    final reference = Reference.fromWordId(packedInt: wordId);
-    final language = _screenManager.verseLanguageLabel(_pageIndex, reference);
-    return language;
   }
 
   String _getLanguageLabel(Language language) {
