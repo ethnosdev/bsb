@@ -1,3 +1,4 @@
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -62,12 +63,11 @@ class TextScreenManager {
     return bookIdToChapterIndexMap[bookId]! + chapter - 1;
   }
 
-  Language verseLanguageLabel(int pageIndex, int verseNumber) {
-    final (bookId, chapter) = bookAndChapterForPageIndex(pageIndex);
+  Language verseLanguageLabel(int pageIndex, Reference reference) {
     final language = languageForVerse(
-      bookId: bookId,
-      chapter: chapter,
-      verse: verseNumber,
+      bookId: reference.bookId,
+      chapter: reference.chapter,
+      verse: reference.verse,
     );
     return language;
   }

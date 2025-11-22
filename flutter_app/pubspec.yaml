@@ -55,3 +55,8 @@ flutter:
     - family: Galatia
       fonts:
         - asset: assets/fonts/galatia/GalSILR.ttf
+
+    # Custom
+    - family: CustomIcons
+      fonts:
+        - asset: assets/fonts/custom/CustomIcons.ttf
