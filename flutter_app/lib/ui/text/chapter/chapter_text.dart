@@ -46,12 +46,14 @@ class _ChapterTextState extends State<ChapterText> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.sizeOf(context).height;
     return ValueListenableBuilder<List<UsfmLine>>(
       valueListenable: manager.textParagraphNotifier,
       builder: (context, verseLines, child) {
         return SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.only(
+                left: 16.0, top: 16.0, right: 16.0, bottom: screenHeight * 0.8),
             child: UsfmWidget(
               verseLines: verseLines,
               selectionController: _selectionController,
