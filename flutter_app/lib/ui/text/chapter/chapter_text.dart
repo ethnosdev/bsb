@@ -172,6 +172,7 @@ class _ChapterTextState extends State<ChapterText> {
                     child: UsfmWidget(
                       verseLines: passage,
                       selectionController: ScriptureSelectionController(),
+                      onFootnoteTapped: _onFootnoteTapped,
                       styleBuilder: (format) {
                         return UsfmParagraphStyle.usfmDefaults(
                           format: format,
