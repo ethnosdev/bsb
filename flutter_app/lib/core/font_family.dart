@@ -6,6 +6,6 @@ String fontFamilyForLanguage(Language language) {
 }
 
 class CustomIcons {
-  static IconData aleph = IconData(0xe800, fontFamily: 'CustomIcons');
-  static IconData alpha = IconData(0xe801, fontFamily: 'CustomIcons');
+  static const aleph = IconData(0xe800, fontFamily: 'CustomIcons');
+  static const alpha = IconData(0xe801, fontFamily: 'CustomIcons');
 }

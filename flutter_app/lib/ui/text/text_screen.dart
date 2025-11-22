@@ -206,10 +206,10 @@ class _TextScreenState extends State<TextScreen> {
   Icon _getLanguageIcon(Language language) {
     switch (language) {
       case Language.greek:
-        return Icon(CustomIcons.alpha);
+        return const Icon(CustomIcons.alpha);
       case Language.hebrew:
       case Language.aramaic:
-        return Icon(CustomIcons.aleph);
+        return const Icon(CustomIcons.aleph);
     }
   }
 

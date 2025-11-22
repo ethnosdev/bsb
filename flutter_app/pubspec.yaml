@@ -1,7 +1,7 @@
 name: bsb
 description: "Berean Standard Bible"
 publish_to: 'none' 
-version: 1.4.2+25
+version: 1.5.0+26
 
 environment:
   sdk: ^3.5.4
@@ -11,13 +11,13 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   sqflite: ^2.4.2
-  get_it: ^8.0.3
+  get_it: ^9.1.0
   path: ^1.9.1
   database_builder: 
     path: ../database_builder
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.1
-  package_info_plus: ^8.3.0
+  package_info_plus: ^9.0.0
   # TODO: publish this as a real package when working
   scripture:
     path: ../../scripture

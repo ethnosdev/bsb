@@ -1,3 +1,12 @@
+# 1.5.0 - 2025.11.22
+
+- Rewrite of text layout engine.
+- Better poetry indentation for line wrapping.
+- Custom text selection for copying text.
+- Put reference above copied text.
+- Fix bug where copied text includes section titles.
+- Optimized database storage.
+
 # 1.4.2 - 2025.07.22
 
 - Fix chapter text not snapping into place when swiping between chapters.
