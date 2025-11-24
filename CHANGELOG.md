@@ -1,4 +1,4 @@
-# 1.5.0 - 2025.11.22
+# 1.5.0 - 2025.11.24
 
 - Rewrite of text layout engine.
 - Better poetry indentation for line wrapping.
