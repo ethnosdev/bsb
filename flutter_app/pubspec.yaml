@@ -4,23 +4,21 @@ publish_to: 'none'
 version: 1.5.0+26
 
 environment:
-  sdk: ^3.5.4
+  sdk: ^3.13.0
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  sqflite: ^2.4.2
-  get_it: ^9.1.0
+  cupertino_icons: ^1.0.9
+  sqflite: ^2.4.3
+  get_it: ^9.2.0
   path: ^1.9.1
   database_builder: 
     path: ../database_builder
   shared_preferences: ^2.5.3
-  url_launcher: ^6.3.1
-  package_info_plus: ^9.0.0
-  # TODO: publish this as a real package when working
-  scripture:
-    path: ../../scripture
+  url_launcher: ^6.3.2
+  package_info_plus: ^10.2.0
+  scripture: ^0.4.0
 
 dev_dependencies:
   flutter_test: 
@@ -29,6 +27,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  config:
+    enable-swift-package-manager: true
 
   assets:
     - assets/database/database.db

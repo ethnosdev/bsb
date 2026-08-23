@@ -118,12 +118,12 @@ class DatabaseHelper {
   }
 
   void dispose() {
-    _insertBsbStmt.dispose();
-    _insertOriginalStmt.dispose();
-    _insertEnglishStmt.dispose();
-    _insertPosStmt.dispose();
-    _insertInterlinearStmt.dispose();
-    _database.dispose();
+    _insertBsbStmt.close();
+    _insertOriginalStmt.close();
+    _insertEnglishStmt.close();
+    _insertPosStmt.close();
+    _insertInterlinearStmt.close();
+    _database.close();
   }
 }
 

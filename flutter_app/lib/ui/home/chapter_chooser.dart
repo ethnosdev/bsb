@@ -55,22 +55,16 @@ class ChapterChooser extends LeafRenderObjectWidget {
 
 class _RenderChapterChooser extends RenderBox {
   _RenderChapterChooser({
-    required int chapterCount,
-    void Function(int? chapter)? onChapterSelected,
-    required TextStyle textStyle,
-    required Color gridColor,
-    required Color gridHighlightColor,
-    required Color textColor,
-    required Color highlightTextColor,
-  })  : _chapterCount = chapterCount,
-        _onChapterSelected = onChapterSelected,
-        _textStyle = textStyle,
-        _gridColor = gridColor,
-        _gridHighlightColor = gridHighlightColor,
-        _textColor = textColor,
-        _highlightTextColor = highlightTextColor {
-    _gridPaint.color = gridColor;
-    _highlightPaint.color = gridHighlightColor;
+    required this._chapterCount,
+    this._onChapterSelected,
+    required this._textStyle,
+    required this._gridColor,
+    required this._gridHighlightColor,
+    required this._textColor,
+    required this._highlightTextColor,
+  }) {
+    _gridPaint.color = _gridColor;
+    _highlightPaint.color = _gridHighlightColor;
   }
 
   final _backgroundPaint = Paint()..color = const Color(0xCC000000);
