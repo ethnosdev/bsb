@@ -73,23 +73,17 @@ class DatabaseHelper {
     return bookId * 1000000 + chapter * 1000 + verse;
   }
 
-  int insertOriginalLanguage({
-    required String word,
-  }) {
+  int insertOriginalLanguage({required String word}) {
     _insertOriginalStmt.execute([word]);
     return _database.lastInsertRowId;
   }
 
-  int insertEnglish({
-    required String word,
-  }) {
+  int insertEnglish({required String word}) {
     _insertEnglishStmt.execute([word]);
     return _database.lastInsertRowId;
   }
 
-  int insertPartOfSpeech({
-    required String name,
-  }) {
+  int insertPartOfSpeech({required String name}) {
     _insertPosStmt.execute([name]);
     return _database.lastInsertRowId;
   }

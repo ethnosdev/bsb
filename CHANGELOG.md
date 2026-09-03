@@ -1,3 +1,8 @@
+# 1.6.0
+
+- Migrate to Swift Package Manager on iOS (#37 @monte-hague)
+- Update the BSB text to the July 31, 2026 revision. (https://bereanbible.com/changelog.txt)
+
 # 1.5.0 - 2025.11.24
 
 - Rewrite of text layout engine.

@@ -30,28 +30,21 @@ class _AboutPageState extends State<AboutPage> {
       fontSize: fontSize * 1.2,
       fontWeight: FontWeight.bold,
     );
-    _contentStyle = TextStyle(
-      fontSize: fontSize,
-    );
+    _contentStyle = TextStyle(fontSize: fontSize);
   }
 
   @override
   Widget build(BuildContext context) {
     final launchColor = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('About'),
-      ),
+      appBar: AppBar(title: const Text('About')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Gratitude',
-                style: _titleStyle,
-              ),
+              Text('Gratitude', style: _titleStyle),
               SizedBox(height: paragraphSpacing),
               Text(
                 "I can't express how grateful I am to the producers of the Berean "
@@ -68,8 +61,10 @@ class _AboutPageState extends State<AboutPage> {
                     style: _contentStyle,
                     children: [
                       const TextSpan(
-                          text: "The Holy Bible, Berean Standard Bible, BSB is "
-                              "produced in cooperation with "),
+                        text:
+                            "The Holy Bible, Berean Standard Bible, BSB is "
+                            "produced in cooperation with ",
+                      ),
                       TextSpan(
                         text: "Bible Hub",
                         style: _contentStyle.copyWith(
@@ -106,8 +101,10 @@ class _AboutPageState extends State<AboutPage> {
                           },
                       ),
                       const TextSpan(
-                          text: ", and the Berean Bible Translation Committee. "
-                              "This text of God's Word has been "),
+                        text:
+                            ", and the Berean Bible Translation Committee. "
+                            "This text of God's Word has been ",
+                      ),
                       TextSpan(
                         text: "dedicated to the public domain",
                         style: _contentStyle.copyWith(
@@ -117,7 +114,8 @@ class _AboutPageState extends State<AboutPage> {
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
                             _launch(
-                                'https://creativecommons.org/publicdomain/zero/1.0/');
+                              'https://creativecommons.org/publicdomain/zero/1.0/',
+                            );
                           },
                       ),
                       const TextSpan(text: "."),
@@ -138,10 +136,11 @@ class _AboutPageState extends State<AboutPage> {
                   style: _contentStyle,
                   children: [
                     const TextSpan(
-                        text:
-                            "In the same spirit, EthnosDev also dedicates this "
-                            "app to the public domain. You can find "
-                            "the source code on "),
+                      text:
+                          "In the same spirit, EthnosDev also dedicates this "
+                          "app to the public domain. You can find "
+                          "the source code on ",
+                    ),
                     TextSpan(
                       text: "GitHub",
                       style: _contentStyle.copyWith(
@@ -158,10 +157,7 @@ class _AboutPageState extends State<AboutPage> {
                 ),
               ),
               SizedBox(height: paragraphSpacing),
-              Text(
-                'Privacy',
-                style: _titleStyle,
-              ),
+              Text('Privacy', style: _titleStyle),
               SizedBox(height: paragraphSpacing),
               Text(
                 "This app does not collect any personal information about you "
@@ -171,10 +167,7 @@ class _AboutPageState extends State<AboutPage> {
                 style: _contentStyle,
               ),
               SizedBox(height: paragraphSpacing),
-              Text(
-                'Features',
-                style: _titleStyle,
-              ),
+              Text('Features', style: _titleStyle),
               SizedBox(height: paragraphSpacing),
               Text(
                 "Many new features are being planned. "
@@ -183,10 +176,7 @@ class _AboutPageState extends State<AboutPage> {
                 style: _contentStyle,
               ),
               SizedBox(height: paragraphSpacing),
-              Text(
-                'Feedback',
-                style: _titleStyle,
-              ),
+              Text('Feedback', style: _titleStyle),
               SizedBox(height: paragraphSpacing),
               SelectableText(
                 "If you have any other feature ideas or if you find a bug, "
@@ -194,22 +184,16 @@ class _AboutPageState extends State<AboutPage> {
                 style: _contentStyle,
               ),
               SizedBox(height: paragraphSpacing),
-              Text(
-                'App information',
-                style: _titleStyle,
-              ),
+              Text('App information', style: _titleStyle),
               SizedBox(height: paragraphSpacing),
               Text(
-                "BSB version: 3rd printing (2-7-2025)",
+                "BSB version: 3rd printing (7-31-2026)",
                 style: _contentStyle,
               ),
               ValueListenableBuilder<String>(
                 valueListenable: _versionNotifier,
                 builder: (context, version, child) {
-                  return Text(
-                    "App version: $version",
-                    style: _contentStyle,
-                  );
+                  return Text("App version: $version", style: _contentStyle);
                 },
               ),
               Text.rich(

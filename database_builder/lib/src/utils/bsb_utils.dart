@@ -47,70 +47,70 @@ Future<void> printAllParatextMarkers() async {
 }
 
 const List<String> bibleBookFilenames = [
-  '01GENBSB.SFM', // Genesis
-  '02EXOBSB.SFM', // Exodus
-  '03LEVBSB.SFM', // Leviticus
-  '04NUMBSB.SFM', // Numbers
-  '05DEUBSB.SFM', // Deuteronomy
-  '06JOSBSB.SFM', // Joshua
-  '07JDGBSB.SFM', // Judges
-  '08RUTBSB.SFM', // Ruth
-  '091SABSB.SFM', // 1 Samuel
-  '102SABSB.SFM', // 2 Samuel
-  '111KIBSB.SFM', // 1 Kings
-  '122KIBSB.SFM', // 2 Kings
-  '131CHBSB.SFM', // 1 Chronicles
-  '142CHBSB.SFM', // 2 Chronicles
-  '15EZRBSB.SFM', // Ezra
-  '16NEHBSB.SFM', // Nehemiah
-  '17ESTBSB.SFM', // Esther
-  '18JOBBSB.SFM', // Job
-  '19PSABSB.SFM', // Psalms
-  '20PROBSB.SFM', // Proverbs
-  '21ECCBSB.SFM', // Ecclesiastes
-  '22SNGBSB.SFM', // Song of Solomon
-  '23ISABSB.SFM', // Isaiah
-  '24JERBSB.SFM', // Jeremiah
-  '25LAMBSB.SFM', // Lamentations
-  '26EZKBSB.SFM', // Ezekiel
-  '27DANBSB.SFM', // Daniel
-  '28HOSBSB.SFM', // Hosea
-  '29JOLBSB.SFM', // Joel
-  '30AMOBSB.SFM', // Amos
-  '31OBABSB.SFM', // Obadiah
-  '32JONBSB.SFM', // Jonah
-  '33MICBSB.SFM', // Micah
-  '34NAMBSB.SFM', // Nahum
-  '35HABBSB.SFM', // Habakkuk
-  '36ZEPBSB.SFM', // Zephaniah
-  '37HAGBSB.SFM', // Haggai
-  '38ZECBSB.SFM', // Zechariah
-  '39MALBSB.SFM', // Malachi
-  '41MATBSB.SFM', // Matthew
-  '42MRKBSB.SFM', // Mark
-  '43LUKBSB.SFM', // Luke
-  '44JHNBSB.SFM', // John
-  '45ACTBSB.SFM', // Acts
-  '46ROMBSB.SFM', // Romans
-  '471COBSB.SFM', // 1 Corinthians
-  '482COBSB.SFM', // 2 Corinthians
-  '49GALBSB.SFM', // Galatians
-  '50EPHBSB.SFM', // Ephesians
-  '51PHPBSB.SFM', // Philippians
-  '52COLBSB.SFM', // Colossians
-  '531THBSB.SFM', // 1 Thessalonians
-  '542THBSB.SFM', // 2 Thessalonians
-  '551TIBSB.SFM', // 1 Timothy
-  '562TIBSB.SFM', // 2 Timothy
-  '57TITBSB.SFM', // Titus
-  '58PHMBSB.SFM', // Philemon
-  '59HEBBSB.SFM', // Hebrews
-  '60JASBSB.SFM', // James
-  '611PEBSB.SFM', // 1 Peter
-  '622PEBSB.SFM', // 2 Peter
-  '631JNBSB.SFM', // 1 John
-  '642JNBSB.SFM', // 2 John
-  '653JNBSB.SFM', // 3 John
-  '66JUDBSB.SFM', // Jude
-  '67REVBSB.SFM', // Revelation
+  'GEN.usfm', // Genesis
+  'EXO.usfm', // Exodus
+  'LEV.usfm', // Leviticus
+  'NUM.usfm', // Numbers
+  'DEU.usfm', // Deuteronomy
+  'JOS.usfm', // Joshua
+  'JDG.usfm', // Judges
+  'RUT.usfm', // Ruth
+  '1SA.usfm', // 1 Samuel
+  '2SA.usfm', // 2 Samuel
+  '1KI.usfm', // 1 Kings
+  '2KI.usfm', // 2 Kings
+  '1CH.usfm', // 1 Chronicles
+  '2CH.usfm', // 2 Chronicles
+  'EZR.usfm', // Ezra
+  'NEH.usfm', // Nehemiah
+  'EST.usfm', // Esther
+  'JOB.usfm', // Job
+  'PSA.usfm', // Psalms
+  'PRO.usfm', // Proverbs
+  'ECC.usfm', // Ecclesiastes
+  'SNG.usfm', // Song of Solomon
+  'ISA.usfm', // Isaiah
+  'JER.usfm', // Jeremiah
+  'LAM.usfm', // Lamentations
+  'EZK.usfm', // Ezekiel
+  'DAN.usfm', // Daniel
+  'HOS.usfm', // Hosea
+  'JOL.usfm', // Joel
+  'AMO.usfm', // Amos
+  'OBA.usfm', // Obadiah
+  'JON.usfm', // Jonah
+  'MIC.usfm', // Micah
+  'NAM.usfm', // Nahum
+  'HAB.usfm', // Habakkuk
+  'ZEP.usfm', // Zephaniah
+  'HAG.usfm', // Haggai
+  'ZEC.usfm', // Zechariah
+  'MAL.usfm', // Malachi
+  'MAT.usfm', // Matthew
+  'MRK.usfm', // Mark
+  'LUK.usfm', // Luke
+  'JHN.usfm', // John
+  'ACT.usfm', // Acts
+  'ROM.usfm', // Romans
+  '1CO.usfm', // 1 Corinthians
+  '2CO.usfm', // 2 Corinthians
+  'GAL.usfm', // Galatians
+  'EPH.usfm', // Ephesians
+  'PHP.usfm', // Philippians
+  'COL.usfm', // Colossians
+  '1TH.usfm', // 1 Thessalonians
+  '2TH.usfm', // 2 Thessalonians
+  '1TI.usfm', // 1 Timothy
+  '2TI.usfm', // 2 Timothy
+  'TIT.usfm', // Titus
+  'PHM.usfm', // Philemon
+  'HEB.usfm', // Hebrews
+  'JAS.usfm', // James
+  '1PE.usfm', // 1 Peter
+  '2PE.usfm', // 2 Peter
+  '1JN.usfm', // 1 John
+  '2JN.usfm', // 2 John
+  '3JN.usfm', // 3 John
+  'JUD.usfm', // Jude
+  'REV.usfm', // Revelation
 ];

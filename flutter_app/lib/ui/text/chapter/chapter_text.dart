@@ -14,7 +14,7 @@ class ChapterText extends StatefulWidget {
   final int bookId;
   final int chapter;
   final void Function(ScriptureSelectionController controller)?
-      onSelectionChanged;
+  onSelectionChanged;
 
   @override
   State<ChapterText> createState() => _ChapterTextState();
@@ -58,7 +58,11 @@ class _ChapterTextState extends State<ChapterText>
         return SingleChildScrollView(
           child: Padding(
             padding: EdgeInsets.only(
-                left: 16.0, top: 16.0, right: 16.0, bottom: screenHeight * 0.8),
+              left: 16.0,
+              top: 16.0,
+              right: 16.0,
+              bottom: screenHeight * 0.8,
+            ),
             child: UsfmWidget(
               verseLines: verseLines,
               selectionController: _selectionController,
@@ -66,14 +70,15 @@ class _ChapterTextState extends State<ChapterText>
               onWordTapped: (id) => print("Tapped word $id"),
               onSelectionRequested: (wordId) {
                 ScriptureLogic.highlightVerse(
-                    _selectionController, verseLines, wordId);
+                  _selectionController,
+                  verseLines,
+                  wordId,
+                );
               },
               styleBuilder: (format) {
                 return UsfmParagraphStyle.usfmDefaults(
                   format: format,
-                  baseStyle: Theme.of(context)
-                      .textTheme
-                      .bodyMedium!
+                  baseStyle: Theme.of(context).textTheme.bodyMedium!
                       .copyWith(fontSize: manager.textSize),
                 );
               },
@@ -102,9 +107,7 @@ class _ChapterTextState extends State<ChapterText>
       builder: (context) => AlertDialog(
         content: SelectableText.rich(
           details,
-          style: TextStyle(
-            fontSize: manager.textSize,
-          ),
+          style: TextStyle(fontSize: manager.textSize),
         ),
       ),
     );
@@ -179,17 +182,13 @@ class _ChapterTextState extends State<ChapterText>
                     child: UsfmWidget(
                       verseLines: passage,
                       selectionController: ScriptureSelectionController(),
-                      selectionColor: Theme.of(context)
-                          .colorScheme
-                          .primary
+                      selectionColor: Theme.of(context).colorScheme.primary
                           .withValues(alpha: 0.3),
                       onFootnoteTapped: _onFootnoteTapped,
                       styleBuilder: (format) {
                         return UsfmParagraphStyle.usfmDefaults(
                           format: format,
-                          baseStyle: Theme.of(context)
-                              .textTheme
-                              .bodyMedium!
+                          baseStyle: Theme.of(context).textTheme.bodyMedium!
                               .copyWith(fontSize: manager.textSize),
                         );
                       },

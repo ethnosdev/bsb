@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +12,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 14;
+  static const _databaseVersion = 17;
   late Database _database;
 
   Future<void> init() async {
@@ -26,7 +27,9 @@ class DatabaseHelper {
       // Check if database needs update
       var currentVersion = await getDatabaseVersion(path);
       if (currentVersion != _databaseVersion) {
-        log("Updating database from version $currentVersion to $_databaseVersion");
+        log(
+          "Updating database from version $currentVersion to $_databaseVersion",
+        );
         await deleteDatabase(path);
         await _copyDatabaseFromAssets(path);
       } else {
@@ -46,8 +49,10 @@ class DatabaseHelper {
   Future<void> _copyDatabaseFromAssets(String path) async {
     await Directory(dirname(path)).create(recursive: true);
     final data = await rootBundle.load(join("assets/database", _databaseName));
-    final bytes =
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    final bytes = data.buffer.asUint8List(
+      data.offsetInBytes,
+      data.lengthInBytes,
+    );
     await File(path).writeAsBytes(bytes, flush: true);
   }
 
@@ -56,26 +61,20 @@ class DatabaseHelper {
 
     final verses = await _database.query(
       Schema.bibleTextTable,
-      columns: [
-        Schema.colReference,
-        Schema.colText,
-        Schema.colFormat,
-      ],
+      columns: [Schema.colReference, Schema.colText, Schema.colFormat],
       where: '${Schema.colReference} >= ? AND ${Schema.colReference} < ?',
       whereArgs: [lowerBound, upperBound],
       orderBy: '${Schema.colId} ASC',
     );
 
-    return verses.map(
-      (verse) {
-        final format = verse[Schema.colFormat] as String;
-        return UsfmLine(
-          bookChapterVerse: verse[Schema.colReference] as int,
-          text: verse[Schema.colText] as String,
-          format: ParagraphFormat.fromJson(format),
-        );
-      },
-    ).toList();
+    return verses.map((verse) {
+      final format = verse[Schema.colFormat] as String;
+      return UsfmLine(
+        bookChapterVerse: verse[Schema.colReference] as int,
+        text: verse[Schema.colText] as String,
+        format: ParagraphFormat.fromJson(format),
+      );
+    }).toList();
   }
 
   (int, int) _chapterBounds(int bookId, int chapter) {
@@ -128,8 +127,9 @@ class DatabaseHelper {
         return Punctuation(punctuation: text);
       } else {
         final language = Language.fromInt(row[Schema.ilColLanguage] as int);
-        final transliteration =
-            (language == Language.greek) ? transliterateGreek(text) : '';
+        final transliteration = (language == Language.greek)
+            ? transliterateGreek(text)
+            : '';
         return OriginalWord(
           language: language,
           word: text,
@@ -155,21 +155,20 @@ class DatabaseHelper {
     );
 
     return result
-        .map((row) => Reference.fromVerseId(
-              packedInt: row[Schema.ilColReference] as int,
-            ))
+        .map(
+          (row) => Reference.fromVerseId(
+            packedInt: row[Schema.ilColReference] as int,
+          ),
+        )
         .toList();
   }
 
   Future<List<UsfmLine>> getRange(Reference reference) async {
     final verses = await _database.query(
       Schema.bibleTextTable,
-      columns: [
-        Schema.colReference,
-        Schema.colText,
-        Schema.colFormat,
-      ],
-      where: '${Schema.colReference} >= ? '
+      columns: [Schema.colReference, Schema.colText, Schema.colFormat],
+      where:
+          '${Schema.colReference} >= ? '
           'AND ${Schema.colReference} <= ?',
       whereArgs: [
         reference.packedVerse,
@@ -178,15 +177,13 @@ class DatabaseHelper {
       orderBy: '${Schema.colId} ASC',
     );
 
-    return verses.map(
-      (verse) {
-        final format = verse[Schema.colFormat] as String;
-        return UsfmLine(
-          bookChapterVerse: verse[Schema.colReference] as int,
-          text: verse[Schema.colText] as String,
-          format: ParagraphFormat.fromJson(format),
-        );
-      },
-    ).toList();
+    return verses.map((verse) {
+      final format = verse[Schema.colFormat] as String;
+      return UsfmLine(
+        bookChapterVerse: verse[Schema.colReference] as int,
+        text: verse[Schema.colText] as String,
+        format: ParagraphFormat.fromJson(format),
+      );
+    }).toList();
   }
 }
