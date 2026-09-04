@@ -2,6 +2,7 @@ import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:scripture/scripture.dart';
+import 'package:scripture/scripture_core.dart';
 
 class ChapterText extends StatefulWidget {
   const ChapterText({
@@ -77,7 +78,9 @@ class _ChapterTextState extends State<ChapterText>
               },
               styleBuilder: (format) {
                 return UsfmParagraphStyle.usfmDefaults(
-                  format: format,
+                  format: format == ParagraphFormat.p
+                      ? ParagraphFormat.m
+                      : format,
                   baseStyle: Theme.of(context).textTheme.bodyMedium!
                       .copyWith(fontSize: manager.textSize),
                 );
@@ -93,6 +96,7 @@ class _ChapterTextState extends State<ChapterText>
     final details = formatFootnote(
       footnote: footnoteText,
       highlightColor: Theme.of(context).colorScheme.primary,
+      keywords: manager.footnoteKeywords(),
       onTapKeyword: (keyword, count) async {
         if (count == 1) {
           Navigator.of(context).pop();
@@ -111,50 +115,6 @@ class _ChapterTextState extends State<ChapterText>
         ),
       ),
     );
-  }
-
-  TextSpan formatFootnote({
-    required String footnote,
-    required Color highlightColor,
-    required void Function(String tappedKeyword, int keywordCount) onTapKeyword,
-  }) {
-    // Make semicolon-separated content display on new lines
-    final note = footnote.replaceAll('; ', ';\n');
-
-    final List<TextSpan> spans = [];
-    int start = 0;
-
-    final keywords = manager.footnoteKeywords();
-    final matches = keywords.allMatches(note);
-
-    for (final match in matches) {
-      // Add text before the match
-      if (match.start > start) {
-        spans.add(TextSpan(text: note.substring(start, match.start)));
-      }
-
-      // Add the matched keyword as a tappable span
-      final matchedText = match.group(0)!;
-      spans.add(
-        TextSpan(
-          text: matchedText,
-          style: TextStyle(color: highlightColor),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () {
-              onTapKeyword(matchedText, matches.length);
-            },
-        ),
-      );
-
-      start = match.end;
-    }
-
-    // Add remaining text after the last match
-    if (start < note.length) {
-      spans.add(TextSpan(text: note.substring(start)));
-    }
-
-    return TextSpan(children: spans);
   }
 
   Future<void> _showDetailsDialog(String title, List<UsfmLine> passage) async {
@@ -187,7 +147,9 @@ class _ChapterTextState extends State<ChapterText>
                       onFootnoteTapped: _onFootnoteTapped,
                       styleBuilder: (format) {
                         return UsfmParagraphStyle.usfmDefaults(
-                          format: format,
+                          format: format == ParagraphFormat.p
+                              ? ParagraphFormat.m
+                              : format,
                           baseStyle: Theme.of(context).textTheme.bodyMedium!
                               .copyWith(fontSize: manager.textSize),
                         );
@@ -204,4 +166,84 @@ class _ChapterTextState extends State<ChapterText>
       },
     );
   }
+}
+
+TextSpan formatFootnote({
+  required String footnote,
+  required Color highlightColor,
+  required RegExp keywords,
+  required void Function(String tappedKeyword, int keywordCount) onTapKeyword,
+}) {
+  // Make semicolon-separated content display on new lines
+  final note = footnote.replaceAll('; ', ';\n');
+
+  final List<TextSpan> spans = [];
+  int start = 0;
+  bool isItalic = false;
+
+  // Match \fqa* first (without trailing spaces), then \fqa (with trailing space separator), then keywords
+  final tagOrKeywordPattern =
+      RegExp(r'(\\fqa\*)|(\\fqa)\s*|' + keywords.pattern);
+  final matches = tagOrKeywordPattern.allMatches(note);
+
+  for (final match in matches) {
+    // Add text before the match
+    if (match.start > start) {
+      final text = note.substring(start, match.start);
+      if (text.isNotEmpty) {
+        spans.add(
+          TextSpan(
+            text: text,
+            style: isItalic
+                ? const TextStyle(fontStyle: FontStyle.italic)
+                : null,
+          ),
+        );
+      }
+    }
+
+    final isFqaClose = match.group(1) != null;
+    final isFqaOpen = match.group(2) != null;
+    final matchedText = match.group(0)!;
+
+    if (isFqaClose) {
+      isItalic = false;
+    } else if (isFqaOpen) {
+      isItalic = true;
+    } else {
+      // Add the matched keyword as a tappable span
+      spans.add(
+        TextSpan(
+          text: matchedText,
+          style: TextStyle(
+            color: highlightColor,
+            fontStyle: isItalic ? FontStyle.italic : null,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              onTapKeyword(matchedText, matches.length);
+            },
+        ),
+      );
+    }
+
+    start = match.end;
+  }
+
+  // Add remaining text after the last match
+  if (start < note.length) {
+    final text = note.substring(start);
+    if (text.isNotEmpty) {
+      spans.add(
+        TextSpan(
+          text: text,
+          style: isItalic
+              ? const TextStyle(fontStyle: FontStyle.italic)
+              : null,
+        ),
+      );
+    }
+  }
+
+  return TextSpan(children: spans);
 }

@@ -37,6 +37,12 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
     for (String newLine in lines) {
       if (newLine.trim().isEmpty) continue;
 
+      // Remove Words of Jesus tags (\wj and \wj*), as the app does not style
+      // them and \wj can precede \v in USFM (e.g. "\p \wj \v 15 ...").
+      newLine = newLine
+          .replaceAll(r'\wj*', '')
+          .replaceAll(RegExp(r'\\wj\s*'), '');
+
       // split at a space or a newline and take the text before it
       String marker = newLine.split(RegExp(r'[ \n]'))[0];
       final remainder = newLine.substring(marker.length).trim();
@@ -74,7 +80,9 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
               .replaceAll(
                 RegExp(r'\|.*?\\ref\*'),
                 '',
-              ); // removes "|JHN 1:1-5\ref*"
+              ) // removes "|JHN 1:1-5\ref*"
+              .replaceAll(r'\ref*', '') // removes remaining "\ref*"
+              .trim();
           break; // Let it insert at the bottom
         case 'p': // standard paragraph marker
         case 's1': // section heading level 1
@@ -125,8 +133,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
               bookId: bookId,
               chapter: chapter,
               verse: verse,
-              text: text!,
-              format: format!.id,
+              text: text,
+              format: format.id,
             );
           }
           break;
@@ -152,8 +160,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
               bookId: bookId,
               chapter: chapter,
               verse: verse,
-              text: text!,
-              format: format!.id,
+              text: text,
+              format: format.id,
             );
           }
           break;
@@ -183,8 +191,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
               bookId: bookId,
               chapter: chapter,
               verse: verse,
-              text: text!,
-              format: format!.id,
+              text: text,
+              format: format.id,
             );
           }
           break;
@@ -230,8 +238,8 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
               bookId: bookId,
               chapter: chapter,
               verse: verse,
-              text: text!,
-              format: format!.id,
+              text: text,
+              format: format.id,
             );
           }
           break;
@@ -243,17 +251,12 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
 
       // If it wasn't handled inside the switch case, insert it now
       if (insertAtBottom) {
-        if (format == null) {
-          print('Format null at: $marker (chapter: $chapter, verse: $verse)');
-          return;
-        }
-
         dbHelper.insertBsbLine(
           bookId: bookId,
           chapter: chapter,
           verse: verse,
           text: text!,
-          format: format!.id,
+          format: format.id,
         );
       }
 
