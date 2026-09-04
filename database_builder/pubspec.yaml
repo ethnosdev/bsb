@@ -9,9 +9,9 @@ environment:
 dependencies:
   path: ^1.9.1
   sqlite3: ^3.5.2
-  # scripture: ^0.4.0
-  scripture:
-    path: ../../scripture
+  scripture: ^0.6.0
+  # scripture:
+  #   path: ../../scripture
 
 dev_dependencies:
   lints: ^6.1.0

@@ -37,7 +37,7 @@ It is highly preferable that the source files be edited by the BSB team at the s
 Known errors:
 
 - Judges 1:6 (move \p marker to the beginning of verse 6)
-- Habakkuk 3:19 (change /mr marker to /d)
+- Habakkuk 3:19 (change \mr marker to \d and add \b on line above)
 
 ## Create and verify the database
 
