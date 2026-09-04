@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -68,7 +70,7 @@ class _ChapterTextState extends State<ChapterText>
               verseLines: verseLines,
               selectionController: _selectionController,
               onFootnoteTapped: _onFootnoteTapped,
-              onWordTapped: (id) => print("Tapped word $id"),
+              onWordTapped: (id) => log("Tapped word $id"),
               onSelectionRequested: (wordId) {
                 ScriptureLogic.highlightVerse(
                   _selectionController,
@@ -182,8 +184,9 @@ TextSpan formatFootnote({
   bool isItalic = false;
 
   // Match \fqa* first (without trailing spaces), then \fqa (with trailing space separator), then keywords
-  final tagOrKeywordPattern =
-      RegExp(r'(\\fqa\*)|(\\fqa)\s*|' + keywords.pattern);
+  final tagOrKeywordPattern = RegExp(
+    r'(\\fqa\*)|(\\fqa)\s*|' + keywords.pattern,
+  );
   final matches = tagOrKeywordPattern.allMatches(note);
 
   for (final match in matches) {
@@ -237,9 +240,7 @@ TextSpan formatFootnote({
       spans.add(
         TextSpan(
           text: text,
-          style: isItalic
-              ? const TextStyle(fontStyle: FontStyle.italic)
-              : null,
+          style: isItalic ? const TextStyle(fontStyle: FontStyle.italic) : null,
         ),
       );
     }
