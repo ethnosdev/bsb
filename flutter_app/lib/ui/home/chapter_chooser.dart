@@ -1,398 +1,390 @@
-import 'dart:math';
-
-import 'package:flutter/gestures.dart';
+import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
-class ChapterChooser extends LeafRenderObjectWidget {
+class ChapterChooser extends StatefulWidget {
   const ChapterChooser({
     super.key,
+    this.bookName,
+    this.bookId,
     required this.chapterCount,
     this.onChapterSelected,
   });
 
+  /// Optional book name to display at the top of the popup.
+  /// If not provided and [bookId] is provided, it will be looked up using [bookId].
+  final String? bookName;
+
+  /// Optional book ID (1 to 66) used to look up the book name if [bookName] is omitted.
+  final int? bookId;
+
+  /// Total number of chapters in the selected book.
   final int chapterCount;
 
-  /// Called when a chapter is selected.
-  ///
-  /// A null value indicates that the selection was canceled.
+  /// Callback when a chapter is selected or the chooser is dismissed.
+  /// A `null` value indicates that selection was canceled.
   final void Function(int? chapter)? onChapterSelected;
 
   @override
-  RenderObject createRenderObject(BuildContext context) {
-    final theme = Theme.of(context);
-    return _RenderChapterChooser(
-      chapterCount: chapterCount,
-      onChapterSelected: onChapterSelected,
-      textStyle: DefaultTextStyle.of(context).style,
-      gridColor: theme.colorScheme.surfaceContainerHighest,
-      gridHighlightColor: theme.colorScheme.secondary,
-      textColor: theme.colorScheme.onSurface,
-      highlightTextColor: theme.colorScheme.onSecondary,
-    );
-  }
-
-  @override
-  void updateRenderObject(
-      BuildContext context, covariant RenderObject renderObject) {
-    final theme = Theme.of(context);
-    (renderObject as _RenderChapterChooser)
-      ..chapterCount = chapterCount
-      ..onChapterSelected = onChapterSelected
-      ..textStyle = DefaultTextStyle.of(context).style
-      ..gridColor = theme.colorScheme.surfaceContainerHighest
-      ..gridHighlightColor = theme.colorScheme.secondary
-      ..textColor = theme.colorScheme.onSurface
-      ..highlightTextColor = theme.colorScheme.onSecondary;
-  }
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(IntProperty('chapterCount', chapterCount));
-  }
+  State<ChapterChooser> createState() => _ChapterChooserState();
 }
 
-class _RenderChapterChooser extends RenderBox {
-  _RenderChapterChooser({
-    required this._chapterCount,
-    this._onChapterSelected,
-    required this._textStyle,
-    required this._gridColor,
-    required this._gridHighlightColor,
-    required this._textColor,
-    required this._highlightTextColor,
-  }) {
-    _gridPaint.color = _gridColor;
-    _highlightPaint.color = _gridHighlightColor;
-  }
+class _ChapterChooserState extends State<ChapterChooser> {
+  String _enteredText = '';
 
-  final _backgroundPaint = Paint()..color = const Color(0xCC000000);
-  final _gridPaint = Paint();
-  final _highlightPaint = Paint();
-
-  int? _highlightedChapter;
-  bool _showOffsetTile = false;
-
-  int get chapterCount => _chapterCount;
-  int _chapterCount;
-  set chapterCount(int value) {
-    if (_chapterCount == value) return;
-    _chapterCount = value;
-    markNeedsLayout();
-  }
-
-  void Function(int? chapter)? get onChapterSelected => _onChapterSelected;
-  void Function(int? chapter)? _onChapterSelected;
-  set onChapterSelected(void Function(int? chapter)? value) {
-    if (_onChapterSelected == value) return;
-    _onChapterSelected = value;
-  }
-
-  TextStyle get textStyle => _textStyle;
-  TextStyle _textStyle;
-  set textStyle(TextStyle value) {
-    if (_textStyle == value) return;
-    _textStyle = value;
-    markNeedsPaint();
-  }
-
-  Color get gridColor => _gridColor;
-  Color _gridColor;
-  set gridColor(Color value) {
-    if (_gridColor == value) return;
-    _gridColor = value;
-    _gridPaint.color = value;
-    markNeedsPaint();
-  }
-
-  Color get gridHighlightColor => _gridHighlightColor;
-  Color _gridHighlightColor;
-  set gridHighlightColor(Color value) {
-    if (_gridHighlightColor == value) return;
-    _gridHighlightColor = value;
-    _highlightPaint.color = value;
-    markNeedsPaint();
-  }
-
-  Color get textColor => _textColor;
-  Color _textColor;
-  set textColor(Color value) {
-    if (_textColor == value) return;
-    _textColor = value;
-    markNeedsPaint();
-  }
-
-  Color get highlightTextColor => _highlightTextColor;
-  Color _highlightTextColor;
-  set highlightTextColor(Color value) {
-    if (_highlightTextColor == value) return;
-    _highlightTextColor = value;
-    markNeedsPaint();
-  }
-
-  @override
-  void performLayout() {
-    size = computeDryLayout(constraints);
-  }
-
-  Size _gridSize = Size.zero;
-  Size _tileSize = Size.zero;
-  int _rows = 0;
-  int _columns = 0;
-  double _scaledFontSize = 0.0;
-
-  @override
-  Size computeDryLayout(BoxConstraints constraints) {
-    _rows = (chapterCount / 10).ceil();
-    _columns = chapterCount < 10 ? chapterCount : 10;
-    const desiredTileWidth = 40.0;
-    final desireTileHeight = (chapterCount > 100) ? 30 : 40;
-    final maxGridWidth = constraints.maxWidth * 0.9;
-    final gridWidth = min(maxGridWidth, _columns * desiredTileWidth);
-    final tileWidth = gridWidth / _columns;
-    final maxGridHeight = constraints.maxHeight * 0.9;
-    final gridHeight = min(maxGridHeight, _rows * desireTileHeight);
-    final tileHeight = gridHeight / _rows;
-    _gridSize = Size(tileWidth * _columns, tileHeight * _rows);
-    _tileSize = Size(tileWidth, tileHeight);
-
-    _scaledFontSize = _calculateOptimalFontSize("150");
-
-    final parentSize = Size(constraints.maxWidth, constraints.maxHeight);
-    return constraints.constrain(parentSize);
-  }
-
-  double _calculateOptimalFontSize(String sampleText) {
-    double scaleFactor = 1.0;
-    final initialFontSize = textStyle.fontSize!;
-
-    TextPainter textPainter;
-    do {
-      textPainter = TextPainter(
-        text: TextSpan(
-          text: sampleText,
-          style: textStyle.copyWith(fontSize: initialFontSize * scaleFactor),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-
-      if (textPainter.width <= _tileSize.width &&
-          textPainter.height <= _tileSize.height) {
-        break;
-      }
-
-      scaleFactor *= 0.9;
-    } while (scaleFactor > 0.3);
-
-    return initialFontSize * scaleFactor;
-  }
-
-  @override
-  bool hitTestSelf(Offset position) => true;
-
-  int? _getChapterAtPosition(Offset position) {
-    final gridOffset = Offset(
-      (size.width - _gridSize.width) / 2,
-      (size.height - _gridSize.height) / 2,
-    );
-
-    final localPosition = position - gridOffset;
-    if (!(Offset.zero & _gridSize).contains(localPosition)) {
-      return null;
+  String get _displayBookName {
+    if (widget.bookName != null && widget.bookName!.isNotEmpty) {
+      return widget.bookName!;
     }
-
-    final col = (localPosition.dx / _tileSize.width).floor();
-    final row = (localPosition.dy / _tileSize.height).floor();
-    final chapter = row * _columns + col + 1;
-
-    if (chapter <= chapterCount && chapter > 0) {
-      return chapter;
+    if (widget.bookId != null) {
+      return bookIdToFullNameMap[widget.bookId] ?? '';
     }
-    return null;
-  }
-
-  void _updateHighlightedChapter(Offset position, bool isMove) {
-    final newHighlight = _getChapterAtPosition(position);
-    if (newHighlight != _highlightedChapter || _showOffsetTile != isMove) {
-      _highlightedChapter = newHighlight;
-      _showOffsetTile = isMove;
-      markNeedsPaint();
-    }
+    return '';
   }
 
   @override
-  void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
-    if (event is PointerDownEvent || event is PointerHoverEvent) {
-      _updateHighlightedChapter(event.localPosition, false);
-    } else if (event is PointerMoveEvent) {
-      _updateHighlightedChapter(event.localPosition, true);
-    } else if (event is PointerUpEvent) {
-      final chapter = _getChapterAtPosition(event.localPosition);
-      onChapterSelected?.call(chapter);
-      _highlightedChapter = null;
-      _showOffsetTile = false;
-      markNeedsPaint();
-    }
-  }
-
-  @override
-  double computeMinIntrinsicWidth(double height) => size.width;
-
-  @override
-  double computeMaxIntrinsicWidth(double height) => size.width;
-
-  @override
-  double computeMinIntrinsicHeight(double width) => size.height;
-
-  @override
-  double computeMaxIntrinsicHeight(double width) => size.height;
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    final canvas = context.canvas;
-    canvas.save();
-    canvas.translate(offset.dx, offset.dy);
-
-    _paintBackground(canvas);
-    _paintGrid(canvas);
-    _paintChapters(context);
-
-    canvas.restore();
-  }
-
-  void _paintBackground(Canvas canvas) {
-    canvas.drawRect(Offset.zero & size, _backgroundPaint);
-  }
-
-  void _paintGrid(Canvas canvas) {
-    final gridOffset = Offset(
-      (size.width - _gridSize.width) / 2,
-      (size.height - _gridSize.height) / 2,
-    );
-    canvas.save();
-    canvas.translate(gridOffset.dx, gridOffset.dy);
-
-    final gridRect = Offset.zero & _gridSize;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(gridRect, const Radius.circular(8)),
-      _gridPaint,
-    );
-    canvas.restore();
-  }
-
-  void _paintChapters(PaintingContext context) {
-    final canvas = context.canvas;
-    final gridOffset = Offset(
-      (size.width - _gridSize.width) / 2,
-      (size.height - _gridSize.height) / 2,
-    );
-    canvas.save();
-    canvas.translate(gridOffset.dx, gridOffset.dy);
-
-    for (var row = 0; row < _rows; row++) {
-      for (var col = 0; col < _columns; col++) {
-        final index = row * _columns + col + 1;
-        if (index <= chapterCount) {
-          _paintChapter(context, row, col, index);
-        }
+  void didUpdateWidget(covariant ChapterChooser oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.chapterCount != widget.chapterCount) {
+      if (_enteredText.isNotEmpty && _matchingChapters(_enteredText).isEmpty) {
+        _enteredText = '';
       }
     }
-    canvas.restore();
   }
 
-  void _paintChapter(PaintingContext context, int row, int col, int index) {
-    final canvas = context.canvas;
-    canvas.save();
-    canvas.translate(
-      col * _tileSize.width,
-      row * _tileSize.height,
-    );
+  /// Returns all valid chapters (1..chapterCount) whose string representation
+  /// starts with [prefix].
+  List<int> _matchingChapters(String prefix) {
+    if (prefix.isEmpty || prefix.startsWith('0')) {
+      return const [];
+    }
+    final matches = <int>[];
+    for (var c = 1; c <= widget.chapterCount; c++) {
+      if (c.toString().startsWith(prefix)) {
+        matches.add(c);
+      }
+    }
+    return matches;
+  }
 
-    if (_highlightedChapter == index) {
-      _paintHighlight(context, index);
+  /// Returns true if typing [digit] after [_enteredText] leads to at least
+  /// one valid chapter.
+  bool _isDigitValid(int digit) {
+    final candidate = '$_enteredText$digit';
+    return _matchingChapters(candidate).isNotEmpty;
+  }
+
+  bool get _canGo {
+    final chapter = int.tryParse(_enteredText);
+    return chapter != null && chapter >= 1 && chapter <= widget.chapterCount;
+  }
+
+  void _handleDigit(int digit) {
+    final newText = '$_enteredText$digit';
+    final matches = _matchingChapters(newText);
+    if (matches.length == 1) {
+      setState(() {
+        _enteredText = newText;
+      });
+      widget.onChapterSelected?.call(matches.first);
+    } else {
+      setState(() {
+        _enteredText = newText;
+      });
+    }
+  }
+
+  void _handleBackspace() {
+    if (_enteredText.isNotEmpty) {
+      setState(() {
+        _enteredText = _enteredText.substring(0, _enteredText.length - 1);
+      });
+    }
+  }
+
+  void _handleGo() {
+    final chapter = int.tryParse(_enteredText);
+    if (chapter != null && chapter >= 1 && chapter <= widget.chapterCount) {
+      widget.onChapterSelected?.call(chapter);
+    }
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    final char = event.character;
+    int? digit;
+    if (char != null && RegExp(r'^[0-9]$').hasMatch(char)) {
+      digit = int.parse(char);
+    } else if (event.logicalKey == LogicalKeyboardKey.digit0 ||
+        event.logicalKey == LogicalKeyboardKey.numpad0) {
+      digit = 0;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit1 ||
+        event.logicalKey == LogicalKeyboardKey.numpad1) {
+      digit = 1;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit2 ||
+        event.logicalKey == LogicalKeyboardKey.numpad2) {
+      digit = 2;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit3 ||
+        event.logicalKey == LogicalKeyboardKey.numpad3) {
+      digit = 3;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit4 ||
+        event.logicalKey == LogicalKeyboardKey.numpad4) {
+      digit = 4;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit5 ||
+        event.logicalKey == LogicalKeyboardKey.numpad5) {
+      digit = 5;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit6 ||
+        event.logicalKey == LogicalKeyboardKey.numpad6) {
+      digit = 6;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit7 ||
+        event.logicalKey == LogicalKeyboardKey.numpad7) {
+      digit = 7;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit8 ||
+        event.logicalKey == LogicalKeyboardKey.numpad8) {
+      digit = 8;
+    } else if (event.logicalKey == LogicalKeyboardKey.digit9 ||
+        event.logicalKey == LogicalKeyboardKey.numpad9) {
+      digit = 9;
     }
 
-    _paintChapterNumber(context, index);
-    canvas.restore();
-  }
-
-  void _paintHighlight(PaintingContext context, int index) {
-    final canvas = context.canvas;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-          Offset.zero & _tileSize, const Radius.circular(4)),
-      _highlightPaint,
-    );
-
-    if (_showOffsetTile) {
-      _paintOffsetTile(context, index);
+    if (digit != null) {
+      if (_isDigitValid(digit)) {
+        _handleDigit(digit);
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.handled;
     }
+
+    if (event.logicalKey == LogicalKeyboardKey.backspace ||
+        event.logicalKey == LogicalKeyboardKey.delete) {
+      if (_enteredText.isNotEmpty) {
+        _handleBackspace();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+      if (_canGo) {
+        _handleGo();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      widget.onChapterSelected?.call(null);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 
-  void _paintOffsetTile(PaintingContext context, int index) {
-    const verticalOffset = 70.0;
-    final canvas = context.canvas;
-    final offsetTileSize = Size(_tileSize.width * 2, _tileSize.height * 2);
-    final offsetPosition = Offset(
-      -_tileSize.width / 2,
-      -verticalOffset - _tileSize.height / 2,
-    );
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        offsetPosition & offsetTileSize,
-        const Radius.circular(8),
-      ),
-      _highlightPaint,
-    );
-
-    final textPainter = _createTextPainter(
-      index.toString(),
-      fontSize: textStyle.fontSize! * 2,
-      color: highlightTextColor,
-    );
-
-    textPainter.paint(
-      context.canvas,
-      Offset(
-        (-_tileSize.width / 2) + (offsetTileSize.width - textPainter.width) / 2,
-        -verticalOffset -
-            _tileSize.height / 2 +
-            (offsetTileSize.height - textPainter.height) / 2,
-      ),
+    return Stack(
+      children: [
+        // Barrier / Scrim
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.onChapterSelected?.call(null),
+            child: Container(
+              color: theme.colorScheme.scrim.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
+        // Keypad Popup
+        Center(
+          child: Focus(
+            autofocus: true,
+            onKeyEvent: _handleKeyEvent,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {}, // Prevent taps inside dialog from closing it
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(24),
+                color: theme.colorScheme.surfaceContainerHigh,
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  width: 320,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeader(theme),
+                      const SizedBox(height: 12),
+                      _buildDisplay(theme),
+                      const SizedBox(height: 16),
+                      _buildKeypadRow(['1', '2', '3']),
+                      const SizedBox(height: 8),
+                      _buildKeypadRow(['4', '5', '6']),
+                      const SizedBox(height: 8),
+                      _buildKeypadRow(['7', '8', '9']),
+                      const SizedBox(height: 8),
+                      _buildBottomRow(theme),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  void _paintChapterNumber(PaintingContext context, int index) {
-    final textPainter = _createTextPainter(
-      index.toString(),
-      color: _highlightedChapter == index ? highlightTextColor : textColor,
-    );
-
-    textPainter.paint(
-      context.canvas,
-      Offset(
-        (_tileSize.width - textPainter.width) / 2,
-        (_tileSize.height - textPainter.height) / 2,
-      ),
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        const SizedBox(width: 40), // Balance close button
+        Expanded(
+          child: Text(
+            _displayBookName,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        IconButton(
+          key: const ValueKey('keypad_close'),
+          icon: const Icon(Icons.close),
+          onPressed: () => widget.onChapterSelected?.call(null),
+          tooltip: 'Close',
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
     );
   }
 
-  TextPainter _createTextPainter(String text,
-      {Color? color, double? fontSize}) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: textStyle.copyWith(
-          color: color,
-          fontSize: fontSize ?? _scaledFontSize,
+  Widget _buildDisplay(ThemeData theme) {
+    final displayText = _enteredText.isNotEmpty
+        ? 'Chapter $_enteredText'
+        : 'Chapter (1–${widget.chapterCount})';
+
+    return Container(
+      height: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
-      textDirection: TextDirection.ltr,
+      child: Text(
+        displayText,
+        style: _enteredText.isNotEmpty
+            ? theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              )
+            : theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+      ),
     );
-    textPainter.layout();
-    return textPainter;
+  }
+
+  Widget _buildKeypadRow(List<String> keys) {
+    return Row(
+      children: [
+        for (var i = 0; i < keys.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: _buildDigitButton(int.parse(keys[i])),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDigitButton(int digit) {
+    final isValid = _isDigitValid(digit);
+    return SizedBox(
+      height: 52,
+      child: FilledButton.tonal(
+        key: ValueKey('keypad_$digit'),
+        onPressed: isValid ? () => _handleDigit(digit) : null,
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: EdgeInsets.zero,
+        ),
+        child: Text(
+          '$digit',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomRow(ThemeData theme) {
+    return Row(
+      children: [
+        // Delete button
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: FilledButton.tonal(
+              key: const ValueKey('keypad_delete'),
+              onPressed: _enteredText.isNotEmpty ? _handleBackspace : null,
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: const Icon(
+                Icons.backspace_outlined,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 0 digit
+        Expanded(
+          child: _buildDigitButton(0),
+        ),
+        const SizedBox(width: 8),
+        // Go button
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: FilledButton(
+              key: const ValueKey('keypad_go'),
+              onPressed: _canGo ? _handleGo : null,
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: const Text(
+                'Go',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

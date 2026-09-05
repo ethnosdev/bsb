@@ -80,6 +80,7 @@ class _BookChooserState extends State<BookChooser> {
             }
             final (bookId, chapterCount) = bookChapter;
             return ChapterChooser(
+              bookId: bookId,
               chapterCount: chapterCount,
               onChapterSelected: (chapter) {
                 _chapterNotifier.value = null;

@@ -1,11 +1,7 @@
-# 1.7.0
+# 2.0.0
 
-- Highlighting: Add multi-color highlighting with adaptive palettes for light and dark modes.
-- Notes: Add personal note-taking with inline note markers (`✎`) and full editor sheet.
-- Disambiguation sheet when tapping words containing both a note and a footnote.
-- User annotations database: Persist user highlights and notes in an isolated database safe from source text updates.
-- Tap targets: Enlarge note marker hit-test target for easier touch selection.
-- Poetry highlighting: Fix darker overlapping seams between poetic lines in Psalms.
+- Multi-color highlighting.
+- Personal note-taking.
 
 # 1.6.0 - 2026.09.04
 

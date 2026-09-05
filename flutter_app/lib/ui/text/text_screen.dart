@@ -149,6 +149,7 @@ class _TextScreenState extends State<TextScreen> {
         }
         final (bookId, chapterCount) = bookChapter;
         return ChapterChooser(
+          bookId: bookId,
           chapterCount: chapterCount,
           onChapterSelected: (chapter) {
             _chapterNotifier.value = null;
