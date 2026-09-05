@@ -1,6 +1,10 @@
 import 'dart:developer';
 
+import 'package:bsb/infrastructure/annotation_models.dart';
+import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
+import 'package:bsb/ui/text/note_editor_sheet.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:scripture/scripture.dart';
@@ -42,6 +46,7 @@ class _ChapterTextState extends State<ChapterText>
   void dispose() {
     _selectionController.removeListener(_handleSelectionChange);
     _selectionController.dispose();
+    manager.dispose();
     super.dispose();
   }
 
@@ -55,41 +60,111 @@ class _ChapterTextState extends State<ChapterText>
   Widget build(BuildContext context) {
     super.build(context);
     final screenHeight = MediaQuery.sizeOf(context).height;
+    final brightness = Theme.of(context).brightness;
+
     return ValueListenableBuilder<List<UsfmLine>>(
       valueListenable: manager.textParagraphNotifier,
       builder: (context, verseLines, child) {
-        return SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16.0,
-              top: 16.0,
-              right: 16.0,
-              bottom: screenHeight * 0.8,
-            ),
-            child: UsfmWidget(
-              verseLines: verseLines,
-              selectionController: _selectionController,
-              onFootnoteTapped: _onFootnoteTapped,
-              onWordTapped: (id) => log("Tapped word $id"),
-              onSelectionRequested: (wordId) {
-                ScriptureLogic.highlightVerse(
-                  _selectionController,
-                  verseLines,
-                  wordId,
+        return ValueListenableBuilder<List<Highlight>>(
+          valueListenable: manager.highlightsNotifier,
+          builder: (context, rawHighlights, child) {
+            final highlights = rawHighlights
+                .map((h) => h.toHighlightRange(brightness))
+                .toList();
+            return ValueListenableBuilder<List<NoteMarker>>(
+              valueListenable: manager.noteMarkersNotifier,
+              builder: (context, noteMarkers, child) {
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      top: 16.0,
+                      right: 16.0,
+                      bottom: screenHeight * 0.8,
+                    ),
+                    child: UsfmWidget(
+                      verseLines: verseLines,
+                      selectionController: _selectionController,
+                      highlights: highlights,
+                      noteMarkers: noteMarkers,
+                      onFootnoteTapped: _onFootnoteTapped,
+                      onNoteTapped: _onNoteTapped,
+                      onAmbiguousTapped: _onAmbiguousTapped,
+                      onWordTapped: (id) => log("Tapped word $id"),
+                      onSelectionRequested: (wordId) {
+                        ScriptureLogic.highlightVerse(
+                          _selectionController,
+                          verseLines,
+                          wordId,
+                        );
+                      },
+                      styleBuilder: (format) {
+                        return UsfmParagraphStyle.usfmDefaults(
+                          format: format == ParagraphFormat.p
+                              ? ParagraphFormat.m
+                              : format,
+                          baseStyle: Theme.of(context).textTheme.bodyMedium!
+                              .copyWith(fontSize: manager.textSize),
+                        );
+                      },
+                    ),
+                  ),
                 );
               },
-              styleBuilder: (format) {
-                return UsfmParagraphStyle.usfmDefaults(
-                  format: format == ParagraphFormat.p
-                      ? ParagraphFormat.m
-                      : format,
-                  baseStyle: Theme.of(context).textTheme.bodyMedium!
-                      .copyWith(fontSize: manager.textSize),
-                );
-              },
-            ),
-          ),
+            );
+          },
         );
+      },
+    );
+  }
+
+  Future<void> _onAmbiguousTapped({
+    required int wordId,
+    required String footnoteText,
+    required String noteId,
+  }) async {
+    final note = await manager.getNoteById(noteId);
+    final ref = Reference.fromWordId(packedInt: wordId);
+
+    if (!mounted) return;
+
+    await AnnotationDisambiguationSheet.show(
+      context: context,
+      title: ref.toString(),
+      notePreview: note?.content ?? '',
+      footnotePreview:
+          footnoteText.replaceAll(RegExp(r'\\[a-z0-9*]+'), '').trim(),
+      onSelectNote: () => _onNoteTapped(noteId),
+      onSelectFootnote: () => _onFootnoteTapped(footnoteText),
+    );
+  }
+
+  Future<void> _onNoteTapped(String noteId) async {
+    final note = await manager.getNoteById(noteId);
+    if (note == null || !mounted) return;
+
+    final ref = Reference.fromWordId(
+      packedInt: note.startWordId,
+      packedIntEnd: note.endWordId,
+    );
+
+    await NoteEditorSheet.show(
+      context: context,
+      title: ref.toString(),
+      initialContent: note.content,
+      isExisting: true,
+      onSave: (newContent) {
+        manager.saveNote(
+          bookId: note.bookId,
+          chapter: note.chapter,
+          startWordId: note.startWordId,
+          endWordId: note.endWordId,
+          content: newContent,
+          existingNoteId: note.id,
+        );
+      },
+      onDelete: () {
+        manager.deleteNote(note.id);
       },
     );
   }

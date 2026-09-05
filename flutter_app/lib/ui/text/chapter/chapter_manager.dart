@@ -1,3 +1,5 @@
+import 'package:bsb/infrastructure/annotation_models.dart';
+import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/extrabiblical_texts.dart';
 import 'package:bsb/infrastructure/reference.dart';
@@ -11,7 +13,37 @@ import 'package:scripture/scripture_core.dart';
 
 class ChapterManager {
   final _dbHelper = getIt<DatabaseHelper>();
+  final _annotationService = getIt<AnnotationService>();
   final textParagraphNotifier = ValueNotifier<List<UsfmLine>>([]);
+  final highlightsNotifier = ValueNotifier<List<Highlight>>([]);
+  final noteMarkersNotifier = ValueNotifier<List<NoteMarker>>([]);
+  int _currentBookId = 0;
+  int _currentChapter = 0;
+
+  ChapterManager() {
+    _annotationService.changeNotifier.addListener(_onAnnotationsChanged);
+  }
+
+  void dispose() {
+    _annotationService.changeNotifier.removeListener(_onAnnotationsChanged);
+    textParagraphNotifier.dispose();
+    highlightsNotifier.dispose();
+    noteMarkersNotifier.dispose();
+  }
+
+  void _onAnnotationsChanged() {
+    if (_currentBookId != 0 && _currentChapter != 0) {
+      _loadAnnotations(_currentBookId, _currentChapter);
+    }
+  }
+
+  Future<void> _loadAnnotations(int bookId, int chapter) async {
+    final highlights = await _annotationService.getHighlights(bookId, chapter);
+    highlightsNotifier.value = highlights;
+
+    final notes = await _annotationService.getNotes(bookId, chapter);
+    noteMarkersNotifier.value = notes.map((n) => n.toNoteMarker()).toList();
+  }
 
   double get textSize => getIt<UserSettings>().textSize;
 
@@ -19,7 +51,36 @@ class ChapterManager {
     required int bookId,
     required int chapter,
   }) async {
+    _currentBookId = bookId;
+    _currentChapter = chapter;
     textParagraphNotifier.value = await _dbHelper.getChapter(bookId, chapter);
+    await _loadAnnotations(bookId, chapter);
+  }
+
+  Future<Note?> getNoteById(String id) {
+    return _annotationService.getNoteById(id);
+  }
+
+  Future<void> saveNote({
+    required int bookId,
+    required int chapter,
+    required int startWordId,
+    required int endWordId,
+    required String content,
+    String? existingNoteId,
+  }) {
+    return _annotationService.saveNote(
+      bookId: bookId,
+      chapter: chapter,
+      startWordId: startWordId,
+      endWordId: endWordId,
+      content: content,
+      existingNoteId: existingNoteId,
+    );
+  }
+
+  Future<void> deleteNote(String id) {
+    return _annotationService.deleteNote(id);
   }
 
   Future<String> verseTextForClipboard(

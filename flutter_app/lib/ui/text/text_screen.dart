@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:scripture/scripture.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:bsb/infrastructure/annotation_service.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/text/highlight_palette_sheet.dart';
+import 'package:bsb/ui/text/note_editor_sheet.dart';
 import 'screen_manager.dart';
 
 class TextScreen extends StatefulWidget {
@@ -181,6 +184,14 @@ class _TextScreenState extends State<TextScreen> {
                 unselectedFontSize: 12.0,
                 items: [
                   BottomNavigationBarItem(
+                    icon: Icon(Icons.border_color),
+                    label: 'Highlight',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.edit_note),
+                    label: 'Note',
+                  ),
+                  BottomNavigationBarItem(
                     icon: Icon(Icons.content_copy),
                     label: 'Copy',
                   ),
@@ -231,15 +242,74 @@ class _TextScreenState extends State<TextScreen> {
 
     switch (index) {
       case 0:
-        await _handleCopy();
+        await _handleHighlight(reference);
       case 1:
-        _handleHebrewGreek(reference, language);
+        await _handleNote(reference);
       case 2:
+        await _handleCopy();
+      case 3:
+        _handleHebrewGreek(reference, language);
+      case 4:
         _handleCompare(reference);
     }
 
     // Clear selection after action
     _activeController?.clear();
+  }
+
+  Future<void> _handleHighlight(Reference reference) async {
+    if (_activeController == null || !_activeController!.hasSelection) return;
+    final startId = _activeController!.startId!;
+    final endId = _activeController!.endId!;
+    final annotationService = getIt<AnnotationService>();
+
+    await HighlightPaletteSheet.show(
+      context: context,
+      onColorSelected: (color) async {
+        await annotationService.addHighlight(
+          bookId: reference.bookId,
+          chapter: reference.chapter,
+          startWordId: startId,
+          endWordId: endId,
+          color: color,
+        );
+      },
+      onClear: () async {
+        await annotationService.clearHighlightsInRange(
+          bookId: reference.bookId,
+          chapter: reference.chapter,
+          startWordId: startId,
+          endWordId: endId,
+        );
+      },
+    );
+  }
+
+  Future<void> _handleNote(Reference reference) async {
+    if (_activeController == null || !_activeController!.hasSelection) return;
+    final startId = _activeController!.startId!;
+    final endId = _activeController!.endId!;
+    final bodyText = _activeController!.getSelectedText();
+    final fullRef = Reference.fromWordId(
+      packedInt: startId,
+      packedIntEnd: endId,
+    );
+    final annotationService = getIt<AnnotationService>();
+
+    await NoteEditorSheet.show(
+      context: context,
+      title: fullRef.toString(),
+      passageText: bodyText,
+      onSave: (content) async {
+        await annotationService.saveNote(
+          bookId: reference.bookId,
+          chapter: reference.chapter,
+          startWordId: startId,
+          endWordId: endId,
+          content: content,
+        );
+      },
+    );
   }
 
   Future<void> _handleCopy() async {
