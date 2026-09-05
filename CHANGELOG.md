@@ -2,6 +2,8 @@
 
 - Migrate to Swift Package Manager on iOS (#37 @monte-hague)
 - Update the BSB text to the July 31, 2026 revision. (https://bereanbible.com/changelog.txt)
+- Footnotes include italicized words.
+- Updated Android Gradle.
 
 # 1.5.0 - 2025.11.24
 
