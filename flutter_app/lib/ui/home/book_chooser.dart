@@ -13,7 +13,7 @@ class BookChooser extends StatefulWidget {
     required this.onSelected,
   });
 
-  final void Function(int bookId, int chapter) onSelected;
+  final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
 
   @override
   State<BookChooser> createState() => _BookChooserState();
@@ -86,6 +86,10 @@ class _BookChooserState extends State<BookChooser> {
                 _chapterNotifier.value = null;
                 if (chapter == null) return;
                 widget.onSelected(bookId, chapter);
+              },
+              onSectionSelected: (chapter, sectionHeading) {
+                _chapterNotifier.value = null;
+                widget.onSelected(bookId, chapter, sectionHeading);
               },
             );
           },

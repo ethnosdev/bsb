@@ -1,3 +1,5 @@
+import 'package:bsb/infrastructure/section_heading.dart';
+import 'package:bsb/ui/home/section_headings_dialog.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +10,9 @@ class ChapterChooser extends StatefulWidget {
     this.bookName,
     this.bookId,
     required this.chapterCount,
+    this.headingsLoader,
     this.onChapterSelected,
+    this.onSectionSelected,
   });
 
   /// Optional book name to display at the top of the popup.
@@ -21,9 +25,15 @@ class ChapterChooser extends StatefulWidget {
   /// Total number of chapters in the selected book.
   final int chapterCount;
 
+  /// Optional custom loader for section headings (used primarily in tests).
+  final Future<List<SectionHeading>> Function(int bookId)? headingsLoader;
+
   /// Callback when a chapter is selected or the chooser is dismissed.
   /// A `null` value indicates that selection was canceled.
   final void Function(int? chapter)? onChapterSelected;
+
+  /// Optional callback when a section heading is selected.
+  final void Function(int chapter, String sectionHeading)? onSectionSelected;
 
   @override
   State<ChapterChooser> createState() => _ChapterChooserState();
@@ -243,7 +253,17 @@ class _ChapterChooserState extends State<ChapterChooser> {
   Widget _buildHeader(ThemeData theme) {
     return Row(
       children: [
-        const SizedBox(width: 40), // Balance close button
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: IconButton(
+            key: const ValueKey('keypad_sections'),
+            icon: const Icon(Icons.format_list_bulleted, size: 22),
+            padding: EdgeInsets.zero,
+            onPressed: _openSectionHeadings,
+            tooltip: 'Section Headings',
+          ),
+        ),
         Expanded(
           child: Text(
             _displayBookName,
@@ -255,13 +275,7 @@ class _ChapterChooserState extends State<ChapterChooser> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        IconButton(
-          key: const ValueKey('keypad_close'),
-          icon: const Icon(Icons.close),
-          onPressed: () => widget.onChapterSelected?.call(null),
-          tooltip: 'Close',
-          visualDensity: VisualDensity.compact,
-        ),
+        const SizedBox(width: 40),
       ],
     );
   }
@@ -386,5 +400,23 @@ class _ChapterChooserState extends State<ChapterChooser> {
         ),
       ],
     );
+  }
+
+  Future<void> _openSectionHeadings() async {
+    final heading = await showDialog<SectionHeading>(
+      context: context,
+      builder: (context) => SectionHeadingsDialog(
+        bookId: widget.bookId ?? 1,
+        bookName: _displayBookName,
+        headingsLoader: widget.headingsLoader,
+      ),
+    );
+    if (heading != null) {
+      if (widget.onSectionSelected != null) {
+        widget.onSectionSelected!(heading.chapter, heading.text);
+      } else {
+        widget.onChapterSelected?.call(heading.chapter);
+      }
+    }
   }
 }

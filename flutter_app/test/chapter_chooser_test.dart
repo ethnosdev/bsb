@@ -1,3 +1,4 @@
+import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -280,27 +281,9 @@ void main() {
       expect(selectedChapter, equals(150));
     });
 
-    testWidgets('close button and background barrier dismiss with null',
+    testWidgets('tapping background barrier dismisses with null',
         (tester) async {
       int? selectedChapter = 999;
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
-            bookId: 1,
-            chapterCount: 50,
-            onChapterSelected: (c) => selectedChapter = c,
-          ),
-        ),
-      );
-
-      // Tap close icon button
-      await tester.tap(find.byKey(const ValueKey('keypad_close')));
-      await tester.pumpAndSettle();
-
-      expect(selectedChapter, isNull);
-
-      // Reset
-      selectedChapter = 999;
       await tester.pumpWidget(
         createTestApp(
           ChapterChooser(
@@ -335,6 +318,108 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(selectedChapter, equals(8));
+    });
+
+    testWidgets(
+        'Section Headings button opens dialog and selecting heading triggers onSectionSelected',
+        (tester) async {
+      int? selectedChapter;
+      String? selectedHeading;
+
+      final testHeadings = [
+        const SectionHeading(
+          bookId: 1,
+          chapter: 1,
+          verse: 1,
+          text: 'The Creation',
+          format: 's1',
+        ),
+        const SectionHeading(
+          bookId: 1,
+          chapter: 3,
+          verse: 1,
+          text: "The Serpent's Deception",
+          format: 's1',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          ChapterChooser(
+            bookId: 1,
+            chapterCount: 50,
+            headingsLoader: (bookId) async => testHeadings,
+            onChapterSelected: (c) => selectedChapter = c,
+            onSectionSelected: (c, h) {
+              selectedChapter = c;
+              selectedHeading = h;
+            },
+          ),
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('keypad_sections')), findsOneWidget);
+      final iconCenter =
+          tester.getCenter(find.byKey(const ValueKey('keypad_sections')));
+      final bookCenter = tester.getCenter(find.text('Genesis'));
+      expect(iconCenter.dx, lessThan(bookCenter.dx));
+      expect((iconCenter.dy - bookCenter.dy).abs(), lessThan(15));
+
+      // Tap Section Headings button
+      await tester.tap(find.byKey(const ValueKey('keypad_sections')));
+      await tester.pumpAndSettle();
+
+      // Dialog opens
+      expect(find.text('Genesis Sections'), findsOneWidget);
+      expect(find.text('The Creation'), findsOneWidget);
+      expect(find.text('1:1'), findsOneWidget);
+      expect(find.text("The Serpent's Deception"), findsOneWidget);
+      expect(find.text('3:1'), findsOneWidget);
+
+      // Tap the second section heading
+      await tester.tap(find.text("The Serpent's Deception"));
+      await tester.pumpAndSettle();
+
+      expect(selectedChapter, equals(3));
+      expect(selectedHeading, equals("The Serpent's Deception"));
+    });
+
+    testWidgets('Section Headings dialog handles empty state and dismissal',
+        (tester) async {
+      int? selectedChapter;
+      String? selectedHeading;
+
+      await tester.pumpWidget(
+        createTestApp(
+          ChapterChooser(
+            bookId: 1,
+            chapterCount: 50,
+            headingsLoader: (bookId) async => [],
+            onChapterSelected: (c) => selectedChapter = c,
+            onSectionSelected: (c, h) {
+              selectedChapter = c;
+              selectedHeading = h;
+            },
+          ),
+        ),
+      );
+
+      // Open dialog
+      await tester.tap(find.byKey(const ValueKey('keypad_sections')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No section headings found'), findsOneWidget);
+
+      // Dismiss dialog by tapping barrier (e.g. top-left corner)
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      // No section or chapter selected
+      expect(selectedChapter, isNull);
+      expect(selectedHeading, isNull);
+
+      // Chapter chooser keypad is still active
+      expect(find.byKey(const ValueKey('keypad_sections')), findsOneWidget);
     });
   });
 }

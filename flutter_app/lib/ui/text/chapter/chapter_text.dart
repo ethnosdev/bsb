@@ -7,6 +7,7 @@ import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
@@ -15,11 +16,13 @@ class ChapterText extends StatefulWidget {
     super.key,
     required this.bookId,
     required this.chapter,
+    this.targetSection,
     this.onSelectionChanged,
   });
 
   final int bookId;
   final int chapter;
+  final String? targetSection;
   final void Function(ScriptureSelectionController controller)?
   onSelectionChanged;
 
@@ -31,6 +34,8 @@ class _ChapterTextState extends State<ChapterText>
     with AutomaticKeepAliveClientMixin {
   final manager = ChapterManager();
   final _selectionController = ScriptureSelectionController();
+  final _scrollController = ScrollController();
+  String? _lastScrolledSection;
 
   @override
   bool get wantKeepAlive => true;
@@ -40,12 +45,26 @@ class _ChapterTextState extends State<ChapterText>
     super.initState();
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     _selectionController.addListener(_handleSelectionChange);
+    if (widget.targetSection != null) {
+      _scrollToTargetSection(widget.targetSection);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ChapterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.targetSection != null &&
+        (widget.targetSection != oldWidget.targetSection ||
+            widget.targetSection != _lastScrolledSection)) {
+      _scrollToTargetSection(widget.targetSection);
+    }
   }
 
   @override
   void dispose() {
     _selectionController.removeListener(_handleSelectionChange);
     _selectionController.dispose();
+    _scrollController.dispose();
     manager.dispose();
     super.dispose();
   }
@@ -54,6 +73,100 @@ class _ChapterTextState extends State<ChapterText>
     if (mounted && widget.onSelectionChanged != null) {
       widget.onSelectionChanged!(_selectionController);
     }
+  }
+
+  void _scrollToTargetSection([String? section, int attempt = 0]) {
+    final target = section ?? widget.targetSection;
+    if (target == null || target.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final success = _performScrollToSection(target);
+      if (success) {
+        _lastScrolledSection = target;
+      } else if (attempt < 15) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted && widget.targetSection == target) {
+            _scrollToTargetSection(target, attempt + 1);
+          }
+        });
+      }
+    });
+  }
+
+  bool _performScrollToSection(String target) {
+    if (!_scrollController.hasClients) return false;
+    if (!_scrollController.position.hasContentDimensions) return false;
+
+    final renderObject = context.findRenderObject();
+    if (renderObject == null || !renderObject.attached) return false;
+
+    RenderPassage? passage;
+    void findPassage(RenderObject ro) {
+      if (passage != null) return;
+      if (ro is RenderPassage) {
+        passage = ro;
+        return;
+      }
+      ro.visitChildren(findPassage);
+    }
+    findPassage(renderObject);
+
+    if (passage == null || !passage!.hasSize) return false;
+
+    RenderBox? child = passage!.firstChild;
+    while (child != null) {
+      if (child is RenderParagraph) {
+        final text = _getParagraphText(child);
+        if (_matchesHeading(text, target)) {
+          final parentData = child.parentData as PassageParentData;
+          final targetOffset = parentData.offset.dy;
+          final maxScroll = _scrollController.position.maxScrollExtent;
+          if (targetOffset > 50.0 && maxScroll <= 0.0) {
+            return false;
+          }
+          final scrollOffset = (16.0 + targetOffset).clamp(0.0, maxScroll);
+          _scrollController.animateTo(
+            scrollOffset,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+          );
+          return true;
+        }
+      }
+      child = (child.parentData as PassageParentData).nextSibling;
+    }
+    return false;
+  }
+
+  String _getParagraphText(RenderBox p) {
+    final words = <String>[];
+    void collectWords(RenderObject ro) {
+      if (ro is RenderWord) {
+        words.add(ro.text);
+        return;
+      }
+      ro.visitChildren(collectWords);
+    }
+    collectWords(p);
+    return words.join(' ');
+  }
+
+  bool _matchesHeading(String text, String target) {
+    final cleanText = text
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase();
+    final cleanTarget = target
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .toLowerCase();
+    if (cleanText.isEmpty || cleanTarget.isEmpty) return false;
+    return cleanText == cleanTarget ||
+        cleanText.startsWith(cleanTarget) ||
+        cleanTarget.startsWith(cleanText);
   }
 
   @override
@@ -65,6 +178,11 @@ class _ChapterTextState extends State<ChapterText>
     return ValueListenableBuilder<List<UsfmLine>>(
       valueListenable: manager.textParagraphNotifier,
       builder: (context, verseLines, child) {
+        if (verseLines.isNotEmpty &&
+            widget.targetSection != null &&
+            _lastScrolledSection != widget.targetSection) {
+          _scrollToTargetSection(widget.targetSection);
+        }
         return ValueListenableBuilder<List<Highlight>>(
           valueListenable: manager.highlightsNotifier,
           builder: (context, rawHighlights, child) {
@@ -74,39 +192,48 @@ class _ChapterTextState extends State<ChapterText>
             return ValueListenableBuilder<List<NoteMarker>>(
               valueListenable: manager.noteMarkersNotifier,
               builder: (context, noteMarkers, child) {
-                return SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: 16.0,
-                      top: 16.0,
-                      right: 16.0,
-                      bottom: screenHeight * 0.8,
-                    ),
-                    child: UsfmWidget(
-                      verseLines: verseLines,
-                      selectionController: _selectionController,
-                      highlights: highlights,
-                      noteMarkers: noteMarkers,
-                      onFootnoteTapped: _onFootnoteTapped,
-                      onNoteTapped: _onNoteTapped,
-                      onAmbiguousTapped: _onAmbiguousTapped,
-                      onWordTapped: (id) => log("Tapped word $id"),
-                      onSelectionRequested: (wordId) {
-                        ScriptureLogic.highlightVerse(
-                          _selectionController,
-                          verseLines,
-                          wordId,
-                        );
-                      },
-                      styleBuilder: (format) {
-                        return UsfmParagraphStyle.usfmDefaults(
-                          format: format == ParagraphFormat.p
-                              ? ParagraphFormat.m
-                              : format,
-                          baseStyle: Theme.of(context).textTheme.bodyMedium!
-                              .copyWith(fontSize: manager.textSize),
-                        );
-                      },
+                return NotificationListener<UserScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.direction != ScrollDirection.idle) {
+                      _lastScrolledSection = null;
+                    }
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: 16.0,
+                        top: 16.0,
+                        right: 16.0,
+                        bottom: screenHeight * 0.8,
+                      ),
+                      child: UsfmWidget(
+                        verseLines: verseLines,
+                        selectionController: _selectionController,
+                        highlights: highlights,
+                        noteMarkers: noteMarkers,
+                        onFootnoteTapped: _onFootnoteTapped,
+                        onNoteTapped: _onNoteTapped,
+                        onAmbiguousTapped: _onAmbiguousTapped,
+                        onWordTapped: (id) => log("Tapped word $id"),
+                        onSelectionRequested: (wordId) {
+                          ScriptureLogic.highlightVerse(
+                            _selectionController,
+                            verseLines,
+                            wordId,
+                          );
+                        },
+                        styleBuilder: (format) {
+                          return UsfmParagraphStyle.usfmDefaults(
+                            format: format == ParagraphFormat.p
+                                ? ParagraphFormat.m
+                                : format,
+                            baseStyle: Theme.of(context).textTheme.bodyMedium!
+                                .copyWith(fontSize: manager.textSize),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );

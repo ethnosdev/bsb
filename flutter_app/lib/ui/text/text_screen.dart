@@ -20,10 +20,12 @@ class TextScreen extends StatefulWidget {
     super.key,
     required this.bookId,
     required this.chapter,
+    this.initialSectionHeading,
   });
 
   final int bookId;
   final int chapter;
+  final String? initialSectionHeading;
 
   @override
   State<TextScreen> createState() => _TextScreenState();
@@ -36,12 +38,20 @@ class _TextScreenState extends State<TextScreen> {
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
   final _showBottomBarNotifier = ValueNotifier<bool>(false);
   int _pageIndex = 0;
+  int? _targetSectionBookId;
+  int? _targetSectionChapter;
+  String? _pendingSectionHeading;
   ScriptureSelectionController? _activeController;
   late Language _currentLanguage;
 
   @override
   void initState() {
     super.initState();
+    _pendingSectionHeading = widget.initialSectionHeading;
+    if (widget.initialSectionHeading != null) {
+      _targetSectionBookId = widget.bookId;
+      _targetSectionChapter = widget.chapter;
+    }
     _currentLanguage = widget.bookId >= 40 ? Language.greek : Language.hebrew;
     _pageIndex = _screenManager.pageIndexForBookAndChapter(
       bookId: widget.bookId,
@@ -61,6 +71,9 @@ class _TextScreenState extends State<TextScreen> {
         _screenManager.updateTitle(
           index: _pageIndex,
         );
+        _pendingSectionHeading = null;
+        _targetSectionBookId = null;
+        _targetSectionChapter = null;
         // Hide the bottom bar when swiping to a new page
         if (_showBottomBarNotifier.value) {
           _showBottomBarNotifier.value = false;
@@ -106,6 +119,12 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
+  bool _isTargetSection(int bookId, int chapter) {
+    return _pendingSectionHeading != null &&
+        bookId == _targetSectionBookId &&
+        chapter == _targetSectionChapter;
+  }
+
   Widget _buildChapterTextPageView() {
     return PageView.builder(
       controller: _pageController,
@@ -115,8 +134,12 @@ class _TextScreenState extends State<TextScreen> {
         final (bookId, chapter) =
             _screenManager.bookAndChapterForPageIndex(pageIndex);
         return ChapterText(
+          key: ValueKey('chapter_${bookId}_$chapter'),
           bookId: bookId,
           chapter: chapter,
+          targetSection: _isTargetSection(bookId, chapter)
+              ? _pendingSectionHeading
+              : null,
           onSelectionChanged: (controller) {
             _activeController = controller;
             final hasSelection = controller.hasSelection;
@@ -154,16 +177,42 @@ class _TextScreenState extends State<TextScreen> {
           onChapterSelected: (chapter) {
             _chapterNotifier.value = null;
             if (chapter == null) return;
-            final pageIndex = _screenManager.pageIndexForBookAndChapter(
-              bookId: bookId,
-              chapter: chapter,
-            );
-            final index = pageIndex + _initialPageOffset;
-            _pageController.jumpToPage(index);
+            _navigateToChapterAndSection(bookId, chapter);
+          },
+          onSectionSelected: (chapter, sectionHeading) {
+            _chapterNotifier.value = null;
+            _navigateToChapterAndSection(bookId, chapter, sectionHeading);
           },
         );
       },
     );
+  }
+
+  void _navigateToChapterAndSection(
+    int bookId,
+    int chapter, [
+    String? sectionHeading,
+  ]) {
+    final pageIndex = _screenManager.pageIndexForBookAndChapter(
+      bookId: bookId,
+      chapter: chapter,
+    );
+    final index = pageIndex + _initialPageOffset;
+
+    setState(() {
+      _targetSectionBookId = bookId;
+      _targetSectionChapter = chapter;
+      _pendingSectionHeading = sectionHeading;
+      _pageIndex = pageIndex;
+      _screenManager.updateTitle(index: pageIndex);
+    });
+
+    if (_pageController.hasClients) {
+      final currentPage = (_pageController.page ?? _initialPageOffset).round();
+      if (currentPage != index) {
+        _pageController.jumpToPage(index);
+      }
+    }
   }
 
   Widget _buildBottomMenuBar() {

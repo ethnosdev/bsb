@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
@@ -183,6 +184,56 @@ class DatabaseHelper {
         bookChapterVerse: verse[Schema.colReference] as int,
         text: verse[Schema.colText] as String,
         format: ParagraphFormat.fromJson(format),
+      );
+    }).toList();
+  }
+
+  Future<List<SectionHeading>> getSectionHeadings(int bookId) async {
+    const int bookMultiplier = 1000000;
+    final int lowerBound = bookId * bookMultiplier;
+    final int upperBound = (bookId + 1) * bookMultiplier;
+
+    final results = await _database.rawQuery(
+      '''
+      SELECT s.${Schema.colReference} as ref,
+             s.${Schema.colText} as heading_text,
+             s.${Schema.colFormat} as heading_format,
+             (SELECT v.${Schema.colReference} FROM ${Schema.bibleTextTable} v
+              WHERE v.${Schema.colId} > s.${Schema.colId}
+                AND v.${Schema.colFormat} NOT IN ('s1', 's2', 'r', 'd', 'ms', 'b')
+              LIMIT 1) as next_ref
+      FROM ${Schema.bibleTextTable} s
+      WHERE s.${Schema.colReference} >= ? AND s.${Schema.colReference} < ?
+        AND s.${Schema.colFormat} IN ('s1', 's2')
+      ORDER BY s.${Schema.colId} ASC
+      ''',
+      [lowerBound, upperBound],
+    );
+
+    return results.map((row) {
+      final headingText = row['heading_text'] as String;
+      final format = row['heading_format'] as String;
+      final nextRef = row['next_ref'] as int?;
+      final ref = row['ref'] as int;
+
+      final int chapter;
+      final int verse;
+
+      if (nextRef != null) {
+        chapter = (nextRef % 1000000) ~/ 1000;
+        verse = nextRef % 1000;
+      } else {
+        chapter = (ref % 1000000) ~/ 1000;
+        final rawVerse = ref % 1000;
+        verse = rawVerse == 0 ? 1 : rawVerse;
+      }
+
+      return SectionHeading(
+        bookId: bookId,
+        chapter: chapter,
+        verse: verse,
+        text: headingText,
+        format: format,
       );
     }).toList();
   }

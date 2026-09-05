@@ -20,13 +20,14 @@ class _HomePageState extends State<HomePage> {
       drawer: const AppDrawer(),
       body: SafeArea(
         child: BookChooser(
-          onSelected: (bookId, chapter) {
+          onSelected: (bookId, chapter, [sectionHeading]) {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => TextScreen(
                   bookId: bookId,
                   chapter: chapter,
+                  initialSectionHeading: sectionHeading,
                 ),
               ),
             );

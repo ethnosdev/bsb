@@ -2,6 +2,8 @@
 
 - Multi-color highlighting.
 - Personal note-taking.
+- Replaced old chapter chooser dialog with a new keypad.
+- Added section headings dialog to chapter chooser.
 
 # 1.6.0 - 2026.09.04
 
