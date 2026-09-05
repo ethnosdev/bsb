@@ -11,13 +11,13 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.9
   sqflite: ^2.4.3
-  get_it: ^9.2.0
+  get_it: ^9.2.1
   path: ^1.9.1
   database_builder: 
     path: ../database_builder
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.5
   url_launcher: ^6.3.2
-  package_info_plus: ^10.2.0
+  package_info_plus: ^10.2.1
   scripture: ^0.6.0
   # scripture:
   #   path: ../../scripture

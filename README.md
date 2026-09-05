@@ -10,7 +10,7 @@ See the [road map](https://github.com/ethnosdev/bsb/wiki) for planned features.
 ## Guides
 
 - [Getting started: Running the app from the source code](docs/getting_started.md)
-- [How to update the BSB text](howto_update_bsb_text.md)
+- [How to update the BSB text](docs/howto_update_bsb_text.md)
 
 ## License
 
