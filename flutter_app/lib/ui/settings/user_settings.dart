@@ -41,4 +41,24 @@ class UserSettings {
   Future<void> setShowInterlinearEnglish(bool show) async {
     await _prefs.setBool(_showInterlinearEnglishKey, show);
   }
+
+  static const _openTabsKey = 'openTabs';
+
+  List<String>? get savedTabsJson => _prefs.getStringList(_openTabsKey);
+
+  Future<void> setSavedTabsJson(List<String> tabsJson) async {
+    await _prefs.setStringList(_openTabsKey, tabsJson);
+  }
+
+  static const _activeTabIdKey = 'activeTabId';
+
+  String? get savedActiveTabId => _prefs.getString(_activeTabIdKey);
+
+  Future<void> setSavedActiveTabId(String? id) async {
+    if (id == null) {
+      await _prefs.remove(_activeTabIdKey);
+    } else {
+      await _prefs.setString(_activeTabIdKey, id);
+    }
+  }
 }

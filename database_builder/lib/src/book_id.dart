@@ -67,6 +67,10 @@ final bookAbbreviationToIdMap = {
   'REV': 66
 };
 
+final bookIdToAbbreviationMap = {
+  for (final entry in bookAbbreviationToIdMap.entries) entry.value: entry.key,
+};
+
 const bookIdToFullNameMap = {
   1: 'Genesis',
   2: 'Exodus',

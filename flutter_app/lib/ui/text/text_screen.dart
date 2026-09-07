@@ -21,11 +21,15 @@ class TextScreen extends StatefulWidget {
     required this.bookId,
     required this.chapter,
     this.initialSectionHeading,
+    this.chapterChooserNotifier,
+    this.onChapterChanged,
   });
 
   final int bookId;
   final int chapter;
   final String? initialSectionHeading;
+  final ValueNotifier<(int, int)?>? chapterChooserNotifier;
+  final void Function(int bookId, int chapter)? onChapterChanged;
 
   @override
   State<TextScreen> createState() => _TextScreenState();
@@ -35,7 +39,9 @@ class _TextScreenState extends State<TextScreen> {
   final _screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
-  final _chapterNotifier = ValueNotifier<(int, int)?>(null);
+  final _internalChapterNotifier = ValueNotifier<(int, int)?>(null);
+  ValueNotifier<(int, int)?> get _chapterNotifier =>
+      widget.chapterChooserNotifier ?? _internalChapterNotifier;
   final _showBottomBarNotifier = ValueNotifier<bool>(false);
   int _pageIndex = 0;
   int? _targetSectionBookId;
@@ -78,44 +84,44 @@ class _TextScreenState extends State<TextScreen> {
         if (_showBottomBarNotifier.value) {
           _showBottomBarNotifier.value = false;
         }
+        final (bookId, chapter) =
+            _screenManager.bookAndChapterForPageIndex(_pageIndex);
+        widget.onChapterChanged?.call(bookId, chapter);
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant TextScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.bookId != oldWidget.bookId ||
+        widget.chapter != oldWidget.chapter ||
+        widget.initialSectionHeading != oldWidget.initialSectionHeading) {
+      _navigateToChapterAndSection(
+        widget.bookId,
+        widget.chapter,
+        widget.initialSectionHeading,
+      );
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _showBottomBarNotifier.dispose();
-    _chapterNotifier.dispose();
+    _internalChapterNotifier.dispose();
     _screenManager.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: ValueListenableBuilder<String>(
-          valueListenable: _screenManager.titleNotifier,
-          builder: (context, title, child) {
-            return GestureDetector(
-              onTap: () {
-                final (bookId, chapterCount) =
-                    _screenManager.currentBookAndChapterCount(_pageIndex);
-                _chapterNotifier.value = (bookId, chapterCount);
-              },
-              child: Text(title),
-            );
-          },
-        ),
-      ),
-      body: Stack(
-        children: [
-          _buildChapterTextPageView(),
-          _buildChapterChooserOverlay(),
-          _buildBottomMenuBar(),
-        ],
-      ),
+    return Stack(
+      children: [
+        _buildChapterTextPageView(),
+        _buildChapterChooserOverlay(),
+        _buildBottomMenuBar(),
+      ],
     );
   }
 
@@ -178,10 +184,12 @@ class _TextScreenState extends State<TextScreen> {
             _chapterNotifier.value = null;
             if (chapter == null) return;
             _navigateToChapterAndSection(bookId, chapter);
+            widget.onChapterChanged?.call(bookId, chapter);
           },
           onSectionSelected: (chapter, sectionHeading) {
             _chapterNotifier.value = null;
             _navigateToChapterAndSection(bookId, chapter, sectionHeading);
+            widget.onChapterChanged?.call(bookId, chapter);
           },
         );
       },

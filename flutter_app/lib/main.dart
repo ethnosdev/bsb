@@ -5,6 +5,7 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/home.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:flutter/material.dart';
 
 Future<void> main() async {
@@ -12,6 +13,7 @@ Future<void> main() async {
   setupServiceLocator();
   await getIt<DatabaseHelper>().init();
   await getIt<UserSettings>().init();
+  await getIt<TabManager>().init();
   await getIt<AppState>().init();
   runApp(const MyApp());
 }

@@ -18,6 +18,13 @@ void main() {
       expect(ids, equals(List.generate(66, (i) => i + 1)));
     });
 
+    test('bookIdToAbbreviationMap has all 66 canonical books inverting bookAbbreviationToIdMap', () {
+      expect(bookIdToAbbreviationMap.length, equals(66));
+      for (final entry in bookAbbreviationToIdMap.entries) {
+        expect(bookIdToAbbreviationMap[entry.value], equals(entry.key));
+      }
+    });
+
     test('bookIdToFullNameMap has all 66 canonical books', () {
       expect(bookIdToFullNameMap.length, equals(66));
 

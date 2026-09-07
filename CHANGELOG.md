@@ -4,6 +4,7 @@
 - Personal note-taking.
 - Replaced old chapter chooser dialog with a new keypad.
 - Added section headings dialog to chapter chooser.
+- Tab view for multiple open chapters.
 
 # 1.6.0 - 2026.09.04
 
