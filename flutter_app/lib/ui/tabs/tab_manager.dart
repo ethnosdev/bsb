@@ -176,6 +176,15 @@ class TabManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reorderItem(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= _tabs.length) return;
+    final item = _tabs.removeAt(oldIndex);
+    final targetIndex = newIndex.clamp(0, _tabs.length);
+    _tabs.insert(targetIndex, item);
+    _saveToPrefs();
+    notifyListeners();
+  }
+
   void _recordHistory(String tabId) {
     _history.remove(tabId);
     _history.add(tabId);

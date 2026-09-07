@@ -18,6 +18,7 @@ Enable seamless multi-location Bible reading through a persistent, browser-like 
   * Tapping an **inactive chip** switches to that tab.
   * Tapping the **active chip** (outside the `x`) opens the `ChapterChooser` overlay for that book.
   * Tapping `x` closes the active tab.
+  * **Long-pressing any chip** initiates drag-and-drop to reorder the tabs horizontally.
 
 ### 2.2. Overflow & Composite Chip
 * The AppBar uses responsive width detection (`LayoutBuilder` / width measuring).
@@ -27,6 +28,7 @@ Enable seamless multi-location Bible reading through a persistent, browser-like 
   * Tapping the composite chip opens a modal bottom sheet listing all open chapters (displaying full book names, e.g., "Romans 8").
   * Tapping an item switches to that chapter and dismisses the sheet.
   * Swiping an item away (`Dismissible`) closes that tab.
+  * **Long-pressing an item** initiates vertical drag-and-drop to reorder the chapters without needing a visual drag handle icon.
   * If the number of open tabs drops below the overflow threshold, the AppBar automatically expands back to individual chips.
 
 ### 2.3. Swiping & Navigation

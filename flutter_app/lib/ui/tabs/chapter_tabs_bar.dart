@@ -59,27 +59,46 @@ class ChapterTabsBar extends StatelessWidget {
 
         // If all chips fit within available width, show them individually
         if (totalWidth <= constraints.maxWidth) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (int i = 0; i < tabs.length; i++) ...[
-                  if (i > 0) const SizedBox(width: spacing),
-                  ChapterChip(
-                    tab: tabs[i],
-                    isActive: tabs[i].id == activeTab.id,
-                    onTap: () {
-                      if (tabs[i].id == activeTab.id) {
-                        onActiveTabTapped(activeTab);
-                      } else {
-                        tabManager.selectTab(tabs[i].id);
-                      }
-                    },
-                    onClose: () => tabManager.closeTab(tabs[i].id),
+          return SizedBox(
+            height: 36,
+            child: ReorderableListView.builder(
+              scrollDirection: Axis.horizontal,
+              shrinkWrap: true,
+              buildDefaultDragHandles: false,
+              padding: EdgeInsets.zero,
+              proxyDecorator: (child, index, animation) {
+                return Material(
+                  color: Colors.transparent,
+                  elevation: 6.0,
+                  shadowColor: Colors.black26,
+                  child: child,
+                );
+              },
+              itemCount: tabs.length,
+              onReorderItem: (oldIndex, newIndex) =>
+                  tabManager.reorderItem(oldIndex, newIndex),
+              itemBuilder: (context, index) {
+                final tab = tabs[index];
+                return ReorderableDelayedDragStartListener(
+                  key: ValueKey(tab.id),
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                    child: ChapterChip(
+                      tab: tab,
+                      isActive: tab.id == activeTab.id,
+                      onTap: () {
+                        if (tab.id == activeTab.id) {
+                          onActiveTabTapped(activeTab);
+                        } else {
+                          tabManager.selectTab(tab.id);
+                        }
+                      },
+                      onClose: () => tabManager.closeTab(tab.id),
+                    ),
                   ),
-                ],
-              ],
+                );
+              },
             ),
           );
         }

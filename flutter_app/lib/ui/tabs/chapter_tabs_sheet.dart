@@ -97,73 +97,91 @@ class ChapterTabsSheet extends StatelessWidget {
                             ),
                           ),
                         )
-                      : ListView.builder(
-                          controller: scrollController,
+                      : ReorderableListView.builder(
+                          scrollController: scrollController,
                           itemCount: tabs.length,
+                          buildDefaultDragHandles: false,
+                          onReorderItem: (oldIndex, newIndex) {
+                            tabManager.reorderItem(oldIndex, newIndex);
+                          },
+                          proxyDecorator: (child, index, animation) {
+                            return Material(
+                              color: colorScheme.surfaceContainerHighest,
+                              elevation: 4.0,
+                              shadowColor: Colors.black26,
+                              borderRadius: BorderRadius.circular(12),
+                              child: child,
+                            );
+                          },
                           itemBuilder: (context, index) {
                             final tab = tabs[index];
                             final isActive = tab.id == activeTabId;
 
-                            return Dismissible(
+                            return ReorderableDelayedDragStartListener(
                               key: ValueKey(tab.id),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                color: colorScheme.errorContainer,
-                                child: Icon(
-                                  Icons.delete_outline,
-                                  color: colorScheme.onErrorContainer,
+                              index: index,
+                              child: Dismissible(
+                                key: ValueKey('dismiss_${tab.id}'),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  color: colorScheme.errorContainer,
+                                  child: Icon(
+                                    Icons.delete_outline,
+                                    color: colorScheme.onErrorContainer,
+                                  ),
                                 ),
-                              ),
-                              onDismissed: (_) {
-                                tabManager.closeTab(tab.id);
-                                if (tabManager.tabs.isEmpty) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: isActive
-                                      ? colorScheme.primary
-                                      : colorScheme.surfaceContainerHighest,
-                                  child: Text(
-                                    tab.label.split(' ').first,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isActive
-                                          ? colorScheme.onPrimary
-                                          : colorScheme.onSurfaceVariant,
+                                onDismissed: (_) {
+                                  tabManager.closeTab(tab.id);
+                                  if (tabManager.tabs.isEmpty) {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: isActive
+                                        ? colorScheme.primary
+                                        : colorScheme.surfaceContainerHighest,
+                                    child: Text(
+                                      tab.label.split(' ').first,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: isActive
+                                            ? colorScheme.onPrimary
+                                            : colorScheme.onSurfaceVariant,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                title: Text(
-                                  tab.fullTitle,
-                                  style: TextStyle(
-                                    fontWeight: isActive
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isActive
-                                        ? colorScheme.primary
-                                        : colorScheme.onSurface,
+                                  title: Text(
+                                    tab.fullTitle,
+                                    style: TextStyle(
+                                      fontWeight: isActive
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isActive
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurface,
+                                    ),
                                   ),
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.close, size: 18),
-                                  onPressed: () {
-                                    tabManager.closeTab(tab.id);
-                                    if (tabManager.tabs.isEmpty) {
-                                      Navigator.pop(context);
-                                    }
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    tooltip: 'Close tab',
+                                    onPressed: () {
+                                      tabManager.closeTab(tab.id);
+                                      if (tabManager.tabs.isEmpty) {
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                  ),
+                                  selected: isActive,
+                                  onTap: () {
+                                    tabManager.selectTab(tab.id);
+                                    Navigator.pop(context);
                                   },
                                 ),
-                                selected: isActive,
-                                onTap: () {
-                                  tabManager.selectTab(tab.id);
-                                  Navigator.pop(context);
-                                },
                               ),
                             );
                           },

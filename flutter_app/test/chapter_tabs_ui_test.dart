@@ -204,5 +204,32 @@ void main() {
 
       expect(tabManager.activeTab?.label, 'GEN 1');
     });
+
+    testWidgets('allows reordering via long press in sheet without drag handle icon', (tester) async {
+      await tabManager.init();
+      tabManager.openTab(1, 1); // Genesis 1
+      tabManager.openTab(45, 8); // Romans 8
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => ChapterTabsSheet.show(context, tabManager),
+                child: const Text('Open Sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
+
+      // No explicit drag handle icon
+      expect(find.byIcon(Icons.drag_handle), findsNothing);
+      // Wrapped with ReorderableDelayedDragStartListener for long-press drag
+      expect(find.byType(ReorderableDelayedDragStartListener), findsNWidgets(2));
+    });
   });
 }

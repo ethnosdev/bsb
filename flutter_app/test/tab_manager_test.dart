@@ -143,5 +143,22 @@ void main() {
       tabManager.reorderTabs(0, 3);
       expect(tabManager.tabs.map((t) => t.label).toList(), ['EXO 1', 'LEV 1', 'GEN 1']);
     });
+
+    test('reorderItem moves tab properly', () async {
+      await tabManager.init();
+      tabManager.openTab(1, 1); // GEN 1
+      tabManager.openTab(2, 1); // EXO 1
+      tabManager.openTab(3, 1); // LEV 1
+
+      expect(tabManager.tabs.map((t) => t.label).toList(), ['GEN 1', 'EXO 1', 'LEV 1']);
+
+      // Move index 0 to index 2
+      tabManager.reorderItem(0, 2);
+      expect(tabManager.tabs.map((t) => t.label).toList(), ['EXO 1', 'LEV 1', 'GEN 1']);
+
+      // Move index 2 back to index 0
+      tabManager.reorderItem(2, 0);
+      expect(tabManager.tabs.map((t) => t.label).toList(), ['GEN 1', 'EXO 1', 'LEV 1']);
+    });
   });
 }
