@@ -5,6 +5,7 @@
 - Replaced old chapter chooser dialog with a new keypad.
 - Added section headings dialog to chapter chooser.
 - Tab view for multiple open chapters.
+- Full text search.
 
 # 1.6.0 - 2026.09.04
 
