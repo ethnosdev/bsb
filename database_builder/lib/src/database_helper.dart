@@ -15,6 +15,9 @@ class DatabaseHelper {
   late PreparedStatement _insertEnglishStmt;
   late PreparedStatement _insertPosStmt;
   late PreparedStatement _insertInterlinearStmt;
+  late PreparedStatement _insertVerseSearchStmt;
+
+  Database get database => _database;
 
   void init() {
     _database = sqlite3.open(_databaseName);
@@ -28,6 +31,7 @@ class DatabaseHelper {
     _database.execute(Schema.createEnglishTable);
     _database.execute(Schema.createPartOfSpeechTable);
     _database.execute(Schema.createInterlinearTable);
+    _database.execute(Schema.createVerseSearchTable);
   }
 
   void _prepareStatements() {
@@ -36,6 +40,7 @@ class DatabaseHelper {
     _insertEnglishStmt = _database.prepare(Schema.insertEnglish);
     _insertPosStmt = _database.prepare(Schema.insertPartOfSpeech);
     _insertInterlinearStmt = _database.prepare(Schema.insertInterlinear);
+    _insertVerseSearchStmt = _database.prepare(Schema.insertVerseSearch);
   }
 
   void beginTransaction() {
@@ -117,7 +122,24 @@ class DatabaseHelper {
     _insertEnglishStmt.close();
     _insertPosStmt.close();
     _insertInterlinearStmt.close();
+    _insertVerseSearchStmt.close();
     _database.close();
+  }
+
+  void insertVerseSearch({
+    required int reference,
+    required int bookId,
+    required int chapter,
+    required int verse,
+    required String text,
+  }) {
+    _insertVerseSearchStmt.execute([
+      reference,
+      bookId,
+      chapter,
+      verse,
+      text,
+    ]);
   }
 }
 

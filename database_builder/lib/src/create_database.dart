@@ -1,6 +1,7 @@
 import 'package:database_builder/src/bsb_table.dart';
 import 'package:database_builder/src/database_helper.dart';
 import 'package:database_builder/src/interlinear_table.dart';
+import 'package:database_builder/src/verse_search_table.dart';
 
 Future<void> createDatabase() async {
   final dbHelper = DatabaseHelper();
@@ -13,6 +14,9 @@ Future<void> createDatabase() async {
 
   print('Creating BSB Table');
   await createBsbTable(dbHelper);
+
+  print('Creating Verse Search Table');
+  await createVerseSearchTable(dbHelper);
 
   print('Creating Foreign Table');
   final (originalMap, posMap, englishMap) = createForeignTables(dbHelper);

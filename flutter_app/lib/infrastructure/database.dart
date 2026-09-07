@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/infrastructure/search/search_models.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:flutter/services.dart';
@@ -38,6 +39,7 @@ class DatabaseHelper {
       }
     }
     _database = await openDatabase(path, version: _databaseVersion);
+    await ensureSearchTableExists();
   }
 
   Future<int> getDatabaseVersion(String path) async {
@@ -236,5 +238,152 @@ class DatabaseHelper {
         format: format,
       );
     }).toList();
+  }
+
+  Future<void> ensureSearchTableExists() async {
+    final tables = await _database.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+      [Schema.verseSearchTable],
+    );
+    if (tables.isEmpty) {
+      log("Creating and populating verse search table");
+      await _populateSearchTable();
+    }
+  }
+
+  Future<void> _populateSearchTable() async {
+    await _database.execute(Schema.createVerseSearchTable);
+    final rows = await _database.rawQuery('''
+      SELECT ${Schema.colReference}, ${Schema.colText}
+      FROM ${Schema.bibleTextTable}
+      WHERE ${Schema.colFormat} NOT IN ('s1', 's2', 'r', 'd', 'ms', 'mr', 'b', 'qa')
+        AND ${Schema.colReference} % 1000 != 0
+      ORDER BY ${Schema.colId} ASC
+    ''');
+
+    final verses = <int, List<String>>{};
+    for (final row in rows) {
+      final ref = row[Schema.colReference] as int;
+      final text = row[Schema.colText] as String;
+      final clean = cleanVerseText(text);
+      if (clean.isEmpty) continue;
+      verses.putIfAbsent(ref, () => []).add(clean);
+    }
+
+    final batch = _database.batch();
+    for (final entry in verses.entries) {
+      final ref = entry.key;
+      final bookId = ref ~/ 1000000;
+      final chapter = (ref % 1000000) ~/ 1000;
+      final verse = ref % 1000;
+      final fullText = entry.value.join(' ');
+
+      batch.rawInsert(
+        Schema.insertVerseSearch,
+        [ref, bookId, chapter, verse, fullText],
+      );
+    }
+    await batch.commit(noResult: true);
+    log("Verse search table populated with ${verses.length} verses");
+  }
+
+  static String _sanitizeFtsQuery(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return '';
+
+    final tokens = <String>[];
+    final tokenRegex = RegExp(r'"([^"]+)"|(\S+)');
+    for (final match in tokenRegex.allMatches(trimmed)) {
+      final quoted = match.group(1);
+      final unquoted = match.group(2);
+
+      if (quoted != null && quoted.trim().isNotEmpty) {
+        final clean = quoted.replaceAll('"', '""').trim();
+        tokens.add('"$clean"');
+      } else if (unquoted != null) {
+        final clean = unquoted.replaceAll(RegExp(r'[^\w]'), '');
+        if (clean.isNotEmpty) {
+          tokens.add('"$clean"*');
+        }
+      }
+    }
+
+    if (tokens.isEmpty) return '';
+    return tokens.join(' AND ');
+  }
+
+  Future<List<SearchResult>> searchVerses({
+    required String query,
+    SearchScope scope = SearchScope.all,
+    int? specificBookId,
+    int? limit,
+  }) async {
+    await ensureSearchTableExists();
+    final cleanQuery = _sanitizeFtsQuery(query);
+    if (cleanQuery.isEmpty) return [];
+
+    String scopeClause = '';
+    final List<Object?> args = [cleanQuery];
+
+    switch (scope) {
+      case SearchScope.all:
+        break;
+      case SearchScope.ot:
+        scopeClause = 'AND ${Schema.colBookId} <= 39';
+      case SearchScope.nt:
+        scopeClause = 'AND ${Schema.colBookId} >= 40';
+      case SearchScope.book:
+        if (specificBookId != null) {
+          scopeClause = 'AND ${Schema.colBookId} = ?';
+          args.add(specificBookId);
+        }
+    }
+
+    String limitClause = '';
+    if (limit != null && limit > 0) {
+      limitClause = 'LIMIT ?';
+      args.add(limit);
+    }
+
+    try {
+      final results = await _database.rawQuery(
+        '''
+        SELECT ${Schema.colReference}, ${Schema.colText}
+        FROM ${Schema.verseSearchTable}
+        WHERE ${Schema.verseSearchTable} MATCH ? $scopeClause
+        ORDER BY rank
+        $limitClause
+        ''',
+        args,
+      );
+
+      return results.map((row) {
+        final refInt = row[Schema.colReference] as int;
+        final text = row[Schema.colText] as String;
+        final ref = Reference.fromVerseId(packedInt: refInt);
+        return SearchResult(
+          reference: ref,
+          text: text,
+        );
+      }).toList();
+    } catch (e) {
+      log('Error during search: $e');
+      return [];
+    }
+  }
+
+  Future<String?> getVerseText(int reference) async {
+    await ensureSearchTableExists();
+    final results = await _database.query(
+      Schema.verseSearchTable,
+      columns: [Schema.colText],
+      where: '${Schema.colReference} = ?',
+      whereArgs: [reference],
+      limit: 1,
+    );
+    if (results.isNotEmpty) {
+      return results.first[Schema.colText] as String?;
+    }
+    return null;
   }
 }

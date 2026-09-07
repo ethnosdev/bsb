@@ -61,4 +61,24 @@ class UserSettings {
       await _prefs.setString(_activeTabIdKey, id);
     }
   }
+
+  static const _recentSearchesKey = 'recentSearches';
+
+  List<String> get recentSearches =>
+      _prefs.getStringList(_recentSearchesKey) ?? [];
+
+  Future<void> addRecentSearch(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    final list = recentSearches.where((q) => q != trimmed).toList();
+    list.insert(0, trimmed);
+    if (list.length > 10) {
+      list.removeRange(10, list.length);
+    }
+    await _prefs.setStringList(_recentSearchesKey, list);
+  }
+
+  Future<void> clearRecentSearches() async {
+    await _prefs.remove(_recentSearchesKey);
+  }
 }

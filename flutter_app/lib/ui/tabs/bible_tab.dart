@@ -7,6 +7,7 @@ class BibleTab {
     required this.bookId,
     required this.chapter,
     this.sectionHeading,
+    this.targetVerse,
     this.scrollOffset = 0.0,
   }) : id = id ?? const Uuid().v4();
 
@@ -14,6 +15,7 @@ class BibleTab {
   int bookId;
   int chapter;
   String? sectionHeading;
+  int? targetVerse;
   double scrollOffset;
 
   String get label {
@@ -31,6 +33,7 @@ class BibleTab {
     int? bookId,
     int? chapter,
     String? sectionHeading,
+    int? targetVerse,
     double? scrollOffset,
   }) {
     return BibleTab(
@@ -38,6 +41,7 @@ class BibleTab {
       bookId: bookId ?? this.bookId,
       chapter: chapter ?? this.chapter,
       sectionHeading: sectionHeading ?? this.sectionHeading,
+      targetVerse: targetVerse ?? this.targetVerse,
       scrollOffset: scrollOffset ?? this.scrollOffset,
     );
   }
@@ -48,6 +52,7 @@ class BibleTab {
       'bookId': bookId,
       'chapter': chapter,
       if (sectionHeading != null) 'sectionHeading': sectionHeading,
+      if (targetVerse != null) 'targetVerse': targetVerse,
       'scrollOffset': scrollOffset,
     };
   }
@@ -58,6 +63,7 @@ class BibleTab {
       bookId: json['bookId'] as int,
       chapter: json['chapter'] as int,
       sectionHeading: json['sectionHeading'] as String?,
+      targetVerse: json['targetVerse'] as int?,
       scrollOffset: (json['scrollOffset'] as num?)?.toDouble() ?? 0.0,
     );
   }

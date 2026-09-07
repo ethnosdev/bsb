@@ -1,6 +1,7 @@
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
+import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/tabs/chapter_tabs_bar.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/text_screen.dart';
@@ -63,18 +64,34 @@ class _HomePageState extends State<HomePage> {
                     )
                   : null,
               actions: [
-                if (hasTabs)
-                  isAdding
-                      ? IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: 'Cancel',
-                          onPressed: _tabManager.cancelAddingTab,
-                        )
-                      : IconButton(
-                          icon: const Icon(Icons.add),
-                          tooltip: 'Open Chapter',
-                          onPressed: _tabManager.startAddingTab,
+                if (isAdding)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Cancel',
+                    onPressed: _tabManager.cancelAddingTab,
+                  )
+                else ...[
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    tooltip: 'Search',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SearchPage(
+                            currentBookId: activeTab?.bookId,
+                          ),
                         ),
+                      );
+                    },
+                  ),
+                  if (hasTabs)
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Open Chapter',
+                      onPressed: _tabManager.startAddingTab,
+                    ),
+                ],
               ],
             ),
             body: (!hasTabs || isAdding)
@@ -90,6 +107,7 @@ class _HomePageState extends State<HomePage> {
                     bookId: activeTab.bookId,
                     chapter: activeTab.chapter,
                     initialSectionHeading: activeTab.sectionHeading,
+                    initialTargetVerse: activeTab.targetVerse,
                     chapterChooserNotifier: _chapterChooserNotifier,
                     onChapterChanged: (bookId, chapter) {
                       _tabManager.updateActiveChapter(bookId, chapter);

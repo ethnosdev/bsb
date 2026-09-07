@@ -25,6 +25,28 @@ class Schema {
     ) VALUES (?, ?, ?)
   ''';
 
+  // Verse search table (FTS5)
+  static const String verseSearchTable = "verses_search";
+  static const String colBookId = "book_id";
+  static const String colChapter = "chapter";
+  static const String colVerse = "verse";
+
+  static const String createVerseSearchTable = '''
+  CREATE VIRTUAL TABLE IF NOT EXISTS $verseSearchTable USING fts5(
+    $colReference UNINDEXED,
+    $colBookId UNINDEXED,
+    $colChapter UNINDEXED,
+    $colVerse UNINDEXED,
+    $colText
+  )
+  ''';
+
+  static const String insertVerseSearch = '''
+    INSERT INTO $verseSearchTable (
+      $colReference, $colBookId, $colChapter, $colVerse, $colText
+    ) VALUES (?, ?, ?, ?, ?)
+  ''';
+
   // Interlinear table
   static const String interlinearTable = "interlinear";
 

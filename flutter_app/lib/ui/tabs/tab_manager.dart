@@ -76,7 +76,12 @@ class TabManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  void openTab(int bookId, int chapter, [String? sectionHeading]) {
+  void openTab(
+    int bookId,
+    int chapter, [
+    String? sectionHeading,
+    int? targetVerse,
+  ]) {
     _isAddingTab = false;
 
     // Check if chapter is already open
@@ -89,6 +94,9 @@ class TabManager extends ChangeNotifier {
       if (sectionHeading != null) {
         existingTab.sectionHeading = sectionHeading;
       }
+      if (targetVerse != null) {
+        existingTab.targetVerse = targetVerse;
+      }
       _activeTabId = existingTab.id;
       _recordHistory(_activeTabId!);
       _saveToPrefs();
@@ -100,6 +108,7 @@ class TabManager extends ChangeNotifier {
       bookId: bookId,
       chapter: chapter,
       sectionHeading: sectionHeading,
+      targetVerse: targetVerse,
     );
     _tabs.add(newTab);
     _activeTabId = newTab.id;

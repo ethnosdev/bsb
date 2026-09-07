@@ -1,5 +1,6 @@
 import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/help.dart';
+import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 
@@ -27,6 +28,16 @@ class AppDrawer extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+            ListTile(
+              title: const Text('Search'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SearchPage()),
+                );
+              },
             ),
             ListTile(
               title: const Text('Settings'),

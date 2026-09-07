@@ -21,6 +21,7 @@ class TextScreen extends StatefulWidget {
     required this.bookId,
     required this.chapter,
     this.initialSectionHeading,
+    this.initialTargetVerse,
     this.chapterChooserNotifier,
     this.onChapterChanged,
   });
@@ -28,6 +29,7 @@ class TextScreen extends StatefulWidget {
   final int bookId;
   final int chapter;
   final String? initialSectionHeading;
+  final int? initialTargetVerse;
   final ValueNotifier<(int, int)?>? chapterChooserNotifier;
   final void Function(int bookId, int chapter)? onChapterChanged;
 
@@ -47,6 +49,9 @@ class _TextScreenState extends State<TextScreen> {
   int? _targetSectionBookId;
   int? _targetSectionChapter;
   String? _pendingSectionHeading;
+  int? _targetVerseBookId;
+  int? _targetVerseChapter;
+  int? _pendingTargetVerse;
   ScriptureSelectionController? _activeController;
   late Language _currentLanguage;
 
@@ -57,6 +62,11 @@ class _TextScreenState extends State<TextScreen> {
     if (widget.initialSectionHeading != null) {
       _targetSectionBookId = widget.bookId;
       _targetSectionChapter = widget.chapter;
+    }
+    _pendingTargetVerse = widget.initialTargetVerse;
+    if (widget.initialTargetVerse != null) {
+      _targetVerseBookId = widget.bookId;
+      _targetVerseChapter = widget.chapter;
     }
     _currentLanguage = widget.bookId >= 40 ? Language.greek : Language.hebrew;
     _pageIndex = _screenManager.pageIndexForBookAndChapter(
@@ -80,6 +90,9 @@ class _TextScreenState extends State<TextScreen> {
         _pendingSectionHeading = null;
         _targetSectionBookId = null;
         _targetSectionChapter = null;
+        _pendingTargetVerse = null;
+        _targetVerseBookId = null;
+        _targetVerseChapter = null;
         // Hide the bottom bar when swiping to a new page
         if (_showBottomBarNotifier.value) {
           _showBottomBarNotifier.value = false;
@@ -96,11 +109,13 @@ class _TextScreenState extends State<TextScreen> {
     super.didUpdateWidget(oldWidget);
     if (widget.bookId != oldWidget.bookId ||
         widget.chapter != oldWidget.chapter ||
-        widget.initialSectionHeading != oldWidget.initialSectionHeading) {
+        widget.initialSectionHeading != oldWidget.initialSectionHeading ||
+        widget.initialTargetVerse != oldWidget.initialTargetVerse) {
       _navigateToChapterAndSection(
         widget.bookId,
         widget.chapter,
         widget.initialSectionHeading,
+        widget.initialTargetVerse,
       );
     }
   }
@@ -131,6 +146,12 @@ class _TextScreenState extends State<TextScreen> {
         chapter == _targetSectionChapter;
   }
 
+  bool _isTargetVerse(int bookId, int chapter) {
+    return _pendingTargetVerse != null &&
+        bookId == _targetVerseBookId &&
+        chapter == _targetVerseChapter;
+  }
+
   Widget _buildChapterTextPageView() {
     return PageView.builder(
       controller: _pageController,
@@ -145,6 +166,9 @@ class _TextScreenState extends State<TextScreen> {
           chapter: chapter,
           targetSection: _isTargetSection(bookId, chapter)
               ? _pendingSectionHeading
+              : null,
+          targetVerse: _isTargetVerse(bookId, chapter)
+              ? _pendingTargetVerse
               : null,
           onSelectionChanged: (controller) {
             _activeController = controller;
@@ -200,6 +224,7 @@ class _TextScreenState extends State<TextScreen> {
     int bookId,
     int chapter, [
     String? sectionHeading,
+    int? targetVerse,
   ]) {
     final pageIndex = _screenManager.pageIndexForBookAndChapter(
       bookId: bookId,
@@ -211,6 +236,9 @@ class _TextScreenState extends State<TextScreen> {
       _targetSectionBookId = bookId;
       _targetSectionChapter = chapter;
       _pendingSectionHeading = sectionHeading;
+      _targetVerseBookId = bookId;
+      _targetVerseChapter = chapter;
+      _pendingTargetVerse = targetVerse;
       _pageIndex = pageIndex;
       _screenManager.updateTitle(index: pageIndex);
     });

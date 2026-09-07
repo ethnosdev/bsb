@@ -17,12 +17,14 @@ class ChapterText extends StatefulWidget {
     required this.bookId,
     required this.chapter,
     this.targetSection,
+    this.targetVerse,
     this.onSelectionChanged,
   });
 
   final int bookId;
   final int chapter;
   final String? targetSection;
+  final int? targetVerse;
   final void Function(ScriptureSelectionController controller)?
   onSelectionChanged;
 
@@ -36,6 +38,7 @@ class _ChapterTextState extends State<ChapterText>
   final _selectionController = ScriptureSelectionController();
   final _scrollController = ScrollController();
   String? _lastScrolledSection;
+  int? _lastScrolledVerse;
 
   @override
   bool get wantKeepAlive => true;
@@ -48,6 +51,9 @@ class _ChapterTextState extends State<ChapterText>
     if (widget.targetSection != null) {
       _scrollToTargetSection(widget.targetSection);
     }
+    if (widget.targetVerse != null) {
+      _scrollToTargetVerse(widget.targetVerse);
+    }
   }
 
   @override
@@ -57,6 +63,11 @@ class _ChapterTextState extends State<ChapterText>
         (widget.targetSection != oldWidget.targetSection ||
             widget.targetSection != _lastScrolledSection)) {
       _scrollToTargetSection(widget.targetSection);
+    }
+    if (widget.targetVerse != null &&
+        (widget.targetVerse != oldWidget.targetVerse ||
+            widget.targetVerse != _lastScrolledVerse)) {
+      _scrollToTargetVerse(widget.targetVerse);
     }
   }
 
@@ -139,6 +150,90 @@ class _ChapterTextState extends State<ChapterText>
     return false;
   }
 
+  void _scrollToTargetVerse([int? verse, int attempt = 0]) {
+    final target = verse ?? widget.targetVerse;
+    if (target == null || target <= 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final success = _performScrollToVerse(target);
+      if (success) {
+        _lastScrolledVerse = target;
+      } else if (attempt < 15) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          if (mounted && widget.targetVerse == target) {
+            _scrollToTargetVerse(target, attempt + 1);
+          }
+        });
+      }
+    });
+  }
+
+  bool _performScrollToVerse(int targetVerse) {
+    if (!_scrollController.hasClients) return false;
+    if (!_scrollController.position.hasContentDimensions) return false;
+
+    final renderObject = context.findRenderObject();
+    if (renderObject == null || !renderObject.attached) return false;
+
+    RenderPassage? passage;
+    void findPassage(RenderObject ro) {
+      if (passage != null) return;
+      if (ro is RenderPassage) {
+        passage = ro;
+        return;
+      }
+      ro.visitChildren(findPassage);
+    }
+    findPassage(renderObject);
+
+    if (passage == null || !passage!.hasSize) return false;
+
+    final targetVerseStr = targetVerse.toString();
+    final expectedPackedRef =
+        widget.bookId * 1000000 + widget.chapter * 1000 + targetVerse;
+
+    RenderBox? child = passage!.firstChild;
+    while (child != null) {
+      if (child is RenderParagraph) {
+        bool matches = false;
+        void checkParagraph(RenderObject ro) {
+          if (matches) return;
+          if (ro is RenderVerseNumber && ro.number == targetVerseStr) {
+            matches = true;
+            return;
+          }
+          if (ro is RenderWord) {
+            if (ro.id ~/ 1000 == expectedPackedRef) {
+              matches = true;
+              return;
+            }
+          }
+          ro.visitChildren(checkParagraph);
+        }
+        checkParagraph(child);
+
+        if (matches) {
+          final parentData = child.parentData as PassageParentData;
+          final targetOffset = parentData.offset.dy;
+          final maxScroll = _scrollController.position.maxScrollExtent;
+          if (targetOffset > 50.0 && maxScroll <= 0.0) {
+            return false;
+          }
+          final scrollOffset = (16.0 + targetOffset).clamp(0.0, maxScroll);
+          _scrollController.animateTo(
+            scrollOffset,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+          );
+          return true;
+        }
+      }
+      child = (child.parentData as PassageParentData).nextSibling;
+    }
+    return false;
+  }
+
   String _getParagraphText(RenderBox p) {
     final words = <String>[];
     void collectWords(RenderObject ro) {
@@ -183,6 +278,11 @@ class _ChapterTextState extends State<ChapterText>
             _lastScrolledSection != widget.targetSection) {
           _scrollToTargetSection(widget.targetSection);
         }
+        if (verseLines.isNotEmpty &&
+            widget.targetVerse != null &&
+            _lastScrolledVerse != widget.targetVerse) {
+          _scrollToTargetVerse(widget.targetVerse);
+        }
         return ValueListenableBuilder<List<Highlight>>(
           valueListenable: manager.highlightsNotifier,
           builder: (context, rawHighlights, child) {
@@ -196,6 +296,7 @@ class _ChapterTextState extends State<ChapterText>
                   onNotification: (notification) {
                     if (notification.direction != ScrollDirection.idle) {
                       _lastScrolledSection = null;
+                      _lastScrolledVerse = null;
                     }
                     return false;
                   },
