@@ -92,4 +92,37 @@ void main() {
     expect(find.byType(UsfmWidget), findsOneWidget);
     expect(find.byType(SelectableScripture), findsOneWidget);
   });
+
+  testWidgets('ChapterText invokes onTargetVerseScrolled when targetVerse is reached and does not re-trigger on rebuild', (tester) async {
+    int targetScrolledCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              return ChapterText(
+                bookId: 1,
+                chapter: 1,
+                targetVerse: 3,
+                onTargetVerseScrolled: () {
+                  targetScrolledCount++;
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(targetScrolledCount, equals(1));
+
+    // Rebuild ChapterText (e.g. simulating parent setState or selection change)
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Must not trigger again
+    expect(targetScrolledCount, equals(1));
+  });
 }

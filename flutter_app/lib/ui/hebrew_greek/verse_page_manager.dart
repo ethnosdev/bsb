@@ -44,12 +44,12 @@ class VersePageManager extends ChangeNotifier {
 
     isLoading = false;
 
-    if (selectedWord == null && originalWords.isNotEmpty) {
-      // Pick the first word that has an English gloss or first word
-      final initialWord = originalWords.firstWhere(
-        (w) => !w.isUntranslated,
-        orElse: () => originalWords.first,
-      );
+    if (selectedWord == null &&
+        (englishWords.isNotEmpty || originalWords.isNotEmpty)) {
+      // Highlight the first word in English and its corresponding Hebrew/Greek word
+      final initialWord = englishWords.isNotEmpty
+          ? englishWords.first
+          : originalWords.first;
       await selectWord(initialWord);
     } else {
       notifyListeners();

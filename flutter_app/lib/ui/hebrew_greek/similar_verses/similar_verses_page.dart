@@ -1,6 +1,8 @@
 import 'package:bsb/core/font_family.dart';
+import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
+import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,23 +13,41 @@ class SimilarVersesPage extends StatefulWidget {
   const SimilarVersesPage({
     super.key,
     required this.word,
-    this.initialMode = WordSearchMode.strongs,
+    this.initialMode = WordSearchMode.exactForm,
+    this.initialExactCount,
+    this.initialStrongsCount,
+    this.dbHelper,
   });
 
   final OriginalWord word;
   final WordSearchMode initialMode;
+  final int? initialExactCount;
+  final int? initialStrongsCount;
+  final DatabaseHelper? dbHelper;
 
   @override
   State<SimilarVersesPage> createState() => _SimilarVersesPageState();
 }
 
 class _SimilarVersesPageState extends State<SimilarVersesPage> {
-  final manager = SimilarVerseManager();
+  late final SimilarVerseManager manager;
 
   @override
   void initState() {
     super.initState();
-    manager.init(widget.word, initialMode: widget.initialMode);
+    manager = SimilarVerseManager(dbHelper: widget.dbHelper);
+    manager.init(
+      widget.word,
+      initialMode: widget.initialMode,
+      initialExactCount: widget.initialExactCount,
+      initialStrongsCount: widget.initialStrongsCount,
+    );
+  }
+
+  @override
+  void dispose() {
+    manager.dispose();
+    super.dispose();
   }
 
   Future<void> _launch(String webpage) async {
@@ -39,6 +59,7 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final fontFamily = fontFamilyForLanguage(widget.word.language);
     final prefix = widget.word.language == Language.greek ? 'G' : 'H';
     final strongsTag =
@@ -72,25 +93,37 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: ValueListenableBuilder<WordSearchMode>(
-              valueListenable: manager.searchModeNotifier,
-              builder: (context, mode, child) {
-                return SegmentedButton<WordSearchMode>(
-                  segments: [
-                    ButtonSegment<WordSearchMode>(
-                      value: WordSearchMode.exactForm,
-                      label: Text('Exact Form (${manager.exactCount})'),
-                      icon: const Icon(Icons.spellcheck),
-                    ),
-                    ButtonSegment<WordSearchMode>(
-                      value: WordSearchMode.strongs,
-                      label: Text("Strong's (${manager.strongsCount})"),
-                      icon: const Icon(Icons.tag),
-                    ),
-                  ],
-                  selected: {mode},
-                  onSelectionChanged: (Set<WordSearchMode> newSelection) {
-                    manager.switchMode(newSelection.first);
+            child: ValueListenableBuilder<({int exact, int strongs})>(
+              valueListenable: manager.countsNotifier,
+              builder: (context, counts, child) {
+                return ValueListenableBuilder<WordSearchMode>(
+                  valueListenable: manager.searchModeNotifier,
+                  builder: (context, mode, child) {
+                    return SegmentedButton<WordSearchMode>(
+                      expandedInsets: EdgeInsets.zero,
+                      segments: [
+                        ButtonSegment<WordSearchMode>(
+                          value: WordSearchMode.exactForm,
+                          label: Text('Exact Form (${counts.exact})'),
+                          icon: const Icon(
+                            Icons.check,
+                            color: Colors.transparent,
+                          ),
+                        ),
+                        ButtonSegment<WordSearchMode>(
+                          value: WordSearchMode.strongs,
+                          label: Text('Lexical Form (${counts.strongs})'),
+                          icon: const Icon(
+                            Icons.check,
+                            color: Colors.transparent,
+                          ),
+                        ),
+                      ],
+                      selected: {mode},
+                      onSelectionChanged: (Set<WordSearchMode> newSelection) {
+                        manager.switchMode(newSelection.first);
+                      },
+                    );
                   },
                 );
               },
@@ -120,16 +153,19 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
                         final formattedReference =
                             manager.formatReference(reference);
 
-                        return FutureBuilder<TextSpan>(
+                        return FutureBuilder<VerseDisplayContent>(
+                          key: ValueKey(
+                            '${reference.packedVerse}_${manager.searchModeNotifier.value.name}',
+                          ),
                           future: manager.getVerseContent(
                             reference,
-                            Theme.of(context).colorScheme.primary,
+                            theme.colorScheme.primary,
                           ),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                     ConnectionState.done &&
                                 snapshot.hasData) {
-                              final verse = snapshot.data!;
+                              final content = snapshot.data!;
                               return ListTile(
                                 title: Text(
                                   formattedReference,
@@ -139,16 +175,57 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
                                 ),
                                 subtitle: Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
-                                  child: Text.rich(
-                                    verse,
-                                    textDirection: widget.word.language.isLTR
-                                        ? TextDirection.ltr
-                                        : TextDirection.rtl,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text.rich(
+                                        content.english,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          fontSize: 15,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text.rich(
+                                        content.original,
+                                        textDirection:
+                                            widget.word.language.isLTR
+                                                ? TextDirection.ltr
+                                                : TextDirection.rtl,
+                                        style: TextStyle(
+                                          fontFamily: fontFamily,
+                                          fontSize: widget.word.language ==
+                                                  Language.hebrew
+                                              ? 18
+                                              : 16,
+                                          height: 1.4,
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                onTap: () {
+                                  final isExact =
+                                      manager.searchModeNotifier.value ==
+                                          WordSearchMode.exactForm;
+                                  showVerseReferenceModal(
+                                    context: context,
+                                    reference: reference,
+                                    initialStrongs: widget.word.strongsNumber,
+                                    initialOriginalId:
+                                        isExact ? widget.word.originalId : null,
+                                    initialExactWord:
+                                        isExact ? widget.word.word : null,
+                                    dbHelper: widget.dbHelper,
+                                  );
+                                },
                               );
                             } else {
-                              return const SizedBox(height: 60);
+                              return const SizedBox(height: 80);
                             }
                           },
                         );

@@ -12,12 +12,27 @@ enum WordSearchMode {
   strongs,
 }
 
+class VerseDisplayContent {
+  final TextSpan english;
+  final TextSpan original;
+
+  const VerseDisplayContent({
+    required this.english,
+    required this.original,
+  });
+}
+
 class SimilarVerseManager {
-  final _dbHelper = getIt<DatabaseHelper>();
+  SimilarVerseManager({DatabaseHelper? dbHelper})
+      : _dbHelper = dbHelper ?? getIt<DatabaseHelper>();
+
+  final DatabaseHelper _dbHelper;
   final similarVersesNotifier = ValueNotifier<List<Reference>>([]);
   final searchModeNotifier =
       ValueNotifier<WordSearchMode>(WordSearchMode.strongs);
   final isLoadingNotifier = ValueNotifier<bool>(true);
+  final countsNotifier =
+      ValueNotifier<({int exact, int strongs})>((exact: 0, strongs: 0));
 
   late OriginalWord word;
   int exactCount = 0;
@@ -26,9 +41,18 @@ class SimilarVerseManager {
   Future<void> init(
     OriginalWord word, {
     WordSearchMode initialMode = WordSearchMode.strongs,
+    int? initialExactCount,
+    int? initialStrongsCount,
   }) async {
     this.word = word;
     searchModeNotifier.value = initialMode;
+    if (initialExactCount != null) {
+      exactCount = initialExactCount;
+    }
+    if (initialStrongsCount != null) {
+      strongsCount = initialStrongsCount;
+    }
+    countsNotifier.value = (exact: exactCount, strongs: strongsCount);
     isLoadingNotifier.value = true;
 
     final exactFuture = _dbHelper.getExactWordCount(word.originalId);
@@ -40,8 +64,16 @@ class SimilarVerseManager {
     final counts = await Future.wait([exactFuture, strongsFuture]);
     exactCount = counts[0];
     strongsCount = counts[1];
+    countsNotifier.value = (exact: exactCount, strongs: strongsCount);
 
     await _loadVersesForMode(initialMode);
+  }
+
+  void dispose() {
+    similarVersesNotifier.dispose();
+    searchModeNotifier.dispose();
+    isLoadingNotifier.dispose();
+    countsNotifier.dispose();
   }
 
   Future<void> switchMode(WordSearchMode mode) async {
@@ -70,23 +102,66 @@ class SimilarVerseManager {
     return '$book ${reference.chapter}:${reference.verse}';
   }
 
-  /// Returns the verse text with the matched words highlighted.
-  Future<TextSpan> getVerseContent(
+  /// Returns the verse text in English and original language with the matched words highlighted.
+  Future<VerseDisplayContent> getVerseContent(
     Reference reference,
     Color highlightColor,
   ) async {
     final data = await _dbHelper.getOriginalLanguageData(reference);
-    return _formatVerse(data, highlightColor);
+    return VerseDisplayContent(
+      english: _formatEnglish(data, highlightColor),
+      original: _formatOriginal(data, highlightColor),
+    );
   }
 
-  TextSpan _formatVerse(
+  TextSpan _formatEnglish(
+    List<VerseElement> data,
+    Color highlightColor,
+  ) {
+    final spans = <TextSpan>[];
+    final isExact = searchModeNotifier.value == WordSearchMode.exactForm;
+    final englishWords = data
+        .whereType<OriginalWord>()
+        .where((w) => !w.isUntranslated)
+        .toList()
+      ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
+
+    for (int i = 0; i < englishWords.length; i++) {
+      final element = englishWords[i];
+      final bool isMatch = isExact
+          ? (element.originalId == word.originalId)
+          : (element.strongsNumber == word.strongsNumber &&
+              word.strongsNumber > 0);
+
+      final color = isMatch ? highlightColor : null;
+      final bold = isMatch ? FontWeight.bold : null;
+      final punct = element.punctuation ?? '';
+      final hasTrailingSpace =
+          punct.endsWith(' ') || (i == englishWords.length - 1);
+      final trailingSpace = hasTrailingSpace ? '' : ' ';
+
+      spans.add(
+        TextSpan(
+          text: '${element.englishGloss}$punct$trailingSpace',
+          style: TextStyle(
+            color: color,
+            fontWeight: bold,
+          ),
+        ),
+      );
+    }
+    return TextSpan(children: spans);
+  }
+
+  TextSpan _formatOriginal(
     List<VerseElement> data,
     Color highlightColor,
   ) {
     final spans = <TextSpan>[];
     final isExact = searchModeNotifier.value == WordSearchMode.exactForm;
 
-    for (final element in data) {
+    for (int i = 0; i < data.length; i++) {
+      final element = data[i];
       if (element is OriginalWord) {
         final fontFamily = fontFamilyForLanguage(element.language);
         final bool isMatch = isExact
@@ -96,10 +171,11 @@ class SimilarVerseManager {
 
         final color = isMatch ? highlightColor : null;
         final bold = isMatch ? FontWeight.bold : null;
+        final trailingSpace = (i < data.length - 1) ? ' ' : '';
 
         spans.add(
           TextSpan(
-            text: '${element.word} ',
+            text: '${element.word}$trailingSpace',
             style: TextStyle(
               fontFamily: fontFamily,
               color: color,

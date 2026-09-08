@@ -7,7 +7,6 @@ import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
@@ -19,6 +18,8 @@ class ChapterText extends StatefulWidget {
     this.targetSection,
     this.targetVerse,
     this.onSelectionChanged,
+    this.onTargetSectionScrolled,
+    this.onTargetVerseScrolled,
   });
 
   final int bookId;
@@ -27,6 +28,8 @@ class ChapterText extends StatefulWidget {
   final int? targetVerse;
   final void Function(ScriptureSelectionController controller)?
   onSelectionChanged;
+  final VoidCallback? onTargetSectionScrolled;
+  final VoidCallback? onTargetVerseScrolled;
 
   @override
   State<ChapterText> createState() => _ChapterTextState();
@@ -39,6 +42,8 @@ class _ChapterTextState extends State<ChapterText>
   final _scrollController = ScrollController();
   String? _lastScrolledSection;
   int? _lastScrolledVerse;
+  String? _activeTargetSection;
+  int? _activeTargetVerse;
 
   @override
   bool get wantKeepAlive => true;
@@ -89,18 +94,31 @@ class _ChapterTextState extends State<ChapterText>
   void _scrollToTargetSection([String? section, int attempt = 0]) {
     final target = section ?? widget.targetSection;
     if (target == null || target.isEmpty) return;
+    if (target == _lastScrolledSection) return;
+    if (attempt == 0 && target == _activeTargetSection) return;
+
+    _activeTargetSection = target;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        _activeTargetSection = null;
+        return;
+      }
       final success = _performScrollToSection(target);
       if (success) {
         _lastScrolledSection = target;
+        _activeTargetSection = null;
+        widget.onTargetSectionScrolled?.call();
       } else if (attempt < 15) {
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted && widget.targetSection == target) {
             _scrollToTargetSection(target, attempt + 1);
+          } else {
+            _activeTargetSection = null;
           }
         });
+      } else {
+        _activeTargetSection = null;
       }
     });
   }
@@ -153,18 +171,31 @@ class _ChapterTextState extends State<ChapterText>
   void _scrollToTargetVerse([int? verse, int attempt = 0]) {
     final target = verse ?? widget.targetVerse;
     if (target == null || target <= 0) return;
+    if (target == _lastScrolledVerse) return;
+    if (attempt == 0 && target == _activeTargetVerse) return;
+
+    _activeTargetVerse = target;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted) {
+        _activeTargetVerse = null;
+        return;
+      }
       final success = _performScrollToVerse(target);
       if (success) {
         _lastScrolledVerse = target;
+        _activeTargetVerse = null;
+        widget.onTargetVerseScrolled?.call();
       } else if (attempt < 15) {
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted && widget.targetVerse == target) {
             _scrollToTargetVerse(target, attempt + 1);
+          } else {
+            _activeTargetVerse = null;
           }
         });
+      } else {
+        _activeTargetVerse = null;
       }
     });
   }
@@ -292,49 +323,40 @@ class _ChapterTextState extends State<ChapterText>
             return ValueListenableBuilder<List<NoteMarker>>(
               valueListenable: manager.noteMarkersNotifier,
               builder: (context, noteMarkers, child) {
-                return NotificationListener<UserScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification.direction != ScrollDirection.idle) {
-                      _lastScrolledSection = null;
-                      _lastScrolledVerse = null;
-                    }
-                    return false;
-                  },
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: 16.0,
-                        top: 16.0,
-                        right: 16.0,
-                        bottom: screenHeight * 0.8,
-                      ),
-                      child: UsfmWidget(
-                        verseLines: verseLines,
-                        selectionController: _selectionController,
-                        highlights: highlights,
-                        noteMarkers: noteMarkers,
-                        onFootnoteTapped: _onFootnoteTapped,
-                        onNoteTapped: _onNoteTapped,
-                        onAmbiguousTapped: _onAmbiguousTapped,
-                        onWordTapped: (id) => log("Tapped word $id"),
-                        onSelectionRequested: (wordId) {
-                          ScriptureLogic.highlightVerse(
-                            _selectionController,
-                            verseLines,
-                            wordId,
-                          );
-                        },
-                        styleBuilder: (format) {
-                          return UsfmParagraphStyle.usfmDefaults(
-                            format: format == ParagraphFormat.p
-                                ? ParagraphFormat.m
-                                : format,
-                            baseStyle: Theme.of(context).textTheme.bodyMedium!
-                                .copyWith(fontSize: manager.textSize),
-                          );
-                        },
-                      ),
+                return SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      top: 16.0,
+                      right: 16.0,
+                      bottom: screenHeight * 0.8,
+                    ),
+                    child: UsfmWidget(
+                      verseLines: verseLines,
+                      selectionController: _selectionController,
+                      highlights: highlights,
+                      noteMarkers: noteMarkers,
+                      onFootnoteTapped: _onFootnoteTapped,
+                      onNoteTapped: _onNoteTapped,
+                      onAmbiguousTapped: _onAmbiguousTapped,
+                      onWordTapped: (id) => log("Tapped word $id"),
+                      onSelectionRequested: (wordId) {
+                        ScriptureLogic.highlightVerse(
+                          _selectionController,
+                          verseLines,
+                          wordId,
+                        );
+                      },
+                      styleBuilder: (format) {
+                        return UsfmParagraphStyle.usfmDefaults(
+                          format: format == ParagraphFormat.p
+                              ? ParagraphFormat.m
+                              : format,
+                          baseStyle: Theme.of(context).textTheme.bodyMedium!
+                              .copyWith(fontSize: manager.textSize),
+                        );
+                      },
                     ),
                   ),
                 );

@@ -39,7 +39,7 @@ import 'database_helper.dart';
       if (pos.isNotEmpty) {
         uniquePos.add(pos);
       }
-      final english = columns[englishColumn].trim();
+      final english = _cleanEnglish(columns[englishColumn]);
       if (english.isNotEmpty) {
         uniqueEnglish.add(english);
       }
@@ -134,13 +134,13 @@ Future<void> createInterlinearTable(
     if (strongsNumber == -1) {
       // print('No strongs number for $original ($bookId, $chapter, $verse)');
     }
-    var english = columns[18].trim();
+    var english = _cleanEnglish(columns[18]);
     if (english.isEmpty) {
       english = '-';
     }
     final englishId = englishMap[english]!;
 
-    final punctuation = columns[19];
+    final punctuation = _cleanPunctuation(columns[19]);
     final bsbSort = int.tryParse(columns[2].trim()) ?? 0;
 
     verseWords.add(
@@ -150,7 +150,7 @@ Future<void> createInterlinearTable(
         partOfSpeech: partOfSpeech,
         strongsNumber: strongsNumber,
         english: englishId,
-        punctuation: punctuation.isEmpty ? null : punctuation,
+        punctuation: punctuation.trim().isEmpty ? null : punctuation,
         bsbSort: bsbSort,
       ),
     );
@@ -159,6 +159,16 @@ Future<void> createInterlinearTable(
     dbHelper.insertInterlinearVerse(verseWords, bookId, chapter, verse);
   }
   dbHelper.commitTransaction();
+}
+
+final _htmlTagRegex = RegExp(r'<[^>]+>');
+
+String _cleanPunctuation(String punct) {
+  return punct.replaceAll(_htmlTagRegex, '');
+}
+
+String _cleanEnglish(String text) {
+  return text.replaceAll(_htmlTagRegex, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 (int bookId, int chapter, int verse) _parseReference(String reference) {

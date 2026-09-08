@@ -521,6 +521,14 @@ void main() {
       expect(invalidStrongs, equals(0));
     });
 
+    test('interlinear punctuation has zero HTML tags (such as </span>)', () {
+      final rows = db.select('''
+        SELECT count(*) as c FROM ${Schema.interlinearTable}
+        WHERE ${Schema.ilColPunctuation} LIKE '%<%';
+      ''');
+      expect(rows.first['c'] as int, equals(0));
+    });
+
     test('Genesis 1:1 in interlinear has 7 Hebrew words', () {
       final rows = db.select('''
         SELECT o.${Schema.olColWord} as original,
@@ -575,6 +583,14 @@ void main() {
       ''').first['c'] as int;
 
       expect(emptyEnglish, equals(0));
+    });
+
+    test('english table words have zero HTML tags', () {
+      final rows = db.select('''
+        SELECT count(*) as c FROM ${Schema.englishTable}
+        WHERE ${Schema.engColWord} LIKE '%<%';
+      ''');
+      expect(rows.first['c'] as int, equals(0));
     });
 
     test('pos table names are all non-empty strings', () {

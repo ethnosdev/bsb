@@ -11,6 +11,7 @@ import 'package:scripture/scripture.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/highlight_palette_sheet.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
 import 'screen_manager.dart';
@@ -170,6 +171,28 @@ class _TextScreenState extends State<TextScreen> {
           targetVerse: _isTargetVerse(bookId, chapter)
               ? _pendingTargetVerse
               : null,
+          onTargetSectionScrolled: () {
+            _pendingSectionHeading = null;
+            _targetSectionBookId = null;
+            _targetSectionChapter = null;
+            if (getIt.isRegistered<TabManager>()) {
+              final activeTab = getIt<TabManager>().activeTab;
+              if (activeTab != null) {
+                activeTab.sectionHeading = null;
+              }
+            }
+          },
+          onTargetVerseScrolled: () {
+            _pendingTargetVerse = null;
+            _targetVerseBookId = null;
+            _targetVerseChapter = null;
+            if (getIt.isRegistered<TabManager>()) {
+              final activeTab = getIt<TabManager>().activeTab;
+              if (activeTab != null) {
+                activeTab.targetVerse = null;
+              }
+            }
+          },
           onSelectionChanged: (controller) {
             _activeController = controller;
             final hasSelection = controller.hasSelection;

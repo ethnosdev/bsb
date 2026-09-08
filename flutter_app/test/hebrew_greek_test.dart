@@ -3,8 +3,10 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
+import 'package:bsb/ui/hebrew_greek/passage_cards.dart';
 import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verse_manager.dart';
+import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
@@ -262,6 +264,45 @@ void main() {
       expect(manager.exactCount, equals(1));
       expect(manager.strongsCount, equals(2));
     });
+
+    test(
+        'initial selection highlights first word in English and corresponding original word even when original order differs',
+        () async {
+      fakeDb.words.clear();
+      fakeDb.words.addAll([
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.hebrew,
+          word: 'וַיֹּ֥אמֶר',
+          transliteration: 'way·yō·mer',
+          englishGloss: 'said',
+          strongsNumber: 559,
+          partOfSpeech: 'V-Qal',
+          bsbSort: 2,
+        ),
+        OriginalWord(
+          id: 2,
+          originalId: 102,
+          language: Language.hebrew,
+          word: 'אֱלֹהִ֖ים',
+          transliteration: '’ĕ·lō·hîm',
+          englishGloss: 'God',
+          strongsNumber: 430,
+          partOfSpeech: 'N-mp',
+          bsbSort: 1,
+        ),
+      ]);
+      fakeDb.lexicons[430] = '**אֱלֹהִים** *God, deity*';
+      fakeDb.lexicons[559] = '**אָמַר** *to say*';
+
+      final manager = VersePageManager(Language.hebrew);
+      await manager.requestVerseContent(bookId: 1, chapter: 1, verse: 3);
+
+      expect(manager.selectedWord?.id, equals(2));
+      expect(manager.selectedWord?.englishGloss, equals('God'));
+      expect(manager.selectedWord?.word, equals('אֱלֹהִ֖ים'));
+    });
   });
 
   group('SimilarVerseManager', () {
@@ -300,6 +341,76 @@ void main() {
       expect(similarManager.similarVersesNotifier.value.length, equals(1));
       expect(similarManager.similarVersesNotifier.value.first.chapter, equals(3));
       expect(similarManager.similarVersesNotifier.value.first.verse, equals(35));
+    });
+
+    test('countsNotifier updates and getVerseContent formats English with highlight', () async {
+      final word = OriginalWord(
+        id: 1,
+        originalId: 200,
+        language: Language.greek,
+        word: 'ἀγαπᾷ',
+        transliteration: 'agapa',
+        englishGloss: 'loves',
+        strongsNumber: 25,
+        partOfSpeech: 'V-PIA-3S',
+        bsbSort: 2,
+      );
+
+      final wordOther = OriginalWord(
+        id: 2,
+        originalId: 201,
+        language: Language.greek,
+        word: 'ὁ',
+        transliteration: 'ho',
+        englishGloss: 'the',
+        strongsNumber: 3588,
+        partOfSpeech: 'Art',
+        bsbSort: 1,
+      );
+
+      fakeDb.words.clear();
+      fakeDb.words.addAll([wordOther, word]);
+      fakeDb.exactMatches.clear();
+      fakeDb.exactMatches.add(Reference(bookId: 43, chapter: 3, verse: 35));
+      fakeDb.strongMatches.clear();
+      fakeDb.strongMatches.add(Reference(bookId: 43, chapter: 3, verse: 35));
+
+      final similarManager = SimilarVerseManager();
+      await similarManager.init(
+        word,
+        initialMode: WordSearchMode.exactForm,
+        initialExactCount: 1,
+        initialStrongsCount: 1,
+      );
+
+      expect(similarManager.countsNotifier.value.exact, equals(1));
+      expect(similarManager.countsNotifier.value.strongs, equals(1));
+
+      const highlightColor = Colors.amber;
+      final content = await similarManager.getVerseContent(
+        Reference(bookId: 43, chapter: 3, verse: 35),
+        highlightColor,
+      );
+
+      // English spans: "the " (not highlighted) then "loves" (highlighted)
+      final englishSpans = content.english.children!.cast<TextSpan>();
+      expect(englishSpans.length, equals(2));
+      expect(englishSpans[0].text, equals('the '));
+      expect(englishSpans[0].style?.color, isNull);
+      expect(englishSpans[1].text, equals('loves'));
+      expect(englishSpans[1].style?.color, equals(highlightColor));
+      expect(englishSpans[1].style?.fontWeight, equals(FontWeight.bold));
+
+      // Original spans: "ὁ " (not highlighted) then "ἀγαπᾷ" (highlighted)
+      final originalSpans = content.original.children!.cast<TextSpan>();
+      expect(originalSpans.length, equals(2));
+      expect(originalSpans[0].text, equals('ὁ '));
+      expect(originalSpans[0].style?.color, isNull);
+      expect(originalSpans[1].text, equals('ἀγαπᾷ'));
+      expect(originalSpans[1].style?.color, equals(highlightColor));
+      expect(originalSpans[1].style?.fontWeight, equals(FontWeight.bold));
+
+      similarManager.dispose();
     });
   });
 
@@ -365,6 +476,291 @@ void main() {
       // Word details should now update to archē
       expect(find.text('archē'), findsOneWidget);
       expect(find.textContaining('ἀρχή'), findsWidgets);
+
+      // Verify both English and Greek highlighted words have consistent primary outline border
+      final screenTheme =
+          Theme.of(tester.element(find.byType(HebrewGreekScreen)));
+      final highlightedEnglishChip = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.descendant(
+                of: find.byType(EnglishPassageCard),
+                matching: find.text('the beginning'),
+              ),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final englishBorder =
+          (highlightedEnglishChip.decoration as BoxDecoration).border
+              as Border;
+      expect(englishBorder.top.color, equals(screenTheme.colorScheme.primary));
+
+      final highlightedGreekChip = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.descendant(
+                of: find.byType(OriginalPassageCard),
+                matching: find.text('ἀρχῇ'),
+              ),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final greekBorder =
+          (highlightedGreekChip.decoration as BoxDecoration).border as Border;
+      expect(greekBorder.top.color, equals(screenTheme.colorScheme.primary));
+    });
+
+    testWidgets('displays Occurrences button and navigates to SimilarVersesPage',
+        (tester) async {
+      fakeDb.words.add(
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.greek,
+          word: 'Ἐν',
+          transliteration: 'En',
+          englishGloss: 'In',
+          strongsNumber: 1722,
+          partOfSpeech: 'Prep',
+          bsbSort: 1,
+        ),
+      );
+      fakeDb.lexicons[1722] = '**ἐν** *in, on, at*';
+      fakeDb.exactMatches.add(Reference(bookId: 43, chapter: 1, verse: 1));
+      fakeDb.strongMatches.add(Reference(bookId: 43, chapter: 1, verse: 1));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: HebrewGreekScreen(
+            bookId: 43,
+            chapter: 1,
+            verse: 1,
+            language: Language.greek,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Occurrences and Bible Hub buttons are present and aligned on the same row without wrapping
+      final occurrencesBtn = find.widgetWithText(ActionChip, 'Occurrences');
+      final bibleHubBtn = find.widgetWithText(ActionChip, 'Bible Hub');
+      expect(occurrencesBtn, findsOneWidget);
+      expect(bibleHubBtn, findsOneWidget);
+      expect(tester.getTopLeft(occurrencesBtn).dy, equals(tester.getTopLeft(bibleHubBtn).dy));
+
+      // Tap Occurrences button
+      await tester.tap(occurrencesBtn);
+      await tester.pumpAndSettle();
+
+      // Verify SimilarVersesPage is shown with Exact Form and Lexical Form segmented buttons with counts
+      expect(find.byType(SimilarVersesPage), findsOneWidget);
+      expect(find.text('Exact Form (1)'), findsOneWidget);
+      expect(find.text('Lexical Form (1)'), findsOneWidget);
+
+      // Verify custom icons are removed, exactly one visible check mark is displayed
+      expect(find.byIcon(Icons.spellcheck), findsNothing);
+      expect(find.byIcon(Icons.tag), findsNothing);
+      final visibleCheck = find.byWidgetPredicate(
+        (w) =>
+            w is Icon &&
+            w.icon == Icons.check &&
+            w.color != Colors.transparent,
+      );
+      expect(visibleCheck, findsOneWidget);
+
+      // Verify segment widths and text positions do not change when selection toggles
+      final exactButtonFinder = find.widgetWithText(TextButton, 'Exact Form (1)');
+      final lexicalButtonFinder = find.widgetWithText(TextButton, 'Lexical Form (1)');
+      final initialExactWidth = tester.getSize(exactButtonFinder).width;
+      final initialLexicalWidth = tester.getSize(lexicalButtonFinder).width;
+      expect(initialExactWidth, equals(initialLexicalWidth));
+
+      final initialExactTextPos = tester.getTopLeft(find.text('Exact Form (1)'));
+      final initialLexicalTextPos =
+          tester.getTopLeft(find.text('Lexical Form (1)'));
+
+      // Switch selection to Lexical Form
+      await tester.tap(lexicalButtonFinder);
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(exactButtonFinder).width, equals(initialExactWidth));
+      expect(tester.getSize(lexicalButtonFinder).width, equals(initialLexicalWidth));
+      expect(
+        tester.getTopLeft(find.text('Exact Form (1)')),
+        equals(initialExactTextPos),
+      );
+      expect(
+        tester.getTopLeft(find.text('Lexical Form (1)')),
+        equals(initialLexicalTextPos),
+      );
+      expect(visibleCheck, findsOneWidget);
+
+      // Verify occurrence item displays both English and Greek text
+      expect(find.textContaining('In'), findsWidgets);
+      expect(find.textContaining('Ἐν'), findsWidgets);
+
+      // Tap occurrence item in SimilarVersesPage
+      final verseResultFinder = find.widgetWithText(ListTile, 'John 1:1');
+      expect(verseResultFinder, findsOneWidget);
+      await tester.tap(verseResultFinder);
+      await tester.pumpAndSettle();
+
+      // Verify VerseReferenceModal is displayed with lexicon and highlighted words
+      expect(find.byType(VerseReferenceModal), findsOneWidget);
+      expect(find.text('Abbott-Smith Lexicon'), findsOneWidget);
+      expect(find.textContaining('in, on, at'), findsWidgets);
+
+      // Verify the word is highlighted in English and Greek in the modal
+      final BuildContext modalContext = tester.element(find.byType(VerseReferenceModal));
+      final modalTheme = Theme.of(modalContext);
+
+      final highlightedEnglishContainer = tester.widget<Container>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(VerseReferenceModal),
+            matching: find.text('In'),
+          ),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final englishBoxDecoration = highlightedEnglishContainer.decoration as BoxDecoration;
+      expect(englishBoxDecoration.color, equals(modalTheme.colorScheme.primaryContainer));
+
+      final highlightedGreekContainer = tester.widget<Container>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(VerseReferenceModal),
+            matching: find.text('Ἐν'),
+          ),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final greekBoxDecoration = highlightedGreekContainer.decoration as BoxDecoration;
+      expect(greekBoxDecoration.color, equals(modalTheme.colorScheme.primaryContainer));
+    });
+
+    testWidgets('sanitizes HTML artifacts such as </span> in word punctuation',
+        (tester) async {
+      fakeDb.words.clear();
+      fakeDb.words.add(
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.greek,
+          word: 'ὑμῖν',
+          transliteration: 'hymin',
+          englishGloss: 'for you',
+          strongsNumber: 4771,
+          partOfSpeech: 'PPro-D2P',
+          punctuation: '.”</span>'.replaceAll(RegExp(r'<[^>]+>'), ''),
+          bsbSort: 1,
+        ),
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: HebrewGreekScreen(
+            bookId: 40,
+            chapter: 17,
+            verse: 20,
+            language: Language.greek,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('</span>'), findsNothing);
+      expect(find.text('for you.”'), findsOneWidget);
+    });
+
+    testWidgets(
+        'highlights first word in English and its corresponding Hebrew word on initial load when word orders differ',
+        (tester) async {
+      fakeDb.words.clear();
+      fakeDb.words.addAll([
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.hebrew,
+          word: 'וַיֹּ֥אמֶר',
+          transliteration: 'way·yō·mer',
+          englishGloss: 'said',
+          strongsNumber: 559,
+          partOfSpeech: 'V-Qal',
+          bsbSort: 2,
+        ),
+        OriginalWord(
+          id: 2,
+          originalId: 102,
+          language: Language.hebrew,
+          word: 'אֱלֹהִ֖ים',
+          transliteration: '’ĕ·lō·hîm',
+          englishGloss: 'God',
+          strongsNumber: 430,
+          partOfSpeech: 'N-mp',
+          bsbSort: 1,
+        ),
+      ]);
+      fakeDb.lexicons[430] = '**אֱלֹהִים** *God, deity*';
+      fakeDb.lexicons[559] = '**אָמַר** *to say*';
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: HebrewGreekScreen(
+            bookId: 1,
+            chapter: 1,
+            verse: 3,
+            language: Language.hebrew,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final screenTheme =
+          Theme.of(tester.element(find.byType(HebrewGreekScreen)));
+
+      // Verify the first English word 'God' is highlighted with primary outline border
+      final godChip = tester.widget<Container>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(EnglishPassageCard),
+            matching: find.text('God'),
+          ),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final godBorder = (godChip.decoration as BoxDecoration).border as Border;
+      expect(godBorder.top.color, equals(screenTheme.colorScheme.primary));
+
+      // Verify the corresponding Hebrew word 'אֱלֹהִ֖ים' (not the first Hebrew word 'וַיֹּ֥אמֶר') is highlighted
+      final elohimChip = tester.widget<Container>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(OriginalPassageCard),
+            matching: find.text('אֱלֹהִ֖ים'),
+          ),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final elohimBorder =
+          (elohimChip.decoration as BoxDecoration).border as Border;
+      expect(elohimBorder.top.color, equals(screenTheme.colorScheme.primary));
+
+      // The unselected first Hebrew word 'וַיֹּ֥אמֶר' should NOT have primary border
+      final saidChip = tester.widget<Container>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(OriginalPassageCard),
+            matching: find.text('וַיֹּ֥אמֶר'),
+          ),
+          matching: find.byType(Container),
+        ).first,
+      );
+      final saidBorder =
+          (saidChip.decoration as BoxDecoration).border as Border;
+      expect(saidBorder.top.color, isNot(equals(screenTheme.colorScheme.primary)));
     });
   });
 
@@ -473,6 +869,13 @@ void main() {
       expect(find.text("'ō·ḏen·nū"), findsOneWidget);
       expect(find.text('H5750'), findsOneWidget);
 
+      // Verify that selecting words does not apply bold font weight (avoids layout shift)
+      final selectedEnglish =
+          tester.widget<Text>(find.text('While yet').first);
+      expect(selectedEnglish.style?.fontWeight, equals(FontWeight.normal));
+      final selectedHebrew = tester.widget<Text>(find.text('עֹדֶנּוּ').first);
+      expect(selectedHebrew.style?.fontWeight, equals(FontWeight.normal));
+
       // Tap second Hebrew word ('בְאִבּוֺ')
       await tester.tap(find.text('בְאִבּוֺ').first);
       await tester.pumpAndSettle();
@@ -480,6 +883,21 @@ void main() {
       // Should switch back to H3
       expect(find.text('ḇə·’ib·bōw'), findsOneWidget);
       expect(find.text('H3'), findsOneWidget);
+      final unselectedEnglish =
+          tester.widget<Text>(find.text('While yet').first);
+      expect(unselectedEnglish.style?.fontWeight, equals(FontWeight.normal));
+
+      // Verify Occurrences button is present and navigates to SimilarVersesPage
+      final occurrencesBtn = find.widgetWithText(ActionChip, 'Occurrences');
+      expect(occurrencesBtn, findsOneWidget);
+      await tester.ensureVisible(occurrencesBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(occurrencesBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SimilarVersesPage), findsOneWidget);
+      expect(find.textContaining('Exact Form'), findsOneWidget);
+      expect(find.textContaining('Lexical Form'), findsOneWidget);
     });
 
     testWidgets('LexiconEntryModal renders lemma content', (tester) async {

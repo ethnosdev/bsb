@@ -1,6 +1,7 @@
 import 'package:bsb/core/font_family.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
+import 'package:bsb/ui/hebrew_greek/passage_cards.dart';
 import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verse_manager.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
@@ -158,9 +159,18 @@ class _VersePageViewState extends State<_VersePageView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildEnglishPassageCard(theme),
+                EnglishPassageCard(
+                  words: verseManager.englishWords,
+                  selectedWord: verseManager.selectedWord,
+                  onWordSelected: verseManager.selectWord,
+                ),
                 const SizedBox(height: 12),
-                _buildOriginalPassageCard(theme),
+                OriginalPassageCard(
+                  language: widget.language,
+                  words: verseManager.originalWords,
+                  selectedWord: verseManager.selectedWord,
+                  onWordSelected: verseManager.selectWord,
+                ),
                 const SizedBox(height: 16),
                 if (verseManager.selectedWord != null)
                   _buildWordDetailsCard(theme, verseManager.selectedWord!),
@@ -172,144 +182,8 @@ class _VersePageViewState extends State<_VersePageView> {
     );
   }
 
-  Widget _buildEnglishPassageCard(ThemeData theme) {
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'English (BSB)',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 3,
-              runSpacing: 4,
-              children: verseManager.englishWords.map((word) {
-                final isSelected = word.id == verseManager.selectedWord?.id;
-                return InkWell(
-                  borderRadius: BorderRadius.circular(6),
-                  onTap: () => verseManager.selectWord(word),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primaryContainer
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${word.englishGloss}${word.punctuation ?? ''}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimaryContainer
-                            : theme.textTheme.bodyLarge?.color,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOriginalPassageCard(ThemeData theme) {
-    final languageName = widget.language.displayName;
-    final direction = verseManager.originalTextDirection;
-    final fontFamily = fontFamilyForLanguage(widget.language);
-
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Column(
-          crossAxisAlignment:
-              direction == TextDirection.rtl
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-          children: [
-            Text(
-              languageName,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              textDirection: direction,
-              spacing: 4,
-              runSpacing: 6,
-              children: verseManager.originalWords.map((word) {
-                final isSelected = word.id == verseManager.selectedWord?.id;
-                final text = '${word.word}${word.punctuation ?? ''}';
-                return InkWell(
-                  borderRadius: BorderRadius.circular(6),
-                  onTap: () => verseManager.selectWord(word),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primaryContainer
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      text,
-                      textDirection: direction,
-                      style: TextStyle(
-                        fontFamily: fontFamily,
-                        fontSize: 24,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected
-                            ? theme.colorScheme.onPrimaryContainer
-                            : theme.textTheme.bodyLarge?.color,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildWordDetailsCard(ThemeData theme, OriginalWord word) {
     final fontFamily = fontFamilyForLanguage(word.language);
-    final prefix = word.language == Language.greek ? 'G' : 'H';
-    final strongsLabel =
-        word.strongsNumber > 0 ? '$prefix${word.strongsNumber}' : 'Untagged';
     final lexiconTitle = word.language == Language.greek
         ? 'Abbott-Smith Greek Lexicon'
         : 'Brown-Driver-Briggs Lexicon';
@@ -375,15 +249,14 @@ class _VersePageViewState extends State<_VersePageView> {
             ),
             const SizedBox(height: 12),
 
-            // Action Buttons Row: Exact Form, Strong's, Bible Hub
-            Wrap(
+            // Action Buttons Row: Occurrences, Bible Hub
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
               children: [
                 ActionChip(
-                  avatar: const Icon(Icons.spellcheck, size: 18),
-                  label: Text('Exact Form (${verseManager.exactCount})'),
+                  avatar: const Icon(Icons.format_list_numbered, size: 18),
+                  label: const Text('Occurrences'),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -391,21 +264,8 @@ class _VersePageViewState extends State<_VersePageView> {
                         builder: (context) => SimilarVersesPage(
                           word: word,
                           initialMode: WordSearchMode.exactForm,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.tag, size: 18),
-                  label: Text('$strongsLabel (${verseManager.strongsCount})'),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SimilarVersesPage(
-                          word: word,
-                          initialMode: WordSearchMode.strongs,
+                          initialExactCount: verseManager.exactCount,
+                          initialStrongsCount: verseManager.strongsCount,
                         ),
                       ),
                     );

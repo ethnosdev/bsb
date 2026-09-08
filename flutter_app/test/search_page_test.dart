@@ -276,4 +276,19 @@ void main() {
     expect(searchManager.currentQuery, isEmpty);
     expect(find.text('Recent Searches'), findsOneWidget);
   });
+
+  testWidgets('search result verse text matches UserSettings.textSize', (tester) async {
+    await userSettings.setTextSize(22.0);
+    await tester.pumpWidget(buildTestableWidget());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'faith');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    final textWidgetFinder = find.byWidgetPredicate(
+      (widget) => widget is Text && widget.textSpan != null && widget.style?.fontSize == 22.0,
+    );
+    expect(textWidgetFinder, findsAtLeast(1));
+  });
 }

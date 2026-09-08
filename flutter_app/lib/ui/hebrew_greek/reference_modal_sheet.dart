@@ -3,6 +3,9 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
+import 'package:bsb/ui/hebrew_greek/passage_cards.dart';
+import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verse_manager.dart';
+import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -55,6 +58,33 @@ Reference? resolveReferenceString(String refStr) {
   return null;
 }
 
+Future<void> showVerseReferenceModal({
+  required BuildContext context,
+  required Reference reference,
+  int? initialStrongs,
+  int? initialOriginalId,
+  String? initialExactWord,
+  DatabaseHelper? dbHelper,
+}) {
+  final db = dbHelper ?? getIt<DatabaseHelper>();
+  return showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (context) => VerseReferenceModal(
+      reference: reference,
+      initialStrongs: initialStrongs,
+      initialOriginalId: initialOriginalId,
+      initialExactWord: initialExactWord,
+      dbHelper: db,
+    ),
+  );
+}
+
 Future<void> showReferenceModal({
   required BuildContext context,
   required String href,
@@ -76,21 +106,12 @@ Future<void> showReferenceModal({
     final refStr = href.substring(4);
     final reference = resolveReferenceString(refStr);
     if (reference != null) {
-      showModalBottomSheet(
+      return showVerseReferenceModal(
         context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (context) => VerseReferenceModal(
-          reference: reference,
-          initialStrongs: targetStrongs,
-          dbHelper: db,
-        ),
+        reference: reference,
+        initialStrongs: targetStrongs,
+        dbHelper: db,
       );
-      return;
     }
   }
 
@@ -118,11 +139,15 @@ class VerseReferenceModal extends StatefulWidget {
     super.key,
     required this.reference,
     this.initialStrongs,
+    this.initialOriginalId,
+    this.initialExactWord,
     this.dbHelper,
   });
 
   final Reference reference;
   final int? initialStrongs;
+  final int? initialOriginalId;
+  final String? initialExactWord;
   final DatabaseHelper? dbHelper;
 
   @override
@@ -152,10 +177,30 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
 
     final originalWords = elements.whereType<OriginalWord>().toList();
     OriginalWord? initialWord;
-    if (widget.initialStrongs != null && widget.initialStrongs! > 0) {
-      initialWord = originalWords.where((w) => w.strongsNumber == widget.initialStrongs).firstOrNull;
+    if (widget.initialOriginalId != null && widget.initialOriginalId! > 0) {
+      initialWord = originalWords
+          .where((w) => w.originalId == widget.initialOriginalId)
+          .firstOrNull;
     }
-    initialWord ??= originalWords.where((w) => !w.isUntranslated).firstOrNull ?? originalWords.firstOrNull;
+    if (initialWord == null &&
+        widget.initialExactWord != null &&
+        widget.initialExactWord!.isNotEmpty) {
+      initialWord = originalWords
+          .where((w) => w.word == widget.initialExactWord)
+          .firstOrNull;
+    }
+    if (initialWord == null &&
+        widget.initialStrongs != null &&
+        widget.initialStrongs! > 0) {
+      initialWord = originalWords
+          .where((w) => w.strongsNumber == widget.initialStrongs)
+          .firstOrNull;
+    }
+    final englishWords = originalWords
+        .where((w) => !w.isUntranslated)
+        .toList()
+      ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
+    initialWord ??= englishWords.firstOrNull ?? originalWords.firstOrNull;
 
     if (mounted) {
       setState(() {
@@ -204,7 +249,6 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
     final Language language = originalWords.isNotEmpty
         ? originalWords.first.language
         : (widget.reference.bookId <= 39 ? Language.hebrew : Language.greek);
-    final isRtl = language == Language.hebrew || language == Language.aramaic;
     final fontFamily = fontFamilyForLanguage(language);
 
     return DraggableScrollableSheet(
@@ -263,153 +307,18 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                       controller: scrollController,
                       padding: const EdgeInsets.all(16.0),
                       children: [
-                        // English Card
-                        Card(
-                          elevation: 0,
-                          color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: theme.colorScheme.outlineVariant.withAlpha(80),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(14.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'English (BSB)',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                if (englishWords.isNotEmpty)
-                                  Wrap(
-                                    spacing: 3,
-                                    runSpacing: 4,
-                                    children: englishWords.map((word) {
-                                      final isSelected = word.id == _selectedWord?.id;
-                                      return InkWell(
-                                        borderRadius: BorderRadius.circular(6),
-                                        onTap: () => _onWordSelected(word),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? theme.colorScheme.primaryContainer
-                                                : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            '${word.englishGloss}${word.punctuation ?? ''}',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: isSelected
-                                                  ? theme.colorScheme.onPrimaryContainer
-                                                  : theme.textTheme.bodyLarge?.color,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  )
-                                else if (_englishText != null)
-                                  Text(
-                                    _englishText!,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      fontSize: 17,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
+                        EnglishPassageCard(
+                          words: englishWords,
+                          selectedWord: _selectedWord,
+                          onWordSelected: _onWordSelected,
+                          fallbackText: _englishText,
                         ),
                         const SizedBox(height: 12),
-
-                        // Original Passage Card with Interactive Words
-                        Card(
-                          elevation: 0,
-                          color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: theme.colorScheme.outlineVariant.withAlpha(80),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(14.0),
-                            child: Column(
-                              crossAxisAlignment: isRtl
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  language.displayName,
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Directionality(
-                                  textDirection: isRtl
-                                      ? TextDirection.rtl
-                                      : TextDirection.ltr,
-                                  child: Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: originalWords.map((w) {
-                                      final isSelected = _selectedWord?.id == w.id;
-                                      return InkWell(
-                                        borderRadius: BorderRadius.circular(6),
-                                        onTap: () => _onWordSelected(w),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 3,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? theme.colorScheme.primaryContainer
-                                                : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? theme.colorScheme.primary
-                                                  : theme.colorScheme.outlineVariant.withAlpha(50),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            w.word,
-                                            style: TextStyle(
-                                              fontFamily: fontFamily,
-                                              fontSize: 22,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: isSelected
-                                                  ? theme.colorScheme.onPrimaryContainer
-                                                  : null,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        OriginalPassageCard(
+                          language: language,
+                          words: originalWords,
+                          selectedWord: _selectedWord,
+                          onWordSelected: _onWordSelected,
                         ),
                         const SizedBox(height: 16),
 
@@ -460,29 +369,58 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    spacing: 8,
-                                    runSpacing: 4,
-                                    children: [
-                                      if (_selectedWord!.strongsNumber > 0)
-                                        Chip(
-                                          label: Text(
-                                            '${_selectedWord!.language == Language.greek ? "G" : "H"}${_selectedWord!.strongsNumber}',
-                                          ),
-                                          visualDensity: VisualDensity.compact,
+                                  if (_selectedWord!.strongsNumber > 0) ...[
+                                    const SizedBox(height: 8),
+                                    Center(
+                                      child: Chip(
+                                        label: Text(
+                                          '${_selectedWord!.language == Language.greek ? "G" : "H"}${_selectedWord!.strongsNumber}',
                                         ),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    spacing: 8,
+                                    children: [
+                                      ActionChip(
+                                        avatar: const Icon(
+                                          Icons.format_list_numbered,
+                                          size: 18,
+                                        ),
+                                        label: const Text('Occurrences'),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  SimilarVersesPage(
+                                                word: _selectedWord!,
+                                                initialMode:
+                                                    WordSearchMode.exactForm,
+                                                dbHelper: _db,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                       if (_selectedWord!.strongsNumber > 0)
                                         ActionChip(
-                                          avatar: const Icon(Icons.open_in_browser, size: 16),
+                                          avatar: const Icon(
+                                            Icons.open_in_browser,
+                                            size: 18,
+                                          ),
                                           label: const Text('Bible Hub'),
-                                          visualDensity: VisualDensity.compact,
                                           onPressed: () {
-                                            final lang = _selectedWord!.language == Language.greek
-                                                ? 'greek'
-                                                : 'hebrew';
-                                            final url = 'https://biblehub.com/$lang/${_selectedWord!.strongsNumber}.htm';
+                                            final lang =
+                                                _selectedWord!.language ==
+                                                        Language.greek
+                                                    ? 'greek'
+                                                    : 'hebrew';
+                                            final url =
+                                                'https://biblehub.com/$lang/${_selectedWord!.strongsNumber}.htm';
                                             showReferenceModal(
                                               context: context,
                                               href: url,

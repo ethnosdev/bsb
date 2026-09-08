@@ -1,6 +1,7 @@
 import 'package:bsb/infrastructure/search/search_models.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/search/search_manager.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
@@ -435,7 +436,7 @@ class _SearchPageState extends State<SearchPage> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: getIt<UserSettings>().textSize,
                                 color: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -461,6 +462,7 @@ class _SearchPageState extends State<SearchPage> {
     final ref = item.reference;
     final bookName = bookIdToFullNameMap[ref.bookId] ?? '';
     final refTitle = '$bookName ${ref.chapter}:${ref.verse}';
+    final textSize = getIt<UserSettings>().textSize;
 
     return ListTile(
       title: Text(
@@ -474,7 +476,7 @@ class _SearchPageState extends State<SearchPage> {
         padding: const EdgeInsets.only(top: 4.0),
         child: Text.rich(
           _buildHighlightedTextSpan(item.text, item.matchSpans),
-          style: const TextStyle(fontSize: 14, height: 1.35),
+          style: TextStyle(fontSize: textSize, height: 1.35),
         ),
       ),
       onTap: () => _navigateToVerse(ref.bookId, ref.chapter, ref.verse),

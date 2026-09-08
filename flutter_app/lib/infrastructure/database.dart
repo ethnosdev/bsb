@@ -14,7 +14,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 27;
+  static const _databaseVersion = 28;
   late Database _database;
 
   Future<void> init() async {
@@ -127,16 +127,23 @@ class DatabaseHelper {
       'ORDER BY i.${Schema.ilColId}',
       [reference.packedVerse],
     );
+    final htmlTagRegex = RegExp(r'<[^>]+>');
     return result.map((row) {
       final text = row[Schema.ilColOriginal] as String;
       final language = Language.fromInt(row[Schema.ilColLanguage] as int);
       final transliteration = (language == Language.greek)
           ? transliterateGreek(text)
           : '';
-      final punctuation = row[Schema.ilColPunctuation] as String?;
+      final rawPunctuation = row[Schema.ilColPunctuation] as String?;
+      final punctuation = rawPunctuation?.replaceAll(htmlTagRegex, '');
       final bsbSort = (row[Schema.ilColBsbSort] as int?) ?? 0;
       final tokenId = (row['token_id'] as int?) ?? 0;
       final originalId = (row['original_id'] as int?) ?? 0;
+      final rawEnglish = row[Schema.ilColEnglish] as String;
+      final englishGloss = rawEnglish
+          .replaceAll(htmlTagRegex, ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
 
       return OriginalWord(
         id: tokenId,
@@ -144,10 +151,12 @@ class DatabaseHelper {
         language: language,
         word: text,
         transliteration: transliteration,
-        englishGloss: row[Schema.ilColEnglish] as String,
+        englishGloss: englishGloss,
         strongsNumber: row[Schema.ilColStrongsNumber] as int,
         partOfSpeech: row[Schema.ilColPartOfSpeech] as String,
-        punctuation: punctuation,
+        punctuation: (punctuation != null && punctuation.trim().isEmpty)
+            ? null
+            : punctuation,
         bsbSort: bsbSort,
       );
     }).toList();
