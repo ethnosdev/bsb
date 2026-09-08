@@ -1,5 +1,7 @@
 import 'package:database_builder/src/verse_search_table.dart';
+import 'package:sqlite3/sqlite3.dart';
 import 'package:test/test.dart';
+import 'test_helper.dart';
 
 void main() {
   group('cleanVerseText', () {
@@ -21,6 +23,59 @@ void main() {
       const raw = '   In   the    beginning   ';
       final cleaned = cleanVerseText(raw);
       expect(cleaned, equals('In the beginning'));
+    });
+  });
+
+  group('verses_search FTS4 table', () {
+    late Database db;
+
+    setUpAll(() {
+      db = openTestDatabase();
+    });
+
+    tearDownAll(() {
+      db.dispose();
+    });
+
+    test('verses_search table uses FTS4', () {
+      final rows = db.select(
+        "SELECT sql FROM sqlite_master WHERE name = 'verses_search';",
+      );
+      expect(rows, isNotEmpty);
+      final sql = (rows.first['sql'] as String).toLowerCase();
+      expect(sql, contains('fts4'));
+      expect(sql, isNot(contains('fts5')));
+    });
+
+    test('contains all 31,086 canonical verses', () {
+      final count = db.select(
+        'SELECT count(*) as c FROM verses_search;',
+      ).first['c'] as int;
+      expect(count, equals(kTotalCanonicalVerses));
+    });
+
+    test('matches prefix queries ordered canonically', () {
+      final results = db.select('''
+        SELECT reference, text FROM verses_search
+        WHERE verses_search MATCH ?
+        ORDER BY reference ASC;
+      ''', ['love*']);
+      expect(results.length, greaterThan(200));
+      // First canonical match is in Genesis
+      final firstRef = results.first['reference'] as int;
+      expect(firstRef ~/ 1000000, equals(1)); // Genesis
+    });
+
+    test('matches exact phrase queries', () {
+      final results = db.select('''
+        SELECT reference, text FROM verses_search
+        WHERE verses_search MATCH ?
+        ORDER BY reference ASC;
+      ''', ['"in the beginning"']);
+      expect(results.length, greaterThanOrEqualTo(2));
+      expect(results.first['reference'], equals(1001001)); // Gen 1:1
+      final refs = results.map((r) => r['reference'] as int).toList();
+      expect(refs, contains(43001001)); // John 1:1
     });
   });
 }

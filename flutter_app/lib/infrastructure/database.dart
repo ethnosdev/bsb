@@ -14,7 +14,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 25;
+  static const _databaseVersion = 27;
   late Database _database;
 
   Future<void> init() async {
@@ -130,8 +130,9 @@ class DatabaseHelper {
     return result.map((row) {
       final text = row[Schema.ilColOriginal] as String;
       final language = Language.fromInt(row[Schema.ilColLanguage] as int);
-      final transliteration =
-          (language == Language.greek) ? transliterateGreek(text) : '';
+      final transliteration = (language == Language.greek)
+          ? transliterateGreek(text)
+          : '';
       final punctuation = row[Schema.ilColPunctuation] as String?;
       final bsbSort = (row[Schema.ilColBsbSort] as int?) ?? 0;
       final tokenId = (row['token_id'] as int?) ?? 0;
@@ -250,10 +251,7 @@ class DatabaseHelper {
     return (result.first['c'] as int?) ?? 0;
   }
 
-  Future<int> getStrongNumberCount(
-    Language language,
-    int strongsNumber,
-  ) async {
+  Future<int> getStrongNumberCount(Language language, int strongsNumber) async {
     final result = await _database.rawQuery(
       'SELECT count(DISTINCT ${Schema.ilColReference}) as c '
       'FROM ${Schema.interlinearTable} '
@@ -375,10 +373,13 @@ class DatabaseHelper {
       final verse = ref % 1000;
       final fullText = entry.value.join(' ');
 
-      batch.rawInsert(
-        Schema.insertVerseSearch,
-        [ref, bookId, chapter, verse, fullText],
-      );
+      batch.rawInsert(Schema.insertVerseSearch, [
+        ref,
+        bookId,
+        chapter,
+        verse,
+        fullText,
+      ]);
     }
     await batch.commit(noResult: true);
     log("Verse search table populated with ${verses.length} verses");
@@ -400,7 +401,7 @@ class DatabaseHelper {
       } else if (unquoted != null) {
         final clean = unquoted.replaceAll(RegExp(r'[^\w]'), '');
         if (clean.isNotEmpty) {
-          tokens.add('"$clean"*');
+          tokens.add('$clean*');
         }
       }
     }
@@ -443,25 +444,19 @@ class DatabaseHelper {
     }
 
     try {
-      final results = await _database.rawQuery(
-        '''
+      final results = await _database.rawQuery('''
         SELECT ${Schema.colReference}, ${Schema.colText}
         FROM ${Schema.verseSearchTable}
         WHERE ${Schema.verseSearchTable} MATCH ? $scopeClause
-        ORDER BY rank
+        ORDER BY ${Schema.colReference} ASC
         $limitClause
-        ''',
-        args,
-      );
+        ''', args);
 
       return results.map((row) {
         final refInt = row[Schema.colReference] as int;
         final text = row[Schema.colText] as String;
         final ref = Reference.fromVerseId(packedInt: refInt);
-        return SearchResult(
-          reference: ref,
-          text: text,
-        );
+        return SearchResult(reference: ref, text: text);
       }).toList();
     } catch (e) {
       log('Error during search: $e');

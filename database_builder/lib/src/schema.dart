@@ -25,19 +25,23 @@ class Schema {
     ) VALUES (?, ?, ?)
   ''';
 
-  // Verse search table (FTS5)
+  // Verse search table (FTS4)
   static const String verseSearchTable = "verses_search";
   static const String colBookId = "book_id";
   static const String colChapter = "chapter";
   static const String colVerse = "verse";
 
   static const String createVerseSearchTable = '''
-  CREATE VIRTUAL TABLE IF NOT EXISTS $verseSearchTable USING fts5(
-    $colReference UNINDEXED,
-    $colBookId UNINDEXED,
-    $colChapter UNINDEXED,
-    $colVerse UNINDEXED,
-    $colText
+  CREATE VIRTUAL TABLE IF NOT EXISTS $verseSearchTable USING fts4(
+    $colReference,
+    $colBookId,
+    $colChapter,
+    $colVerse,
+    $colText,
+    notindexed=$colReference,
+    notindexed=$colBookId,
+    notindexed=$colChapter,
+    notindexed=$colVerse
   )
   ''';
 

@@ -209,12 +209,14 @@ void main() {
     });
 
     test('references are strictly monotonic (non-decreasing) in bible table', () {
+      // Note: Habakkuk 3:19 is followed by a musical postscript (\d, ref 35003000).
       final outOfOrder = db.select('''
         SELECT count(*) as c FROM (
           SELECT ${Schema.colReference} as ref,
                  LAG(${Schema.colReference}) OVER (ORDER BY ${Schema.colId}) as prev_ref
           FROM ${Schema.bibleTextTable}
-        ) WHERE prev_ref IS NOT NULL AND ref < prev_ref;
+        ) WHERE prev_ref IS NOT NULL AND ref < prev_ref
+          AND ref != 35003000;
       ''').first['c'] as int;
 
       expect(outOfOrder, equals(0));

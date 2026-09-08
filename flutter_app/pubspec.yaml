@@ -16,6 +16,7 @@ dependencies:
   database_builder: 
     path: ../database_builder
   shared_preferences: ^2.5.5
+  shared_preferences_android: ^2.4.28
   url_launcher: ^6.3.2
   package_info_plus: ^10.2.1
   # scripture: ^0.6.0
