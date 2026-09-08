@@ -5,6 +5,7 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/search/search_models.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
+import 'package:bsb/infrastructure/word_cluster.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:scripture/scripture.dart';
@@ -128,7 +129,7 @@ class DatabaseHelper {
       [reference.packedVerse],
     );
     final htmlTagRegex = RegExp(r'<[^>]+>');
-    return result.map((row) {
+    final words = result.map((row) {
       final text = row[Schema.ilColOriginal] as String;
       final language = Language.fromInt(row[Schema.ilColLanguage] as int);
       final transliteration = (language == Language.greek)
@@ -160,6 +161,7 @@ class DatabaseHelper {
         bsbSort: bsbSort,
       );
     }).toList();
+    return resolveWordClusters(words);
   }
 
   Future<String?> getLexiconContent(

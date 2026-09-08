@@ -105,7 +105,9 @@ class EnglishPassageCard extends StatelessWidget {
                 spacing: 3,
                 runSpacing: 4,
                 children: words.map((word) {
-                  final isSelected = word.id == selectedWord?.id;
+                  final isSelected = word.id == selectedWord?.id ||
+                      (selectedWord != null &&
+                          word.clusterWordIds.contains(selectedWord!.id));
                   return PassageWordChip(
                     text: '${word.englishGloss}${word.punctuation ?? ''}',
                     isSelected: isSelected,
@@ -185,7 +187,9 @@ class OriginalPassageCard extends StatelessWidget {
               spacing: 4,
               runSpacing: 6,
               children: words.map((word) {
-                final isSelected = word.id == selectedWord?.id;
+                final isSelected = word.id == selectedWord?.id ||
+                    (selectedWord != null &&
+                        selectedWord!.clusterWordIds.contains(word.id));
                 return PassageWordChip(
                   text: word.word,
                   isSelected: isSelected,

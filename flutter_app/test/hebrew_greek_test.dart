@@ -2,6 +2,7 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
+import 'package:bsb/infrastructure/word_cluster.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/hebrew_greek/passage_cards.dart';
 import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
@@ -48,7 +49,7 @@ class FakeHebrewGreekDatabaseHelper implements DatabaseHelper {
   Future<List<VerseElement>> getOriginalLanguageData(
     Reference reference,
   ) async {
-    return words;
+    return resolveWordClusters(words);
   }
 
   @override
@@ -114,6 +115,31 @@ void main() {
   });
 
   group('VersePageManager & Dual Passage Alignment', () {
+    test('OriginalWord distinguishes untranslated placeholders and vvv clusters', () {
+      OriginalWord makeWord(String gloss) => OriginalWord(
+            language: Language.greek,
+            word: 'test',
+            transliteration: 'test',
+            englishGloss: gloss,
+            strongsNumber: 1,
+            partOfSpeech: '',
+          );
+
+      expect(makeWord('-').isUntranslated, isTrue);
+      expect(makeWord('').isUntranslated, isTrue);
+      expect(makeWord('   ').isUntranslated, isTrue);
+      expect(makeWord('. . .').isUntranslated, isTrue);
+      expect(makeWord('...').isUntranslated, isTrue);
+      expect(makeWord('( -').isUntranslated, isTrue);
+      expect(makeWord('God').isUntranslated, isFalse);
+
+      expect(makeWord('vvv').isVvv, isTrue);
+      expect(makeWord(' vvv ').isVvv, isTrue);
+      expect(makeWord('vvv').isUntranslated, isFalse);
+      expect(makeWord('vvv').hasEnglishChip, isFalse);
+      expect(makeWord('God').hasEnglishChip, isTrue);
+    });
+
     test('correctly orders English words by bsbSort and omits untranslated words',
         () async {
       fakeDb.words.addAll([
@@ -302,6 +328,148 @@ void main() {
       expect(manager.selectedWord?.id, equals(2));
       expect(manager.selectedWord?.englishGloss, equals('God'));
       expect(manager.selectedWord?.word, equals('אֱלֹהִ֖ים'));
+    });
+  });
+
+  group('Word Cluster Resolution (\'vvv\' Multi-word Translation)', () {
+    test('clusters vvv companion word with forward anchor word', () {
+      final words = [
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.hebrew,
+          word: 'זֹרֵ֣עַ',
+          transliteration: 'zō·rê·a‘',
+          englishGloss: 'vvv',
+          strongsNumber: 2232,
+          partOfSpeech: 'V-Qal',
+          bsbSort: 659,
+        ),
+        OriginalWord(
+          id: 2,
+          originalId: 102,
+          language: Language.hebrew,
+          word: 'זֶ֗רַע',
+          transliteration: 'ze·ra‘',
+          englishGloss: 'seed-bearing',
+          strongsNumber: 2233,
+          partOfSpeech: 'N-ms',
+          bsbSort: 660,
+        ),
+      ];
+
+      final clustered = resolveWordClusters(words).whereType<OriginalWord>().toList();
+      expect(clustered[0].isVvv, isTrue);
+      expect(clustered[0].partOfTranslation, equals('seed-bearing'));
+      expect(clustered[0].clusterWordIds, equals({1, 2}));
+      expect(clustered[0].hasEnglishChip, isFalse);
+
+      expect(clustered[1].isVvv, isFalse);
+      expect(clustered[1].clusterWordIds, equals({1, 2}));
+      expect(clustered[1].hasEnglishChip, isTrue);
+    });
+
+    test('clusters multiple consecutive vvv words with single anchor', () {
+      final words = [
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.hebrew,
+          word: 'בַּעֲבוּר֙',
+          transliteration: '',
+          englishGloss: 'vvv',
+          strongsNumber: 5668,
+          partOfSpeech: '',
+          bsbSort: 12579,
+        ),
+        OriginalWord(
+          id: 2,
+          originalId: 102,
+          language: Language.hebrew,
+          word: 'תִּֽהְיֶה־',
+          transliteration: '',
+          englishGloss: 'vvv',
+          strongsNumber: 1961,
+          partOfSpeech: '',
+          bsbSort: 12580,
+        ),
+        OriginalWord(
+          id: 3,
+          originalId: 103,
+          language: Language.hebrew,
+          word: 'לִּ֣י',
+          transliteration: '',
+          englishGloss: 'vvv',
+          strongsNumber: 0,
+          partOfSpeech: '',
+          bsbSort: 12581,
+        ),
+        OriginalWord(
+          id: 4,
+          originalId: 104,
+          language: Language.hebrew,
+          word: 'לְעֵדָ֔ה',
+          transliteration: '',
+          englishGloss: 'as my witness',
+          strongsNumber: 5713,
+          partOfSpeech: '',
+          bsbSort: 12582,
+        ),
+      ];
+
+      final clustered = resolveWordClusters(words).whereType<OriginalWord>().toList();
+      for (int i = 0; i < 3; i++) {
+        expect(clustered[i].isVvv, isTrue);
+        expect(clustered[i].partOfTranslation, equals('as my witness'));
+        expect(clustered[i].clusterWordIds, equals({1, 2, 3, 4}));
+        expect(clustered[i].hasEnglishChip, isFalse);
+      }
+      expect(clustered[3].clusterWordIds, equals({1, 2, 3, 4}));
+      expect(clustered[3].hasEnglishChip, isTrue);
+    });
+
+    test('clusters discontinuous words using BSB sort when subject intervenes', () {
+      final words = [
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.hebrew,
+          word: 'וַיִּקְרָ֧א',
+          transliteration: '',
+          englishGloss: 'vvv',
+          strongsNumber: 7121,
+          partOfSpeech: '',
+          bsbSort: 1791,
+        ),
+        OriginalWord(
+          id: 2,
+          originalId: 102,
+          language: Language.hebrew,
+          word: 'הָֽאָדָ֛ם',
+          transliteration: '',
+          englishGloss: 'And Adam',
+          strongsNumber: 120,
+          partOfSpeech: '',
+          bsbSort: 1790,
+        ),
+        OriginalWord(
+          id: 3,
+          originalId: 103,
+          language: Language.hebrew,
+          word: 'שֵׁ֥ם',
+          transliteration: '',
+          englishGloss: 'named',
+          strongsNumber: 8034,
+          partOfSpeech: '',
+          bsbSort: 1792,
+        ),
+      ];
+
+      final clustered = resolveWordClusters(words).whereType<OriginalWord>().toList();
+      expect(clustered[0].partOfTranslation, equals('named'));
+      expect(clustered[0].clusterWordIds, equals({1, 3}));
+      expect(clustered[1].clusterWordIds, isEmpty);
+      expect(clustered[2].clusterWordIds, equals({1, 3}));
     });
   });
 
@@ -761,6 +929,204 @@ void main() {
       final saidBorder =
           (saidChip.decoration as BoxDecoration).border as Border;
       expect(saidBorder.top.color, isNot(equals(screenTheme.colorScheme.primary)));
+    });
+
+    testWidgets(
+        'bidirectional multi-word cluster highlighting and Translated as part of display',
+        (tester) async {
+      fakeDb.words.addAll([
+        OriginalWord(
+          id: 1,
+          originalId: 101,
+          language: Language.hebrew,
+          word: 'זֹרֵ֣עַ',
+          transliteration: 'zō·rê·a‘',
+          englishGloss: 'vvv',
+          strongsNumber: 2232,
+          partOfSpeech: 'V-Qal-Ptc-ms',
+          bsbSort: 659,
+        ),
+        OriginalWord(
+          id: 2,
+          originalId: 102,
+          language: Language.hebrew,
+          word: 'זֶ֗רַע',
+          transliteration: 'ze·ra‘',
+          englishGloss: 'seed-bearing',
+          strongsNumber: 2233,
+          partOfSpeech: 'N-ms',
+          bsbSort: 660,
+        ),
+        OriginalWord(
+          id: 3,
+          originalId: 103,
+          language: Language.hebrew,
+          word: 'עֵ֥שֶׂב',
+          transliteration: '‘ê·śeḇ',
+          englishGloss: 'plant',
+          strongsNumber: 6212,
+          partOfSpeech: 'N-ms',
+          bsbSort: 661,
+        ),
+      ]);
+      fakeDb.lexicons[2232] = '**זָרַע** *to sow, scatter seed*';
+      fakeDb.lexicons[2233] = '**זֶרַע** *seed, sowing, offspring*';
+      fakeDb.lexicons[6212] = '**עֵשֶׂב** *herb, plant, grass*';
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: HebrewGreekScreen(
+            bookId: 1,
+            chapter: 1,
+            verse: 29,
+            language: Language.hebrew,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final screenTheme =
+          Theme.of(tester.element(find.byType(HebrewGreekScreen)));
+
+      // 1. English passage card does not show 'vvv', but shows 'seed-bearing' and 'plant'
+      expect(
+        find.descendant(
+          of: find.byType(EnglishPassageCard),
+          matching: find.text('vvv'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(EnglishPassageCard),
+          matching: find.text('seed-bearing'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(EnglishPassageCard),
+          matching: find.text('plant'),
+        ),
+        findsOneWidget,
+      );
+
+      // Helper to check highlight border
+      Border getBorder(Finder finder) {
+        final container = tester.widget<Container>(
+          find.ancestor(of: finder, matching: find.byType(Container)).first,
+        );
+        return (container.decoration as BoxDecoration).border as Border;
+      }
+
+      final seedEnglishFinder = find.descendant(
+        of: find.byType(EnglishPassageCard),
+        matching: find.text('seed-bearing'),
+      );
+      final zoreaFinder = find.descendant(
+        of: find.byType(OriginalPassageCard),
+        matching: find.text('זֹרֵ֣עַ'),
+      );
+      final zeraFinder = find.descendant(
+        of: find.byType(OriginalPassageCard),
+        matching: find.text('זֶ֗רַע'),
+      );
+      final esevFinder = find.descendant(
+        of: find.byType(OriginalPassageCard),
+        matching: find.text('עֵ֥שֶׂב'),
+      );
+
+      // Initially, the first English word ("seed-bearing") is selected.
+      // Both Hebrew words in the cluster (זֹרֵ֣עַ and זֶ֗רַע) should be highlighted.
+      expect(
+        getBorder(seedEnglishFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(zoreaFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(zeraFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(esevFinder).top.color,
+        isNot(equals(screenTheme.colorScheme.primary)),
+      );
+
+      // 2. Now tap the vvv Hebrew word 'זֹרֵ֣עַ'
+      await tester.tap(zoreaFinder);
+      await tester.pumpAndSettle();
+
+      // Both Hebrew words in cluster and English seed-bearing remain highlighted
+      expect(
+        getBorder(seedEnglishFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(zoreaFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(zeraFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(esevFinder).top.color,
+        isNot(equals(screenTheme.colorScheme.primary)),
+      );
+
+      // Word details card shows 'Translated as part of "seed-bearing"' and word 1's details
+      expect(find.text('Translated as part of "seed-bearing"'), findsOneWidget);
+      expect(find.text('V-Qal-Ptc-ms'), findsOneWidget);
+      expect(find.textContaining('to sow, scatter seed'), findsWidgets);
+
+      // 3. Tap 'עֵ֥שֶׂב'
+      await tester.tap(esevFinder);
+      await tester.pumpAndSettle();
+
+      expect(
+        getBorder(seedEnglishFinder).top.color,
+        isNot(equals(screenTheme.colorScheme.primary)),
+      );
+      expect(
+        getBorder(zoreaFinder).top.color,
+        isNot(equals(screenTheme.colorScheme.primary)),
+      );
+      expect(
+        getBorder(zeraFinder).top.color,
+        isNot(equals(screenTheme.colorScheme.primary)),
+      );
+      expect(
+        getBorder(esevFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(find.text('Translated as part of "seed-bearing"'), findsNothing);
+
+      // 4. Tap English 'seed-bearing' again
+      await tester.tap(seedEnglishFinder);
+      await tester.pumpAndSettle();
+
+      // Cluster is re-highlighted
+      expect(
+        getBorder(seedEnglishFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(zoreaFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(zeraFinder).top.color,
+        equals(screenTheme.colorScheme.primary),
+      );
+      expect(
+        getBorder(esevFinder).top.color,
+        isNot(equals(screenTheme.colorScheme.primary)),
+      );
+      expect(find.text('N-ms'), findsOneWidget);
+      expect(find.textContaining('seed, sowing, offspring'), findsWidgets);
     });
   });
 

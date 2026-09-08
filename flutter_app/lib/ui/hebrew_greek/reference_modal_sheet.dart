@@ -197,7 +197,7 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
           .firstOrNull;
     }
     final englishWords = originalWords
-        .where((w) => !w.isUntranslated)
+        .where((w) => w.hasEnglishChip)
         .toList()
       ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
     initialWord ??= englishWords.firstOrNull ?? originalWords.firstOrNull;
@@ -243,7 +243,7 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
     final theme = Theme.of(context);
     final originalWords = _interlinear.whereType<OriginalWord>().toList();
     final englishWords = originalWords
-        .where((w) => !w.isUntranslated)
+        .where((w) => w.hasEnglishChip)
         .toList()
       ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
     final Language language = originalWords.isNotEmpty
@@ -361,11 +361,21 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                                   const SizedBox(height: 6),
                                   Center(
                                     child: Text(
-                                      _selectedWord!.isUntranslated
-                                          ? '(not translated)'
-                                          : _selectedWord!.englishGloss,
-                                      style: theme.textTheme.titleMedium?.copyWith(
+                                      _selectedWord!.isVvv &&
+                                              _selectedWord!.partOfTranslation !=
+                                                  null
+                                          ? 'Translated as part of "${_selectedWord!.partOfTranslation}"'
+                                          : (_selectedWord!.isUntranslated
+                                              ? '(not translated)'
+                                              : _selectedWord!.englishGloss),
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w600,
+                                        fontStyle:
+                                            (_selectedWord!.isUntranslated ||
+                                                    _selectedWord!.isVvv)
+                                                ? FontStyle.italic
+                                                : FontStyle.normal,
                                       ),
                                     ),
                                   ),

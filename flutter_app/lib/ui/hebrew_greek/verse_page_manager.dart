@@ -38,7 +38,7 @@ class VersePageManager extends ChangeNotifier {
 
     originalWords = data.whereType<OriginalWord>().toList();
     englishWords = originalWords
-        .where((w) => !w.isUntranslated)
+        .where((w) => w.hasEnglishChip)
         .toList()
       ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
 

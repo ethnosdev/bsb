@@ -120,18 +120,24 @@ class SimilarVerseManager {
   ) {
     final spans = <TextSpan>[];
     final isExact = searchModeNotifier.value == WordSearchMode.exactForm;
-    final englishWords = data
-        .whereType<OriginalWord>()
-        .where((w) => !w.isUntranslated)
+    final allOriginalWords = data.whereType<OriginalWord>().toList();
+    final englishWords = allOriginalWords
+        .where((w) => w.hasEnglishChip)
         .toList()
       ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
 
     for (int i = 0; i < englishWords.length; i++) {
       final element = englishWords[i];
       final bool isMatch = isExact
-          ? (element.originalId == word.originalId)
-          : (element.strongsNumber == word.strongsNumber &&
-              word.strongsNumber > 0);
+          ? (element.originalId == word.originalId ||
+              element.clusterWordIds.any((cid) => allOriginalWords
+                  .any((w) => w.id == cid && w.originalId == word.originalId)))
+          : ((element.strongsNumber == word.strongsNumber &&
+                  word.strongsNumber > 0) ||
+              element.clusterWordIds.any((cid) => allOriginalWords.any((w) =>
+                  w.id == cid &&
+                  w.strongsNumber == word.strongsNumber &&
+                  word.strongsNumber > 0)));
 
       final color = isMatch ? highlightColor : null;
       final bold = isMatch ? FontWeight.bold : null;

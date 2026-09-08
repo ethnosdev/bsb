@@ -226,13 +226,16 @@ class _VersePageViewState extends State<_VersePageView> {
             const SizedBox(height: 8),
             Center(
               child: Text(
-                word.isUntranslated
-                    ? '(not translated in English text)'
-                    : word.englishGloss,
+                word.isVvv && word.partOfTranslation != null
+                    ? 'Translated as part of "${word.partOfTranslation}"'
+                    : (word.isUntranslated
+                        ? '(not translated in English text)'
+                        : word.englishGloss),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontStyle:
-                      word.isUntranslated ? FontStyle.italic : FontStyle.normal,
+                  fontStyle: (word.isUntranslated || word.isVvv)
+                      ? FontStyle.italic
+                      : FontStyle.normal,
                 ),
               ),
             ),
