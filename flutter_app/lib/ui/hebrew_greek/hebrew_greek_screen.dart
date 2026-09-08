@@ -1,12 +1,14 @@
 import 'package:bsb/core/font_family.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
+import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
+import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verse_manager.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
 import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HebrewGreekScreen extends StatefulWidget {
@@ -54,6 +56,12 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -63,62 +71,23 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
             return Text(title);
           },
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.abc,
-              color: manager.showInterlinearEnglish //
-                  ? null
-                  : Theme.of(context).colorScheme.primary,
-            ),
-            onPressed: () {
-              manager.toggleShowInterlinearEnglish();
-              setState(() {});
-            },
-          ),
-        ],
       ),
       body: ValueListenableBuilder<int?>(
         valueListenable: manager.verseCountNotifier,
         builder: (context, verseCount, child) {
           if (verseCount == null) {
-            return const SizedBox();
+            return const Center(child: CircularProgressIndicator());
           }
           return PageView.builder(
             controller: _pageController,
             physics: const SnappyScrollPhysics(),
             itemCount: verseCount,
             itemBuilder: (context, index) {
-              final verseManager = VersePageManager(widget.language);
-              verseManager.requestVerseContent(
+              return _VersePageView(
                 bookId: widget.bookId,
                 chapter: widget.chapter,
                 verse: index + 1,
-                textColor: Theme.of(context).textTheme.bodyMedium!.color!,
-                highlightColor: Theme.of(context).colorScheme.primary,
-                showEnglish: manager.showInterlinearEnglish,
-              );
-              return ListenableBuilder(
-                listenable: verseManager,
-                builder: (context, child) {
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          _buildInterlinearText(
-                            verseManager.interlinearText,
-                            verseManager.textDirection,
-                          ),
-                          if (verseManager.originalWord != null) //
-                            ..._buildOriginalWordDetails(
-                                verseManager.originalWord!),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                language: widget.language,
               );
             },
           );
@@ -126,93 +95,43 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
       ),
     );
   }
+}
 
-  Widget _buildInterlinearText(TextSpan text, TextDirection direction) {
-    return SelectableText.rich(
-      text,
-      textAlign: TextAlign.start,
-      textDirection: direction,
+class _VersePageView extends StatefulWidget {
+  const _VersePageView({
+    required this.bookId,
+    required this.chapter,
+    required this.verse,
+    required this.language,
+  });
+
+  final int bookId;
+  final int chapter;
+  final int verse;
+  final Language language;
+
+  @override
+  State<_VersePageView> createState() => _VersePageViewState();
+}
+
+class _VersePageViewState extends State<_VersePageView> {
+  late final VersePageManager verseManager;
+
+  @override
+  void initState() {
+    super.initState();
+    verseManager = VersePageManager(widget.language);
+    verseManager.requestVerseContent(
+      bookId: widget.bookId,
+      chapter: widget.chapter,
+      verse: widget.verse,
     );
   }
 
-  List<Widget> _buildOriginalWordDetails(OriginalWord word) {
-    final fontFamily = fontFamilyForLanguage(word.language);
-    return [
-      const SizedBox(height: 16),
-      Center(
-        child: SelectableText(
-          word.word,
-          style: TextStyle(
-            fontFamily: fontFamily,
-            fontSize: 50,
-          ),
-        ),
-      ),
-      if (word.language == Language.greek)
-        Center(
-          child: SelectableText(
-            word.transliteration,
-            style: TextStyle(
-              fontSize: 20,
-              color:
-                  Theme.of(context).textTheme.bodyMedium!.color!.withAlpha(160),
-            ),
-          ),
-        ),
-      const SizedBox(height: 16),
-      Center(
-        child: SelectableText(
-          word.englishGloss,
-          style: const TextStyle(
-            fontSize: 20,
-          ),
-        ),
-      ),
-      const SizedBox(height: 16),
-      SelectableText(
-        word.partOfSpeech,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontStyle: FontStyle.italic,
-        ),
-      ),
-      Text.rich(TextSpan(children: [
-        const TextSpan(
-          text: "Strong's number: ",
-        ),
-        TextSpan(
-          text: "${word.strongsNumber}",
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
-            decoration: TextDecoration.underline,
-          ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () {
-              final language =
-                  (word.language == Language.greek) ? 'greek' : 'hebrew';
-              _launch(
-                  'https://biblehub.com/$language/${word.strongsNumber}.htm');
-            },
-        ),
-      ])),
-      const SizedBox(height: 16),
-      TextButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SimilarVersesPage(
-                word: word,
-                showEnglish: manager.showInterlinearEnglish,
-              ),
-            ),
-          );
-        },
-        child: const Text(
-          'See use in other verses',
-        ),
-      ),
-    ];
+  @override
+  void dispose() {
+    verseManager.dispose();
+    super.dispose();
   }
 
   Future<void> _launch(String webpage) async {
@@ -220,5 +139,371 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListenableBuilder(
+      listenable: verseManager,
+      builder: (context, child) {
+        if (verseManager.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildEnglishPassageCard(theme),
+                const SizedBox(height: 12),
+                _buildOriginalPassageCard(theme),
+                const SizedBox(height: 16),
+                if (verseManager.selectedWord != null)
+                  _buildWordDetailsCard(theme, verseManager.selectedWord!),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEnglishPassageCard(ThemeData theme) {
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'English (BSB)',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 3,
+              runSpacing: 4,
+              children: verseManager.englishWords.map((word) {
+                final isSelected = word.id == verseManager.selectedWord?.id;
+                return InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () => verseManager.selectWord(word),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.colorScheme.primaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${word.englishGloss}${word.punctuation ?? ''}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOriginalPassageCard(ThemeData theme) {
+    final languageName = widget.language.displayName;
+    final direction = verseManager.originalTextDirection;
+    final fontFamily = fontFamilyForLanguage(widget.language);
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment:
+              direction == TextDirection.rtl
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+          children: [
+            Text(
+              languageName,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              textDirection: direction,
+              spacing: 4,
+              runSpacing: 6,
+              children: verseManager.originalWords.map((word) {
+                final isSelected = word.id == verseManager.selectedWord?.id;
+                final text = '${word.word}${word.punctuation ?? ''}';
+                return InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () => verseManager.selectWord(word),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? theme.colorScheme.primaryContainer
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      text,
+                      textDirection: direction,
+                      style: TextStyle(
+                        fontFamily: fontFamily,
+                        fontSize: 24,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWordDetailsCard(ThemeData theme, OriginalWord word) {
+    final fontFamily = fontFamilyForLanguage(word.language);
+    final prefix = word.language == Language.greek ? 'G' : 'H';
+    final strongsLabel =
+        word.strongsNumber > 0 ? '$prefix${word.strongsNumber}' : 'Untagged';
+    final lexiconTitle = word.language == Language.greek
+        ? 'Abbott-Smith Greek Lexicon'
+        : 'Brown-Driver-Briggs Lexicon';
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(120)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Headword row
+            Center(
+              child: SelectableText(
+                word.word,
+                style: TextStyle(
+                  fontFamily: fontFamily,
+                  fontSize: 42,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (word.language == Language.greek &&
+                word.transliteration.isNotEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(
+                    word.transliteration,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                word.isUntranslated
+                    ? '(not translated in English text)'
+                    : word.englishGloss,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  fontStyle:
+                      word.isUntranslated ? FontStyle.italic : FontStyle.normal,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                word.partOfSpeech,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Action Buttons Row: Exact Form, Strong's, Bible Hub
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.spellcheck, size: 18),
+                  label: Text('Exact Form (${verseManager.exactCount})'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SimilarVersesPage(
+                          word: word,
+                          initialMode: WordSearchMode.exactForm,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.tag, size: 18),
+                  label: Text('$strongsLabel (${verseManager.strongsCount})'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SimilarVersesPage(
+                          word: word,
+                          initialMode: WordSearchMode.strongs,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (word.strongsNumber > 0)
+                  ActionChip(
+                    avatar: const Icon(Icons.open_in_browser, size: 18),
+                    label: const Text('Bible Hub'),
+                    onPressed: () {
+                      final lang = word.language == Language.greek
+                          ? 'greek'
+                          : 'hebrew';
+                      _launch(
+                        'https://biblehub.com/$lang/${word.strongsNumber}.htm',
+                      );
+                    },
+                  ),
+              ],
+            ),
+            const Divider(height: 32),
+
+            // Lexicon Header
+            Row(
+              children: [
+                Icon(
+                  Icons.menu_book,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  lexiconTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Lexicon Markdown Body
+            if (verseManager.isLoadingLexicon)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (verseManager.lexiconContent != null &&
+                verseManager.lexiconContent!.isNotEmpty)
+              MarkdownBody(
+                data: verseManager.lexiconContent!,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  a: TextStyle(
+                    color: theme.colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: theme.colorScheme.primary,
+                  ),
+                  h3: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                  p: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                  listBullet: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 15,
+                  ),
+                ),
+                onTapLink: (text, href, title) {
+                  if (href != null) {
+                    showReferenceModal(
+                      context: context,
+                      href: href,
+                      defaultLanguage: word.language,
+                      targetStrongs: word.strongsNumber,
+                    );
+                  }
+                },
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'No lexicon entry available for this word.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

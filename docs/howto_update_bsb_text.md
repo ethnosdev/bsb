@@ -41,15 +41,22 @@ Known errors:
 
 ## Create and verify the database
 
-- Run `database_builder/bin/main.dart` (which calls the `createDatabase` function)
+- Run `database_builder/bin/main.dart` (which calls the `createDatabase` function).
 - Run `dart test` in `database_builder/` to verify that the generated database passes all integrity, canon, text hygiene, and interlinear checks.
-- Copy `database.db` into `flutter_app/assets/database` and replace the old database.
+
+## Update database in app assets
+
+To ensure a clean asset replacement:
+
+- Delete the old database: remove `flutter_app/assets/database/database.db`.
+- Add the new database: copy the newly generated `database_builder/database.db` to `flutter_app/assets/database/database.db`.
 
 ## Update database version
 
-This triggers the app to delete the old database and use the new one when users upgrade:
+Incrementing the version number is critical because it triggers existing installs of the app to delete their cached local copy and re-copy the fresh database from assets when upgraded:
 
-- In `flutter_app/lib/infrastructure/database.dart`, increment the `_databaseVersion` int.
+- Open `flutter_app/lib/infrastructure/database.dart`.
+- Increment the `_databaseVersion` integer constant (e.g., from `22` to `23`).
 
 ## Check the formatting
 

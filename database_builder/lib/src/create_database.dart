@@ -1,6 +1,7 @@
 import 'package:database_builder/src/bsb_table.dart';
 import 'package:database_builder/src/database_helper.dart';
 import 'package:database_builder/src/interlinear_table.dart';
+import 'package:database_builder/src/lexicon/lexicon_table.dart';
 import 'package:database_builder/src/verse_search_table.dart';
 
 Future<void> createDatabase() async {
@@ -23,6 +24,12 @@ Future<void> createDatabase() async {
 
   print('Creating Interlinear Table');
   await createInterlinearTable(dbHelper, originalMap, posMap, englishMap);
+
+  print('Creating Lexicon Table');
+  await createLexiconTable(dbHelper);
+
+  print('Creating Indexes');
+  dbHelper.createIndexes();
 
   print('Cleaning up resources');
   dbHelper.dispose();

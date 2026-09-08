@@ -14,7 +14,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 22;
+  static const _databaseVersion = 25;
   late Database _database;
 
   Future<void> init() async {
@@ -110,12 +110,15 @@ class DatabaseHelper {
     Reference reference,
   ) async {
     final result = await _database.rawQuery(
-      'SELECT o.${Schema.olColWord} as ${Schema.ilColOriginal}, '
+      'SELECT i.${Schema.ilColId} as token_id, '
+      'o.${Schema.olColId} as original_id, '
+      'o.${Schema.olColWord} as ${Schema.ilColOriginal}, '
       'e.${Schema.engColWord} as ${Schema.ilColEnglish}, '
       'i.${Schema.ilColStrongsNumber}, '
       'p.${Schema.posColName} as ${Schema.ilColPartOfSpeech}, '
       'i.${Schema.ilColLanguage}, '
-      'i.${Schema.ilColPunctuation} '
+      'i.${Schema.ilColPunctuation}, '
+      'i.${Schema.ilColBsbSort} '
       'FROM ${Schema.interlinearTable} i '
       'JOIN ${Schema.englishTable} e ON i.${Schema.ilColEnglish} = e.${Schema.engColId} '
       'JOIN ${Schema.partOfSpeechTable} p ON i.${Schema.ilColPartOfSpeech} = p.${Schema.posColId} '
@@ -126,23 +129,76 @@ class DatabaseHelper {
     );
     return result.map((row) {
       final text = row[Schema.ilColOriginal] as String;
-      if (row[Schema.ilColPunctuation] == 1) {
-        return Punctuation(punctuation: text);
-      } else {
-        final language = Language.fromInt(row[Schema.ilColLanguage] as int);
-        final transliteration = (language == Language.greek)
-            ? transliterateGreek(text)
-            : '';
-        return OriginalWord(
-          language: language,
-          word: text,
-          transliteration: transliteration,
-          englishGloss: row[Schema.ilColEnglish] as String,
-          strongsNumber: row[Schema.ilColStrongsNumber] as int,
-          partOfSpeech: row[Schema.ilColPartOfSpeech] as String,
-        );
-      }
+      final language = Language.fromInt(row[Schema.ilColLanguage] as int);
+      final transliteration =
+          (language == Language.greek) ? transliterateGreek(text) : '';
+      final punctuation = row[Schema.ilColPunctuation] as String?;
+      final bsbSort = (row[Schema.ilColBsbSort] as int?) ?? 0;
+      final tokenId = (row['token_id'] as int?) ?? 0;
+      final originalId = (row['original_id'] as int?) ?? 0;
+
+      return OriginalWord(
+        id: tokenId,
+        originalId: originalId,
+        language: language,
+        word: text,
+        transliteration: transliteration,
+        englishGloss: row[Schema.ilColEnglish] as String,
+        strongsNumber: row[Schema.ilColStrongsNumber] as int,
+        partOfSpeech: row[Schema.ilColPartOfSpeech] as String,
+        punctuation: punctuation,
+        bsbSort: bsbSort,
+      );
     }).toList();
+  }
+
+  Future<String?> getLexiconContent(
+    Language language,
+    int strongsNumber,
+  ) async {
+    final results = await _database.query(
+      Schema.lexiconEntryTable,
+      columns: [Schema.lexColContent],
+      where: '${Schema.lexColLanguage} = ? AND ${Schema.lexColStrongs} = ?',
+      whereArgs: [language.id, strongsNumber],
+      limit: 1,
+    );
+    if (results.isNotEmpty) {
+      return results.first[Schema.lexColContent] as String?;
+    }
+    return null;
+  }
+
+  Future<String?> getLexiconContentByLemma(
+    Language? language,
+    String lemma,
+  ) async {
+    final cleanLemma = lemma.trim();
+    if (cleanLemma.isEmpty) return null;
+
+    final whereClause = language != null
+        ? '(${Schema.lexColLanguage} = ? OR ${Schema.lexColLanguage} = ?) AND (${Schema.lexColLemma} = ? OR ${Schema.lexColLemma} LIKE ?)'
+        : '(${Schema.lexColLemma} = ? OR ${Schema.lexColLemma} LIKE ?)';
+    final whereArgs = language != null
+        ? [
+            language.id,
+            language == Language.hebrew ? Language.aramaic.id : language.id,
+            cleanLemma,
+            '%$cleanLemma%',
+          ]
+        : [cleanLemma, '%$cleanLemma%'];
+
+    final results = await _database.query(
+      Schema.lexiconEntryTable,
+      columns: [Schema.lexColContent],
+      where: whereClause,
+      whereArgs: whereArgs,
+      limit: 1,
+    );
+    if (results.isNotEmpty) {
+      return results.first[Schema.lexColContent] as String?;
+    }
+    return null;
   }
 
   Future<List<Reference>> getVersesWithStrongNumber(
@@ -164,6 +220,47 @@ class DatabaseHelper {
           ),
         )
         .toList();
+  }
+
+  Future<List<Reference>> getVersesWithExactWord(int originalId) async {
+    final result = await _database.rawQuery(
+      'SELECT DISTINCT ${Schema.ilColReference} '
+      'FROM ${Schema.interlinearTable} '
+      'WHERE ${Schema.ilColOriginal} = ? '
+      'ORDER BY ${Schema.ilColReference}',
+      [originalId],
+    );
+
+    return result
+        .map(
+          (row) => Reference.fromVerseId(
+            packedInt: row[Schema.ilColReference] as int,
+          ),
+        )
+        .toList();
+  }
+
+  Future<int> getExactWordCount(int originalId) async {
+    final result = await _database.rawQuery(
+      'SELECT count(DISTINCT ${Schema.ilColReference}) as c '
+      'FROM ${Schema.interlinearTable} '
+      'WHERE ${Schema.ilColOriginal} = ?',
+      [originalId],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<int> getStrongNumberCount(
+    Language language,
+    int strongsNumber,
+  ) async {
+    final result = await _database.rawQuery(
+      'SELECT count(DISTINCT ${Schema.ilColReference}) as c '
+      'FROM ${Schema.interlinearTable} '
+      'WHERE ${Schema.ilColStrongsNumber} = ? AND ${Schema.ilColLanguage} = ?',
+      [strongsNumber, language.id],
+    );
+    return (result.first['c'] as int?) ?? 0;
   }
 
   Future<List<UsfmLine>> getRange(Reference reference) async {

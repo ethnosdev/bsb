@@ -12,6 +12,7 @@ dependencies:
   # scripture: ^0.6.0
   scripture:
     path: ../../scripture
+  xml: ^7.0.1
 
 dev_dependencies:
   lints: ^6.1.0

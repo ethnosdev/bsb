@@ -54,7 +54,7 @@ class Schema {
   static const String ilColId = '_id';
   // BBCCCVVV packed integer
   static const String ilColReference = 'reference';
-  // 1 Hebrew, 2 Aramaic, 3 Greek
+  // 0 Hebrew, 1 Aramaic, 2 Greek
   static const String ilColLanguage = 'language';
   // foreign key to original language table
   static const String ilColOriginal = 'original';
@@ -64,6 +64,7 @@ class Schema {
   // foreign key to english table
   static const String ilColEnglish = 'english';
   static const String ilColPunctuation = 'punct';
+  static const String ilColBsbSort = 'bsb_sort';
 
   // SQL statements
   static const String createInterlinearTable = '''
@@ -75,16 +76,53 @@ class Schema {
     $ilColPartOfSpeech INTEGER NOT NULL,
     $ilColStrongsNumber INTEGER NOT NULL,
     $ilColEnglish INTEGER NOT NULL,
-    $ilColPunctuation TEXT
+    $ilColPunctuation TEXT,
+    $ilColBsbSort INTEGER NOT NULL
   )
+  ''';
+
+  static const String createInterlinearIndexes = '''
+  CREATE INDEX IF NOT EXISTS idx_il_ref ON $interlinearTable($ilColReference);
+  CREATE INDEX IF NOT EXISTS idx_il_strongs ON $interlinearTable($ilColLanguage, $ilColStrongsNumber);
+  CREATE INDEX IF NOT EXISTS idx_il_original ON $interlinearTable($ilColOriginal);
   ''';
 
   static const String insertInterlinear = '''
     INSERT INTO $interlinearTable (
       $ilColReference, $ilColLanguage,
       $ilColOriginal, $ilColPartOfSpeech, $ilColStrongsNumber,
-      $ilColEnglish, $ilColPunctuation
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      $ilColEnglish, $ilColPunctuation, $ilColBsbSort
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  ''';
+
+  // Lexicon entry table
+  static const String lexiconEntryTable = "lexicon_entry";
+
+  static const String lexColId = '_id';
+  static const String lexColLanguage = 'language';
+  static const String lexColStrongs = 'strongs';
+  static const String lexColLemma = 'lemma';
+  static const String lexColContent = 'content';
+
+  static const String createLexiconEntryTable = '''
+  CREATE TABLE IF NOT EXISTS $lexiconEntryTable (
+    $lexColId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $lexColLanguage INTEGER NOT NULL,
+    $lexColStrongs INTEGER NOT NULL,
+    $lexColLemma TEXT NOT NULL,
+    $lexColContent TEXT NOT NULL
+  )
+  ''';
+
+  static const String createLexiconIndexes = '''
+  CREATE INDEX IF NOT EXISTS idx_lex_strongs ON $lexiconEntryTable($lexColLanguage, $lexColStrongs);
+  CREATE INDEX IF NOT EXISTS idx_lex_lemma ON $lexiconEntryTable($lexColLemma);
+  ''';
+
+  static const String insertLexiconEntry = '''
+    INSERT INTO $lexiconEntryTable (
+      $lexColLanguage, $lexColStrongs, $lexColLemma, $lexColContent
+    ) VALUES (?, ?, ?, ?)
   ''';
 
   // Part of speech table

@@ -1,102 +1,87 @@
-import 'package:bsb/core/font_family.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
-import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-/// This class manages a single page of the PageView for swiping between verses.
+/// Manages the state of a single verse page: dual passage tokens,
+/// selected word, lexicon entry, and occurrence counts.
 class VersePageManager extends ChangeNotifier {
   final _dbHelper = getIt<DatabaseHelper>();
-  var interlinearText = const TextSpan();
-  OriginalWord? originalWord;
   final Language language;
 
   VersePageManager(this.language);
 
-  TextDirection get textDirection {
-    final showEnglish = getIt<UserSettings>().showInterlinearEnglish;
-    final isLtr = language.isLTR;
-    return (showEnglish || isLtr) ? TextDirection.ltr : TextDirection.rtl;
-  }
+  List<OriginalWord> originalWords = [];
+  List<OriginalWord> englishWords = [];
+  OriginalWord? selectedWord;
+  String? lexiconContent;
+  int exactCount = 0;
+  int strongsCount = 0;
+  bool isLoading = true;
+  bool isLoadingLexicon = false;
+
+  TextDirection get originalTextDirection =>
+      language.isLTR ? TextDirection.ltr : TextDirection.rtl;
 
   Future<void> requestVerseContent({
     required int bookId,
     required int chapter,
     required int verse,
-    required Color textColor,
-    required Color highlightColor,
-    required bool showEnglish,
   }) async {
+    isLoading = true;
+    notifyListeners();
+
     final reference = Reference(bookId: bookId, chapter: chapter, verse: verse);
     final data = await _dbHelper.getOriginalLanguageData(reference);
-    final textSize = getIt<UserSettings>().textSize;
-    interlinearText = formatVerse(
-      data,
-      textSize,
-      textColor,
-      highlightColor,
-      _onWordTap,
-      showEnglish,
-    );
-    notifyListeners();
-  }
 
-  void _onWordTap(OriginalWord word) {
-    originalWord = word;
-    notifyListeners();
-  }
+    originalWords = data.whereType<OriginalWord>().toList();
+    englishWords = originalWords
+        .where((w) => !w.isUntranslated)
+        .toList()
+      ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
 
-  TextSpan formatVerse(
-    List<VerseElement> data,
-    double textSize,
-    Color textColor,
-    Color highlightColor,
-    void Function(OriginalWord) onWordTap,
-    bool showEnglish,
-  ) {
-    final spans = <TextSpan>[];
-    for (final element in data) {
-      if (element is OriginalWord) {
-        final fontFamily = fontFamilyForLanguage(element.language);
-        spans.add(
-          TextSpan(
-            text: '${element.word} ',
-            style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: textSize,
-              color: highlightColor,
-            ),
-            recognizer: TapGestureRecognizer() //
-              ..onTap = () => onWordTap(element),
-          ),
-        );
-        if (showEnglish) {
-          spans.add(
-            TextSpan(
-              text: '(${element.englishGloss}) ',
-              style: TextStyle(
-                fontSize: textSize,
-                color: textColor,
-              ),
-            ),
-          );
-        }
-      } else if (element is Punctuation) {
-        spans.add(
-          TextSpan(
-            text: element.punctuation,
-            style: TextStyle(
-              fontSize: textSize,
-              color: textColor,
-            ),
-          ),
-        );
-      }
+    isLoading = false;
+
+    if (selectedWord == null && originalWords.isNotEmpty) {
+      // Pick the first word that has an English gloss or first word
+      final initialWord = originalWords.firstWhere(
+        (w) => !w.isUntranslated,
+        orElse: () => originalWords.first,
+      );
+      await selectWord(initialWord);
+    } else {
+      notifyListeners();
     }
-    return TextSpan(children: spans);
+  }
+
+  Future<void> selectWord(OriginalWord word) async {
+    selectedWord = word;
+    isLoadingLexicon = true;
+    notifyListeners();
+
+    final contentFuture = _dbHelper.getLexiconContent(
+      language,
+      word.strongsNumber,
+    );
+    final exactFuture = _dbHelper.getExactWordCount(word.originalId);
+    final strongsFuture = _dbHelper.getStrongNumberCount(
+      language,
+      word.strongsNumber,
+    );
+
+    final results = await Future.wait([
+      contentFuture,
+      exactFuture,
+      strongsFuture,
+    ]);
+
+    lexiconContent = results[0] as String?;
+    exactCount = results[1] as int;
+    strongsCount = results[2] as int;
+    isLoadingLexicon = false;
+
+    notifyListeners();
   }
 }

@@ -16,6 +16,7 @@ class DatabaseHelper {
   late PreparedStatement _insertPosStmt;
   late PreparedStatement _insertInterlinearStmt;
   late PreparedStatement _insertVerseSearchStmt;
+  late PreparedStatement _insertLexiconStmt;
 
   Database get database => _database;
 
@@ -32,6 +33,7 @@ class DatabaseHelper {
     _database.execute(Schema.createPartOfSpeechTable);
     _database.execute(Schema.createInterlinearTable);
     _database.execute(Schema.createVerseSearchTable);
+    _database.execute(Schema.createLexiconEntryTable);
   }
 
   void _prepareStatements() {
@@ -41,6 +43,7 @@ class DatabaseHelper {
     _insertPosStmt = _database.prepare(Schema.insertPartOfSpeech);
     _insertInterlinearStmt = _database.prepare(Schema.insertInterlinear);
     _insertVerseSearchStmt = _database.prepare(Schema.insertVerseSearch);
+    _insertLexiconStmt = _database.prepare(Schema.insertLexiconEntry);
   }
 
   void beginTransaction() {
@@ -112,8 +115,30 @@ class DatabaseHelper {
         word.strongsNumber,
         word.english,
         word.punctuation,
+        word.bsbSort,
       ]);
     }
+  }
+
+  void insertLexiconEntry({
+    required int language,
+    required int strongs,
+    required String lemma,
+    required String content,
+  }) {
+    _insertLexiconStmt.execute([
+      language,
+      strongs,
+      lemma,
+      content,
+    ]);
+  }
+
+  void createIndexes() {
+    print('Creating SQLite indexes for interlinear and lexicon...');
+    _database.execute(Schema.createInterlinearIndexes);
+    _database.execute(Schema.createLexiconIndexes);
+    print('Indexes created successfully.');
   }
 
   void dispose() {
@@ -123,6 +148,7 @@ class DatabaseHelper {
     _insertPosStmt.close();
     _insertInterlinearStmt.close();
     _insertVerseSearchStmt.close();
+    _insertLexiconStmt.close();
     _database.close();
   }
 
@@ -151,6 +177,7 @@ class InterlinearWord {
     required this.strongsNumber,
     required this.english,
     required this.punctuation,
+    required this.bsbSort,
   });
   final int language;
   final int original;
@@ -158,4 +185,5 @@ class InterlinearWord {
   final int strongsNumber;
   final int english;
   final String? punctuation;
+  final int bsbSort;
 }

@@ -141,6 +141,7 @@ Future<void> createInterlinearTable(
     final englishId = englishMap[english]!;
 
     final punctuation = columns[19];
+    final bsbSort = int.tryParse(columns[2].trim()) ?? 0;
 
     verseWords.add(
       InterlinearWord(
@@ -150,6 +151,7 @@ Future<void> createInterlinearTable(
         strongsNumber: strongsNumber,
         english: englishId,
         punctuation: punctuation.isEmpty ? null : punctuation,
+        bsbSort: bsbSort,
       ),
     );
   }
