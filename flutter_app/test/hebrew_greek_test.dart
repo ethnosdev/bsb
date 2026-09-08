@@ -724,6 +724,17 @@ void main() {
 
       // Verify SimilarVersesPage is shown with Exact Form and Lexical Form segmented buttons with counts
       expect(find.byType(SimilarVersesPage), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.descendant(
+            of: find.byType(SimilarVersesPage),
+            matching: find.byType(AppBar),
+          ),
+          matching: find.text('Ἐν'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('G1722'), findsNothing);
       expect(find.text('Exact Form (1)'), findsOneWidget);
       expect(find.text('Lexical Form (1)'), findsOneWidget);
 

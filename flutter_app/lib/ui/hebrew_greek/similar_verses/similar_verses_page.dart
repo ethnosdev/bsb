@@ -61,14 +61,11 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final fontFamily = fontFamilyForLanguage(widget.word.language);
-    final prefix = widget.word.language == Language.greek ? 'G' : 'H';
-    final strongsTag =
-        widget.word.strongsNumber > 0 ? ' ($prefix${widget.word.strongsNumber})' : '';
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${widget.word.word}$strongsTag',
+          widget.word.word,
           style: TextStyle(
             fontFamily: fontFamily,
           ),
