@@ -1,4 +1,6 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_family.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
@@ -250,6 +252,9 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
         ? originalWords.first.language
         : (widget.reference.bookId <= 39 ? Language.hebrew : Language.greek);
     final fontFamily = fontFamilyForLanguage(language);
+    final baseTextSize = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().textSizeNotifier.value
+        : FontScale.defaultBaseSize;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -312,6 +317,7 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                           selectedWord: _selectedWord,
                           onWordSelected: _onWordSelected,
                           fallbackText: _englishText,
+                          baseTextSize: baseTextSize,
                         ),
                         const SizedBox(height: 12),
                         OriginalPassageCard(
@@ -319,6 +325,7 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                           words: originalWords,
                           selectedWord: _selectedWord,
                           onWordSelected: _onWordSelected,
+                          baseTextSize: baseTextSize,
                         ),
                         const SizedBox(height: 16),
 
@@ -343,7 +350,7 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                                       _selectedWord!.word,
                                       style: TextStyle(
                                         fontFamily: fontFamily,
-                                        fontSize: 32,
+                                        fontSize: FontScale.sheetHeadword(baseTextSize),
                                         fontWeight: FontWeight.bold,
                                         color: theme.colorScheme.primary,
                                       ),
@@ -483,7 +490,7 @@ class _VerseReferenceModalState extends State<VerseReferenceModal> {
                                           color: theme.colorScheme.primary,
                                         ),
                                         p: theme.textTheme.bodyMedium?.copyWith(
-                                          fontSize: 14.5,
+                                          fontSize: FontScale.lexiconBody(baseTextSize),
                                           height: 1.5,
                                         ),
                                       ),
@@ -566,6 +573,9 @@ class _LexiconEntryModalState extends State<LexiconEntryModal> {
     final fontFamily = fontFamilyForLanguage(
       widget.language ?? Language.hebrew,
     );
+    final baseTextSize = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().textSizeNotifier.value
+        : FontScale.defaultBaseSize;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -601,7 +611,7 @@ class _LexiconEntryModalState extends State<LexiconEntryModal> {
                       widget.lemma,
                       style: TextStyle(
                         fontFamily: fontFamily,
-                        fontSize: 22,
+                        fontSize: FontScale.sheetRootLemma(baseTextSize),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -636,7 +646,7 @@ class _LexiconEntryModalState extends State<LexiconEntryModal> {
                                 color: theme.colorScheme.primary,
                               ),
                               p: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: 15,
+                                fontSize: FontScale.lexiconBody(baseTextSize),
                                 height: 1.5,
                               ),
                             ),

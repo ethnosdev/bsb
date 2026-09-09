@@ -1,3 +1,4 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/database.dart';
@@ -45,7 +46,9 @@ class ChapterManager {
     noteMarkersNotifier.value = notes.map((n) => n.toNoteMarker()).toList();
   }
 
-  double get textSize => getIt<UserSettings>().textSize;
+  double get textSize => getIt.isRegistered<AppState>()
+      ? getIt<AppState>().textSizeNotifier.value
+      : getIt<UserSettings>().textSize;
 
   Future<void> requestText({
     required int bookId,

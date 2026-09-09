@@ -1,3 +1,4 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/search/search_models.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/search/search_manager.dart';
@@ -146,13 +147,20 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
-      body: ValueListenableBuilder<bool>(
-        valueListenable: _hasTextNotifier,
-        builder: (context, hasText, child) {
-          if (!hasText) {
-            return _buildEmptyQueryView();
-          }
-          return _buildResultsView();
+      body: ValueListenableBuilder<double>(
+        valueListenable: getIt.isRegistered<AppState>()
+            ? getIt<AppState>().textSizeNotifier
+            : ValueNotifier<double>(getIt<UserSettings>().textSize),
+        builder: (context, currentTextSize, child) {
+          return ValueListenableBuilder<bool>(
+            valueListenable: _hasTextNotifier,
+            builder: (context, hasText, child) {
+              if (!hasText) {
+                return _buildEmptyQueryView();
+              }
+              return _buildResultsView();
+            },
+          );
         },
       ),
     );
@@ -436,7 +444,9 @@ class _SearchPageState extends State<SearchPage> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: getIt<UserSettings>().textSize,
+                                fontSize: getIt.isRegistered<AppState>()
+                                    ? getIt<AppState>().textSizeNotifier.value
+                                    : getIt<UserSettings>().textSize,
                                 color: Theme.of(context)
                                     .textTheme
                                     .bodyMedium
@@ -462,7 +472,9 @@ class _SearchPageState extends State<SearchPage> {
     final ref = item.reference;
     final bookName = bookIdToFullNameMap[ref.bookId] ?? '';
     final refTitle = '$bookName ${ref.chapter}:${ref.verse}';
-    final textSize = getIt<UserSettings>().textSize;
+    final textSize = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().textSizeNotifier.value
+        : getIt<UserSettings>().textSize;
 
     return ListTile(
       title: Text(

@@ -1,7 +1,9 @@
 import 'dart:developer';
 
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
@@ -300,65 +302,73 @@ class _ChapterTextState extends State<ChapterText>
     super.build(context);
     final screenHeight = MediaQuery.sizeOf(context).height;
     final brightness = Theme.of(context).brightness;
+    final textSizeListenable = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().textSizeNotifier
+        : ValueNotifier<double>(manager.textSize);
 
-    return ValueListenableBuilder<List<UsfmLine>>(
-      valueListenable: manager.textParagraphNotifier,
-      builder: (context, verseLines, child) {
-        if (verseLines.isNotEmpty &&
-            widget.targetSection != null &&
-            _lastScrolledSection != widget.targetSection) {
-          _scrollToTargetSection(widget.targetSection);
-        }
-        if (verseLines.isNotEmpty &&
-            widget.targetVerse != null &&
-            _lastScrolledVerse != widget.targetVerse) {
-          _scrollToTargetVerse(widget.targetVerse);
-        }
-        return ValueListenableBuilder<List<Highlight>>(
-          valueListenable: manager.highlightsNotifier,
-          builder: (context, rawHighlights, child) {
-            final highlights = rawHighlights
-                .map((h) => h.toHighlightRange(brightness))
-                .toList();
-            return ValueListenableBuilder<List<NoteMarker>>(
-              valueListenable: manager.noteMarkersNotifier,
-              builder: (context, noteMarkers, child) {
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: 16.0,
-                      top: 16.0,
-                      right: 16.0,
-                      bottom: screenHeight * 0.8,
-                    ),
-                    child: UsfmWidget(
-                      verseLines: verseLines,
-                      selectionController: _selectionController,
-                      highlights: highlights,
-                      noteMarkers: noteMarkers,
-                      onFootnoteTapped: _onFootnoteTapped,
-                      onNoteTapped: _onNoteTapped,
-                      onAmbiguousTapped: _onAmbiguousTapped,
-                      onWordTapped: (id) => log("Tapped word $id"),
-                      onSelectionRequested: (wordId) {
-                        ScriptureLogic.highlightVerse(
-                          _selectionController,
-                          verseLines,
-                          wordId,
-                        );
-                      },
-                      styleBuilder: (format) {
-                        return UsfmParagraphStyle.usfmDefaults(
-                          format: format == ParagraphFormat.p
-                              ? ParagraphFormat.m
-                              : format,
-                          baseStyle: Theme.of(context).textTheme.bodyMedium!
-                              .copyWith(fontSize: manager.textSize),
-                        );
-                      },
-                    ),
-                  ),
+    return ValueListenableBuilder<double>(
+      valueListenable: textSizeListenable,
+      builder: (context, currentTextSize, child) {
+        return ValueListenableBuilder<List<UsfmLine>>(
+          valueListenable: manager.textParagraphNotifier,
+          builder: (context, verseLines, child) {
+            if (verseLines.isNotEmpty &&
+                widget.targetSection != null &&
+                _lastScrolledSection != widget.targetSection) {
+              _scrollToTargetSection(widget.targetSection);
+            }
+            if (verseLines.isNotEmpty &&
+                widget.targetVerse != null &&
+                _lastScrolledVerse != widget.targetVerse) {
+              _scrollToTargetVerse(widget.targetVerse);
+            }
+            return ValueListenableBuilder<List<Highlight>>(
+              valueListenable: manager.highlightsNotifier,
+              builder: (context, rawHighlights, child) {
+                final highlights = rawHighlights
+                    .map((h) => h.toHighlightRange(brightness))
+                    .toList();
+                return ValueListenableBuilder<List<NoteMarker>>(
+                  valueListenable: manager.noteMarkersNotifier,
+                  builder: (context, noteMarkers, child) {
+                    return SingleChildScrollView(
+                      controller: _scrollController,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: 16.0,
+                          top: 16.0,
+                          right: 16.0,
+                          bottom: screenHeight * 0.8,
+                        ),
+                        child: UsfmWidget(
+                          verseLines: verseLines,
+                          selectionController: _selectionController,
+                          highlights: highlights,
+                          noteMarkers: noteMarkers,
+                          onFootnoteTapped: _onFootnoteTapped,
+                          onNoteTapped: _onNoteTapped,
+                          onAmbiguousTapped: _onAmbiguousTapped,
+                          onWordTapped: (id) => log("Tapped word $id"),
+                          onSelectionRequested: (wordId) {
+                            ScriptureLogic.highlightVerse(
+                              _selectionController,
+                              verseLines,
+                              wordId,
+                            );
+                          },
+                          styleBuilder: (format) {
+                            return UsfmParagraphStyle.usfmDefaults(
+                              format: format == ParagraphFormat.p
+                                  ? ParagraphFormat.m
+                                  : format,
+                              baseStyle: Theme.of(context).textTheme.bodyMedium!
+                                  .copyWith(fontSize: currentTextSize),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );

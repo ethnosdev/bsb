@@ -5,11 +5,18 @@ import 'package:flutter/material.dart';
 
 class SettingsManager extends ChangeNotifier {
   final userSettings = getIt<UserSettings>();
+  AppState? get _appState =>
+      getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
 
-  double get textSize => userSettings.textSize;
+  double get textSize =>
+      _appState?.textSizeNotifier.value ?? userSettings.textSize;
 
   Future<void> setTextSize(double size) async {
-    await userSettings.setTextSize(size);
+    if (_appState != null) {
+      await _appState!.setTextSize(size);
+    } else {
+      await userSettings.setTextSize(size);
+    }
     notifyListeners();
   }
 
@@ -17,7 +24,9 @@ class SettingsManager extends ChangeNotifier {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await userSettings.setThemeMode(mode);
-    getIt<AppState>().themeNotifier.value = mode;
+    if (_appState != null) {
+      _appState!.themeNotifier.value = mode;
+    }
     notifyListeners();
   }
 }

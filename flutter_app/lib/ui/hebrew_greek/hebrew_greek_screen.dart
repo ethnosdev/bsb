@@ -1,4 +1,7 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_family.dart';
+import 'package:bsb/core/font_scale.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_manager.dart';
 import 'package:bsb/ui/hebrew_greek/passage_cards.dart';
@@ -7,6 +10,7 @@ import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verse_manager.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
 import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
+import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -79,7 +83,7 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
           if (verseCount == null) {
             return const Center(child: CircularProgressIndicator());
           }
-          return PageView.builder(
+          final pageView = PageView.builder(
             controller: _pageController,
             physics: const SnappyScrollPhysics(),
             itemCount: verseCount,
@@ -89,6 +93,25 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
                 chapter: widget.chapter,
                 verse: index + 1,
                 language: widget.language,
+              );
+            },
+          );
+
+          final appState =
+              getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+          if (appState == null) return pageView;
+
+          return ValueListenableBuilder<double>(
+            valueListenable: appState.textSizeNotifier,
+            builder: (context, currentSize, _) {
+              return ZoomWrapper(
+                initialScale: currentSize,
+                minScale: FontScale.minBaseSize,
+                maxScale: FontScale.maxBaseSize,
+                onScaleChanged: (newScale) {
+                  appState.setTextSize(newScale);
+                },
+                builder: (context, scale) => pageView,
               );
             },
           );
@@ -145,44 +168,65 @@ class _VersePageViewState extends State<_VersePageView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    final textSizeNotifier = appState?.textSizeNotifier ??
+        ValueNotifier<double>(FontScale.defaultBaseSize);
 
-    return ListenableBuilder(
-      listenable: verseManager,
-      builder: (context, child) {
-        if (verseManager.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return ValueListenableBuilder<double>(
+      valueListenable: textSizeNotifier,
+      builder: (context, baseTextSize, _) {
+        return ListenableBuilder(
+          listenable: verseManager,
+          builder: (context, child) {
+            if (verseManager.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                EnglishPassageCard(
-                  words: verseManager.englishWords,
-                  selectedWord: verseManager.selectedWord,
-                  onWordSelected: verseManager.selectWord,
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 12.0,
                 ),
-                const SizedBox(height: 12),
-                OriginalPassageCard(
-                  language: widget.language,
-                  words: verseManager.originalWords,
-                  selectedWord: verseManager.selectedWord,
-                  onWordSelected: verseManager.selectWord,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    EnglishPassageCard(
+                      words: verseManager.englishWords,
+                      selectedWord: verseManager.selectedWord,
+                      onWordSelected: verseManager.selectWord,
+                      baseTextSize: baseTextSize,
+                    ),
+                    const SizedBox(height: 12),
+                    OriginalPassageCard(
+                      language: widget.language,
+                      words: verseManager.originalWords,
+                      selectedWord: verseManager.selectedWord,
+                      onWordSelected: verseManager.selectWord,
+                      baseTextSize: baseTextSize,
+                    ),
+                    const SizedBox(height: 16),
+                    if (verseManager.selectedWord != null)
+                      _buildWordDetailsCard(
+                        theme,
+                        verseManager.selectedWord!,
+                        baseTextSize,
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                if (verseManager.selectedWord != null)
-                  _buildWordDetailsCard(theme, verseManager.selectedWord!),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildWordDetailsCard(ThemeData theme, OriginalWord word) {
+  Widget _buildWordDetailsCard(
+    ThemeData theme,
+    OriginalWord word,
+    double baseTextSize,
+  ) {
     final fontFamily = fontFamilyForLanguage(word.language);
     final lexiconTitle = word.language == Language.greek
         ? 'Abbott-Smith Greek Lexicon'
@@ -205,7 +249,7 @@ class _VersePageViewState extends State<_VersePageView> {
                 word.word,
                 style: TextStyle(
                   fontFamily: fontFamily,
-                  fontSize: 42,
+                  fontSize: FontScale.heroWord(baseTextSize),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -335,11 +379,11 @@ class _VersePageViewState extends State<_VersePageView> {
                     color: theme.colorScheme.primary,
                   ),
                   p: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
+                    fontSize: FontScale.lexiconBody(baseTextSize),
                     height: 1.5,
                   ),
                   listBullet: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
+                    fontSize: FontScale.lexiconBody(baseTextSize),
                   ),
                 ),
                 onTapLink: (text, href, title) {

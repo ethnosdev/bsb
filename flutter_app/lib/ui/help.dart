@@ -1,78 +1,75 @@
+import 'package:bsb/app_state.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
 
-class HelpPage extends StatefulWidget {
+class HelpPage extends StatelessWidget {
   const HelpPage({super.key});
 
   @override
-  State<HelpPage> createState() => _HelpPageState();
-}
-
-class _HelpPageState extends State<HelpPage> {
-  late double fontSize;
-  late TextStyle _titleStyle;
-  late TextStyle _contentStyle;
-
-  @override
-  void initState() {
-    super.initState();
-    fontSize = getIt<UserSettings>().textSize;
-    _titleStyle = TextStyle(
-      fontSize: fontSize * 1.2,
-      fontWeight: FontWeight.bold,
-    );
-    _contentStyle = TextStyle(
-      fontSize: fontSize,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final textSizeNotifier = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().textSizeNotifier
+        : ValueNotifier<double>(getIt<UserSettings>().textSize);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Help'),
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          _HelpCard(
-            title: 'Chapter selection',
-            content:
-                'On the main screen, tap any book to select a chapter and then go to the text. '
-                'Alternatively, swipe up on a book to go to the first chapter '
-                'or swipe down to go to the last chapter.',
-            titleStyle: _titleStyle,
-            contentStyle: _contentStyle,
-          ),
-          const SizedBox(height: 16),
-          _HelpCard(
-            title: 'Navigation',
-            content:
-                'While in the chapter text screen, swipe to the right or left '
-                'to go to the next or previous chapter. You can also tap book name '
-                'on the app bar to show the chapter chooser dialog.',
-            titleStyle: _titleStyle,
-            contentStyle: _contentStyle,
-          ),
-          const SizedBox(height: 16),
-          _HelpCard(
-            title: 'Footnotes',
-            content:
-                'If you see an asterisk (*) in the text, tap it to learn additional information.',
-            titleStyle: _titleStyle,
-            contentStyle: _contentStyle,
-          ),
-          const SizedBox(height: 16),
-          _HelpCard(
-            title: 'Additional tools',
-            content: 'Long press on the text of a verse to copy, view the '
-                'original Hebrew/Greek, or compare with other translations.',
-            titleStyle: _titleStyle,
-            contentStyle: _contentStyle,
-          ),
-        ],
+      body: ValueListenableBuilder<double>(
+        valueListenable: textSizeNotifier,
+        builder: (context, fontSize, _) {
+          final titleStyle = TextStyle(
+            fontSize: FontScale.infoTitle(fontSize),
+            fontWeight: FontWeight.bold,
+          );
+          final contentStyle = TextStyle(
+            fontSize: fontSize,
+          );
+
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              _HelpCard(
+                title: 'Chapter selection',
+                content:
+                    'On the main screen, tap any book to select a chapter and then go to the text. '
+                    'Alternatively, swipe up on a book to go to the first chapter '
+                    'or swipe down to go to the last chapter.',
+                titleStyle: titleStyle,
+                contentStyle: contentStyle,
+              ),
+              const SizedBox(height: 16),
+              _HelpCard(
+                title: 'Navigation',
+                content:
+                    'While in the chapter text screen, swipe to the right or left '
+                    'to go to the next or previous chapter. You can also tap book name '
+                    'on the app bar to show the chapter chooser dialog.',
+                titleStyle: titleStyle,
+                contentStyle: contentStyle,
+              ),
+              const SizedBox(height: 16),
+              _HelpCard(
+                title: 'Footnotes',
+                content:
+                    'If you see an asterisk (*) in the text, tap it to learn additional information.',
+                titleStyle: titleStyle,
+                contentStyle: contentStyle,
+              ),
+              const SizedBox(height: 16),
+              _HelpCard(
+                title: 'Additional tools',
+                content: 'Long press on the text of a verse to copy, view the '
+                    'original Hebrew/Greek, or compare with other translations.',
+                titleStyle: titleStyle,
+                contentStyle: contentStyle,
+              ),
+            ],
+          );
+        },
       ),
     );
   }

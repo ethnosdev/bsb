@@ -1,6 +1,9 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_family.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
 import 'package:database_builder/database_builder.dart';
@@ -61,6 +64,9 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final fontFamily = fontFamilyForLanguage(widget.word.language);
+    final baseTextSize = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().textSizeNotifier.value
+        : FontScale.defaultBaseSize;
 
     return Scaffold(
       appBar: AppBar(
@@ -180,7 +186,9 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
                                         content.english,
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
-                                          fontSize: 15,
+                                          fontSize: FontScale.similarEnglish(
+                                            baseTextSize,
+                                          ),
                                           height: 1.4,
                                         ),
                                       ),
@@ -193,10 +201,10 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
                                                 : TextDirection.rtl,
                                         style: TextStyle(
                                           fontFamily: fontFamily,
-                                          fontSize: widget.word.language ==
-                                                  Language.hebrew
-                                              ? 18
-                                              : 16,
+                                          fontSize: FontScale.similarOriginal(
+                                            baseTextSize,
+                                            widget.word.language,
+                                          ),
                                           height: 1.4,
                                           color: theme
                                               .colorScheme.onSurfaceVariant,

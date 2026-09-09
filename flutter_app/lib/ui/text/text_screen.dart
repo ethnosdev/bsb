@@ -1,8 +1,11 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_family.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
+import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
@@ -154,7 +157,7 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   Widget _buildChapterTextPageView() {
-    return PageView.builder(
+    final pageView = PageView.builder(
       controller: _pageController,
       physics: const SnappyScrollPhysics(),
       itemBuilder: (context, index) {
@@ -211,6 +214,24 @@ class _TextScreenState extends State<TextScreen> {
               _showBottomBarNotifier.value = hasSelection;
             }
           },
+        );
+      },
+    );
+
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    if (appState == null) return pageView;
+
+    return ValueListenableBuilder<double>(
+      valueListenable: appState.textSizeNotifier,
+      builder: (context, currentSize, _) {
+        return ZoomWrapper(
+          initialScale: currentSize,
+          minScale: FontScale.minBaseSize,
+          maxScale: FontScale.maxBaseSize,
+          onScaleChanged: (newScale) {
+            appState.setTextSize(newScale);
+          },
+          builder: (context, scale) => pageView,
         );
       },
     );

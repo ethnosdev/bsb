@@ -1,4 +1,7 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_family.dart';
+import 'package:bsb/core/font_scale.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
@@ -68,16 +71,29 @@ class EnglishPassageCard extends StatelessWidget {
     required this.selectedWord,
     required this.onWordSelected,
     this.fallbackText,
+    this.baseTextSize,
+    this.fontSize,
   });
 
   final List<OriginalWord> words;
   final OriginalWord? selectedWord;
   final ValueChanged<OriginalWord> onWordSelected;
   final String? fallbackText;
+  final double? baseTextSize;
+  final double? fontSize;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final base = baseTextSize ??
+        (getIt.isRegistered<AppState>()
+            ? getIt<AppState>().textSizeNotifier.value
+            : FontScale.defaultBaseSize);
+    final chipFontSize = fontSize ?? FontScale.englishPassage(base);
+    final fallbackFontSize = fontSize != null
+        ? fontSize! * (17.0 / 18.0)
+        : FontScale.englishFallback(base);
+
     return Card(
       elevation: 0,
       color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
@@ -112,7 +128,7 @@ class EnglishPassageCard extends StatelessWidget {
                     text: '${word.englishGloss}${word.punctuation ?? ''}',
                     isSelected: isSelected,
                     onTap: () => onWordSelected(word),
-                    fontSize: 18,
+                    fontSize: chipFontSize,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
                       vertical: 2,
@@ -124,7 +140,7 @@ class EnglishPassageCard extends StatelessWidget {
               Text(
                 fallbackText!,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 17,
+                  fontSize: fallbackFontSize,
                   height: 1.5,
                 ),
               ),
@@ -143,14 +159,16 @@ class OriginalPassageCard extends StatelessWidget {
     required this.words,
     required this.selectedWord,
     required this.onWordSelected,
-    this.fontSize = 24,
+    this.baseTextSize,
+    this.fontSize,
   });
 
   final Language language;
   final List<OriginalWord> words;
   final OriginalWord? selectedWord;
   final ValueChanged<OriginalWord> onWordSelected;
-  final double fontSize;
+  final double? baseTextSize;
+  final double? fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +176,12 @@ class OriginalPassageCard extends StatelessWidget {
     final isRtl = language == Language.hebrew || language == Language.aramaic;
     final direction = isRtl ? TextDirection.rtl : TextDirection.ltr;
     final fontFamily = fontFamilyForLanguage(language);
+    final base = baseTextSize ??
+        (getIt.isRegistered<AppState>()
+            ? getIt<AppState>().textSizeNotifier.value
+            : FontScale.defaultBaseSize);
+    final chipFontSize =
+        fontSize ?? FontScale.originalPassage(base, language);
 
     return Card(
       elevation: 0,
@@ -195,7 +219,7 @@ class OriginalPassageCard extends StatelessWidget {
                   isSelected: isSelected,
                   onTap: () => onWordSelected(word),
                   fontFamily: fontFamily,
-                  fontSize: fontSize,
+                  fontSize: chipFontSize,
                   textDirection: direction,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 5,
