@@ -27,6 +27,11 @@ dependencies:
   file_picker: ^12.2.0
   share_plus: ^13.3.0
   path_provider: ^2.1.6
+  just_audio: ^0.10.6
+  audio_service: ^0.18.19
+  audio_video_progress_bar: ^2.0.3
+  rxdart: ^0.28.0
+  audio_session: ^0.2.4
 
 dev_dependencies:
   flutter_test: 

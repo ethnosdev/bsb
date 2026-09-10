@@ -11,6 +11,7 @@
 - Added selection handles to verse text selection.
 - Verse navigation.
 - Hebrew transliteration.
+- Audio playback.
 
 # 1.6.0 - 2026.09.04
 

@@ -1,4 +1,6 @@
+import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/search/search_page.dart';
@@ -18,15 +20,46 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _tabManager = getIt<TabManager>();
   final _chapterChooserNotifier = ValueNotifier<(int, int)?>(null);
+  AudioPlaybackManager? _cachedAudioManager;
+
+  @override
+  void initState() {
+    super.initState();
+    if (getIt.isRegistered<AudioPlaybackManager>()) {
+      _cachedAudioManager = getIt<AudioPlaybackManager>();
+      _cachedAudioManager!.isPlayerVisible
+          .addListener(_onPlayerVisibilityChanged);
+    }
+  }
+
+  void _onPlayerVisibilityChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  AudioPlaybackManager? get _audioManager {
+    if (_cachedAudioManager == null &&
+        getIt.isRegistered<AudioPlaybackManager>()) {
+      _cachedAudioManager = getIt<AudioPlaybackManager>();
+      _cachedAudioManager!.isPlayerVisible
+          .addListener(_onPlayerVisibilityChanged);
+    }
+    return _cachedAudioManager;
+  }
 
   @override
   void dispose() {
+    _cachedAudioManager?.isPlayerVisible
+        .removeListener(_onPlayerVisibilityChanged);
     _chapterChooserNotifier.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final audioManager = _audioManager;
+
     return ListenableBuilder(
       listenable: _tabManager,
       builder: (context, child) {
@@ -71,26 +104,71 @@ class _HomePageState extends State<HomePage> {
                     onPressed: _tabManager.cancelAddingTab,
                   )
                 else ...[
-                  IconButton(
-                    icon: const Icon(Icons.search),
-                    tooltip: 'Search',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SearchPage(
-                            currentBookId: activeTab?.bookId,
+                  if (!hasTabs)
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      tooltip: 'Search',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SearchPage(
+                              currentBookId: activeTab?.bookId,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                  if (hasTabs)
+                        );
+                      },
+                    )
+                  else ...[
                     IconButton(
                       icon: const Icon(Icons.add),
                       tooltip: 'Open Chapter',
                       onPressed: _tabManager.startAddingTab,
                     ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: 'More options',
+                      onSelected: (value) {
+                        if (value == 'search') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SearchPage(
+                                currentBookId: activeTab.bookId,
+                              ),
+                            ),
+                          );
+                        } else if (value == 'play') {
+                          audioManager?.playOrToggleChapter(
+                            activeTab.bookId,
+                            activeTab.chapter,
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'search',
+                          child: Row(
+                            children: [
+                              Icon(Icons.search),
+                              SizedBox(width: 12),
+                              Text('Search'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'play',
+                          child: Row(
+                            children: [
+                              Icon(Icons.play_arrow),
+                              SizedBox(width: 12),
+                              Text('Play Audio'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -113,6 +191,10 @@ class _HomePageState extends State<HomePage> {
                       _tabManager.updateActiveChapter(bookId, chapter);
                     },
                   ),
+            bottomNavigationBar: (audioManager != null &&
+                    audioManager.isPlayerVisible.value)
+                ? AudioPlayerBottomBar(manager: audioManager)
+                : null,
           ),
         );
       },

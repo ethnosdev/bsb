@@ -15,6 +15,7 @@ Future<void> main() async {
   await getIt<UserSettings>().init();
   await getIt<TabManager>().init();
   await getIt<AppState>().init();
+  await initAudioService();
   runApp(const MyApp());
 }
 
