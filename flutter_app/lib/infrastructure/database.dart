@@ -174,7 +174,9 @@ class DatabaseHelper {
       final language = Language.fromInt(row[Schema.ilColLanguage] as int);
       final transliteration = (language == Language.greek)
           ? transliterateGreek(text)
-          : '';
+          : (language == Language.hebrew || language == Language.aramaic)
+              ? transliterateHebrew(text)
+              : '';
       final rawPunctuation = row[Schema.ilColPunctuation] as String?;
       final punctuation = rawPunctuation?.replaceAll(htmlTagRegex, '');
       final bsbSort = (row[Schema.ilColBsbSort] as int?) ?? 0;

@@ -254,8 +254,7 @@ class _VersePageViewState extends State<_VersePageView> {
                 ),
               ),
             ),
-            if (word.language == Language.greek &&
-                word.transliteration.isNotEmpty)
+            if (word.transliteration.isNotEmpty)
               Center(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 2.0),

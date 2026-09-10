@@ -110,3 +110,44 @@ final _ignore = {
   'ἴδε, Ide, ide',
   'ἤδη, Ēdē, ēdē',
 };
+
+void testHebrewTransliterator({int maxErrors = 10}) {
+  final file = File('bsb_tables/bsb_tables.csv');
+  final lines = file.readAsLinesSync();
+
+  int total = 0;
+  int matchCount = 0;
+  int errorCount = 0;
+  String verse = '';
+
+  for (int i = 1; i < lines.length; i++) {
+    final line = lines[i];
+    final columns = line.split('\t');
+    if (columns.length < 8) continue;
+    final lang = columns[4].trim();
+    if (lang != 'Hebrew' && lang != 'Aramaic') continue;
+
+    if (columns.length > 12 && columns[12].trim().isNotEmpty) {
+      verse = columns[12].trim();
+    }
+
+    final hebrewWord = columns[5].trim();
+    final officialTranslit = columns[7].trim();
+    if (hebrewWord.isEmpty || officialTranslit.isEmpty) continue;
+
+    total++;
+    final ourTranslit = transliterateHebrew(hebrewWord);
+    if (ourTranslit == officialTranslit) {
+      matchCount++;
+    } else {
+      errorCount++;
+      if (errorCount <= maxErrors) {
+        print('$verse | $hebrewWord | Expected: $officialTranslit | Got: $ourTranslit');
+      }
+    }
+  }
+
+  final pct = (matchCount / total * 100).toStringAsFixed(2);
+  print('Tested: $total words | Matches: $matchCount ($pct%) | Mismatches: $errorCount');
+}
+

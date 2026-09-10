@@ -940,6 +940,9 @@ void main() {
       final saidBorder =
           (saidChip.decoration as BoxDecoration).border as Border;
       expect(saidBorder.top.color, isNot(equals(screenTheme.colorScheme.primary)));
+
+      // Verify Hebrew transliteration pronunciation is rendered
+      expect(find.text('’ĕ·lō·hîm'), findsOneWidget);
     });
 
     testWidgets(

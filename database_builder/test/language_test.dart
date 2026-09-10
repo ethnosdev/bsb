@@ -164,4 +164,56 @@ void main() {
       expect(transliterateGreek('Θεός'), equals('Theos'));
     });
   });
+
+  group('transliterateHebrew', () {
+    test('transliterates Genesis 1:1 words', () {
+      expect(transliterateHebrew('בְּרֵאשִׁ֖ית'), equals('bə·rê·šîṯ'));
+      expect(transliterateHebrew('בָּרָ֣א'), equals('bā·rā'));
+      expect(transliterateHebrew('אֱלֹהִ֑ים'), equals('’ĕ·lō·hîm'));
+      expect(transliterateHebrew('אֵ֥ת'), equals('’êṯ'));
+      expect(transliterateHebrew('הַשָּׁמַ֖יִם'), equals('haš·šā·ma·yim'));
+      expect(transliterateHebrew('וְאֵ֥ת'), equals('wə·’êṯ'));
+      expect(transliterateHebrew('הָאָֽרֶץ׃'), equals('hā·’ā·reṣ'));
+    });
+
+    test('transliterates Divine Name (YHWH) and prefixed variants', () {
+      expect(transliterateHebrew('יְהוָ֥ה'), equals('Yah·weh'));
+      expect(transliterateHebrew('יְהוָֽה׃'), equals('Yah·weh'));
+      expect(transliterateHebrew('לַיהוָ֖ה'), equals('Yah·weh'));
+      expect(transliterateHebrew('מֵיְהוָ֖ה'), equals('Yah·weh'));
+      expect(transliterateHebrew('יְהוָֽה־'), equals('Yah·weh-'));
+    });
+
+    test('transliterates Holam male and Shuruq', () {
+      expect(transliterateHebrew('י֔וֹם'), equals('yō·wm'));
+      expect(transliterateHebrew('ט֑וֹב'), equals('ṭō·wḇ'));
+      expect(transliterateHebrew('בּ֥וֹ'), equals('bōw'));
+      expect(transliterateHebrew('אֹת֑וֹ'), equals('’ō·ṯōw'));
+      expect(transliterateHebrew('תֹ֙הוּ֙'), equals('ṯō·hū'));
+      expect(transliterateHebrew('וּבֵ֥ין'), equals('ū·ḇên'));
+    });
+
+    test('transliterates furtive patach correctly', () {
+      expect(transliterateHebrew('וְר֣וּחַ'), equals('wə·rū·aḥ'));
+      expect(transliterateHebrew('רָקִ֖יעַ'), equals('rā·qî·a‘'));
+    });
+
+    test('transliterates 3ms plural noun suffix -āw', () {
+      expect(transliterateHebrew('פָּנָֽיו׃'), equals('pā·nāw'));
+      expect(transliterateHebrew('בְּאַפָּ֖יו'), equals('bə·’ap·pāw'));
+      expect(transliterateHebrew('מִצַּלְעֹתָ֔יו'), equals('miṣ·ṣal·‘ō·ṯāw'));
+    });
+
+    test('transliterates maqaf and hyphenated words', () {
+      expect(transliterateHebrew('עַל־'), equals('‘al-'));
+      expect(transliterateHebrew('אֶת־'), equals('’eṯ-'));
+      expect(transliterateHebrew('כִּי־'), equals('kî-'));
+    });
+
+    test('transliterates biblical Aramaic words', () {
+      expect(transliterateHebrew('וּמַלְכוּתֵ֔הּ'), equals('ū·mal·ḵū·ṯêh'));
+      expect(transliterateHebrew('אֱלָהָא֙'), equals('’ĕ·lā·hā'));
+    });
+  });
 }
+
