@@ -2,6 +2,7 @@ import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/highlight_palette_sheet.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
+import 'package:bsb/ui/text/note_viewer_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -166,6 +167,100 @@ void main() {
 
       expect(noteSelected, isFalse);
       expect(footnoteSelected, isTrue);
+    });
+  });
+
+  group('NoteViewerSheet', () {
+    testWidgets('opens in view mode displaying note content and edit pencil icon', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NoteViewerSheet(
+              title: 'Psalm 32:2',
+              passageText: 'Blessed is the man...',
+              content: 'This is my personal note.',
+              onSave: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      // Verify title, passage text, and content are displayed
+      expect(find.text('Psalm 32:2'), findsOneWidget);
+      expect(find.text('Blessed is the man...'), findsOneWidget);
+      expect(find.text('This is my personal note.'), findsOneWidget);
+
+      // Verify pencil icon is present
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+
+      // Verify NOT in edit mode (no TextField, no Cancel or Save buttons)
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Save'), findsNothing);
+    });
+
+    testWidgets('tapping pencil icon switches to edit mode and allows saving', (tester) async {
+      String? savedText;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NoteViewerSheet(
+              title: 'Psalm 32:2',
+              content: 'Initial note',
+              onSave: (val) => savedText = val,
+            ),
+          ),
+        ),
+      );
+
+      // Tap pencil icon
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      // Now in edit mode: TextField, Cancel, and Save buttons are visible
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+
+      // Edit text and save
+      await tester.enterText(find.byType(TextField), 'Modified note content');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(savedText, 'Modified note content');
+      // Returned to view mode displaying the updated text
+      expect(find.text('Modified note content'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('tapping cancel in edit mode reverts to view mode without saving', (tester) async {
+      String? savedText;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NoteViewerSheet(
+              title: 'Psalm 32:2',
+              content: 'Original note',
+              onSave: (val) => savedText = val,
+            ),
+          ),
+        ),
+      );
+
+      // Tap pencil to edit
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      // Enter new text but hit Cancel
+      await tester.enterText(find.byType(TextField), 'Discarded text');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(savedText, isNull);
+      expect(find.text('Original note'), findsOneWidget);
+      expect(find.text('Discarded text'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
     });
   });
 }

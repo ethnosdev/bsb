@@ -95,7 +95,7 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
           // Title row
           Row(
             children: [
-              Icon(Icons.edit_note, color: theme.colorScheme.primary),
+              Icon(Icons.sticky_note_2_outlined, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -107,7 +107,7 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
               ),
               if (widget.isExisting && widget.onDelete != null)
                 IconButton(
-                  icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                  icon: const Icon(Icons.delete_outline),
                   tooltip: 'Delete Note',
                   onPressed: () {
                     Navigator.of(context).pop();

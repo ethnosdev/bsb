@@ -2,11 +2,12 @@ import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
+import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
-import 'package:bsb/ui/text/note_editor_sheet.dart';
+import 'package:bsb/ui/text/note_viewer_sheet.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:scripture/scripture.dart';
@@ -408,11 +409,22 @@ class _ChapterTextState extends State<ChapterText>
       packedIntEnd: note.endWordId,
     );
 
-    await NoteEditorSheet.show(
+    String? passageText = note.passageText;
+    if (passageText == null || passageText.isEmpty) {
+      passageText = await getIt<DatabaseHelper>().getTextForRange(
+        bookId: note.bookId,
+        chapter: note.chapter,
+        startWordId: note.startWordId,
+        endWordId: note.endWordId,
+      );
+    }
+    if (!mounted) return;
+
+    await NoteViewerSheet.show(
       context: context,
       title: ref.toString(),
-      initialContent: note.content,
-      isExisting: true,
+      passageText: passageText,
+      content: note.content,
       onSave: (newContent) {
         manager.saveNote(
           bookId: note.bookId,
@@ -420,6 +432,7 @@ class _ChapterTextState extends State<ChapterText>
           startWordId: note.startWordId,
           endWordId: note.endWordId,
           content: newContent,
+          passageText: passageText,
           existingNoteId: note.id,
         );
       },

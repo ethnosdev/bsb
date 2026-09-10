@@ -70,6 +70,7 @@ class ChapterManager {
     required int startWordId,
     required int endWordId,
     required String content,
+    String? passageText,
     String? existingNoteId,
   }) {
     return _annotationService.saveNote(
@@ -78,6 +79,7 @@ class ChapterManager {
       startWordId: startWordId,
       endWordId: endWordId,
       content: content,
+      passageText: passageText,
       existingNoteId: existingNoteId,
     );
   }

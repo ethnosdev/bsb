@@ -73,7 +73,8 @@ class AnnotationDisambiguationSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: Icon(Icons.edit_note, color: theme.colorScheme.primary),
+              leading: Icon(Icons.sticky_note_2_outlined,
+                  color: theme.colorScheme.primary),
               title: const Text('My Note'),
               subtitle: Text(
                 notePreview.isNotEmpty ? notePreview : 'Tap to view or edit note',
