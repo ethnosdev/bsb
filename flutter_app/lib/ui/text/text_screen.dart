@@ -391,6 +391,7 @@ class _TextScreenState extends State<TextScreen> {
     if (_activeController == null || !_activeController!.hasSelection) return;
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
+    final selectedText = _activeController!.getSelectedText();
     final annotationService = getIt<AnnotationService>();
 
     await HighlightPaletteSheet.show(
@@ -402,6 +403,7 @@ class _TextScreenState extends State<TextScreen> {
           startWordId: startId,
           endWordId: endId,
           color: color,
+          text: selectedText,
         );
       },
       onClear: () async {
@@ -437,6 +439,7 @@ class _TextScreenState extends State<TextScreen> {
           startWordId: startId,
           endWordId: endId,
           content: content,
+          passageText: bodyText,
         );
       },
     );

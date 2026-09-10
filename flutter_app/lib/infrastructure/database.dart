@@ -81,6 +81,46 @@ class DatabaseHelper {
     }).toList();
   }
 
+  final Map<int, Map<int, String>> _chapterWordsCache = {};
+
+  Future<Map<int, String>> getChapterWords(int bookId, int chapter) async {
+    final key = bookId * 1000 + chapter;
+    final cached = _chapterWordsCache[key];
+    if (cached != null) {
+      return cached;
+    }
+    final lines = await getChapter(bookId, chapter);
+    final passage = UsfmParser.parse(lines, showHeadings: false);
+    final map = <int, String>{};
+    for (final p in passage.paragraphs) {
+      if (!p.format.isBiblicalText) continue;
+      for (final el in p.content) {
+        if (el is Word) {
+          map[el.id] = el.text;
+        }
+      }
+    }
+    _chapterWordsCache[key] = map;
+    return map;
+  }
+
+  Future<String?> getTextForRange({
+    required int bookId,
+    required int chapter,
+    required int startWordId,
+    required int endWordId,
+  }) async {
+    final wordsMap = await getChapterWords(bookId, chapter);
+    final words = <String>[];
+    for (final entry in wordsMap.entries) {
+      if (entry.key >= startWordId && entry.key <= endWordId) {
+        words.add(entry.value);
+      }
+    }
+    if (words.isEmpty) return null;
+    return words.join(' ');
+  }
+
   (int, int) _chapterBounds(int bookId, int chapter) {
     const int bookMultiplier = 1000000;
     const int chapterMultiplier = 1000;

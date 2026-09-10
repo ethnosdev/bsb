@@ -2,11 +2,13 @@
 
 - Multi-color highlighting.
 - Personal note-taking.
+- Import/export annotations (highlights and notes).
 - Replaced old chapter chooser dialog with a new keypad.
 - Added section headings dialog to chapter chooser.
 - Tab view for multiple open chapters.
 - Full text search.
 - Hebrew and Greek lexicons.
+- Added selection handles to verse text selection.
 
 # 1.6.0 - 2026.09.04
 

@@ -19,6 +19,25 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
+  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) async {
+    final list = List<Highlight>.from(_highlights);
+    if (orderBy.contains('start_word_id') || orderBy.contains('book_id')) {
+      list.sort((a, b) {
+        final bComp = a.bookId.compareTo(b.bookId);
+        if (bComp != 0) return bComp;
+        final cComp = a.chapter.compareTo(b.chapter);
+        if (cComp != 0) return cComp;
+        return a.startWordId.compareTo(b.startWordId);
+      });
+    } else if (orderBy.contains('ASC')) {
+      list.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+    } else {
+      list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    }
+    return list;
+  }
+
+  @override
   Future<void> insertHighlight(Highlight highlight) async {
     _highlights.removeWhere((h) => h.id == highlight.id);
     _highlights.add(highlight);
@@ -38,11 +57,48 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
+  Future<Highlight?> getHighlightById(String id) async {
+    final index = _highlights.indexWhere((h) => h.id == id);
+    return index != -1 ? _highlights[index] : null;
+  }
+
+  @override
+  Future<void> clearAllHighlights() async {
+    _highlights.clear();
+  }
+
+  @override
+  Future<void> batchInsertHighlights(List<Highlight> highlights) async {
+    for (final h in highlights) {
+      await insertHighlight(h);
+    }
+  }
+
+  @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async {
     return _notes
         .where((n) => n.bookId == bookId && n.chapter == chapter)
         .toList()
       ..sort((a, b) => a.startWordId.compareTo(b.startWordId));
+  }
+
+  @override
+  Future<List<Note>> getAllNotes({String orderBy = 'updated_at DESC'}) async {
+    final list = List<Note>.from(_notes);
+    if (orderBy.contains('start_word_id') || orderBy.contains('book_id')) {
+      list.sort((a, b) {
+        final bComp = a.bookId.compareTo(b.bookId);
+        if (bComp != 0) return bComp;
+        final cComp = a.chapter.compareTo(b.chapter);
+        if (cComp != 0) return cComp;
+        return a.startWordId.compareTo(b.startWordId);
+      });
+    } else if (orderBy.contains('ASC')) {
+      list.sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+    } else {
+      list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    }
+    return list;
   }
 
   @override
@@ -71,6 +127,18 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   @override
   Future<void> deleteNote(String id) async {
     _notes.removeWhere((n) => n.id == id);
+  }
+
+  @override
+  Future<void> clearAllNotes() async {
+    _notes.clear();
+  }
+
+  @override
+  Future<void> batchInsertNotes(List<Note> notes) async {
+    for (final n in notes) {
+      await insertNote(n);
+    }
   }
 }
 
@@ -238,6 +306,76 @@ void main() {
 
       notes = await service.getNotes(1, 1);
       expect(notes, isEmpty);
+    });
+
+    test('getAllHighlights and deleteHighlight', () async {
+      await service.addHighlight(
+        bookId: 1,
+        chapter: 1,
+        startWordId: 10,
+        endWordId: 20,
+        color: HighlightColor.yellow,
+      );
+      await service.addHighlight(
+        bookId: 43,
+        chapter: 3,
+        startWordId: 100,
+        endWordId: 110,
+        color: HighlightColor.blue,
+      );
+
+      final all = await service.getAllHighlights();
+      expect(all.length, 2);
+
+      await service.deleteHighlight(all.first.id);
+      final remaining = await service.getAllHighlights();
+      expect(remaining.length, 1);
+    });
+
+    test('getAllNotes returns all notes across chapters and books', () async {
+      await service.saveNote(
+        bookId: 1,
+        chapter: 1,
+        startWordId: 10,
+        endWordId: 20,
+        content: 'Note in Genesis',
+      );
+      await service.saveNote(
+        bookId: 19,
+        chapter: 23,
+        startWordId: 50,
+        endWordId: 60,
+        content: 'Note in Psalms',
+      );
+
+      final allNotes = await service.getAllNotes();
+      expect(allNotes.length, 2);
+    });
+
+    test('addHighlight and saveNote store text and passageText', () async {
+      await service.addHighlight(
+        bookId: 19,
+        chapter: 32,
+        startWordId: 19032002000,
+        endWordId: 19032002005,
+        color: HighlightColor.purple,
+        text: 'Blessed is the man whose iniquity',
+      );
+
+      final highlights = await service.getAllHighlights();
+      expect(highlights.first.text, 'Blessed is the man whose iniquity');
+
+      await service.saveNote(
+        bookId: 19,
+        chapter: 32,
+        startWordId: 19032002000,
+        endWordId: 19032002005,
+        content: 'Reflections on Psalm 32:2',
+        passageText: 'Blessed is the man whose iniquity',
+      );
+
+      final notes = await service.getAllNotes();
+      expect(notes.first.passageText, 'Blessed is the man whose iniquity');
     });
   });
 }

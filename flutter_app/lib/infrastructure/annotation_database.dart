@@ -34,6 +34,7 @@ class AnnotationDatabaseHelper {
         start_word_id INTEGER NOT NULL,
         end_word_id INTEGER NOT NULL,
         color INTEGER NOT NULL,
+        text TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )
@@ -52,6 +53,7 @@ class AnnotationDatabaseHelper {
         start_word_id INTEGER NOT NULL,
         end_word_id INTEGER NOT NULL,
         content TEXT NOT NULL,
+        passage_text TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )
@@ -71,6 +73,15 @@ class AnnotationDatabaseHelper {
       where: 'book_id = ? AND chapter = ?',
       whereArgs: [bookId, chapter],
       orderBy: 'start_word_id ASC',
+    );
+    return maps.map((m) => Highlight.fromMap(m)).toList();
+  }
+
+  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) async {
+    final db = await database;
+    final maps = await db.query(
+      'highlights',
+      orderBy: orderBy,
     );
     return maps.map((m) => Highlight.fromMap(m)).toList();
   }
@@ -103,6 +114,37 @@ class AnnotationDatabaseHelper {
     );
   }
 
+  Future<Highlight?> getHighlightById(String id) async {
+    final db = await database;
+    final maps = await db.query(
+      'highlights',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return Highlight.fromMap(maps.first);
+  }
+
+  Future<void> clearAllHighlights() async {
+    final db = await database;
+    await db.delete('highlights');
+  }
+
+  Future<void> batchInsertHighlights(List<Highlight> highlights) async {
+    if (highlights.isEmpty) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final h in highlights) {
+      batch.insert(
+        'highlights',
+        h.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   // Notes CRUD
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async {
     final db = await database;
@@ -111,6 +153,15 @@ class AnnotationDatabaseHelper {
       where: 'book_id = ? AND chapter = ?',
       whereArgs: [bookId, chapter],
       orderBy: 'start_word_id ASC',
+    );
+    return maps.map((m) => Note.fromMap(m)).toList();
+  }
+
+  Future<List<Note>> getAllNotes({String orderBy = 'updated_at DESC'}) async {
+    final db = await database;
+    final maps = await db.query(
+      'notes',
+      orderBy: orderBy,
     );
     return maps.map((m) => Note.fromMap(m)).toList();
   }
@@ -153,6 +204,25 @@ class AnnotationDatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> clearAllNotes() async {
+    final db = await database;
+    await db.delete('notes');
+  }
+
+  Future<void> batchInsertNotes(List<Note> notes) async {
+    if (notes.isEmpty) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final n in notes) {
+      batch.insert(
+        'notes',
+        n.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   Future<void> close() async {

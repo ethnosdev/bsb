@@ -81,4 +81,16 @@ class UserSettings {
   Future<void> clearRecentSearches() async {
     await _prefs.remove(_recentSearchesKey);
   }
+
+  static const _annotationSortOrderKey = 'annotationSortOrder';
+
+  String? get annotationSortOrder => _prefs.getString(_annotationSortOrderKey);
+
+  Future<void> setAnnotationSortOrder(String? sortOrder) async {
+    if (sortOrder == null) {
+      await _prefs.remove(_annotationSortOrderKey);
+    } else {
+      await _prefs.setString(_annotationSortOrderKey, sortOrder);
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'annotation_backup.dart';
 import 'annotation_database.dart';
 import 'annotation_models.dart';
 
@@ -20,15 +21,24 @@ class AnnotationService {
     return _dbHelper.getHighlightsForChapter(bookId, chapter);
   }
 
+  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) {
+    return _dbHelper.getAllHighlights(orderBy: orderBy);
+  }
+
   Future<List<Note>> getNotes(int bookId, int chapter) {
     return _dbHelper.getNotesForChapter(bookId, chapter);
+  }
+
+  Future<List<Note>> getAllNotes({String orderBy = 'updated_at DESC'}) {
+    return _dbHelper.getAllNotes(orderBy: orderBy);
   }
 
   Future<Note?> getNoteById(String id) {
     return _dbHelper.getNoteById(id);
   }
 
-  /// Adds a highlight and normalizes overlapping ranges (merging same colors,
+  /// Adds a highlight to the given word range, merging/overriding any
+  /// existing highlights that overlap with the new range (including
   /// splitting/trimming overridden colors).
   Future<void> addHighlight({
     required int bookId,
@@ -36,6 +46,7 @@ class AnnotationService {
     required int startWordId,
     required int endWordId,
     required HighlightColor color,
+    String? text,
   }) async {
     final now = DateTime.now();
     int currentStart = startWordId;
@@ -105,6 +116,9 @@ class AnnotationService {
         startWordId: currentStart,
         endWordId: currentEnd,
         color: color,
+        text: (currentStart == startWordId && currentEnd == endWordId)
+            ? text
+            : null,
         createdAt: now,
         updatedAt: now,
       ),
@@ -176,6 +190,7 @@ class AnnotationService {
     required int startWordId,
     required int endWordId,
     required String content,
+    String? passageText,
     String? existingNoteId,
   }) async {
     final trimmed = content.trim();
@@ -195,6 +210,7 @@ class AnnotationService {
         await _dbHelper.updateNote(
           existing.copyWith(
             content: trimmed,
+            passageText: passageText ?? existing.passageText,
             updatedAt: now,
           ),
         );
@@ -212,6 +228,7 @@ class AnnotationService {
         startWordId: startWordId,
         endWordId: endWordId,
         content: trimmed,
+        passageText: passageText,
         createdAt: now,
         updatedAt: now,
       ),
@@ -219,8 +236,106 @@ class AnnotationService {
     _notifyChange();
   }
 
+  Future<void> updateHighlight(Highlight highlight) async {
+    await _dbHelper.updateHighlight(highlight);
+    _notifyChange();
+  }
+
+  Future<void> deleteHighlight(String id) async {
+    await _dbHelper.deleteHighlight(id);
+    _notifyChange();
+  }
+
   Future<void> deleteNote(String id) async {
     await _dbHelper.deleteNote(id);
     _notifyChange();
+  }
+
+  Future<void> clearAllAnnotations() async {
+    await _dbHelper.clearAllHighlights();
+    await _dbHelper.clearAllNotes();
+    _notifyChange();
+  }
+
+  Future<AnnotationBackup> createBackup() async {
+    final highlights = await _dbHelper.getAllHighlights(
+      orderBy: 'book_id ASC, chapter ASC, start_word_id ASC',
+    );
+    final notes = await _dbHelper.getAllNotes(
+      orderBy: 'book_id ASC, chapter ASC, start_word_id ASC',
+    );
+    return AnnotationBackup(
+      exportedAt: DateTime.now(),
+      highlights: highlights,
+      notes: notes,
+    );
+  }
+
+  Future<String> exportBackupJson({bool pretty = true}) async {
+    final backup = await createBackup();
+    return backup.toJson(pretty: pretty);
+  }
+
+  Future<String> exportBackupMarkdown() async {
+    final backup = await createBackup();
+    return backup.toMarkdown();
+  }
+
+  Future<AnnotationImportResult> restoreBackup(
+    AnnotationBackup backup, {
+    AnnotationImportMode mode = AnnotationImportMode.merge,
+  }) async {
+    if (mode == AnnotationImportMode.replace) {
+      await _dbHelper.clearAllHighlights();
+      await _dbHelper.clearAllNotes();
+      await _dbHelper.batchInsertHighlights(backup.highlights);
+      await _dbHelper.batchInsertNotes(backup.notes);
+      _notifyChange();
+      return AnnotationImportResult(
+        highlightsImported: backup.highlights.length,
+        notesImported: backup.notes.length,
+        mode: mode,
+      );
+    }
+
+    // Merge mode:
+    int highlightsCount = 0;
+    final highlightsToInsert = <Highlight>[];
+    for (final h in backup.highlights) {
+      final existing = await _dbHelper.getHighlightById(h.id);
+      if (existing == null) {
+        highlightsToInsert.add(h);
+        highlightsCount++;
+      } else if (!h.updatedAt.isBefore(existing.updatedAt)) {
+        highlightsToInsert.add(h);
+        highlightsCount++;
+      }
+    }
+    if (highlightsToInsert.isNotEmpty) {
+      await _dbHelper.batchInsertHighlights(highlightsToInsert);
+    }
+
+    int notesCount = 0;
+    final notesToInsert = <Note>[];
+    for (final n in backup.notes) {
+      final existing = await _dbHelper.getNoteById(n.id);
+      if (existing == null) {
+        notesToInsert.add(n);
+        notesCount++;
+      } else if (!n.updatedAt.isBefore(existing.updatedAt)) {
+        notesToInsert.add(n);
+        notesCount++;
+      }
+    }
+    if (notesToInsert.isNotEmpty) {
+      await _dbHelper.batchInsertNotes(notesToInsert);
+    }
+
+    _notifyChange();
+    return AnnotationImportResult(
+      highlightsImported: highlightsCount,
+      notesImported: notesCount,
+      mode: mode,
+    );
   }
 }

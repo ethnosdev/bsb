@@ -54,6 +54,7 @@ class Highlight {
   final int startWordId;
   final int endWordId;
   final HighlightColor color;
+  final String? text;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -64,6 +65,7 @@ class Highlight {
     required this.startWordId,
     required this.endWordId,
     required this.color,
+    this.text,
     required this.createdAt,
     required this.updatedAt,
   }) : assert(startWordId <= endWordId);
@@ -75,6 +77,7 @@ class Highlight {
     int? startWordId,
     int? endWordId,
     HighlightColor? color,
+    String? text,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -85,6 +88,7 @@ class Highlight {
       startWordId: startWordId ?? this.startWordId,
       endWordId: endWordId ?? this.endWordId,
       color: color ?? this.color,
+      text: text ?? this.text,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -98,33 +102,28 @@ class Highlight {
       'start_word_id': startWordId,
       'end_word_id': endWordId,
       'color': color.name,
+      'text': text,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
     };
   }
 
   factory Highlight.fromMap(Map<String, dynamic> map) {
-    final rawColor = map['color'];
-    HighlightColor color;
-    if (rawColor is String) {
-      color = HighlightColor.fromString(rawColor);
-    } else if (rawColor is int &&
-        rawColor >= 0 &&
-        rawColor < HighlightColor.values.length) {
-      color = HighlightColor.values[rawColor];
-    } else {
-      color = HighlightColor.yellow;
-    }
-
+    final colorStr = map['color'] as String?;
+    final color = HighlightColor.values.firstWhere(
+      (c) => c.name == colorStr,
+      orElse: () => HighlightColor.yellow,
+    );
     return Highlight(
       id: map['id'] as String,
-      bookId: map['book_id'] as int,
-      chapter: map['chapter'] as int,
-      startWordId: map['start_word_id'] as int,
-      endWordId: map['end_word_id'] as int,
+      bookId: (map['book_id'] as num).toInt(),
+      chapter: (map['chapter'] as num).toInt(),
+      startWordId: (map['start_word_id'] as num).toInt(),
+      endWordId: (map['end_word_id'] as num).toInt(),
       color: color,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at'] as int),
+      text: map['text'] as String?,
+      createdAt: _parseDateTime(map['created_at']),
+      updatedAt: _parseDateTime(map['updated_at']),
     );
   }
 
@@ -144,6 +143,7 @@ class Note {
   final int startWordId;
   final int endWordId;
   final String content;
+  final String? passageText;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -154,6 +154,7 @@ class Note {
     required this.startWordId,
     required this.endWordId,
     required this.content,
+    this.passageText,
     required this.createdAt,
     required this.updatedAt,
   }) : assert(startWordId <= endWordId);
@@ -165,6 +166,7 @@ class Note {
     int? startWordId,
     int? endWordId,
     String? content,
+    String? passageText,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -175,6 +177,7 @@ class Note {
       startWordId: startWordId ?? this.startWordId,
       endWordId: endWordId ?? this.endWordId,
       content: content ?? this.content,
+      passageText: passageText ?? this.passageText,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -188,6 +191,7 @@ class Note {
       'start_word_id': startWordId,
       'end_word_id': endWordId,
       'content': content,
+      'passage_text': passageText,
       'created_at': createdAt.millisecondsSinceEpoch,
       'updated_at': updatedAt.millisecondsSinceEpoch,
     };
@@ -196,13 +200,14 @@ class Note {
   factory Note.fromMap(Map<String, dynamic> map) {
     return Note(
       id: map['id'] as String,
-      bookId: map['book_id'] as int,
-      chapter: map['chapter'] as int,
-      startWordId: map['start_word_id'] as int,
-      endWordId: map['end_word_id'] as int,
+      bookId: (map['book_id'] as num).toInt(),
+      chapter: (map['chapter'] as num).toInt(),
+      startWordId: (map['start_word_id'] as num).toInt(),
+      endWordId: (map['end_word_id'] as num).toInt(),
       content: map['content'] as String,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updated_at'] as int),
+      passageText: map['passage_text'] as String?,
+      createdAt: _parseDateTime(map['created_at']),
+      updatedAt: _parseDateTime(map['updated_at']),
     );
   }
 
@@ -213,3 +218,13 @@ class Note {
     );
   }
 }
+
+DateTime _parseDateTime(dynamic val) {
+  if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+  if (val is String) {
+    final parsed = DateTime.tryParse(val);
+    if (parsed != null) return parsed;
+  }
+  return DateTime.now();
+}
+

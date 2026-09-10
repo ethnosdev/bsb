@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:bsb/ui/annotations/annotation_file_handler.dart';
 import 'settings_manager.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -107,11 +108,74 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   );
                 },
-              )
+              ),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Text(
+                  'Backup & Annotations',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.backup_outlined),
+                title: const Text('Export Annotations'),
+                subtitle: const Text('Backup highlights and notes to a file'),
+                onTap: () {
+                  _showExportChoiceDialog(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.restore_outlined),
+                title: const Text('Import Annotations'),
+                subtitle:
+                    const Text('Restore highlights and notes from a backup file'),
+                onTap: () {
+                  AnnotationFileHandler().importJson(context);
+                },
+              ),
             ],
           );
         },
       ),
+    );
+  }
+
+  void _showExportChoiceDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.backup_outlined),
+                title: const Text('Export Backup (JSON)'),
+                subtitle:
+                    const Text('Complete backup for restoring on any device'),
+                onTap: () {
+                  Navigator.of(sheetCtx).pop();
+                  AnnotationFileHandler().exportJson(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text('Export as Markdown (.md)'),
+                subtitle: const Text(
+                    'Formatted text for reading and note-taking apps'),
+                onTap: () {
+                  Navigator.of(sheetCtx).pop();
+                  AnnotationFileHandler().exportMarkdown(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
