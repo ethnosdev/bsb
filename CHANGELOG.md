@@ -9,6 +9,8 @@
 - Full text search.
 - Hebrew and Greek lexicons.
 - Added selection handles to verse text selection.
+- Verse navigation.
+- Hebrew transliteration.
 
 # 1.6.0 - 2026.09.04
 

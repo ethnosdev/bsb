@@ -49,6 +49,7 @@ class _TextScreenState extends State<TextScreen> {
   ValueNotifier<(int, int)?> get _chapterNotifier =>
       widget.chapterChooserNotifier ?? _internalChapterNotifier;
   final _showBottomBarNotifier = ValueNotifier<bool>(false);
+  late final ValueNotifier<int> _activePageIndexNotifier;
   int _pageIndex = 0;
   int? _targetSectionBookId;
   int? _targetSectionChapter;
@@ -77,6 +78,7 @@ class _TextScreenState extends State<TextScreen> {
       bookId: widget.bookId,
       chapter: widget.chapter,
     );
+    _activePageIndexNotifier = ValueNotifier<int>(_pageIndex);
     _screenManager.updateTitle(index: _pageIndex);
     _pageController = PageController(
       initialPage: _initialPageOffset + _pageIndex,
@@ -88,6 +90,7 @@ class _TextScreenState extends State<TextScreen> {
       final currentIndex = (page - _initialPageOffset).round();
       if (currentIndex != _pageIndex) {
         _pageIndex = currentIndex;
+        _activePageIndexNotifier.value = currentIndex;
         _screenManager.updateTitle(
           index: _pageIndex,
         );
@@ -128,6 +131,7 @@ class _TextScreenState extends State<TextScreen> {
   void dispose() {
     _pageController.dispose();
     _showBottomBarNotifier.dispose();
+    _activePageIndexNotifier.dispose();
     _internalChapterNotifier.dispose();
     _screenManager.dispose();
     super.dispose();
@@ -168,6 +172,8 @@ class _TextScreenState extends State<TextScreen> {
           key: ValueKey('chapter_${bookId}_$chapter'),
           bookId: bookId,
           chapter: chapter,
+          activePageIndexListenable: _activePageIndexNotifier,
+          pageIndex: pageIndex,
           targetSection: _isTargetSection(bookId, chapter)
               ? _pendingSectionHeading
               : null,
@@ -284,6 +290,7 @@ class _TextScreenState extends State<TextScreen> {
       _targetVerseChapter = chapter;
       _pendingTargetVerse = targetVerse;
       _pageIndex = pageIndex;
+      _activePageIndexNotifier.value = pageIndex;
       _screenManager.updateTitle(index: pageIndex);
     });
 

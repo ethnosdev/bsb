@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
@@ -7,11 +8,14 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
+import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
 import 'package:bsb/ui/text/note_viewer_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
+
 
 class ChapterText extends StatefulWidget {
   const ChapterText({
@@ -20,6 +24,8 @@ class ChapterText extends StatefulWidget {
     required this.chapter,
     this.targetSection,
     this.targetVerse,
+    this.activePageIndexListenable,
+    this.pageIndex,
     this.onSelectionChanged,
     this.onTargetSectionScrolled,
     this.onTargetVerseScrolled,
@@ -29,6 +35,8 @@ class ChapterText extends StatefulWidget {
   final int chapter;
   final String? targetSection;
   final int? targetVerse;
+  final ValueListenable<int>? activePageIndexListenable;
+  final int? pageIndex;
   final void Function(ScriptureSelectionController controller)?
   onSelectionChanged;
   final VoidCallback? onTargetSectionScrolled;
@@ -48,12 +56,66 @@ class _ChapterTextState extends State<ChapterText>
   String? _activeTargetSection;
   int? _activeTargetVerse;
 
+  bool _isVerseScrubberVisible = false;
+  bool _isScrubbing = false;
+  Timer? _verseScrubberTimer;
+  bool _hasInitiallyShownScrubber = false;
+
   @override
   bool get wantKeepAlive => true;
+
+  bool get _isActive {
+    if (widget.activePageIndexListenable == null || widget.pageIndex == null) {
+      return true;
+    }
+    return widget.activePageIndexListenable!.value == widget.pageIndex;
+  }
+
+  void _handleActivePageChange() {
+    if (_isActive) {
+      _showVerseScrubberWithTimeout();
+    } else {
+      _hideVerseScrubber();
+    }
+  }
+
+  void _showVerseScrubberWithTimeout({
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    _verseScrubberTimer?.cancel();
+    if (!_isVerseScrubberVisible) {
+      setState(() {
+        _isVerseScrubberVisible = true;
+      });
+    }
+    _verseScrubberTimer = Timer(duration, () {
+      if (mounted && !_isScrubbing) {
+        setState(() {
+          _isVerseScrubberVisible = false;
+        });
+      }
+    });
+  }
+
+  void _hideVerseScrubber() {
+    _verseScrubberTimer?.cancel();
+    if (_isVerseScrubberVisible) {
+      setState(() {
+        _isVerseScrubberVisible = false;
+      });
+    }
+  }
+
+  void _scrollFromScrubber(int verse) {
+    _lastScrolledVerse = null;
+    _scrollToTargetVerse(verse);
+  }
 
   @override
   void initState() {
     super.initState();
+    widget.activePageIndexListenable?.addListener(_handleActivePageChange);
+    manager.textParagraphNotifier.addListener(_handleTextParagraphsLoaded);
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     _selectionController.addListener(_handleSelectionChange);
     if (widget.targetSection != null) {
@@ -64,9 +126,27 @@ class _ChapterTextState extends State<ChapterText>
     }
   }
 
+  void _handleTextParagraphsLoaded() {
+    final verseLines = manager.textParagraphNotifier.value;
+    if (verseLines.isNotEmpty && !_hasInitiallyShownScrubber) {
+      final hasMoreThan5Verses =
+          verseLines.map((l) => l.verse).where((v) => v > 0).toSet().length > 5;
+      if (hasMoreThan5Verses) {
+        _hasInitiallyShownScrubber = true;
+        if (_isActive) {
+          _showVerseScrubberWithTimeout();
+        }
+      }
+    }
+  }
+
   @override
   void didUpdateWidget(covariant ChapterText oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.activePageIndexListenable != oldWidget.activePageIndexListenable) {
+      oldWidget.activePageIndexListenable?.removeListener(_handleActivePageChange);
+      widget.activePageIndexListenable?.addListener(_handleActivePageChange);
+    }
     if (widget.targetSection != null &&
         (widget.targetSection != oldWidget.targetSection ||
             widget.targetSection != _lastScrolledSection)) {
@@ -81,6 +161,9 @@ class _ChapterTextState extends State<ChapterText>
 
   @override
   void dispose() {
+    _verseScrubberTimer?.cancel();
+    widget.activePageIndexListenable?.removeListener(_handleActivePageChange);
+    manager.textParagraphNotifier.removeListener(_handleTextParagraphsLoaded);
     _selectionController.removeListener(_handleSelectionChange);
     _selectionController.dispose();
     _scrollController.dispose();
@@ -89,6 +172,9 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _handleSelectionChange() {
+    if (_selectionController.hasSelection) {
+      _hideVerseScrubber();
+    }
     if (mounted && widget.onSelectionChanged != null) {
       widget.onSelectionChanged!(_selectionController);
     }
@@ -207,6 +293,15 @@ class _ChapterTextState extends State<ChapterText>
     if (!_scrollController.hasClients) return false;
     if (!_scrollController.position.hasContentDimensions) return false;
 
+    if (targetVerse == 1) {
+      _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+      return true;
+    }
+
     final renderObject = context.findRenderObject();
     if (renderObject == null || !renderObject.attached) return false;
 
@@ -323,6 +418,27 @@ class _ChapterTextState extends State<ChapterText>
                 _lastScrolledVerse != widget.targetVerse) {
               _scrollToTargetVerse(widget.targetVerse);
             }
+            final verses = <int>{};
+            for (final line in verseLines) {
+              if (line.verse > 0) {
+                verses.add(line.verse);
+              }
+            }
+            final sortedVerses = verses.toList()..sort();
+
+            if (verseLines.isNotEmpty && !_hasInitiallyShownScrubber) {
+              if (sortedVerses.length > 5) {
+                _hasInitiallyShownScrubber = true;
+                if (_isActive) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _showVerseScrubberWithTimeout();
+                    }
+                  });
+                }
+              }
+            }
+
             return ValueListenableBuilder<List<Highlight>>(
               valueListenable: manager.highlightsNotifier,
               builder: (context, rawHighlights, child) {
@@ -332,41 +448,118 @@ class _ChapterTextState extends State<ChapterText>
                 return ValueListenableBuilder<List<NoteMarker>>(
                   valueListenable: manager.noteMarkersNotifier,
                   builder: (context, noteMarkers, child) {
-                    return SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: 16.0,
-                          top: 16.0,
-                          right: 16.0,
-                          bottom: screenHeight * 0.8,
-                        ),
-                        child: UsfmWidget(
-                          verseLines: verseLines,
-                          selectionController: _selectionController,
-                          highlights: highlights,
-                          noteMarkers: noteMarkers,
-                          onFootnoteTapped: _onFootnoteTapped,
-                          onNoteTapped: _onNoteTapped,
-                          onAmbiguousTapped: _onAmbiguousTapped,
-                          onWordTapped: (id) => log("Tapped word $id"),
-                          onSelectionRequested: (wordId) {
-                            ScriptureLogic.highlightVerse(
-                              _selectionController,
-                              verseLines,
-                              wordId,
-                            );
-                          },
-                          styleBuilder: (format) {
-                            return UsfmParagraphStyle.usfmDefaults(
-                              format: format == ParagraphFormat.p
-                                  ? ParagraphFormat.m
-                                  : format,
-                              baseStyle: Theme.of(context).textTheme.bodyMedium!
-                                  .copyWith(fontSize: currentTextSize),
-                            );
-                          },
-                        ),
+                    return ClipRect(
+                      child: Stack(
+                        children: [
+                          NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              if (notification is ScrollStartNotification &&
+                                  notification.dragDetails != null) {
+                                if (_isVerseScrubberVisible && !_isScrubbing) {
+                                  _hideVerseScrubber();
+                                }
+                              }
+                              return false;
+                            },
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  left: 16.0,
+                                  top: 16.0,
+                                  right: 16.0,
+                                  bottom: screenHeight * 0.8,
+                                ),
+                                child: UsfmWidget(
+                                  verseLines: verseLines,
+                                  selectionController: _selectionController,
+                                  highlights: highlights,
+                                  noteMarkers: noteMarkers,
+                                  onFootnoteTapped: _onFootnoteTapped,
+                                  onNoteTapped: _onNoteTapped,
+                                  onAmbiguousTapped: _onAmbiguousTapped,
+                                  onWordTapped: (id) {
+                                    if (_isVerseScrubberVisible && !_isScrubbing) {
+                                      _hideVerseScrubber();
+                                    }
+                                    log("Tapped word $id");
+                                  },
+                                  onSelectionRequested: (wordId) {
+                                    ScriptureLogic.highlightVerse(
+                                      _selectionController,
+                                      verseLines,
+                                      wordId,
+                                    );
+                                  },
+                                  styleBuilder: (format) {
+                                    return UsfmParagraphStyle.usfmDefaults(
+                                      format: format == ParagraphFormat.p
+                                          ? ParagraphFormat.m
+                                          : format,
+                                      baseStyle: Theme.of(context).textTheme.bodyMedium!
+                                          .copyWith(fontSize: currentTextSize),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (widget.activePageIndexListenable != null &&
+                              widget.pageIndex != null)
+                            ValueListenableBuilder<int>(
+                              valueListenable: widget.activePageIndexListenable!,
+                              builder: (context, activeIndex, _) {
+                                final isCurrentActivePage =
+                                    activeIndex == widget.pageIndex;
+                                return VerseScrubber(
+                                  verses: sortedVerses,
+                                  isActive: isCurrentActivePage,
+                                  isVisible: _isVerseScrubberVisible,
+                                  onVerseSelected: (verse) {
+                                    _scrollFromScrubber(verse);
+                                    _showVerseScrubberWithTimeout();
+                                  },
+                                  onSwipeIn: () {
+                                    _showVerseScrubberWithTimeout();
+                                  },
+                                  onDismiss: () {
+                                    _hideVerseScrubber();
+                                  },
+                                  onInteractionStart: () {
+                                    _isScrubbing = true;
+                                    _verseScrubberTimer?.cancel();
+                                  },
+                                  onInteractionEnd: () {
+                                    _isScrubbing = false;
+                                    _showVerseScrubberWithTimeout();
+                                  },
+                                );
+                              },
+                            )
+                          else
+                            VerseScrubber(
+                              verses: sortedVerses,
+                              isVisible: _isVerseScrubberVisible,
+                              onVerseSelected: (verse) {
+                                _scrollFromScrubber(verse);
+                                _showVerseScrubberWithTimeout();
+                              },
+                              onSwipeIn: () {
+                                _showVerseScrubberWithTimeout();
+                              },
+                              onDismiss: () {
+                                _hideVerseScrubber();
+                              },
+                              onInteractionStart: () {
+                                _isScrubbing = true;
+                                _verseScrubberTimer?.cancel();
+                              },
+                              onInteractionEnd: () {
+                                _isScrubbing = false;
+                                _showVerseScrubberWithTimeout();
+                              },
+                            ),
+                        ],
                       ),
                     );
                   },
