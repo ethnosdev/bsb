@@ -6,9 +6,7 @@ import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 
 class AppDrawer extends StatelessWidget {
-  const AppDrawer({
-    super.key,
-  });
+  const AppDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,24 +19,15 @@ class AppDrawer extends StatelessWidget {
               child: Center(
                 child: ColorFiltered(
                   colorFilter: ColorFilter.mode(
-                      Theme.of(context).textTheme.titleMedium!.color!,
-                      BlendMode.srcIn),
+                    Theme.of(context).textTheme.titleMedium!.color!,
+                    BlendMode.srcIn,
+                  ),
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,
                   ),
                 ),
               ),
-            ),
-            ListTile(
-              title: const Text('Search'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SearchPage()),
-                );
-              },
             ),
             ListTile(
               title: const Text('Highlights & Notes'),

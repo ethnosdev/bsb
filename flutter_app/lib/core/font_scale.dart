@@ -3,7 +3,7 @@ import 'package:database_builder/database_builder.dart';
 /// Centralized typographic scalers relative to the user's base text size.
 abstract final class FontScale {
   static const double minBaseSize = 8.0;
-  static const double maxBaseSize = 30.0;
+  static const double maxBaseSize = 50.0;
   static const double defaultBaseSize = 20.0;
 
   /// Clamps a base text size to valid user-setting bounds.

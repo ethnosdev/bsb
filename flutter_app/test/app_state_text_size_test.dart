@@ -51,7 +51,7 @@ void main() {
       expect(appState.textSizeNotifier.value, equals(FontScale.minBaseSize));
       expect(userSettings.textSize, equals(FontScale.minBaseSize));
 
-      await appState.setTextSize(35.0);
+      await appState.setTextSize(55.0);
       expect(appState.textSizeNotifier.value, equals(FontScale.maxBaseSize));
       expect(userSettings.textSize, equals(FontScale.maxBaseSize));
     });

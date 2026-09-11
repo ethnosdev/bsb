@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/ui/annotations/annotation_file_handler.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+
 import 'settings_manager.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -17,9 +19,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListenableBuilder(
         listenable: manager,
         builder: (context, widget) {
@@ -27,17 +27,19 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               ListTile(
                 title: const Text('Light-Dark Theme'),
-                subtitle: Text(manager.themeMode == ThemeMode.light
-                    ? 'Light'
-                    : manager.themeMode == ThemeMode.dark
-                        ? 'Dark'
-                        : 'Match device settings'),
+                subtitle: Text(
+                  manager.themeMode == ThemeMode.light
+                      ? 'Light'
+                      : manager.themeMode == ThemeMode.dark
+                      ? 'Dark'
+                      : 'Match device settings',
+                ),
                 trailing: Icon(
                   manager.themeMode == ThemeMode.light
                       ? Icons.light_mode
                       : manager.themeMode == ThemeMode.dark
-                          ? Icons.dark_mode
-                          : Icons.smartphone,
+                      ? Icons.dark_mode
+                      : Icons.smartphone,
                 ),
                 onTap: () {
                   showDialog(
@@ -80,7 +82,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     context: context,
                     builder: (context) => AlertDialog(
                       content: SizedBox(
-                        height: 100,
+                        height: 150,
                         child: StatefulBuilder(
                           builder: (context, setState) => Column(
                             children: [
@@ -92,9 +94,12 @@ class _SettingsPageState extends State<SettingsPage> {
                               const Spacer(),
                               Slider(
                                 value: manager.textSize,
-                                min: 8,
-                                max: 30,
-                                divisions: 22,
+                                min: FontScale.minBaseSize,
+                                max: FontScale.maxBaseSize,
+                                divisions:
+                                    (FontScale.maxBaseSize -
+                                            FontScale.minBaseSize)
+                                        .toInt(),
                                 label: manager.textSize.toStringAsFixed(1),
                                 onChanged: (value) {
                                   setState(() {
@@ -112,9 +117,11 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               ListTile(
                 title: const Text('Book Chooser Layout'),
-                subtitle: Text(manager.bookChooserStyle == BookChooserStyle.list
-                    ? 'List'
-                    : 'Grid'),
+                subtitle: Text(
+                  manager.bookChooserStyle == BookChooserStyle.list
+                      ? 'List'
+                      : 'Grid',
+                ),
                 trailing: Icon(
                   manager.bookChooserStyle == BookChooserStyle.list
                       ? Icons.view_list
@@ -155,9 +162,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Text(
                   'Backup & Annotations',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               ListTile(
@@ -171,8 +178,9 @@ class _SettingsPageState extends State<SettingsPage> {
               ListTile(
                 leading: const Icon(Icons.restore_outlined),
                 title: const Text('Import Annotations'),
-                subtitle:
-                    const Text('Restore highlights and notes from a backup file'),
+                subtitle: const Text(
+                  'Restore highlights and notes from a backup file',
+                ),
                 onTap: () {
                   AnnotationFileHandler().importJson(context);
                 },
@@ -195,8 +203,9 @@ class _SettingsPageState extends State<SettingsPage> {
               ListTile(
                 leading: const Icon(Icons.backup_outlined),
                 title: const Text('Export Backup (JSON)'),
-                subtitle:
-                    const Text('Complete backup for restoring on any device'),
+                subtitle: const Text(
+                  'Complete backup for restoring on any device',
+                ),
                 onTap: () {
                   Navigator.of(sheetCtx).pop();
                   AnnotationFileHandler().exportJson(context);
@@ -206,7 +215,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 leading: const Icon(Icons.description_outlined),
                 title: const Text('Export as Markdown (.md)'),
                 subtitle: const Text(
-                    'Formatted text for reading and note-taking apps'),
+                  'Formatted text for reading and note-taking apps',
+                ),
                 onTap: () {
                   Navigator.of(sheetCtx).pop();
                   AnnotationFileHandler().exportMarkdown(context);

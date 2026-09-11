@@ -7,10 +7,10 @@ void main() {
     test('clampBase restricts base size to [minBaseSize, maxBaseSize]', () {
       expect(FontScale.clampBase(20.0), equals(20.0));
       expect(FontScale.clampBase(5.0), equals(8.0));
-      expect(FontScale.clampBase(35.0), equals(30.0));
+      expect(FontScale.clampBase(55.0), equals(50.0));
       expect(FontScale.clampBase(-1.0), equals(8.0));
       expect(FontScale.clampBase(8.0), equals(8.0));
-      expect(FontScale.clampBase(30.0), equals(30.0));
+      expect(FontScale.clampBase(50.0), equals(50.0));
     });
 
     test('scripture matches base text size', () {

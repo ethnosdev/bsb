@@ -6,7 +6,7 @@ class ZoomWrapper extends StatefulWidget {
     super.key,
     required this.initialScale,
     this.minScale = 8.0,
-    this.maxScale = 30.0,
+    this.maxScale = 50.0,
     this.getInitialScale,
     this.onZoomStart,
     required this.onScaleChanged,
