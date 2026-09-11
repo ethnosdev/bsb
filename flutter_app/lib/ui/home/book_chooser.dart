@@ -905,6 +905,11 @@ class _BookItemState extends State<BookItem> {
   @override
   Widget build(BuildContext context) {
     final displayTitle = _getDisplayTitle(context);
+    final theme = Theme.of(context);
+    final borderColor = theme.brightness == Brightness.light
+        ? theme.colorScheme.outlineVariant
+        : Colors.black;
+
     return Expanded(
       child: Material(
         color: widget.color,
@@ -920,7 +925,10 @@ class _BookItemState extends State<BookItem> {
             onTap: () => widget.onTap(widget.bookId, widget.chapterCount),
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(width: 0.5),
+                border: Border.all(
+                  color: borderColor,
+                  width: 0.5,
+                ),
               ),
               child: Center(
                 child: FittedBox(

@@ -43,15 +43,15 @@ class _ListBookChooserState extends State<ListBookChooser> {
         Row(
           children: [
             Expanded(
-              child: _buildColumn(
-                title: 'Old Testament',
+              child: _buildList(
+                storageKey: 'old_testament',
                 bookIds: _oldTestamentBooks,
               ),
             ),
             const VerticalDivider(width: 1, thickness: 1),
             Expanded(
-              child: _buildColumn(
-                title: 'New Testament',
+              child: _buildList(
+                storageKey: 'new_testament',
                 bookIds: _newTestamentBooks,
               ),
             ),
@@ -83,52 +83,31 @@ class _ListBookChooserState extends State<ListBookChooser> {
     );
   }
 
-  Widget _buildColumn({
-    required String title,
+  Widget _buildList({
+    required String storageKey,
     required List<int> bookIds,
   }) {
-    final theme = Theme.of(context);
+    return ListView.separated(
+      key: PageStorageKey('list_book_chooser_$storageKey'),
+      itemCount: bookIds.length,
+      separatorBuilder: (context, index) =>
+          const Divider(height: 1, thickness: 0.5),
+      itemBuilder: (context, index) {
+        final bookId = bookIds[index];
+        final bookName = bookIdToFullNameMap[bookId] ?? '';
+        final chapterCount = bookIdToChapterCountMap[bookId] ?? 1;
 
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          color: theme.colorScheme.surfaceContainerHigh,
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
+        return ListTile(
+          dense: true,
+          title: Text(
+            bookName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15),
           ),
-        ),
-        Expanded(
-          child: ListView.separated(
-            key: PageStorageKey('list_book_chooser_$title'),
-            itemCount: bookIds.length,
-            separatorBuilder: (context, index) =>
-                const Divider(height: 1, thickness: 0.5),
-            itemBuilder: (context, index) {
-              final bookId = bookIds[index];
-              final bookName = bookIdToFullNameMap[bookId] ?? '';
-              final chapterCount = bookIdToChapterCountMap[bookId] ?? 1;
-
-              return ListTile(
-                dense: true,
-                title: Text(
-                  bookName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 15),
-                ),
-                onTap: () => _onBookSelected(bookId, chapterCount),
-              );
-            },
-          ),
-        ),
-      ],
+          onTap: () => _onBookSelected(bookId, chapterCount),
+        );
+      },
     );
   }
 }

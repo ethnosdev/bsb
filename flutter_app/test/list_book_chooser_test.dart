@@ -14,7 +14,7 @@ Widget createTestApp(Widget child) {
 
 void main() {
   group('ListBookChooser Widget Tests', () {
-    testWidgets('renders Old Testament and New Testament column headers and books', (tester) async {
+    testWidgets('renders books from both testaments without section labels', (tester) async {
       await tester.pumpWidget(
         createTestApp(
           ListBookChooser(onSelected: (_, _, [_]) {}),
@@ -22,8 +22,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Old Testament'), findsOneWidget);
-      expect(find.text('New Testament'), findsOneWidget);
+      // Labels should not be present
+      expect(find.text('Old Testament'), findsNothing);
+      expect(find.text('New Testament'), findsNothing);
 
       // Verify books from both testaments appear
       expect(find.text('Genesis'), findsOneWidget);
@@ -47,7 +48,7 @@ void main() {
       expect(find.text('Revelation'), findsNothing);
 
       // Scroll the Old Testament list (on the left)
-      final otListFinder = find.byKey(const PageStorageKey('list_book_chooser_Old Testament'));
+      final otListFinder = find.byKey(const PageStorageKey('list_book_chooser_old_testament'));
       await tester.drag(otListFinder, const Offset(0, -600));
       await tester.pumpAndSettle();
 
@@ -56,7 +57,7 @@ void main() {
       expect(find.text('Revelation'), findsNothing);
 
       // Now scroll the New Testament list (on the right)
-      final ntListFinder = find.byKey(const PageStorageKey('list_book_chooser_New Testament'));
+      final ntListFinder = find.byKey(const PageStorageKey('list_book_chooser_new_testament'));
       await tester.drag(ntListFinder, const Offset(0, -600));
       await tester.pumpAndSettle();
 
@@ -83,7 +84,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll to Obadiah (book 31) in Old Testament
-      final otListFinder = find.byKey(const PageStorageKey('list_book_chooser_Old Testament'));
+      final otListFinder = find.byKey(const PageStorageKey('list_book_chooser_old_testament'));
       final otScrollable = find.descendant(of: otListFinder, matching: find.byType(Scrollable));
       await tester.scrollUntilVisible(find.text('Obadiah'), 200, scrollable: otScrollable);
       await tester.tap(find.text('Obadiah'));

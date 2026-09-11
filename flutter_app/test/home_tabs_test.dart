@@ -93,8 +93,10 @@ void main() {
     expect(find.text('Berean Standard Bible'), findsOneWidget);
     expect(find.byType(ListBookChooser), findsOneWidget);
     expect(find.byType(BookChooser), findsNothing);
-    expect(find.text('Old Testament'), findsOneWidget);
-    expect(find.text('New Testament'), findsOneWidget);
+    expect(find.text('Genesis'), findsOneWidget);
+    expect(find.text('Matthew'), findsOneWidget);
+    expect(find.text('Old Testament'), findsNothing);
+    expect(find.text('New Testament'), findsNothing);
   });
 
   testWidgets('shows ChapterChip and TextScreen when a tab is opened', (tester) async {

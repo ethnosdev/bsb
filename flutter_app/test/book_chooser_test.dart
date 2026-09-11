@@ -253,5 +253,51 @@ void main() {
       expect(selectedBookId, equals(2));
       expect(selectedChapter, equals(40));
     });
+
+    testWidgets('uses subtle outlineVariant border in light mode and black in dark mode', (tester) async {
+      final lightTheme = ThemeData.light(useMaterial3: true);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: lightTheme,
+          home: Scaffold(
+            body: BookChooser(onSelected: (_, _, [_]) {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find Container of first BookItem
+      final containerFinder = find.descendant(
+        of: find.byType(BookItem).first,
+        matching: find.byType(Container),
+      );
+      final containerWidget = tester.widget<Container>(containerFinder);
+      final boxDecoration = containerWidget.decoration as BoxDecoration;
+      final border = boxDecoration.border as Border;
+
+      expect(border.top.color, equals(lightTheme.colorScheme.outlineVariant));
+
+      // Now switch to dark mode
+      final darkTheme = ThemeData.dark(useMaterial3: true);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: darkTheme,
+          home: Scaffold(
+            body: BookChooser(onSelected: (_, _, [_]) {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final darkContainerFinder = find.descendant(
+        of: find.byType(BookItem).first,
+        matching: find.byType(Container),
+      );
+      final darkContainerWidget = tester.widget<Container>(darkContainerFinder);
+      final darkBoxDecoration = darkContainerWidget.decoration as BoxDecoration;
+      final darkBorder = darkBoxDecoration.border as Border;
+
+      expect(darkBorder.top.color, equals(Colors.black));
+    });
   });
 }
