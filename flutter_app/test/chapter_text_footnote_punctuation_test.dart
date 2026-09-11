@@ -26,18 +26,6 @@ class FakeFootnoteDbHelper implements DatabaseHelper {
       ),
     ];
   }
-
-  @override
-  Future<List<UsfmLine>> getVerses(int bookId, int chapter, int startVerse, int endVerse) async {
-    return [
-      UsfmLine(
-        bookChapterVerse: 41012011,
-        text:
-            r'and it is marvelous in our eyes’\f + \fr 12:11 \ft Psalm 118:22–23\f*?”',
-        format: ParagraphFormat.q2,
-      ),
-    ];
-  }
 }
 
 class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {

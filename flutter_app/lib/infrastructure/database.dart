@@ -95,7 +95,7 @@ class DatabaseHelper {
     for (final p in passage.paragraphs) {
       if (!p.format.isBiblicalText) continue;
       for (final el in p.content) {
-        if (el is Word) {
+        if (el is Word && el.id >= 0) {
           map[el.id] = el.text;
         }
       }

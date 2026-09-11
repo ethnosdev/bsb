@@ -14,10 +14,7 @@ class HelpPage extends StatelessWidget {
         : ValueNotifier<double>(getIt<UserSettings>().textSize);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Help'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Help'), elevation: 0),
       body: ValueListenableBuilder<double>(
         valueListenable: textSizeNotifier,
         builder: (context, fontSize, _) {
@@ -25,9 +22,7 @@ class HelpPage extends StatelessWidget {
             fontSize: FontScale.infoTitle(fontSize),
             fontWeight: FontWeight.bold,
           );
-          final contentStyle = TextStyle(
-            fontSize: fontSize,
-          );
+          final contentStyle = TextStyle(fontSize: fontSize);
 
           return ListView(
             padding: const EdgeInsets.all(16.0),
@@ -54,15 +49,15 @@ class HelpPage extends StatelessWidget {
               const SizedBox(height: 16),
               _HelpCard(
                 title: 'Footnotes',
-                content:
-                    'If you see an asterisk (*) in the text, tap it to learn additional information.',
+                content: 'If you see an asterisk (*) in the text, tap it to learn additional information.',
                 titleStyle: titleStyle,
                 contentStyle: contentStyle,
               ),
               const SizedBox(height: 16),
               _HelpCard(
                 title: 'Additional tools',
-                content: 'Long press on the text of a verse to copy, view the '
+                content:
+                    'Long press on the text of a verse to copy, view the '
                     'original Hebrew/Greek, or compare with other translations.',
                 titleStyle: titleStyle,
                 contentStyle: contentStyle,
@@ -97,15 +92,9 @@ class _HelpCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: titleStyle,
-            ),
+            Text(title, style: titleStyle),
             const SizedBox(height: 8),
-            Text(
-              content,
-              style: contentStyle,
-            ),
+            Text(content, style: contentStyle),
           ],
         ),
       ),
