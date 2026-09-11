@@ -5,6 +5,7 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/home.dart';
+import 'package:bsb/ui/home/list_book_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_chip.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
@@ -77,6 +78,23 @@ void main() {
     expect(find.byType(BookChooser), findsOneWidget);
     expect(find.byType(ChapterChip), findsNothing);
     expect(find.byIcon(Icons.add), findsNothing);
+  });
+
+  testWidgets('shows ListBookChooser when setting is set to list', (tester) async {
+    await userSettings.setBookChooserStyle(BookChooserStyle.list);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Berean Standard Bible'), findsOneWidget);
+    expect(find.byType(ListBookChooser), findsOneWidget);
+    expect(find.byType(BookChooser), findsNothing);
+    expect(find.text('Old Testament'), findsOneWidget);
+    expect(find.text('New Testament'), findsOneWidget);
   });
 
   testWidgets('shows ChapterChip and TextScreen when a tab is opened', (tester) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:bsb/ui/annotations/annotation_file_handler.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'settings_manager.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -104,6 +105,45 @@ class _SettingsPageState extends State<SettingsPage> {
                             ],
                           ),
                         ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                title: const Text('Book Chooser Layout'),
+                subtitle: Text(manager.bookChooserStyle == BookChooserStyle.list
+                    ? 'List'
+                    : 'Grid'),
+                trailing: Icon(
+                  manager.bookChooserStyle == BookChooserStyle.list
+                      ? Icons.view_list
+                      : Icons.grid_view,
+                ),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Book Chooser Layout'),
+                      content: SegmentedButton<BookChooserStyle>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment<BookChooserStyle>(
+                            value: BookChooserStyle.grid,
+                            label: Text('Grid'),
+                            icon: Icon(Icons.grid_view),
+                          ),
+                          ButtonSegment<BookChooserStyle>(
+                            value: BookChooserStyle.list,
+                            label: Text('List'),
+                            icon: Icon(Icons.view_list),
+                          ),
+                        ],
+                        selected: {manager.bookChooserStyle},
+                        onSelectionChanged: (Set<BookChooserStyle> selection) {
+                          manager.setBookChooserStyle(selection.first);
+                          Navigator.of(context).pop();
+                        },
                       ),
                     ),
                   );

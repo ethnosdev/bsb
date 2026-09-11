@@ -93,4 +93,31 @@ class UserSettings {
       await _prefs.setString(_annotationSortOrderKey, sortOrder);
     }
   }
+
+  static const _bookChooserStyleKey = 'bookChooserStyle';
+
+  BookChooserStyle get bookChooserStyle {
+    final value = _prefs.getString(_bookChooserStyleKey);
+    if (value == 'list') {
+      return BookChooserStyle.list;
+    }
+    return BookChooserStyle.grid;
+  }
+
+  Future<void> setBookChooserStyle(BookChooserStyle style) async {
+    if (style == BookChooserStyle.grid) {
+      await _prefs.remove(_bookChooserStyleKey);
+    } else {
+      await _prefs.setString(_bookChooserStyleKey, style.name);
+    }
+  }
 }
+
+enum BookChooserStyle {
+  grid('Grid'),
+  list('List');
+
+  const BookChooserStyle(this.displayName);
+  final String displayName;
+}
+

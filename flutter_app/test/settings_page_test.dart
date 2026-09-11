@@ -36,6 +36,7 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Light-Dark Theme'), findsOneWidget);
     expect(find.text('Text Size'), findsOneWidget);
+    expect(find.text('Book Chooser Layout'), findsOneWidget);
     expect(find.text('Backup & Annotations'), findsOneWidget);
     expect(find.text('Export Annotations'), findsOneWidget);
     expect(find.text('Import Annotations'), findsOneWidget);
@@ -46,5 +47,31 @@ void main() {
 
     expect(find.text('Export Backup (JSON)'), findsOneWidget);
     expect(find.text('Export as Markdown (.md)'), findsOneWidget);
+  });
+
+  testWidgets('SettingsPage allows changing Book Chooser Layout between Grid and List', (tester) async {
+    final userSettings = getIt<UserSettings>();
+    expect(userSettings.bookChooserStyle, equals(BookChooserStyle.grid));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Book Chooser Layout'), findsOneWidget);
+    expect(find.text('Grid'), findsOneWidget);
+
+    // Tap to open choice dialog
+    await tester.tap(find.text('Book Chooser Layout'));
+    await tester.pumpAndSettle();
+
+    // Tap 'List' segment
+    await tester.tap(find.text('List'));
+    await tester.pumpAndSettle();
+
+    expect(userSettings.bookChooserStyle, equals(BookChooserStyle.list));
+    expect(find.text('List'), findsOneWidget);
   });
 }

@@ -1,9 +1,12 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
+import 'package:bsb/ui/home/list_book_chooser.dart';
 import 'package:bsb/ui/search/search_page.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_tabs_bar.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/text_screen.dart';
@@ -54,6 +57,33 @@ class _HomePageState extends State<HomePage> {
         .removeListener(_onPlayerVisibilityChanged);
     _chapterChooserNotifier.dispose();
     super.dispose();
+  }
+
+  Widget _buildBookChooser() {
+    void onSelected(int bookId, int chapter, [String? sectionHeading]) {
+      _tabManager.openTab(bookId, chapter, sectionHeading);
+    }
+
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    if (appState != null) {
+      return ValueListenableBuilder<BookChooserStyle>(
+        valueListenable: appState.bookChooserStyleNotifier,
+        builder: (context, style, _) {
+          if (style == BookChooserStyle.list) {
+            return ListBookChooser(onSelected: onSelected);
+          }
+          return BookChooser(onSelected: onSelected);
+        },
+      );
+    }
+
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final style = userSettings?.bookChooserStyle ?? BookChooserStyle.grid;
+    if (style == BookChooserStyle.list) {
+      return ListBookChooser(onSelected: onSelected);
+    }
+    return BookChooser(onSelected: onSelected);
   }
 
   @override
@@ -174,11 +204,7 @@ class _HomePageState extends State<HomePage> {
             ),
             body: (!hasTabs || isAdding)
                 ? SafeArea(
-                    child: BookChooser(
-                      onSelected: (bookId, chapter, [sectionHeading]) {
-                        _tabManager.openTab(bookId, chapter, sectionHeading);
-                      },
-                    ),
+                    child: _buildBookChooser(),
                   )
                 : TextScreen(
                     key: const ValueKey('text_reader_screen'),

@@ -1,4 +1,5 @@
 import 'package:bsb/ui/home/chapter_chooser.dart';
+import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
 enum ChapterSelectionState {
@@ -7,13 +8,36 @@ enum ChapterSelectionState {
   end,
 }
 
+class _BookChooserScope extends InheritedWidget {
+  const _BookChooserScope({
+    required this.useFullName,
+    required super.child,
+  });
+
+  final bool useFullName;
+
+  static _BookChooserScope? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_BookChooserScope>();
+  }
+
+  @override
+  bool updateShouldNotify(_BookChooserScope oldWidget) {
+    return useFullName != oldWidget.useFullName;
+  }
+}
+
 class BookChooser extends StatefulWidget {
   const BookChooser({
     super.key,
     required this.onSelected,
+    this.wideScreenBreakpoint = defaultWideScreenBreakpoint,
   });
 
+  /// The width threshold above which full book names are displayed instead of abbreviations.
+  static const double defaultWideScreenBreakpoint = 800.0;
+
   final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final double wideScreenBreakpoint;
 
   @override
   State<BookChooser> createState() => _BookChooserState();
@@ -54,47 +78,59 @@ class _BookChooserState extends State<BookChooser> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Column(
-          children: [
-            _buildPentateuch(),
-            _buildHistorical1(),
-            _buildHistorical2(),
-            _buildWisdom(),
-            _buildMajorProphets(),
-            _buildMinorProphets1(),
-            _buildMinorProphets2(),
-            _buildGospels(),
-            _buildPaulineEpistles(),
-            _buildPastoralEpistles(),
-            _buildGeneralEpistles1(),
-            _buildGeneralEpistles2(),
-          ],
-        ),
-        ValueListenableBuilder<(int, int)?>(
-          valueListenable: _chapterNotifier,
-          builder: (context, bookChapter, child) {
-            if (bookChapter == null) {
-              return const SizedBox();
-            }
-            final (bookId, chapterCount) = bookChapter;
-            return ChapterChooser(
-              bookId: bookId,
-              chapterCount: chapterCount,
-              onChapterSelected: (chapter) {
-                _chapterNotifier.value = null;
-                if (chapter == null) return;
-                widget.onSelected(bookId, chapter);
-              },
-              onSectionSelected: (chapter, sectionHeading) {
-                _chapterNotifier.value = null;
-                widget.onSelected(bookId, chapter, sectionHeading);
-              },
-            );
-          },
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final useFullName = width >= widget.wideScreenBreakpoint;
+
+        return _BookChooserScope(
+          useFullName: useFullName,
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildPentateuch(),
+                  _buildHistorical1(),
+                  _buildHistorical2(),
+                  _buildWisdom(),
+                  _buildMajorProphets(),
+                  _buildMinorProphets1(),
+                  _buildMinorProphets2(),
+                  _buildGospels(),
+                  _buildPaulineEpistles(),
+                  _buildPastoralEpistles(),
+                  _buildGeneralEpistles1(),
+                  _buildGeneralEpistles2(),
+                ],
+              ),
+              ValueListenableBuilder<(int, int)?>(
+                valueListenable: _chapterNotifier,
+                builder: (context, bookChapter, child) {
+                  if (bookChapter == null) {
+                    return const SizedBox();
+                  }
+                  final (bookId, chapterCount) = bookChapter;
+                  return ChapterChooser(
+                    bookId: bookId,
+                    chapterCount: chapterCount,
+                    onChapterSelected: (chapter) {
+                      _chapterNotifier.value = null;
+                      if (chapter == null) return;
+                      widget.onSelected(bookId, chapter);
+                    },
+                    onSectionSelected: (chapter, sectionHeading) {
+                      _chapterNotifier.value = null;
+                      widget.onSelected(bookId, chapter, sectionHeading);
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -817,29 +853,58 @@ class BookItem extends StatefulWidget {
   const BookItem({
     super.key,
     required this.title,
+    this.fullName,
     required this.color,
     required this.onTap,
     required this.onSwipeUp,
     required this.onSwipeDown,
     required this.bookId,
     required this.chapterCount,
+    this.useFullName,
+    this.wideScreenBreakpoint,
   });
 
   final String title;
+  final String? fullName;
   final Color color;
   final void Function(int bookId, int chapterCount) onTap;
   final void Function(int bookId) onSwipeUp;
   final void Function(int bookId, int chapter) onSwipeDown;
   final int bookId;
   final int chapterCount;
+  final bool? useFullName;
+  final double? wideScreenBreakpoint;
 
   @override
   State<BookItem> createState() => _BookItemState();
 }
 
 class _BookItemState extends State<BookItem> {
+  bool _shouldUseFullName(BuildContext context) {
+    if (widget.useFullName != null) {
+      return widget.useFullName!;
+    }
+    final scope = _BookChooserScope.of(context);
+    if (scope != null) {
+      return scope.useFullName;
+    }
+    final breakpoint =
+        widget.wideScreenBreakpoint ?? BookChooser.defaultWideScreenBreakpoint;
+    return MediaQuery.sizeOf(context).width >= breakpoint;
+  }
+
+  String _getDisplayTitle(BuildContext context) {
+    if (_shouldUseFullName(context)) {
+      return widget.fullName ??
+          bookIdToFullNameMap[widget.bookId] ??
+          widget.title;
+    }
+    return widget.title;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayTitle = _getDisplayTitle(context);
     return Expanded(
       child: Material(
         color: widget.color,
@@ -861,7 +926,7 @@ class _BookItemState extends State<BookItem> {
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    widget.title,
+                    displayTitle,
                     maxLines: 1,
                     style: const TextStyle(
                       fontSize: 17,

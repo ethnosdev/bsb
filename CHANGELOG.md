@@ -12,6 +12,7 @@
 - Verse navigation.
 - Hebrew transliteration.
 - Audio playback.
+- Book chooser list option.
 
 # 1.6.0 - 2026.09.04
 

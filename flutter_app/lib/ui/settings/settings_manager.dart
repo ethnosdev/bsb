@@ -29,4 +29,17 @@ class SettingsManager extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  BookChooserStyle get bookChooserStyle =>
+      _appState?.bookChooserStyleNotifier.value ??
+      userSettings.bookChooserStyle;
+
+  Future<void> setBookChooserStyle(BookChooserStyle style) async {
+    if (_appState != null) {
+      await _appState!.setBookChooserStyle(style);
+    } else {
+      await userSettings.setBookChooserStyle(style);
+    }
+    notifyListeners();
+  }
 }
