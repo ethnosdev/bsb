@@ -118,7 +118,14 @@ class DatabaseHelper {
       }
     }
     if (words.isEmpty) return null;
-    return words.join(' ');
+    final buffer = StringBuffer();
+    for (final word in words) {
+      if (buffer.isNotEmpty && !isPunctuation(word)) {
+        buffer.write(' ');
+      }
+      buffer.write(word);
+    }
+    return buffer.toString();
   }
 
   (int, int) _chapterBounds(int bookId, int chapter) {
