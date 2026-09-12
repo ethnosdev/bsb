@@ -94,7 +94,7 @@ class _ListBookChooserState extends State<ListBookChooser> {
           const Divider(height: 1, thickness: 0.5),
       itemBuilder: (context, index) {
         final bookId = bookIds[index];
-        final bookName = bookIdToFullNameMap[bookId] ?? '';
+        final bookName = bookIdToBookNameMap[bookId] ?? '';
         final chapterCount = bookIdToChapterCountMap[bookId] ?? 1;
 
         return ListTile(

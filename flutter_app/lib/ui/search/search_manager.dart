@@ -19,10 +19,9 @@ class SearchManager {
 
   final isLoadingNotifier = ValueNotifier<bool>(false);
   final resultsNotifier = ValueNotifier<List<SearchResult>>([]);
-  final referenceMatchNotifier = ValueNotifier<ParsedReference?>(null);
-  final referencePreviewNotifier = ValueNotifier<String?>(null);
   final recentSearchesNotifier = ValueNotifier<List<String>>([]);
   final scopeNotifier = ValueNotifier<SearchScope>(SearchScope.all);
+  final isExactNotifier = ValueNotifier<bool>(false);
 
   String _currentQuery = '';
   String get currentQuery => _currentQuery;
@@ -43,6 +42,15 @@ class SearchManager {
     }
   }
 
+  void setExactMatch(bool isExact) {
+    if (isExactNotifier.value == isExact) return;
+    isExactNotifier.value = isExact;
+    scrollOffset = 0.0;
+    if (_currentQuery.trim().length >= 2) {
+      _executeSearch(_currentQuery.trim());
+    }
+  }
+
   void onQueryChanged(String query) {
     if (_currentQuery == query) return;
     _currentQuery = query;
@@ -55,20 +63,6 @@ class SearchManager {
     }
 
     scrollOffset = 0.0;
-
-    // Reference matching is fast and synchronous
-    final refMatch = _searchService.parseReference(trimmed);
-    referenceMatchNotifier.value = refMatch;
-
-    if (refMatch != null && refMatch.isExactVerse) {
-      _searchService.getVerseText(refMatch.toReference()).then((preview) {
-        if (_currentQuery.trim() == trimmed) {
-          referencePreviewNotifier.value = preview;
-        }
-      });
-    } else {
-      referencePreviewNotifier.value = null;
-    }
 
     // Debounce text search by 250ms
     _debounceTimer = Timer(const Duration(milliseconds: 250), () {
@@ -87,6 +81,7 @@ class SearchManager {
       query: query,
       scope: scopeNotifier.value,
       specificBookId: currentBookId,
+      isExact: isExactNotifier.value,
       // No limit: return all matching results
     );
 
@@ -102,8 +97,6 @@ class SearchManager {
     scrollOffset = 0.0;
     isLoadingNotifier.value = false;
     resultsNotifier.value = [];
-    referenceMatchNotifier.value = null;
-    referencePreviewNotifier.value = null;
   }
 
   Future<void> recordSearch(String query) async {
@@ -123,9 +116,8 @@ class SearchManager {
     _debounceTimer?.cancel();
     isLoadingNotifier.dispose();
     resultsNotifier.dispose();
-    referenceMatchNotifier.dispose();
-    referencePreviewNotifier.dispose();
     recentSearchesNotifier.dispose();
     scopeNotifier.dispose();
+    isExactNotifier.dispose();
   }
 }

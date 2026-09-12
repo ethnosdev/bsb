@@ -85,6 +85,14 @@ class TextScreenManager {
     return 'https://biblehub.com/$formatted/$chapter-$verse.htm';
   }
 
+  String bibleHubCrossReferenceUrl({
+    required int bookId,
+    required int chapter,
+    required int verse,
+  }) {
+    return '${bibleHubUrl(bookId: bookId, chapter: chapter, verse: verse)}#crossref';
+  }
+
   void dispose() {
     titleNotifier.dispose();
   }

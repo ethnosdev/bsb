@@ -58,6 +58,7 @@ class _TextScreenState extends State<TextScreen> {
   int? _targetVerseChapter;
   int? _pendingTargetVerse;
   ScriptureSelectionController? _activeController;
+  final _moreKey = GlobalKey();
   late Language _currentLanguage;
 
   @override
@@ -337,8 +338,8 @@ class _TextScreenState extends State<TextScreen> {
                     label: _getLanguageLabel(language),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.compare),
-                    label: 'Compare',
+                    icon: Icon(Icons.more_horiz, key: _moreKey),
+                    label: 'More',
                   ),
                 ],
                 onTap: (index) => _handleBottomBarTap(index, language),
@@ -377,6 +378,7 @@ class _TextScreenState extends State<TextScreen> {
     // Extract context using the Extension
     final reference = Reference.fromWordId(packedInt: startId);
 
+    bool shouldClear = true;
     switch (index) {
       case 0:
         await _handleHighlight(reference);
@@ -387,11 +389,13 @@ class _TextScreenState extends State<TextScreen> {
       case 3:
         _handleHebrewGreek(reference, language);
       case 4:
-        _handleCompare(reference);
+        shouldClear = await _handleMore(reference);
     }
 
-    // Clear selection after action
-    _activeController?.clear();
+    if (shouldClear) {
+      // Clear selection after action
+      _activeController?.clear();
+    }
   }
 
   Future<void> _handleHighlight(Reference reference) async {
@@ -490,8 +494,70 @@ class _TextScreenState extends State<TextScreen> {
     );
   }
 
+  Future<bool> _handleMore(Reference reference) async {
+    final RenderBox? button =
+        _moreKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? overlay =
+        Navigator.of(context).overlay?.context.findRenderObject()
+            as RenderBox? ??
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+
+    final RelativeRect position;
+    if (button != null && overlay != null) {
+      final buttonRect = Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      );
+      position = RelativeRect.fromRect(buttonRect, Offset.zero & overlay.size);
+    } else {
+      final size = MediaQuery.of(context).size;
+      position = RelativeRect.fromLTRB(
+        size.width - 150,
+        size.height - 80,
+        0,
+        0,
+      );
+    }
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: position,
+      items: const [
+        PopupMenuItem<String>(
+          value: 'compare',
+          child: Text('Compare'),
+        ),
+        PopupMenuItem<String>(
+          value: 'cross_reference',
+          child: Text('Cross Reference'),
+        ),
+      ],
+    );
+
+    if (selected == 'compare') {
+      _handleCompare(reference);
+      return true;
+    } else if (selected == 'cross_reference') {
+      _handleCrossReference(reference);
+      return true;
+    }
+    return false;
+  }
+
   void _handleCompare(Reference reference) {
     final url = _screenManager.bibleHubUrl(
+      bookId: reference.bookId,
+      chapter: reference.chapter,
+      verse: reference.verse,
+    );
+    _launch(url);
+  }
+
+  void _handleCrossReference(Reference reference) {
+    final url = _screenManager.bibleHubCrossReferenceUrl(
       bookId: reference.bookId,
       chapter: reference.chapter,
       verse: reference.verse,

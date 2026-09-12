@@ -896,7 +896,7 @@ class _BookItemState extends State<BookItem> {
   String _getDisplayTitle(BuildContext context) {
     if (_shouldUseFullName(context)) {
       return widget.fullName ??
-          bookIdToFullNameMap[widget.bookId] ??
+          bookIdToBookNameMap[widget.bookId] ??
           widget.title;
     }
     return widget.title;

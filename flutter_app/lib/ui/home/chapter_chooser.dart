@@ -47,7 +47,7 @@ class _ChapterChooserState extends State<ChapterChooser> {
       return widget.bookName!;
     }
     if (widget.bookId != null) {
-      return bookIdToFullNameMap[widget.bookId] ?? '';
+      return bookIdToBookNameMap[widget.bookId] ?? '';
     }
     return '';
   }

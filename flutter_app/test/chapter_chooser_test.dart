@@ -226,7 +226,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Psalm'), findsOneWidget);
+      expect(find.text('Psalms'), findsOneWidget);
 
       // Tap 1 -> ambiguous (1, 10-19, 100-150)
       await tester.tap(find.byKey(const ValueKey('keypad_1')));

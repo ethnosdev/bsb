@@ -106,7 +106,7 @@ class _SearchPageState extends State<SearchPage> {
           autofocus: _manager.currentQuery.isEmpty,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search verses or e.g. John 3:16',
+            hintText: 'Search verses',
             border: InputBorder.none,
             hintStyle: TextStyle(
               color: theme.textTheme.bodyMedium?.color?.withAlpha(120),
@@ -177,18 +177,71 @@ class _SearchPageState extends State<SearchPage> {
             children: [
               _buildFilterChip('All', SearchScope.all, currentScope),
               const SizedBox(width: 8),
-              _buildFilterChip('Old Testament', SearchScope.ot, currentScope),
+              _buildFilterChip(
+                'OT',
+                SearchScope.ot,
+                currentScope,
+                tooltip: 'Old Testament',
+              ),
               const SizedBox(width: 8),
-              _buildFilterChip('New Testament', SearchScope.nt, currentScope),
+              _buildFilterChip(
+                'NT',
+                SearchScope.nt,
+                currentScope,
+                tooltip: 'New Testament',
+              ),
               if (widget.currentBookId != null) ...[
                 const SizedBox(width: 8),
                 _buildFilterChip(
-                  bookIdToFullNameMap[widget.currentBookId] ?? 'Current Book',
+                  bookIdToBookNameMap[widget.currentBookId] ?? 'Current Book',
                   SearchScope.book,
                   currentScope,
                 ),
               ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: SizedBox(
+                  height: 20,
+                  child: VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: colorScheme.outlineVariant,
+                  ),
+                ),
+              ),
+              _buildExactChip(colorScheme),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExactChip(ColorScheme colorScheme) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _manager.isExactNotifier,
+      builder: (context, isExact, child) {
+        return FilterChip(
+          selected: isExact,
+          onSelected: (val) {
+            _manager.setExactMatch(val);
+            if (_scrollController.hasClients) {
+              _scrollController.jumpTo(0.0);
+            }
+          },
+          avatar: Icon(
+            Icons.format_quote,
+            size: 16,
+            color: isExact
+                ? colorScheme.onSecondaryContainer
+                : colorScheme.onSurfaceVariant,
+          ),
+          label: const Text('Exact'),
+          tooltip: 'Match exact word or phrase',
+          showCheckmark: false,
+          labelStyle: TextStyle(
+            fontSize: 12,
+            fontWeight: isExact ? FontWeight.bold : FontWeight.normal,
           ),
         );
       },
@@ -198,10 +251,12 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildFilterChip(
     String label,
     SearchScope scope,
-    SearchScope activeScope,
-  ) {
+    SearchScope activeScope, {
+    String? tooltip,
+  }) {
     final isSelected = scope == activeScope;
     return ChoiceChip(
+      tooltip: tooltip,
       label: Text(label),
       selected: isSelected,
       onSelected: (_) {
@@ -221,65 +276,43 @@ class _SearchPageState extends State<SearchPage> {
     return ValueListenableBuilder<List<String>>(
       valueListenable: _manager.recentSearchesNotifier,
       builder: (context, recents, child) {
+        if (recents.isEmpty) {
+          return const SizedBox.shrink();
+        }
         return ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            if (recents.isNotEmpty) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Recent Searches',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  TextButton(
-                    onPressed: _manager.clearRecentSearches,
-                    child: const Text('Clear all'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
-                children: recents.map((query) {
-                  return ActionChip(
-                    avatar: const Icon(Icons.history, size: 16),
-                    label: Text(query),
-                    onPressed: () {
-                      _textController.text = query;
-                      _textController.selection = TextSelection.fromPosition(
-                        TextPosition(offset: query.length),
-                      );
-                    },
-                  );
-                }).toList(),
-              ),
-              const Divider(height: 32),
-            ],
-            Text(
-              'Search Tips',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Recent Searches',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                TextButton(
+                  onPressed: _manager.clearRecentSearches,
+                  child: const Text('Clear all'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            _buildTipTile(
-              icon: Icons.search,
-              title: 'Keywords',
-              description: 'Search for words like "grace", "faith", or "Jerusalem".',
-            ),
-            _buildTipTile(
-              icon: Icons.format_quote,
-              title: 'Exact Phrases',
-              description: 'Use quotes for exact phrases like "in the beginning".',
-            ),
-            _buildTipTile(
-              icon: Icons.menu_book,
-              title: 'Direct References',
-              description: 'Jump directly using "John 3:16", "Jn 3", "Gen 1", or "Ps 23".',
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: recents.map((query) {
+                return ActionChip(
+                  avatar: const Icon(Icons.history, size: 16),
+                  label: Text(query),
+                  onPressed: () {
+                    _textController.text = query;
+                    _textController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: query.length),
+                    );
+                  },
+                );
+              }).toList(),
             ),
           ],
         );
@@ -287,182 +320,44 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildTipTile({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildResultsView() {
-    return ValueListenableBuilder<ParsedReference?>(
-      valueListenable: _manager.referenceMatchNotifier,
-      builder: (context, refMatch, child) {
-        return ValueListenableBuilder<List<SearchResult>>(
-          valueListenable: _manager.resultsNotifier,
-          builder: (context, results, child) {
-            return ValueListenableBuilder<bool>(
-              valueListenable: _manager.isLoadingNotifier,
-              builder: (context, isLoading, child) {
-                final hasRefMatch = refMatch != null;
-                final hasResults = results.isNotEmpty;
+    return ValueListenableBuilder<List<SearchResult>>(
+      valueListenable: _manager.resultsNotifier,
+      builder: (context, results, child) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: _manager.isLoadingNotifier,
+          builder: (context, isLoading, child) {
+            if (!isLoading && results.isEmpty) {
+              return _buildNoResultsView();
+            }
 
-                if (!isLoading && !hasRefMatch && !hasResults) {
-                  return _buildNoResultsView();
+            return ListView.builder(
+              controller: _scrollController,
+              itemCount: results.isEmpty ? 0 : results.length + 1,
+              itemBuilder: (context, index) {
+                // Results count header
+                if (index == 0) {
+                  final isExact = _manager.isExactNotifier.value;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Text(
+                      '${results.length} ${results.length == 1 ? 'verse' : 'verses'} found${isExact ? ' (exact)' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  );
                 }
 
-                return ListView.builder(
-                  controller: _scrollController,
-                  itemCount: (hasRefMatch ? 1 : 0) +
-                      (hasResults ? results.length + 1 : 0),
-                  itemBuilder: (context, index) {
-                    // Item 0 is direct reference match card if available
-                    if (hasRefMatch && index == 0) {
-                      return _buildDirectReferenceCard(refMatch);
-                    }
-
-                    final resultIndex = hasRefMatch ? index - 1 : index;
-
-                    // Results count header
-                    if (resultIndex == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                          vertical: 8.0,
-                        ),
-                        child: Text(
-                          '${results.length} ${results.length == 1 ? 'verse' : 'verses'} found',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                          ),
-                        ),
-                      );
-                    }
-
-                    final item = results[resultIndex - 1];
-                    return _buildSearchResultTile(item);
-                  },
-                );
+                final item = results[index - 1];
+                return _buildSearchResultTile(item);
               },
             );
           },
-        );
-      },
-    );
-  }
-
-  Widget _buildDirectReferenceCard(ParsedReference refMatch) {
-    final bookName = bookIdToFullNameMap[refMatch.bookId] ?? '';
-    final refString = refMatch.verse != null
-        ? '$bookName ${refMatch.chapter}:${refMatch.verse}'
-        : '$bookName ${refMatch.chapter}';
-
-    return ValueListenableBuilder<String?>(
-      valueListenable: _manager.referencePreviewNotifier,
-      builder: (context, preview, child) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Card(
-            elevation: 1.0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.primary.withAlpha(60),
-              ),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12.0),
-              onTap: () => _navigateToVerse(
-                refMatch.bookId,
-                refMatch.chapter,
-                refMatch.verse,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.bookmark_outline,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Go to $refString',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              const Spacer(),
-                              const Icon(
-                                Icons.arrow_forward,
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                          if (preview != null && preview.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              preview,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: getIt.isRegistered<AppState>()
-                                    ? getIt<AppState>().textSizeNotifier.value
-                                    : getIt<UserSettings>().textSize,
-                                color: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.color
-                                    ?.withAlpha(180),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         );
       },
     );
@@ -536,6 +431,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildNoResultsView() {
+    final isExact = _manager.isExactNotifier.value;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -549,20 +445,22 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No verses found',
+              isExact ? 'No exact matches found' : 'No verses found',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Try checking your spelling, using different keywords, or selecting a broader search scope.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).textTheme.bodySmall?.color,
+            if (isExact) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Try turning off Exact match or checking your spelling.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

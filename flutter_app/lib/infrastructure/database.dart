@@ -445,9 +445,20 @@ class DatabaseHelper {
     log("Verse search table populated with ${verses.length} verses");
   }
 
-  static String _sanitizeFtsQuery(String query) {
+  static String _sanitizeFtsQuery(String query, {bool isExact = false}) {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return '';
+
+    if (isExact) {
+      var clean = trimmed;
+      if (clean.startsWith('"') && clean.endsWith('"') && clean.length >= 2) {
+        clean = clean.substring(1, clean.length - 1).trim();
+      }
+      clean = clean.replaceAll('"', '').trim();
+      clean = clean.replaceAll(RegExp(r'\s+'), ' ');
+      if (!RegExp(r'\w').hasMatch(clean)) return '';
+      return '"$clean"';
+    }
 
     final tokens = <String>[];
     final tokenRegex = RegExp(r'"([^"]+)"|(\S+)');
@@ -475,9 +486,10 @@ class DatabaseHelper {
     SearchScope scope = SearchScope.all,
     int? specificBookId,
     int? limit,
+    bool isExact = false,
   }) async {
     await ensureSearchTableExists();
-    final cleanQuery = _sanitizeFtsQuery(query);
+    final cleanQuery = _sanitizeFtsQuery(query, isExact: isExact);
     if (cleanQuery.isEmpty) return [];
 
     String scopeClause = '';

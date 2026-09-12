@@ -140,6 +140,15 @@ const bookIdToFullNameMap = {
   66: 'Revelation'
 };
 
+/// Maps book ID (1..66) to the conventional name of the book itself.
+///
+/// For book 19, this is 'Psalms' (the Book of Psalms).
+/// For individual chapter or verse references (e.g. 'Psalm 23:1'), see [bookIdToFullNameMap].
+final bookIdToBookNameMap = {
+  ...bookIdToFullNameMap,
+  19: 'Psalms',
+};
+
 const fullNameToBookIdMap = {
   'Genesis': 1,
   'Exodus': 2,

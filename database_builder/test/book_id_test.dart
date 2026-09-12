@@ -39,6 +39,13 @@ void main() {
       expect(bookIdToFullNameMap[66], equals('Revelation'));
     });
 
+    test('bookIdToBookNameMap has all 66 canonical books with Psalms for 19', () {
+      expect(bookIdToBookNameMap.length, equals(66));
+      expect(bookIdToBookNameMap[19], equals('Psalms'));
+      expect(bookIdToBookNameMap[1], equals('Genesis'));
+      expect(bookIdToBookNameMap[66], equals('Revelation'));
+    });
+
     test('fullNameToBookIdMap contains all canonical names plus Psalms alias', () {
       // 66 canonical names + 'Psalms' alias for 'Psalm'
       expect(fullNameToBookIdMap.length, equals(67));

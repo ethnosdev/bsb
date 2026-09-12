@@ -147,5 +147,21 @@ void main() {
       expect(find.byType(ChapterChooser), findsNothing);
       expect(find.text('Genesis'), findsOneWidget);
     });
+
+    testWidgets('renders Psalms and not Psalm in Old Testament list', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          ListBookChooser(onSelected: (_, _, [_]) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final otListFinder = find.byKey(const PageStorageKey('list_book_chooser_old_testament'));
+      final otScrollable = find.descendant(of: otListFinder, matching: find.byType(Scrollable));
+      await tester.scrollUntilVisible(find.text('Psalms'), 200, scrollable: otScrollable);
+
+      expect(find.text('Psalms'), findsOneWidget);
+      expect(find.text('Psalm'), findsNothing);
+    });
   });
 }

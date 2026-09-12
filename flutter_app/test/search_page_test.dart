@@ -17,6 +17,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FakeSearchDatabaseHelper implements DatabaseHelper {
   final List<SearchResult> searchResultsToReturn = [];
 
+  String? lastSearchedQuery;
+  bool? lastSearchedExact;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
@@ -26,7 +29,10 @@ class FakeSearchDatabaseHelper implements DatabaseHelper {
     SearchScope scope = SearchScope.all,
     int? specificBookId,
     int? limit,
+    bool isExact = false,
   }) async {
+    lastSearchedQuery = query;
+    lastSearchedExact = isExact;
     if (query.contains('faith')) {
       return [
         SearchResult(
@@ -134,7 +140,7 @@ void main() {
     );
   }
 
-  testWidgets('renders search input, recent searches, and tips on open', (tester) async {
+  testWidgets('renders search input and recent searches on open without hints or tips', (tester) async {
     await tester.pumpWidget(buildTestableWidget());
     await tester.pumpAndSettle();
 
@@ -142,7 +148,7 @@ void main() {
     expect(find.text('Recent Searches'), findsOneWidget);
     expect(find.text('grace'), findsOneWidget);
     expect(find.text('truth'), findsOneWidget);
-    expect(find.text('Search Tips'), findsOneWidget);
+    expect(find.text('Search Tips'), findsNothing);
   });
 
   testWidgets('tapping a recent search populates search input', (tester) async {
@@ -156,27 +162,15 @@ void main() {
     expect(find.text('grace'), findsAtLeast(1));
   });
 
-  testWidgets('typing a reference shows direct jump card with preview', (tester) async {
+  testWidgets('typing a reference does not show direct jump card', (tester) async {
     await tester.pumpWidget(buildTestableWidget());
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'John 3:16');
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    expect(find.text('Go to John 3:16'), findsOneWidget);
-    expect(
-      find.text('For God so loved the world that He gave His one and only Son.'),
-      findsOneWidget,
-    );
-
-    // Tapping the card navigates via tabManager.openTab
-    await tester.tap(find.text('Go to John 3:16'));
-    await tester.pumpAndSettle();
-
-    expect(tabManager.tabs.length, equals(1));
-    expect(tabManager.tabs.first.bookId, equals(43));
-    expect(tabManager.tabs.first.chapter, equals(3));
-    expect(tabManager.tabs.first.targetVerse, equals(16));
+    expect(find.text('Go to John 3:16'), findsNothing);
   });
 
   testWidgets('typing keywords shows search results and allows navigation', (tester) async {
@@ -223,12 +217,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('All'), findsOneWidget);
-    expect(find.text('Old Testament'), findsOneWidget);
-    expect(find.text('New Testament'), findsOneWidget);
+    expect(find.text('OT'), findsOneWidget);
+    expect(find.text('NT'), findsOneWidget);
     expect(find.text('Romans'), findsOneWidget);
 
-    await tester.tap(find.text('New Testament'));
+    await tester.tap(find.text('NT'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('scope filter chip for Psalms displays "Psalms" and not "Psalm"', (tester) async {
+    await tester.pumpWidget(buildTestableWidget(19)); // Psalms active
+    await tester.pumpAndSettle();
+
+    expect(find.text('Psalms'), findsOneWidget);
+    expect(find.text('Psalm'), findsNothing);
   });
 
   testWidgets('retains search query, results, and scroll position when re-opened (Approach A)', (tester) async {
@@ -290,5 +292,36 @@ void main() {
       (widget) => widget is Text && widget.textSpan != null && widget.style?.fontSize == 22.0,
     );
     expect(textWidgetFinder, findsAtLeast(1));
+  });
+
+  testWidgets('exact match chip toggles exact search mode', (tester) async {
+    await tester.pumpWidget(buildTestableWidget());
+    await tester.pumpAndSettle();
+
+    final exactChip = find.widgetWithText(FilterChip, 'Exact');
+    expect(exactChip, findsOneWidget);
+    expect(find.byIcon(Icons.format_quote), findsOneWidget);
+
+    // Enter query 'faith'
+    await tester.enterText(find.byType(TextField), 'faith');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 verses found'), findsOneWidget);
+    expect(fakeDbHelper.lastSearchedExact, isFalse);
+
+    // Tap Exact chip
+    await tester.tap(exactChip);
+    await tester.pumpAndSettle();
+
+    expect(fakeDbHelper.lastSearchedExact, isTrue);
+    expect(find.text('2 verses found (exact)'), findsOneWidget);
+
+    // Tap Exact chip again to disable
+    await tester.tap(exactChip);
+    await tester.pumpAndSettle();
+
+    expect(fakeDbHelper.lastSearchedExact, isFalse);
+    expect(find.text('2 verses found'), findsOneWidget);
   });
 }

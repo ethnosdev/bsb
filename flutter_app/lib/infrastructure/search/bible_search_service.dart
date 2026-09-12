@@ -21,16 +21,18 @@ class BibleSearchService {
     SearchScope scope = SearchScope.all,
     int? specificBookId,
     int? limit,
+    bool isExact = false,
   }) async {
     final rawResults = await dbHelper.searchVerses(
       query: query,
       scope: scope,
       specificBookId: specificBookId,
       limit: limit,
+      isExact: isExact,
     );
 
     return rawResults.map((result) {
-      final spans = computeMatchSpans(result.text, query);
+      final spans = computeMatchSpans(result.text, query, isExact: isExact);
       return SearchResult(
         reference: result.reference,
         text: result.text,
@@ -39,9 +41,43 @@ class BibleSearchService {
     }).toList();
   }
 
-  static List<(int, int)> computeMatchSpans(String text, String query) {
+  static List<(int, int)> computeMatchSpans(
+    String text,
+    String query, {
+    bool isExact = false,
+  }) {
     final trimmed = query.trim();
     if (trimmed.isEmpty || text.isEmpty) return const [];
+
+    if (isExact) {
+      var clean = trimmed;
+      if (clean.startsWith('"') && clean.endsWith('"') && clean.length >= 2) {
+        clean = clean.substring(1, clean.length - 1).trim();
+      }
+      clean = clean.replaceAll('"', '').trim();
+      if (clean.isEmpty) return const [];
+
+      final words = clean
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .map(RegExp.escape)
+          .join(r'\s+');
+      if (words.isEmpty) return const [];
+
+      final pattern = RegExp(r'\b' + words + r'\b', caseSensitive: false);
+      final matches = pattern
+          .allMatches(text)
+          .map((m) => (m.start, m.end))
+          .toList();
+      if (matches.isNotEmpty) {
+        return matches;
+      }
+      final fallbackPattern = RegExp(words, caseSensitive: false);
+      return fallbackPattern
+          .allMatches(text)
+          .map((m) => (m.start, m.end))
+          .toList();
+    }
 
     final tokens = <String>[];
     final tokenRegex = RegExp(r'"([^"]+)"|(\S+)');

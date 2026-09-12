@@ -67,6 +67,8 @@ void main() {
       expect(find.text('1 Corinthians'), findsOneWidget);
       expect(find.text('1 Thessalonians'), findsOneWidget);
       expect(find.text('Revelation'), findsOneWidget);
+      expect(find.text('Psalms'), findsOneWidget);
+      expect(find.text('Psalm'), findsNothing);
 
       // Should NOT find abbreviated names
       expect(find.text('Gen'), findsNothing);
