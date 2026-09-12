@@ -101,7 +101,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final titleFinder = find.text('Chapter selection');
+    final titleFinder = find.text('Book selection');
     expect(titleFinder, findsOneWidget);
     Text textWidget = tester.widget<Text>(titleFinder);
     expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(20.0)));

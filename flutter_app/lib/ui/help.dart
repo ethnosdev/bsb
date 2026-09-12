@@ -30,11 +30,13 @@ class HelpPage extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               children: [
                 _HelpCard(
-                  title: 'Chapter selection',
+                  title: 'Book selection',
                   content:
-                      'On the main screen, tap any book to select a chapter and then go to the text. '
-                      'Alternatively, swipe up on a book to go to the first chapter '
-                      'or swipe down to go to the last chapter.',
+                      'On the book selection screen, tap any book to choose a chapter '
+                      'using the keypad (single-chapter books open directly). '
+                      'Alternatively, swipe up on a book to go straight to the first chapter, '
+                      'or swipe down to go to the last chapter. '
+                      'Tap the list icon on the keypad to browse by section heading.',
                   titleStyle: titleStyle,
                   contentStyle: contentStyle,
                 ),
@@ -42,25 +44,64 @@ class HelpPage extends StatelessWidget {
                 _HelpCard(
                   title: 'Navigation',
                   content:
-                      'While in the chapter text screen, swipe to the right or left '
-                      'to go to the next or previous chapter. You can also tap book name '
-                      'on the app bar to show the chapter chooser dialog.',
+                      'While reading the biblical text, swipe left or right to move between chapters. '
+                      'Tap the active chapter in the app bar to reopen the chapter keypad. '
+                      'Drag along the verse scrubber on the right edge to jump directly to any verse, '
+                      'or pinch the screen to adjust the font size.',
+                  titleStyle: titleStyle,
+                  contentStyle: contentStyle,
+                ),
+                const SizedBox(height: 16),
+                _HelpCard(
+                  title: 'Tabs',
+                  content:
+                      'Tap the + icon in the app bar to open a chapter in a new tab. '
+                      'Tap any tab to switch to it, drag tabs to reorder them, '
+                      'or tap the close icon on the active tab to close it.',
                   titleStyle: titleStyle,
                   contentStyle: contentStyle,
                 ),
                 const SizedBox(height: 16),
                 _HelpCard(
                   title: 'Footnotes',
-                  content: 'If you see an asterisk (*) in the text, tap it to learn additional information.',
+                  content:
+                      'Tap an asterisk (*) or the preceding word in the text to view footnotes. '
+                      'Tap any cross-reference link inside a footnote to preview the passage, '
+                      'which can also be opened in a new tab.',
                   titleStyle: titleStyle,
                   contentStyle: contentStyle,
                 ),
                 const SizedBox(height: 16),
                 _HelpCard(
-                  title: 'Additional tools',
+                  title: 'Verse tools',
                   content:
-                      'Long press on the text of a verse to copy, view the '
-                      'original Hebrew/Greek, or compare with other translations.',
+                      'Long press a verse to select it. Use the bottom toolbar to highlight '
+                      'in multiple colors, attach a personal note, copy with the reference, '
+                      'or explore the original Hebrew and Greek. '
+                      'Tap the note icon in the text to view or edit an existing note.',
+                  titleStyle: titleStyle,
+                  contentStyle: contentStyle,
+                ),
+                const SizedBox(height: 16),
+                _HelpCard(
+                  title: 'Search',
+                  content:
+                      'Search for words or phrases across the entire Bible, Old Testament, '
+                      'New Testament, or the current book. '
+                      'Use the "Exact" filter to match exact phrases or words, '
+                      'and tap any result to open it in a chapter tab.',
+                  titleStyle: titleStyle,
+                  contentStyle: contentStyle,
+                ),
+                const SizedBox(height: 16),
+                _HelpCard(
+                  title: 'Hebrew and Greek',
+                  content:
+                      'Access original language study by selecting a verse and tapping the Hebrew or Greek icon. '
+                      'Tap any word in English or the original text to highlight both and view its transliteration, '
+                      'grammatical details, and full lexicon entry (Abbott-Smith or BDB). '
+                      'Tap "Occurrences" to see every verse where the word or root appears in Scripture, '
+                      'or swipe left and right to navigate between verses.',
                   titleStyle: titleStyle,
                   contentStyle: contentStyle,
                 ),

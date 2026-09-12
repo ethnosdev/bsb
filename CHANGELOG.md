@@ -14,6 +14,7 @@
 - Audio playback.
 - Book chooser list option.
 - Link to cross references on Bible Hub.
+- Distraction free mode.
 
 # 1.6.0 - 2026.09.04
 
