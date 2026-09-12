@@ -35,16 +35,10 @@ Future<void> createVerseSearchTable(DatabaseHelper dbHelper) async {
   dbHelper.beginTransaction();
   for (final entry in verses.entries) {
     final ref = entry.key;
-    final bookId = ref ~/ 1000000;
-    final chapter = (ref % 1000000) ~/ 1000;
-    final verse = ref % 1000;
     final fullText = entry.value.join(' ');
 
     dbHelper.insertVerseSearch(
       reference: ref,
-      bookId: bookId,
-      chapter: chapter,
-      verse: verse,
       text: fullText,
     );
   }

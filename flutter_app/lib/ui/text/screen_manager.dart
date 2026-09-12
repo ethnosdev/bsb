@@ -67,7 +67,7 @@ class TextScreenManager {
     final language = languageForVerse(
       bookId: reference.bookId,
       chapter: reference.chapter,
-      verse: reference.verse,
+      verse: reference.verse ?? 1,
     );
     return language;
   }

@@ -6,6 +6,7 @@ import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
@@ -670,6 +671,7 @@ class _ChapterTextState extends State<ChapterText>
 
   Future<void> _showDetailsDialog(String title, List<UsfmLine> passage) async {
     final fontSize = manager.textSize;
+    final reference = Reference.tryParse(title);
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -680,12 +682,39 @@ class _ChapterTextState extends State<ChapterText>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    if (reference != null)
+                      const SizedBox(width: 48),
+                    Expanded(
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (reference != null)
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new),
+                        tooltip: 'Open in new tab',
+                        onPressed: () {
+                          Navigator.of(context).popUntil(
+                            (route) => route is! PopupRoute,
+                          );
+                          if (getIt.isRegistered<TabManager>()) {
+                            getIt<TabManager>().openTab(
+                              reference.bookId,
+                              reference.chapter,
+                              null,
+                              reference.verse,
+                            );
+                          }
+                        },
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Flexible(
@@ -738,6 +767,10 @@ TextSpan formatFootnote({
   );
   final matches = tagOrKeywordPattern.allMatches(note);
 
+  final keywordCount = matches
+      .where((m) => m.group(1) == null && m.group(2) == null)
+      .length;
+
   for (final match in matches) {
     // Add text before the match
     if (match.start > start) {
@@ -773,7 +806,7 @@ TextSpan formatFootnote({
           ),
           recognizer: TapGestureRecognizer()
             ..onTap = () {
-              onTapKeyword(matchedText, matches.length);
+              onTapKeyword(matchedText, keywordCount);
             },
         ),
       );

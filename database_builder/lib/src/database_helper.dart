@@ -96,6 +96,8 @@ class DatabaseHelper {
     return _database.lastInsertRowId;
   }
 
+  int _interlinearTokenId = 0;
+
   void insertInterlinearVerse(
     List<InterlinearWord> words,
     int bookId,
@@ -107,7 +109,9 @@ class DatabaseHelper {
     }
     final reference = _packReference(bookId, chapter, verse);
     for (var word in words) {
+      _interlinearTokenId++;
       _insertInterlinearStmt.execute([
+        _interlinearTokenId,
         reference,
         word.language,
         word.original,
@@ -124,7 +128,7 @@ class DatabaseHelper {
     required int language,
     required int strongs,
     required String lemma,
-    required String content,
+    required List<int> content,
   }) {
     _insertLexiconStmt.execute([
       language,
@@ -135,7 +139,8 @@ class DatabaseHelper {
   }
 
   void createIndexes() {
-    print('Creating SQLite indexes for interlinear and lexicon...');
+    print('Creating SQLite indexes for bible, interlinear, and lexicon...');
+    _database.execute(Schema.createBibleIndexes);
     _database.execute(Schema.createInterlinearIndexes);
     _database.execute(Schema.createLexiconIndexes);
     print('Indexes created successfully.');
@@ -154,16 +159,10 @@ class DatabaseHelper {
 
   void insertVerseSearch({
     required int reference,
-    required int bookId,
-    required int chapter,
-    required int verse,
     required String text,
   }) {
     _insertVerseSearchStmt.execute([
       reference,
-      bookId,
-      chapter,
-      verse,
       text,
     ]);
   }

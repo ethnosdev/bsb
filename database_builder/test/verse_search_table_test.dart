@@ -34,7 +34,7 @@ void main() {
     });
 
     tearDownAll(() {
-      db.dispose();
+      db.close();
     });
 
     test('verses_search table uses FTS4', () {
@@ -49,32 +49,32 @@ void main() {
 
     test('contains all 31,086 canonical verses', () {
       final count = db.select(
-        'SELECT count(*) as c FROM verses_search;',
+        'SELECT count(*) as c FROM verses_search_docsize;',
       ).first['c'] as int;
       expect(count, equals(kTotalCanonicalVerses));
     });
 
     test('matches prefix queries ordered canonically', () {
       final results = db.select('''
-        SELECT reference, text FROM verses_search
+        SELECT docid FROM verses_search
         WHERE verses_search MATCH ?
-        ORDER BY reference ASC;
+        ORDER BY docid ASC;
       ''', ['love*']);
       expect(results.length, greaterThan(200));
       // First canonical match is in Genesis
-      final firstRef = results.first['reference'] as int;
+      final firstRef = results.first['docid'] as int;
       expect(firstRef ~/ 1000000, equals(1)); // Genesis
     });
 
     test('matches exact phrase queries', () {
       final results = db.select('''
-        SELECT reference, text FROM verses_search
+        SELECT docid FROM verses_search
         WHERE verses_search MATCH ?
-        ORDER BY reference ASC;
+        ORDER BY docid ASC;
       ''', ['"in the beginning"']);
       expect(results.length, greaterThanOrEqualTo(2));
-      expect(results.first['reference'], equals(1001001)); // Gen 1:1
-      final refs = results.map((r) => r['reference'] as int).toList();
+      expect(results.first['docid'], equals(1001001)); // Gen 1:1
+      final refs = results.map((r) => r['docid'] as int).toList();
       expect(refs, contains(43001001)); // John 1:1
     });
   });

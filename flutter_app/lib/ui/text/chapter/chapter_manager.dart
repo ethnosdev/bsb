@@ -110,9 +110,12 @@ class ChapterManager {
   }
 
   RegExp footnoteKeywords() {
-    const verseRange = '\\d+:\\d+(?:–\\d+)?';
+    const scriptureRef =
+        r'(?:\d+:\d+(?:[–\-—]\d+)?|\d+(?:[–\-—]\d+)?\b(?!:))';
+    final sortedBookNames = List<String>.from(validBookNames)
+      ..sort((a, b) => b.length.compareTo(a.length));
     final patterns = [
-      ...validBookNames.map((kw) => '$kw $verseRange'),
+      ...sortedBookNames.map((kw) => '\\b$kw $scriptureRef'),
       ...sourceTexts.keys.map((kw) => '\\b$kw\\b'),
       ...validExtraBiblicalTexts.keys,
     ].join('|');

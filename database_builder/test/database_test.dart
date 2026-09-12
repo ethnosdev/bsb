@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:database_builder/database_builder.dart';
 import 'package:scripture/scripture_core.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -618,6 +621,55 @@ void main() {
       checkIds(Schema.originalLanguageTable, Schema.olColId);
       checkIds(Schema.englishTable, Schema.engColId);
       checkIds(Schema.partOfSpeechTable, Schema.posColId);
+    });
+  });
+
+  group('Optimized Database Features', () {
+    test('bible table has idx_bible_ref index', () {
+      final indexes = db
+          .select("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'bible';")
+          .map((r) => r['name'] as String)
+          .toList();
+      expect(indexes, contains('idx_bible_ref'));
+    });
+
+    test('interlinear table is WITHOUT ROWID and indexed by reference', () {
+      final sql = db
+          .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'interlinear';")
+          .first['sql'] as String;
+      expect(sql.toUpperCase(), contains('WITHOUT ROWID'));
+      expect(sql, contains('PRIMARY KEY (reference, _id)'));
+    });
+
+    test('lexicon content decompresses via zlib to readable markdown', () {
+      final row = db.select('''
+        SELECT language, strongs, lemma, content FROM lexicon_entry
+        WHERE language = 2 AND strongs = 1 LIMIT 1;
+      ''').first;
+      final bytes = row['content'] as List<int>;
+      final text = utf8.decode(zlib.decode(bytes));
+      expect(text, contains('ἄλφα'));
+      expect(text, contains('alpha'));
+    });
+
+    test('contentless FTS4 search with bible subquery produces clean verse text', () {
+      final rows = db.select('''
+        SELECT b.reference, group_concat(b.text, ' ') as text
+        FROM bible b
+        WHERE b.reference IN (
+          SELECT docid FROM verses_search WHERE verses_search MATCH 'light' AND docid < 40000000
+        )
+          AND b.format NOT IN ('s1', 's2', 'r', 'd', 'ms', 'mr', 'b', 'qa')
+        GROUP BY b.reference
+        ORDER BY b.reference ASC
+        LIMIT 5;
+      ''');
+      expect(rows, isNotEmpty);
+      final firstRowText = rows.first['text'] as String;
+      final clean = cleanVerseText(firstRowText);
+      expect(clean, isNot(contains(r'\f')));
+      expect(clean, isNot(contains(r'\ft')));
+      expect(clean, equals('And God said, “Let there be light,” and there was light.'));
     });
   });
 }

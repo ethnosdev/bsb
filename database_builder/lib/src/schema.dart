@@ -19,13 +19,17 @@ class Schema {
   )
   ''';
 
+  static const String createBibleIndexes = '''
+  CREATE INDEX IF NOT EXISTS idx_bible_ref ON $bibleTextTable($colReference);
+  ''';
+
   static const String insertBsbLine = '''
     INSERT INTO $bibleTextTable (
       $colReference, $colText, $colFormat
     ) VALUES (?, ?, ?)
   ''';
 
-  // Verse search table (FTS4)
+  // Verse search table (Contentless FTS4)
   static const String verseSearchTable = "verses_search";
   static const String colBookId = "book_id";
   static const String colChapter = "chapter";
@@ -33,22 +37,15 @@ class Schema {
 
   static const String createVerseSearchTable = '''
   CREATE VIRTUAL TABLE IF NOT EXISTS $verseSearchTable USING fts4(
-    $colReference,
-    $colBookId,
-    $colChapter,
-    $colVerse,
     $colText,
-    notindexed=$colReference,
-    notindexed=$colBookId,
-    notindexed=$colChapter,
-    notindexed=$colVerse
+    content=""
   )
   ''';
 
   static const String insertVerseSearch = '''
     INSERT INTO $verseSearchTable (
-      $colReference, $colBookId, $colChapter, $colVerse, $colText
-    ) VALUES (?, ?, ?, ?, ?)
+      docid, $colText
+    ) VALUES (?, ?)
   ''';
 
   // Interlinear table
@@ -73,7 +70,7 @@ class Schema {
   // SQL statements
   static const String createInterlinearTable = '''
   CREATE TABLE IF NOT EXISTS $interlinearTable (
-    $ilColId INTEGER PRIMARY KEY AUTOINCREMENT,
+    $ilColId INTEGER NOT NULL,
     $ilColReference INTEGER NOT NULL,
     $ilColLanguage INTEGER NOT NULL,
     $ilColOriginal INTEGER NOT NULL,
@@ -81,22 +78,22 @@ class Schema {
     $ilColStrongsNumber INTEGER NOT NULL,
     $ilColEnglish INTEGER NOT NULL,
     $ilColPunctuation TEXT,
-    $ilColBsbSort INTEGER NOT NULL
-  )
+    $ilColBsbSort INTEGER NOT NULL,
+    PRIMARY KEY ($ilColReference, $ilColId)
+  ) WITHOUT ROWID
   ''';
 
   static const String createInterlinearIndexes = '''
-  CREATE INDEX IF NOT EXISTS idx_il_ref ON $interlinearTable($ilColReference);
   CREATE INDEX IF NOT EXISTS idx_il_strongs ON $interlinearTable($ilColLanguage, $ilColStrongsNumber);
   CREATE INDEX IF NOT EXISTS idx_il_original ON $interlinearTable($ilColOriginal);
   ''';
 
   static const String insertInterlinear = '''
     INSERT INTO $interlinearTable (
-      $ilColReference, $ilColLanguage,
+      $ilColId, $ilColReference, $ilColLanguage,
       $ilColOriginal, $ilColPartOfSpeech, $ilColStrongsNumber,
       $ilColEnglish, $ilColPunctuation, $ilColBsbSort
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   ''';
 
   // Lexicon entry table
@@ -114,7 +111,7 @@ class Schema {
     $lexColLanguage INTEGER NOT NULL,
     $lexColStrongs INTEGER NOT NULL,
     $lexColLemma TEXT NOT NULL,
-    $lexColContent TEXT NOT NULL
+    $lexColContent BLOB NOT NULL
   )
   ''';
 

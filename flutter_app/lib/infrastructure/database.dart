@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -15,7 +16,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 28;
+  static const _databaseVersion = 29;
   late Database _database;
 
   Future<void> init() async {
@@ -225,7 +226,11 @@ class DatabaseHelper {
       limit: 1,
     );
     if (results.isNotEmpty) {
-      return results.first[Schema.lexColContent] as String?;
+      final raw = results.first[Schema.lexColContent];
+      if (raw is Uint8List) {
+        return utf8.decode(zlib.decode(raw));
+      }
+      return raw as String?;
     }
     return null;
   }
@@ -257,7 +262,11 @@ class DatabaseHelper {
       limit: 1,
     );
     if (results.isNotEmpty) {
-      return results.first[Schema.lexColContent] as String?;
+      final raw = results.first[Schema.lexColContent];
+      if (raw is Uint8List) {
+        return utf8.decode(zlib.decode(raw));
+      }
+      return raw as String?;
     }
     return null;
   }
@@ -428,16 +437,10 @@ class DatabaseHelper {
     final batch = _database.batch();
     for (final entry in verses.entries) {
       final ref = entry.key;
-      final bookId = ref ~/ 1000000;
-      final chapter = (ref % 1000000) ~/ 1000;
-      final verse = ref % 1000;
       final fullText = entry.value.join(' ');
 
       batch.rawInsert(Schema.insertVerseSearch, [
         ref,
-        bookId,
-        chapter,
-        verse,
         fullText,
       ]);
     }
@@ -499,13 +502,14 @@ class DatabaseHelper {
       case SearchScope.all:
         break;
       case SearchScope.ot:
-        scopeClause = 'AND ${Schema.colBookId} <= 39';
+        scopeClause = 'AND docid < 40000000';
       case SearchScope.nt:
-        scopeClause = 'AND ${Schema.colBookId} >= 40';
+        scopeClause = 'AND docid >= 40000000';
       case SearchScope.book:
         if (specificBookId != null) {
-          scopeClause = 'AND ${Schema.colBookId} = ?';
-          args.add(specificBookId);
+          scopeClause = 'AND docid >= ? AND docid < ?';
+          args.add(specificBookId * 1000000);
+          args.add((specificBookId + 1) * 1000000);
         }
     }
 
@@ -517,18 +521,24 @@ class DatabaseHelper {
 
     try {
       final results = await _database.rawQuery('''
-        SELECT ${Schema.colReference}, ${Schema.colText}
-        FROM ${Schema.verseSearchTable}
-        WHERE ${Schema.verseSearchTable} MATCH ? $scopeClause
-        ORDER BY ${Schema.colReference} ASC
+        SELECT b.${Schema.colReference}, group_concat(b.${Schema.colText}, ' ') as text
+        FROM ${Schema.bibleTextTable} b
+        WHERE b.${Schema.colReference} IN (
+          SELECT docid FROM ${Schema.verseSearchTable}
+          WHERE ${Schema.verseSearchTable} MATCH ? $scopeClause
+        )
+          AND b.${Schema.colFormat} NOT IN ('s1', 's2', 'r', 'd', 'ms', 'mr', 'b', 'qa')
+        GROUP BY b.${Schema.colReference}
+        ORDER BY b.${Schema.colReference} ASC
         $limitClause
         ''', args);
 
       return results.map((row) {
         final refInt = row[Schema.colReference] as int;
-        final text = row[Schema.colText] as String;
+        final rawText = row['text'] as String;
+        final clean = cleanVerseText(rawText);
         final ref = Reference.fromVerseId(packedInt: refInt);
-        return SearchResult(reference: ref, text: text);
+        return SearchResult(reference: ref, text: clean);
       }).toList();
     } catch (e) {
       log('Error during search: $e');
@@ -537,17 +547,17 @@ class DatabaseHelper {
   }
 
   Future<String?> getVerseText(int reference) async {
-    await ensureSearchTableExists();
     final results = await _database.query(
-      Schema.verseSearchTable,
+      Schema.bibleTextTable,
       columns: [Schema.colText],
-      where: '${Schema.colReference} = ?',
+      where:
+          '${Schema.colReference} = ? AND ${Schema.colFormat} NOT IN (\'s1\', \'s2\', \'r\', \'d\', \'ms\', \'mr\', \'b\', \'qa\')',
       whereArgs: [reference],
-      limit: 1,
+      orderBy: '${Schema.colId} ASC',
     );
-    if (results.isNotEmpty) {
-      return results.first[Schema.colText] as String?;
-    }
-    return null;
+    if (results.isEmpty) return null;
+    final rawText = results.map((r) => r[Schema.colText] as String).join(' ');
+    final clean = cleanVerseText(rawText);
+    return clean.isEmpty ? null : clean;
   }
 }
