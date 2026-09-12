@@ -50,6 +50,11 @@ class _TextScreenState extends State<TextScreen> {
       widget.chapterChooserNotifier ?? _internalChapterNotifier;
   final _showBottomBarNotifier = ValueNotifier<bool>(false);
   late final ValueNotifier<int> _activePageIndexNotifier;
+  final _showScrubberNotifier = ValueNotifier<int>(0);
+  bool _hasHorizontalUserDrag = false;
+  double _horizontalDragStartPixels = 0.0;
+  int _horizontalDragStartPage = 0;
+  bool _swipedTowardsNextChapter = false;
   int _pageIndex = 0;
   int? _targetSectionBookId;
   int? _targetSectionChapter;
@@ -133,6 +138,7 @@ class _TextScreenState extends State<TextScreen> {
     _pageController.dispose();
     _showBottomBarNotifier.dispose();
     _activePageIndexNotifier.dispose();
+    _showScrubberNotifier.dispose();
     _internalChapterNotifier.dispose();
     _screenManager.dispose();
     super.dispose();
@@ -162,19 +168,57 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   Widget _buildChapterTextPageView() {
-    final pageView = PageView.builder(
-      controller: _pageController,
-      physics: const SnappyScrollPhysics(),
-      itemBuilder: (context, index) {
-        final pageIndex = index - _initialPageOffset;
-        final (bookId, chapter) =
-            _screenManager.bookAndChapterForPageIndex(pageIndex);
-        return ChapterText(
-          key: ValueKey('chapter_${bookId}_$chapter'),
-          bookId: bookId,
-          chapter: chapter,
-          activePageIndexListenable: _activePageIndexNotifier,
-          pageIndex: pageIndex,
+    final pageView = NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.axis == Axis.horizontal) {
+          if (notification is ScrollStartNotification) {
+            if (notification.dragDetails != null) {
+              _hasHorizontalUserDrag = true;
+              _horizontalDragStartPixels = notification.metrics.pixels;
+              _horizontalDragStartPage = _pageIndex;
+              _swipedTowardsNextChapter = false;
+            }
+          } else if (notification is ScrollUpdateNotification) {
+            if (_hasHorizontalUserDrag) {
+              final dragDelta =
+                  notification.metrics.pixels - _horizontalDragStartPixels;
+              if (dragDelta > 10.0) {
+                _swipedTowardsNextChapter = true;
+              } else if (notification.dragDetails != null &&
+                  dragDelta < -10.0) {
+                _swipedTowardsNextChapter = false;
+              }
+            }
+          } else if (notification is ScrollEndNotification) {
+            if (_hasHorizontalUserDrag) {
+              final settledBack = _pageIndex == _horizontalDragStartPage &&
+                  (notification.metrics.pixels - _horizontalDragStartPixels)
+                          .abs() <
+                      50.0;
+              if (_swipedTowardsNextChapter && settledBack) {
+                _showScrubberNotifier.value++;
+              }
+              _hasHorizontalUserDrag = false;
+              _swipedTowardsNextChapter = false;
+            }
+          }
+        }
+        return false;
+      },
+      child: PageView.builder(
+        controller: _pageController,
+        physics: const SnappyScrollPhysics(),
+        itemBuilder: (context, index) {
+          final pageIndex = index - _initialPageOffset;
+          final (bookId, chapter) =
+              _screenManager.bookAndChapterForPageIndex(pageIndex);
+          return ChapterText(
+            key: ValueKey('chapter_${bookId}_$chapter'),
+            bookId: bookId,
+            chapter: chapter,
+            activePageIndexListenable: _activePageIndexNotifier,
+            showScrubberNotifier: _showScrubberNotifier,
+            pageIndex: pageIndex,
           targetSection: _isTargetSection(bookId, chapter)
               ? _pendingSectionHeading
               : null,
@@ -223,7 +267,8 @@ class _TextScreenState extends State<TextScreen> {
           },
         );
       },
-    );
+    ),
+  );
 
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     if (appState == null) return pageView;

@@ -20,7 +20,6 @@ class VerseScrubber extends StatefulWidget {
     required this.isVisible,
     this.isActive = true,
     required this.onVerseSelected,
-    required this.onSwipeIn,
     this.onDismiss,
     this.onInteractionStart,
     this.onInteractionEnd,
@@ -37,9 +36,6 @@ class VerseScrubber extends StatefulWidget {
 
   /// Callback when a verse is selected (on tap or drag release).
   final ValueChanged<int> onVerseSelected;
-
-  /// Callback when the user swipes in from the right edge.
-  final VoidCallback onSwipeIn;
 
   /// Optional callback when the user swipes right on the bar to dismiss it.
   final VoidCallback? onDismiss;
@@ -58,7 +54,6 @@ class _VerseScrubberState extends State<VerseScrubber> {
   bool _isDragging = false;
   int _currentScrubbedVerse = 1;
   double _touchY = 0.0;
-  double? _edgeStartX;
 
   @override
   void initState() {
@@ -183,34 +178,6 @@ class _VerseScrubberState extends State<VerseScrubber> {
         return Stack(
           clipBehavior: Clip.hardEdge,
           children: [
-            // Edge swipe-in detector: active only when bar is offscreen AND page is active
-            Positioned(
-              key: const ValueKey('verse_scrubber_edge_detector_positioned'),
-              right: 0,
-              top: barTop,
-              height: calculatedBarHeight,
-              width: 28,
-              child: IgnorePointer(
-                ignoring: isActuallyVisible || !widget.isActive,
-                child: Listener(
-                  key: const ValueKey('verse_scrubber_edge_detector'),
-                  behavior: HitTestBehavior.translucent,
-                  onPointerDown: (event) {
-                    _edgeStartX = event.position.dx;
-                  },
-                  onPointerMove: (event) {
-                    if (_edgeStartX != null &&
-                        (event.position.dx - _edgeStartX!) < -8.0) {
-                      _edgeStartX = null;
-                      widget.onSwipeIn();
-                    }
-                  },
-                  onPointerUp: (_) => _edgeStartX = null,
-                  onPointerCancel: (_) => _edgeStartX = null,
-                ),
-              ),
-            ),
-
             // Vertical Scrubber Bar with stable key: always animates smoothly between onscreen and offscreen
             Positioned(
               key: const ValueKey('verse_scrubber_bar_positioned'),

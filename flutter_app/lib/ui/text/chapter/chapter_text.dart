@@ -25,6 +25,7 @@ class ChapterText extends StatefulWidget {
     this.targetSection,
     this.targetVerse,
     this.activePageIndexListenable,
+    this.showScrubberNotifier,
     this.pageIndex,
     this.onSelectionChanged,
     this.onTargetSectionScrolled,
@@ -36,6 +37,7 @@ class ChapterText extends StatefulWidget {
   final String? targetSection;
   final int? targetVerse;
   final ValueListenable<int>? activePageIndexListenable;
+  final ValueListenable<int>? showScrubberNotifier;
   final int? pageIndex;
   final void Function(ScriptureSelectionController controller)?
   onSelectionChanged;
@@ -79,6 +81,12 @@ class _ChapterTextState extends State<ChapterText>
     }
   }
 
+  void _handleShowScrubberRequest() {
+    if (_isActive) {
+      _showVerseScrubberWithTimeout();
+    }
+  }
+
   void _showVerseScrubberWithTimeout({
     Duration duration = const Duration(seconds: 3),
   }) {
@@ -115,6 +123,7 @@ class _ChapterTextState extends State<ChapterText>
   void initState() {
     super.initState();
     widget.activePageIndexListenable?.addListener(_handleActivePageChange);
+    widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
     manager.textParagraphNotifier.addListener(_handleTextParagraphsLoaded);
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     _selectionController.addListener(_handleSelectionChange);
@@ -147,6 +156,10 @@ class _ChapterTextState extends State<ChapterText>
       oldWidget.activePageIndexListenable?.removeListener(_handleActivePageChange);
       widget.activePageIndexListenable?.addListener(_handleActivePageChange);
     }
+    if (widget.showScrubberNotifier != oldWidget.showScrubberNotifier) {
+      oldWidget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
+      widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
+    }
     if (widget.targetSection != null &&
         (widget.targetSection != oldWidget.targetSection ||
             widget.targetSection != _lastScrolledSection)) {
@@ -162,6 +175,7 @@ class _ChapterTextState extends State<ChapterText>
   @override
   void dispose() {
     _verseScrubberTimer?.cancel();
+    widget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
     widget.activePageIndexListenable?.removeListener(_handleActivePageChange);
     manager.textParagraphNotifier.removeListener(_handleTextParagraphsLoaded);
     _selectionController.removeListener(_handleSelectionChange);
@@ -512,28 +526,25 @@ class _ChapterTextState extends State<ChapterText>
                                 final isCurrentActivePage =
                                     activeIndex == widget.pageIndex;
                                 return VerseScrubber(
-                                  verses: sortedVerses,
-                                  isActive: isCurrentActivePage,
-                                  isVisible: _isVerseScrubberVisible,
-                                  onVerseSelected: (verse) {
-                                    _scrollFromScrubber(verse);
-                                    _showVerseScrubberWithTimeout();
-                                  },
-                                  onSwipeIn: () {
-                                    _showVerseScrubberWithTimeout();
-                                  },
-                                  onDismiss: () {
-                                    _hideVerseScrubber();
-                                  },
-                                  onInteractionStart: () {
-                                    _isScrubbing = true;
-                                    _verseScrubberTimer?.cancel();
-                                  },
-                                  onInteractionEnd: () {
-                                    _isScrubbing = false;
-                                    _showVerseScrubberWithTimeout();
-                                  },
-                                );
+                                   verses: sortedVerses,
+                                   isActive: isCurrentActivePage,
+                                   isVisible: _isVerseScrubberVisible,
+                                   onVerseSelected: (verse) {
+                                     _scrollFromScrubber(verse);
+                                     _showVerseScrubberWithTimeout();
+                                   },
+                                   onDismiss: () {
+                                     _hideVerseScrubber();
+                                   },
+                                   onInteractionStart: () {
+                                     _isScrubbing = true;
+                                     _verseScrubberTimer?.cancel();
+                                   },
+                                   onInteractionEnd: () {
+                                     _isScrubbing = false;
+                                     _showVerseScrubberWithTimeout();
+                                   },
+                                 );
                               },
                             )
                           else
@@ -542,9 +553,6 @@ class _ChapterTextState extends State<ChapterText>
                               isVisible: _isVerseScrubberVisible,
                               onVerseSelected: (verse) {
                                 _scrollFromScrubber(verse);
-                                _showVerseScrubberWithTimeout();
-                              },
-                              onSwipeIn: () {
                                 _showVerseScrubberWithTimeout();
                               },
                               onDismiss: () {

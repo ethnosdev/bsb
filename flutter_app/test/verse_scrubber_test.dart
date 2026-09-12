@@ -1,11 +1,14 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
+import 'package:bsb/ui/text/text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
@@ -69,7 +72,6 @@ void main() {
               verses: List.generate(9, (i) => i + 1),
               isVisible: true,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -90,7 +92,6 @@ void main() {
               verses: verses,
               isVisible: true,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -112,7 +113,6 @@ void main() {
               verses: verses,
               isVisible: true,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -138,7 +138,6 @@ void main() {
               verses: verses,
               isVisible: true,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -152,9 +151,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('edge detector appears when isVisible is false and responds to swipe in', (tester) async {
-      bool swipedIn = false;
-
+    testWidgets('edge detector does not exist and scrubber animates out when isVisible is false', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -162,22 +159,13 @@ void main() {
               verses: List.generate(15, (i) => i + 1),
               isVisible: false,
               onVerseSelected: (_) {},
-              onSwipeIn: () {
-                swipedIn = true;
-              },
             ),
           ),
         ),
       );
 
-      final edgeDetector = find.byKey(const ValueKey('verse_scrubber_edge_detector'));
-      expect(edgeDetector, findsOneWidget);
-
-      // Drag to the left from the right edge
-      await tester.drag(edgeDetector, const Offset(-10, 0));
-      await tester.pump();
-
-      expect(swipedIn, isTrue);
+      expect(find.byKey(const ValueKey('verse_scrubber_edge_detector')), findsNothing);
+      expect(find.byKey(const ValueKey('verse_scrubber_animated_slide')), findsOneWidget);
     });
 
     testWidgets('swiping right on the scrubber bar triggers onDismiss', (tester) async {
@@ -190,7 +178,6 @@ void main() {
               verses: List.generate(15, (i) => i + 1),
               isVisible: true,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
               onDismiss: () {
                 dismissed = true;
               },
@@ -218,7 +205,6 @@ void main() {
               onVerseSelected: (v) {
                 selectedVerse = v;
               },
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -244,7 +230,6 @@ void main() {
               onVerseSelected: (v) {
                 selectedVerse = v;
               },
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -351,15 +336,17 @@ void main() {
       expect(hiddenScrubber.isVisible, isFalse);
     });
 
-    testWidgets('swiping in from right edge makes scrubber reappear', (tester) async {
+    testWidgets('showScrubberNotifier makes scrubber reappear on active page', (tester) async {
       getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+      final showScrubberNotifier = ValueNotifier<int>(0);
 
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: ChapterText(
               bookId: 1,
               chapter: 1,
+              showScrubberNotifier: showScrubberNotifier,
             ),
           ),
         ),
@@ -373,16 +360,17 @@ void main() {
       final scrubberFinder = find.byType(VerseScrubber);
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
-      // Find the edge detector
-      final edgeDetector = find.byKey(const ValueKey('verse_scrubber_edge_detector'));
-      expect(edgeDetector, findsOneWidget);
-
-      // Swipe left from right edge
-      await tester.drag(edgeDetector, const Offset(-15, 0));
+      // Trigger the notifier (simulating swipe towards next chapter and sliding back into place)
+      showScrubberNotifier.value++;
       await tester.pump();
 
       // It becomes visible again
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+
+      // Auto-hides again after 3 seconds
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
     });
 
     testWidgets('scrolling text directly immediately hides the scrubber', (tester) async {
@@ -424,7 +412,6 @@ void main() {
                 verses: verses,
                 isVisible: true,
                 onVerseSelected: (_) {},
-                onSwipeIn: () {},
               ),
             ),
           ),
@@ -515,7 +502,6 @@ void main() {
               verses: verses,
               isVisible: true,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -535,7 +521,6 @@ void main() {
               verses: verses,
               isVisible: false,
               onVerseSelected: (_) {},
-              onSwipeIn: () {},
             ),
           ),
         ),
@@ -551,6 +536,118 @@ void main() {
       // Complete animation
       await tester.pump(const Duration(milliseconds: 150));
       await tester.pumpAndSettle();
+    });
+  });
+
+  group('TextScreen chapter swipe and slide-back verse scrubber tests', () {
+    late TabManager tabManager;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final userSettings = UserSettings();
+      await userSettings.init();
+      getIt.registerSingleton<UserSettings>(userSettings);
+
+      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+
+      final annotationDb = FakeAnnotationDbHelper();
+      getIt.registerSingleton<AnnotationDatabaseHelper>(annotationDb);
+      getIt.registerSingleton<AnnotationService>(
+        AnnotationService(dbHelper: annotationDb),
+      );
+
+      tabManager = TabManager();
+      await tabManager.init();
+      getIt.registerSingleton<TabManager>(tabManager);
+
+      getIt.registerSingleton<AppState>(AppState());
+    });
+
+    tearDown(() {
+      getIt.reset();
+    });
+
+    testWidgets(
+        'starting swipe towards next chapter and letting chapter slide back shows scrubber again',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TextScreen(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      VerseScrubber getActiveScrubber() {
+        return tester
+            .widgetList<VerseScrubber>(find.byType(VerseScrubber))
+            .firstWhere((s) => s.isActive);
+      }
+
+      expect(getActiveScrubber().isVisible, isTrue);
+
+      // Auto-hides after 3 seconds
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(getActiveScrubber().isVisible, isFalse);
+
+      // Start swiping towards next chapter (finger drags left) by 50px and release
+      final gesture = await tester.startGesture(const Offset(300, 300));
+      await gesture.moveBy(const Offset(-25, 0));
+      await tester.pump();
+      await gesture.moveBy(const Offset(-25, 0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // Scrubber should be visible again after sliding back into place
+      expect(getActiveScrubber().isVisible, isTrue);
+
+      // And auto-hides after 3s
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(getActiveScrubber().isVisible, isFalse);
+    });
+
+    testWidgets(
+        'swiping towards previous chapter and sliding back does not show scrubber',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TextScreen(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      VerseScrubber getActiveScrubber() {
+        return tester
+            .widgetList<VerseScrubber>(find.byType(VerseScrubber))
+            .firstWhere((s) => s.isActive);
+      }
+
+      // Auto-hides after 3 seconds
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(getActiveScrubber().isVisible, isFalse);
+
+      // Swipe towards previous chapter (finger drags right) by 40px and release
+      final gesture = await tester.startGesture(const Offset(300, 300));
+      await gesture.moveBy(const Offset(40, 0));
+      await tester.pump();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // Scrubber should NOT be visible
+      expect(getActiveScrubber().isVisible, isFalse);
     });
   });
 }
