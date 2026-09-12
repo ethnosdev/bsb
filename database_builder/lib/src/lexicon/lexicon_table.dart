@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:database_builder/src/database_helper.dart';
 import 'abbott_smith_parser.dart';
 import 'bdb_parser.dart';
@@ -19,12 +16,11 @@ Future<void> createLexiconTable(DatabaseHelper dbHelper) async {
   int count = 0;
 
   for (final record in greekRecords) {
-    final compressed = zlib.encode(utf8.encode(record.content));
     dbHelper.insertLexiconEntry(
       language: record.language,
       strongs: record.strongs,
       lemma: record.lemma,
-      content: compressed,
+      content: record.content,
     );
     count++;
     if (count % 5000 == 0) {
@@ -33,12 +29,11 @@ Future<void> createLexiconTable(DatabaseHelper dbHelper) async {
   }
 
   for (final record in otRecords) {
-    final compressed = zlib.encode(utf8.encode(record.content));
     dbHelper.insertLexiconEntry(
       language: record.language,
       strongs: record.strongs,
       lemma: record.lemma,
-      content: compressed,
+      content: record.content,
     );
     count++;
     if (count % 5000 == 0) {

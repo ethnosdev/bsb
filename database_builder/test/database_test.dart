@@ -633,21 +633,20 @@ void main() {
       expect(indexes, contains('idx_bible_ref'));
     });
 
-    test('interlinear table is WITHOUT ROWID and indexed by reference', () {
-      final sql = db
-          .select("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'interlinear';")
-          .first['sql'] as String;
-      expect(sql.toUpperCase(), contains('WITHOUT ROWID'));
-      expect(sql, contains('PRIMARY KEY (reference, _id)'));
+    test('interlinear table has reference, strongs, and original indexes', () {
+      final indexes = db
+          .select("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'interlinear';")
+          .map((r) => r['name'] as String)
+          .toList();
+      expect(indexes, containsAll(['idx_il_ref', 'idx_il_strongs', 'idx_il_original']));
     });
 
-    test('lexicon content decompresses via zlib to readable markdown', () {
+    test('lexicon content is readable markdown text', () {
       final row = db.select('''
         SELECT language, strongs, lemma, content FROM lexicon_entry
         WHERE language = 2 AND strongs = 1 LIMIT 1;
       ''').first;
-      final bytes = row['content'] as List<int>;
-      final text = utf8.decode(zlib.decode(bytes));
+      final text = row['content'] as String;
       expect(text, contains('ἄλφα'));
       expect(text, contains('alpha'));
     });

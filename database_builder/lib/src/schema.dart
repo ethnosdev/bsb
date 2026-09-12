@@ -70,7 +70,7 @@ class Schema {
   // SQL statements
   static const String createInterlinearTable = '''
   CREATE TABLE IF NOT EXISTS $interlinearTable (
-    $ilColId INTEGER NOT NULL,
+    $ilColId INTEGER PRIMARY KEY AUTOINCREMENT,
     $ilColReference INTEGER NOT NULL,
     $ilColLanguage INTEGER NOT NULL,
     $ilColOriginal INTEGER NOT NULL,
@@ -78,22 +78,22 @@ class Schema {
     $ilColStrongsNumber INTEGER NOT NULL,
     $ilColEnglish INTEGER NOT NULL,
     $ilColPunctuation TEXT,
-    $ilColBsbSort INTEGER NOT NULL,
-    PRIMARY KEY ($ilColReference, $ilColId)
-  ) WITHOUT ROWID
+    $ilColBsbSort INTEGER NOT NULL
+  )
   ''';
 
   static const String createInterlinearIndexes = '''
+  CREATE INDEX IF NOT EXISTS idx_il_ref ON $interlinearTable($ilColReference);
   CREATE INDEX IF NOT EXISTS idx_il_strongs ON $interlinearTable($ilColLanguage, $ilColStrongsNumber);
   CREATE INDEX IF NOT EXISTS idx_il_original ON $interlinearTable($ilColOriginal);
   ''';
 
   static const String insertInterlinear = '''
     INSERT INTO $interlinearTable (
-      $ilColId, $ilColReference, $ilColLanguage,
+      $ilColReference, $ilColLanguage,
       $ilColOriginal, $ilColPartOfSpeech, $ilColStrongsNumber,
       $ilColEnglish, $ilColPunctuation, $ilColBsbSort
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   ''';
 
   // Lexicon entry table
@@ -111,7 +111,7 @@ class Schema {
     $lexColLanguage INTEGER NOT NULL,
     $lexColStrongs INTEGER NOT NULL,
     $lexColLemma TEXT NOT NULL,
-    $lexColContent BLOB NOT NULL
+    $lexColContent TEXT NOT NULL
   )
   ''';
 

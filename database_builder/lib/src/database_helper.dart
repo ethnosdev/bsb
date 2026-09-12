@@ -96,8 +96,6 @@ class DatabaseHelper {
     return _database.lastInsertRowId;
   }
 
-  int _interlinearTokenId = 0;
-
   void insertInterlinearVerse(
     List<InterlinearWord> words,
     int bookId,
@@ -109,9 +107,7 @@ class DatabaseHelper {
     }
     final reference = _packReference(bookId, chapter, verse);
     for (var word in words) {
-      _interlinearTokenId++;
       _insertInterlinearStmt.execute([
-        _interlinearTokenId,
         reference,
         word.language,
         word.original,
@@ -128,7 +124,7 @@ class DatabaseHelper {
     required int language,
     required int strongs,
     required String lemma,
-    required List<int> content,
+    required String content,
   }) {
     _insertLexiconStmt.execute([
       language,
