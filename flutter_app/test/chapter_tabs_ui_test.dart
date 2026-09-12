@@ -114,6 +114,30 @@ void main() {
       await tester.tap(find.byType(CompositeChapterChip));
       expect(tapped, isTrue);
     });
+
+    testWidgets('has the same height (36.0) as normal ChapterChip', (tester) async {
+      final tab = BibleTab(bookId: 45, chapter: 8);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                ChapterChip(tab: tab, isActive: true, onTap: () {}),
+                CompositeChapterChip(activeTab: tab, otherTabsCount: 3, onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final chipSize = tester.getSize(find.byType(ChapterChip));
+      final compositeSize = tester.getSize(find.byType(CompositeChapterChip));
+
+      expect(chipSize.height, equals(36.0));
+      expect(compositeSize.height, equals(36.0));
+      expect(compositeSize.height, equals(chipSize.height));
+    });
   });
 
   group('ChapterTabsBar', () {
@@ -169,6 +193,7 @@ void main() {
       expect(find.byType(CompositeChapterChip), findsOneWidget);
       expect(find.text('JHN 3'), findsOneWidget);
       expect(find.text('+3'), findsOneWidget);
+      expect(tester.getSize(find.byType(CompositeChapterChip)).height, equals(36.0));
     });
   });
 

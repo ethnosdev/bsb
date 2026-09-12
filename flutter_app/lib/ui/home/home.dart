@@ -108,6 +108,7 @@ class _HomePageState extends State<HomePage> {
           child: Scaffold(
             drawer: const AppDrawer(),
             appBar: AppBar(
+              titleSpacing: 0,
               title: !hasTabs
                   ? const Text('Berean Standard Bible')
                   : ChapterTabsBar(

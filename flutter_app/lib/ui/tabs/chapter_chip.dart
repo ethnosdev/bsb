@@ -28,51 +28,53 @@ class ChapterChip extends StatelessWidget {
         ? colorScheme.onPrimaryContainer
         : colorScheme.onSurfaceVariant;
 
-    return Material(
-      color: backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18.0),
-        side: isActive
-            ? BorderSide(color: colorScheme.primary, width: 1.2)
-            : BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 10.0,
-            right: isActive && onClose != null ? 4.0 : 10.0,
-            top: 4.0,
-            bottom: 4.0,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                tab.label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: foregroundColor,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              if (isActive && onClose != null) ...[
-                const SizedBox(width: 4),
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onClose,
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: foregroundColor,
-                    ),
+    return SizedBox(
+      height: 36.0,
+      child: Material(
+        color: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.0),
+          side: isActive
+              ? BorderSide(color: colorScheme.primary, width: 1.2)
+              : BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 10.0,
+              right: isActive && onClose != null ? 4.0 : 10.0,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  tab.label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: foregroundColor,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                    letterSpacing: 0.5,
                   ),
                 ),
+                if (isActive && onClose != null) ...[
+                  const SizedBox(width: 4),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onClose,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: foregroundColor,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

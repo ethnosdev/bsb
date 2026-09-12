@@ -104,10 +104,16 @@ class ChapterTabsBar extends StatelessWidget {
         }
 
         // Overflow: show composite chip
-        return CompositeChapterChip(
-          activeTab: activeTab,
-          otherTabsCount: tabs.length - 1,
-          onTap: () => ChapterTabsSheet.show(context, tabManager),
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3.0),
+            child: CompositeChapterChip(
+              activeTab: activeTab,
+              otherTabsCount: tabs.length - 1,
+              onTap: () => ChapterTabsSheet.show(context, tabManager),
+            ),
+          ),
         );
       },
     );

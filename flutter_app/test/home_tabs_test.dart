@@ -187,4 +187,16 @@ void main() {
     expect(find.text('Berean Standard Bible'), findsOneWidget);
     expect(find.byType(BookChooser), findsOneWidget);
   });
+
+  testWidgets('appBar uses titleSpacing: 0 to reduce padding for chapter chips', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pump();
+
+    final appBar = tester.widget<AppBar>(find.byType(AppBar));
+    expect(appBar.titleSpacing, equals(0));
+  });
 }
