@@ -77,45 +77,48 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
           },
         ),
       ),
-      body: ValueListenableBuilder<int?>(
-        valueListenable: manager.verseCountNotifier,
-        builder: (context, verseCount, child) {
-          if (verseCount == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final pageView = PageView.builder(
-            controller: _pageController,
-            physics: const SnappyScrollPhysics(),
-            itemCount: verseCount,
-            itemBuilder: (context, index) {
-              return _VersePageView(
-                bookId: widget.bookId,
-                chapter: widget.chapter,
-                verse: index + 1,
-                language: widget.language,
-              );
-            },
-          );
+      body: SafeArea(
+        top: false,
+        child: ValueListenableBuilder<int?>(
+          valueListenable: manager.verseCountNotifier,
+          builder: (context, verseCount, child) {
+            if (verseCount == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final pageView = PageView.builder(
+              controller: _pageController,
+              physics: const SnappyScrollPhysics(),
+              itemCount: verseCount,
+              itemBuilder: (context, index) {
+                return _VersePageView(
+                  bookId: widget.bookId,
+                  chapter: widget.chapter,
+                  verse: index + 1,
+                  language: widget.language,
+                );
+              },
+            );
 
-          final appState =
-              getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-          if (appState == null) return pageView;
+            final appState =
+                getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+            if (appState == null) return pageView;
 
-          return ValueListenableBuilder<double>(
-            valueListenable: appState.textSizeNotifier,
-            builder: (context, currentSize, _) {
-              return ZoomWrapper(
-                initialScale: currentSize,
-                minScale: FontScale.minBaseSize,
-                maxScale: FontScale.maxBaseSize,
-                onScaleChanged: (newScale) {
-                  appState.setTextSize(newScale);
-                },
-                builder: (context, scale) => pageView,
-              );
-            },
-          );
-        },
+            return ValueListenableBuilder<double>(
+              valueListenable: appState.textSizeNotifier,
+              builder: (context, currentSize, _) {
+                return ZoomWrapper(
+                  initialScale: currentSize,
+                  minScale: FontScale.minBaseSize,
+                  maxScale: FontScale.maxBaseSize,
+                  onScaleChanged: (newScale) {
+                    appState.setTextSize(newScale);
+                  },
+                  builder: (context, scale) => pageView,
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

@@ -92,8 +92,10 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
             ),
         ],
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: ValueListenableBuilder<({int exact, int strongs})>(
@@ -243,6 +245,7 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

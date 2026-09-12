@@ -147,21 +147,24 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
-      body: ValueListenableBuilder<double>(
-        valueListenable: getIt.isRegistered<AppState>()
-            ? getIt<AppState>().textSizeNotifier
-            : ValueNotifier<double>(getIt<UserSettings>().textSize),
-        builder: (context, currentTextSize, child) {
-          return ValueListenableBuilder<bool>(
-            valueListenable: _hasTextNotifier,
-            builder: (context, hasText, child) {
-              if (!hasText) {
-                return _buildEmptyQueryView();
-              }
-              return _buildResultsView();
-            },
-          );
-        },
+      body: SafeArea(
+        top: false,
+        child: ValueListenableBuilder<double>(
+          valueListenable: getIt.isRegistered<AppState>()
+              ? getIt<AppState>().textSizeNotifier
+              : ValueNotifier<double>(getIt<UserSettings>().textSize),
+          builder: (context, currentTextSize, child) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: _hasTextNotifier,
+              builder: (context, hasText, child) {
+                if (!hasText) {
+                  return _buildEmptyQueryView();
+                }
+                return _buildResultsView();
+              },
+            );
+          },
+        ),
       ),
     );
   }

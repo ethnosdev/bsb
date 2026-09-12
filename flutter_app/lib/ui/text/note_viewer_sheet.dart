@@ -99,14 +99,16 @@ class _NoteViewerSheetState extends State<NoteViewerSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: bottomInset + 16,
-      ),
-      child: Column(
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: bottomInset + 16,
+        ),
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -252,6 +254,7 @@ class _NoteViewerSheetState extends State<NoteViewerSheet> {
           ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

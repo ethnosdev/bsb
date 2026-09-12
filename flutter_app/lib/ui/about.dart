@@ -32,9 +32,11 @@ class _AboutPageState extends State<AboutPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('About')),
-      body: ValueListenableBuilder<double>(
-        valueListenable: textSizeNotifier,
-        builder: (context, fontSize, _) {
+      body: SafeArea(
+        top: false,
+        child: ValueListenableBuilder<double>(
+          valueListenable: textSizeNotifier,
+          builder: (context, fontSize, _) {
           final paragraphSpacing = FontScale.infoSpacing(fontSize);
           final titleStyle = TextStyle(
             fontSize: FontScale.infoTitle(fontSize),
@@ -225,8 +227,9 @@ class _AboutPageState extends State<AboutPage> {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Future<void> _lookupVersionNumber() async {
     final packageInfo = await PackageInfo.fromPlatform();

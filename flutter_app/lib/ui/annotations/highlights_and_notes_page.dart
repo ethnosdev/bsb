@@ -483,15 +483,18 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildHighlightsTab(),
-                _buildNotesTab(),
-              ],
-            ),
+      body: SafeArea(
+        top: false,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildHighlightsTab(),
+                  _buildNotesTab(),
+                ],
+              ),
+      ),
     );
   }
 

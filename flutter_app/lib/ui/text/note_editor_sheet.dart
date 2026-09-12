@@ -69,114 +69,117 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: bottomInset + 16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: bottomInset + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Title row
-          Row(
-            children: [
-              Icon(Icons.sticky_note_2_outlined, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(
+            const SizedBox(height: 12),
+            // Title row
+            Row(
+              children: [
+                Icon(Icons.sticky_note_2_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (widget.isExisting && widget.onDelete != null)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Delete Note',
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      widget.onDelete?.call();
+                    },
+                  ),
+              ],
+            ),
+            if (widget.passageText != null && widget.passageText!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: Text(
-                  widget.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  widget.passageText!,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
-              if (widget.isExisting && widget.onDelete != null)
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete Note',
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    widget.onDelete?.call();
-                  },
-                ),
             ],
-          ),
-          if (widget.passageText != null && widget.passageText!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                widget.passageText!,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 12),
+            // Note input field
+            TextField(
+              controller: _textController,
+              autofocus: true,
+              maxLines: 6,
+              minLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Type your note here...',
+                filled: true,
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            // Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () {
+                    final text = _textController.text;
+                    Navigator.of(context).pop();
+                    widget.onSave(text);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: 12),
-          // Note input field
-          TextField(
-            controller: _textController,
-            autofocus: true,
-            maxLines: 6,
-            minLines: 3,
-            decoration: InputDecoration(
-              hintText: 'Type your note here...',
-              filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Action buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: () {
-                  final text = _textController.text;
-                  Navigator.of(context).pop();
-                  widget.onSave(text);
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

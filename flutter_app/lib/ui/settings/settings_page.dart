@@ -20,174 +20,177 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
-      body: ListenableBuilder(
-        listenable: manager,
-        builder: (context, widget) {
-          return ListView(
-            children: [
-              ListTile(
-                title: const Text('Light-Dark Theme'),
-                subtitle: Text(
-                  manager.themeMode == ThemeMode.light
-                      ? 'Light'
-                      : manager.themeMode == ThemeMode.dark
-                      ? 'Dark'
-                      : 'Match device settings',
-                ),
-                trailing: Icon(
-                  manager.themeMode == ThemeMode.light
-                      ? Icons.light_mode
-                      : manager.themeMode == ThemeMode.dark
-                      ? Icons.dark_mode
-                      : Icons.smartphone,
-                ),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      content: SegmentedButton<ThemeMode>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment<ThemeMode>(
-                            value: ThemeMode.light,
-                            icon: Icon(Icons.light_mode),
-                          ),
-                          ButtonSegment<ThemeMode>(
-                            value: ThemeMode.system,
-                            icon: Icon(Icons.smartphone),
-                          ),
-                          ButtonSegment<ThemeMode>(
-                            value: ThemeMode.dark,
-                            icon: Icon(Icons.dark_mode),
-                          ),
-                        ],
-                        selected: {manager.themeMode},
-                        onSelectionChanged: (Set<ThemeMode> selection) {
-                          manager.setThemeMode(selection.first);
-                          Navigator.of(context).pop();
-                        },
+      body: SafeArea(
+        top: false,
+        child: ListenableBuilder(
+          listenable: manager,
+          builder: (context, widget) {
+            return ListView(
+              children: [
+                ListTile(
+                  title: const Text('Light-Dark Theme'),
+                  subtitle: Text(
+                    manager.themeMode == ThemeMode.light
+                        ? 'Light'
+                        : manager.themeMode == ThemeMode.dark
+                        ? 'Dark'
+                        : 'Match device settings',
+                  ),
+                  trailing: Icon(
+                    manager.themeMode == ThemeMode.light
+                        ? Icons.light_mode
+                        : manager.themeMode == ThemeMode.dark
+                        ? Icons.dark_mode
+                        : Icons.smartphone,
+                  ),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        content: SegmentedButton<ThemeMode>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.light,
+                              icon: Icon(Icons.light_mode),
+                            ),
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.system,
+                              icon: Icon(Icons.smartphone),
+                            ),
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.dark,
+                              icon: Icon(Icons.dark_mode),
+                            ),
+                          ],
+                          selected: {manager.themeMode},
+                          onSelectionChanged: (Set<ThemeMode> selection) {
+                            manager.setThemeMode(selection.first);
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                title: const Text('Text Size'),
-                trailing: Text(
-                  '${manager.textSize}',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                    );
+                  },
                 ),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      content: SizedBox(
-                        height: 150,
-                        child: StatefulBuilder(
-                          builder: (context, setState) => Column(
-                            children: [
-                              const Spacer(),
-                              Text(
-                                'Text Size',
-                                style: TextStyle(fontSize: manager.textSize),
-                              ),
-                              const Spacer(),
-                              Slider(
-                                value: manager.textSize,
-                                min: FontScale.minBaseSize,
-                                max: FontScale.maxBaseSize,
-                                divisions:
-                                    (FontScale.maxBaseSize -
-                                            FontScale.minBaseSize)
-                                        .toInt(),
-                                label: manager.textSize.toStringAsFixed(1),
-                                onChanged: (value) {
-                                  setState(() {
-                                    manager.setTextSize(value);
-                                  });
-                                },
-                              ),
-                            ],
+                ListTile(
+                  title: const Text('Text Size'),
+                  trailing: Text(
+                    '${manager.textSize}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        content: SizedBox(
+                          height: 150,
+                          child: StatefulBuilder(
+                            builder: (context, setState) => Column(
+                              children: [
+                                const Spacer(),
+                                Text(
+                                  'Text Size',
+                                  style: TextStyle(fontSize: manager.textSize),
+                                ),
+                                const Spacer(),
+                                Slider(
+                                  value: manager.textSize,
+                                  min: FontScale.minBaseSize,
+                                  max: FontScale.maxBaseSize,
+                                  divisions:
+                                      (FontScale.maxBaseSize -
+                                              FontScale.minBaseSize)
+                                          .toInt(),
+                                  label: manager.textSize.toStringAsFixed(1),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      manager.setTextSize(value);
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                title: const Text('Book Chooser Layout'),
-                subtitle: Text(
-                  manager.bookChooserStyle == BookChooserStyle.list
-                      ? 'List'
-                      : 'Grid',
+                    );
+                  },
                 ),
-                trailing: Icon(
-                  manager.bookChooserStyle == BookChooserStyle.list
-                      ? Icons.view_list
-                      : Icons.grid_view,
-                ),
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Book Chooser Layout'),
-                      content: SegmentedButton<BookChooserStyle>(
-                        showSelectedIcon: false,
-                        segments: const [
-                          ButtonSegment<BookChooserStyle>(
-                            value: BookChooserStyle.grid,
-                            label: Text('Grid'),
-                            icon: Icon(Icons.grid_view),
-                          ),
-                          ButtonSegment<BookChooserStyle>(
-                            value: BookChooserStyle.list,
-                            label: Text('List'),
-                            icon: Icon(Icons.view_list),
-                          ),
-                        ],
-                        selected: {manager.bookChooserStyle},
-                        onSelectionChanged: (Set<BookChooserStyle> selection) {
-                          manager.setBookChooserStyle(selection.first);
-                          Navigator.of(context).pop();
-                        },
+                ListTile(
+                  title: const Text('Book Chooser Layout'),
+                  subtitle: Text(
+                    manager.bookChooserStyle == BookChooserStyle.list
+                        ? 'List'
+                        : 'Grid',
+                  ),
+                  trailing: Icon(
+                    manager.bookChooserStyle == BookChooserStyle.list
+                        ? Icons.view_list
+                        : Icons.grid_view,
+                  ),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Book Chooser Layout'),
+                        content: SegmentedButton<BookChooserStyle>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment<BookChooserStyle>(
+                              value: BookChooserStyle.grid,
+                              label: Text('Grid'),
+                              icon: Icon(Icons.grid_view),
+                            ),
+                            ButtonSegment<BookChooserStyle>(
+                              value: BookChooserStyle.list,
+                              label: Text('List'),
+                              icon: Icon(Icons.view_list),
+                            ),
+                          ],
+                          selected: {manager.bookChooserStyle},
+                          onSelectionChanged: (Set<BookChooserStyle> selection) {
+                            manager.setBookChooserStyle(selection.first);
+                            Navigator.of(context).pop();
+                          },
+                        ),
                       ),
+                    );
+                  },
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text(
+                    'Backup & Annotations',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                },
-              ),
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: Text(
-                  'Backup & Annotations',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.backup_outlined),
-                title: const Text('Export Annotations'),
-                subtitle: const Text('Backup highlights and notes to a file'),
-                onTap: () {
-                  _showExportChoiceDialog(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.restore_outlined),
-                title: const Text('Import Annotations'),
-                subtitle: const Text(
-                  'Restore highlights and notes from a backup file',
+                ListTile(
+                  leading: const Icon(Icons.backup_outlined),
+                  title: const Text('Export Annotations'),
+                  subtitle: const Text('Backup highlights and notes to a file'),
+                  onTap: () {
+                    _showExportChoiceDialog(context);
+                  },
                 ),
-                onTap: () {
-                  AnnotationFileHandler().importJson(context);
-                },
-              ),
-            ],
-          );
-        },
+                ListTile(
+                  leading: const Icon(Icons.restore_outlined),
+                  title: const Text('Import Annotations'),
+                  subtitle: const Text(
+                    'Restore highlights and notes from a backup file',
+                  ),
+                  onTap: () {
+                    AnnotationFileHandler().importJson(context);
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

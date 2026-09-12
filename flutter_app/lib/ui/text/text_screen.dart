@@ -257,7 +257,7 @@ class _TextScreenState extends State<TextScreen> {
                 _currentLanguage = languageForVerse(
                   bookId: reference.bookId,
                   chapter: reference.chapter,
-                  verse: reference.verse,
+                  verse: reference.verse ?? 1,
                 );
               });
             }
@@ -353,41 +353,52 @@ class _TextScreenState extends State<TextScreen> {
         valueListenable: _showBottomBarNotifier,
         builder: (context, showBar, child) {
           final language = _currentLanguage;
+          final theme = Theme.of(context);
+          final navBarBgColor = theme.bottomNavigationBarTheme.backgroundColor ??
+              theme.colorScheme.surface;
+
           return Align(
             alignment: Alignment.bottomCenter,
             child: AnimatedSlide(
               offset: showBar ? Offset.zero : const Offset(0, 1),
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
-              child: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                selectedItemColor: Theme.of(context).colorScheme.onSurface,
-                unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-                selectedFontSize: 12.0,
-                unselectedFontSize: 12.0,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.border_color),
-                    label: 'Highlight',
+              child: Material(
+                color: navBarBgColor,
+                elevation: 8,
+                child: SafeArea(
+                  top: false,
+                  child: BottomNavigationBar(
+                    type: BottomNavigationBarType.fixed,
+                    selectedItemColor: theme.colorScheme.onSurface,
+                    unselectedItemColor: theme.colorScheme.onSurface,
+                    selectedFontSize: 12.0,
+                    unselectedFontSize: 12.0,
+                    items: [
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.border_color),
+                        label: 'Highlight',
+                      ),
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.edit_note),
+                        label: 'Note',
+                      ),
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.content_copy),
+                        label: 'Copy',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _getLanguageIcon(language),
+                        label: _getLanguageLabel(language),
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.more_horiz, key: _moreKey),
+                        label: 'More',
+                      ),
+                    ],
+                    onTap: (index) => _handleBottomBarTap(index, language),
                   ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.edit_note),
-                    label: 'Note',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.content_copy),
-                    label: 'Copy',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _getLanguageIcon(language),
-                    label: _getLanguageLabel(language),
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.more_horiz, key: _moreKey),
-                    label: 'More',
-                  ),
-                ],
-                onTap: (index) => _handleBottomBarTap(index, language),
+                ),
               ),
             ),
           );
@@ -532,7 +543,7 @@ class _TextScreenState extends State<TextScreen> {
         builder: (context) => HebrewGreekScreen(
           bookId: reference.bookId,
           chapter: reference.chapter,
-          verse: reference.verse,
+          verse: reference.verse ?? 1,
           language: language,
         ),
       ),
@@ -596,7 +607,7 @@ class _TextScreenState extends State<TextScreen> {
     final url = _screenManager.bibleHubUrl(
       bookId: reference.bookId,
       chapter: reference.chapter,
-      verse: reference.verse,
+      verse: reference.verse ?? 1,
     );
     _launch(url);
   }
@@ -605,7 +616,7 @@ class _TextScreenState extends State<TextScreen> {
     final url = _screenManager.bibleHubCrossReferenceUrl(
       bookId: reference.bookId,
       chapter: reference.chapter,
-      verse: reference.verse,
+      verse: reference.verse ?? 1,
     );
     _launch(url);
   }
