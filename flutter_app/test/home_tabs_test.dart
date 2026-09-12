@@ -238,4 +238,95 @@ void main() {
     // ChapterChooser dialog should now be visible for John!
     expect(find.byType(ChapterChooser), findsOneWidget);
   });
+
+  testWidgets('three-dot menu shows Distraction free option and enters distraction free mode', (tester) async {
+    tabManager.openTab(43, 3); // John 3
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify AppBar and 3-dot menu are visible
+    expect(find.byType(AppBar), findsOneWidget);
+    final moreButton = find.byIcon(Icons.more_vert);
+    expect(moreButton, findsOneWidget);
+
+    // Tap 3-dot menu
+    await tester.tap(moreButton);
+    await tester.pumpAndSettle();
+
+    // Verify 'Distraction free' option exists
+    expect(find.text('Distraction free'), findsOneWidget);
+
+    // Tap 'Distraction free'
+    await tester.tap(find.text('Distraction free'));
+    await tester.pumpAndSettle();
+
+    // AppBar should now be hidden
+    expect(find.byType(AppBar), findsNothing);
+
+    // The top overlay should be visible with exit buttons
+    final exitButton = find.byIcon(Icons.fullscreen_exit);
+    expect(exitButton, findsOneWidget);
+    expect(find.byTooltip('Exit distraction free'), findsNWidgets(2)); // back arrow + fullscreen_exit
+
+    // Tapping exit button exits distraction free mode
+    await tester.tap(exitButton);
+    await tester.pumpAndSettle();
+
+    // AppBar is restored
+    expect(find.byType(AppBar), findsOneWidget);
+  });
+
+  testWidgets('Kindle style overlay auto-hides and reappears when tapping top region', (tester) async {
+    tabManager.openTab(43, 3); // John 3
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Enter distraction free mode
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Distraction free'));
+    await tester.pump(); // enters mode, timer scheduled
+
+    // Initially, top overlay is visible
+    expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
+
+    // Advance time by 3.5 seconds to trigger auto-hide
+    await tester.pump(const Duration(milliseconds: 3500));
+    await tester.pumpAndSettle();
+
+    // Now overlay is hidden (IgnorePointer is true)
+    final ignorePointerFinder =
+        find.byKey(const Key('distraction_free_overlay_ignore_pointer'));
+    expect(ignorePointerFinder, findsOneWidget);
+    final ignorePointerWidget =
+        tester.widget<IgnorePointer>(ignorePointerFinder);
+    expect(ignorePointerWidget.ignoring, isTrue);
+
+    // Tap in top region (y = 40)
+    await tester.tapAt(const Offset(200, 40));
+    await tester.pumpAndSettle();
+
+    // Overlay is visible again!
+    final ignorePointerWidget2 =
+        tester.widget<IgnorePointer>(ignorePointerFinder);
+    expect(ignorePointerWidget2.ignoring, isFalse);
+
+    // Back gesture / PopScope should exit distraction free mode
+    final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
+    await widgetsAppState.didPopRoute();
+    await tester.pumpAndSettle();
+
+    // AppBar is restored
+    expect(find.byType(AppBar), findsOneWidget);
+  });
 }

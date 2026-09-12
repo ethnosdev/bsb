@@ -310,4 +310,35 @@ void main() {
     expect(audioManager.isPlayerVisible.value, isFalse);
     expect(find.byType(AudioPlayerBottomBar), findsNothing);
   });
+
+  testWidgets('AudioPlayerBottomBar is hidden when entering distraction free mode and restored when exiting', (tester) async {
+    tabManager.openTab(1, 1);
+    audioManager.isPlayerVisible.value = true;
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Player bar is visible initially
+    expect(find.byType(AudioPlayerBottomBar), findsOneWidget);
+
+    // Enter distraction free mode from 3-dot menu
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Distraction free'));
+    await tester.pumpAndSettle();
+
+    // Player bar is now hidden!
+    expect(find.byType(AudioPlayerBottomBar), findsNothing);
+
+    // Exit distraction free mode via exit button
+    await tester.tap(find.byIcon(Icons.fullscreen_exit));
+    await tester.pumpAndSettle();
+
+    // Player bar is restored!
+    expect(find.byType(AudioPlayerBottomBar), findsOneWidget);
+  });
 }
