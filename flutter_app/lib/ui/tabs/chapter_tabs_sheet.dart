@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'bible_tab.dart';
 import 'tab_manager.dart';
 
 class ChapterTabsSheet extends StatelessWidget {
   const ChapterTabsSheet({
     super.key,
     required this.tabManager,
+    this.onActiveTabTapped,
   });
 
   final TabManager tabManager;
+  final void Function(BibleTab activeTab)? onActiveTabTapped;
 
-  static Future<void> show(BuildContext context, TabManager tabManager) {
+  static Future<void> show(
+    BuildContext context,
+    TabManager tabManager, {
+    void Function(BibleTab activeTab)? onActiveTabTapped,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -17,7 +24,10 @@ class ChapterTabsSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => ChapterTabsSheet(tabManager: tabManager),
+      builder: (context) => ChapterTabsSheet(
+        tabManager: tabManager,
+        onActiveTabTapped: onActiveTabTapped,
+      ),
     );
   }
 
@@ -57,10 +67,13 @@ class ChapterTabsSheet extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
                   child: Row(
                     children: [
-                      Text(
-                        'Open Chapters',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          'Open Chapters',
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -178,8 +191,13 @@ class ChapterTabsSheet extends StatelessWidget {
                                   ),
                                   selected: isActive,
                                   onTap: () {
-                                    tabManager.selectTab(tab.id);
-                                    Navigator.pop(context);
+                                    if (isActive) {
+                                      Navigator.pop(context);
+                                      onActiveTabTapped?.call(tab);
+                                    } else {
+                                      tabManager.selectTab(tab.id);
+                                      Navigator.pop(context);
+                                    }
                                   },
                                 ),
                               ),

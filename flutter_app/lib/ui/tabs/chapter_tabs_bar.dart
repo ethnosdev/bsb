@@ -111,7 +111,11 @@ class ChapterTabsBar extends StatelessWidget {
             child: CompositeChapterChip(
               activeTab: activeTab,
               otherTabsCount: tabs.length - 1,
-              onTap: () => ChapterTabsSheet.show(context, tabManager),
+              onTap: () => ChapterTabsSheet.show(
+                context,
+                tabManager,
+                onActiveTabTapped: onActiveTabTapped,
+              ),
             ),
           ),
         );

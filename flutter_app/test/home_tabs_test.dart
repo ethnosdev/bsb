@@ -4,10 +4,12 @@ import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
+import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/home/home.dart';
 import 'package:bsb/ui/home/list_book_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_chip.dart';
+import 'package:bsb/ui/tabs/composite_chip.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/text_screen.dart';
 import 'package:flutter/material.dart';
@@ -198,5 +200,42 @@ void main() {
 
     final appBar = tester.widget<AppBar>(find.byType(AppBar));
     expect(appBar.titleSpacing, equals(0));
+  });
+
+  testWidgets('tapping current tab in composite sheet opens ChapterChooser', (tester) async {
+    tabManager.openTab(1, 1); // Genesis 1
+    tabManager.openTab(45, 8); // Romans 8
+    tabManager.openTab(19, 23); // Psalms 23
+    tabManager.openTab(43, 3); // John 3
+
+    // Set screen size narrow enough so that 4 tabs collapse into composite chip
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Composite chip should be visible
+    expect(find.byType(CompositeChapterChip), findsOneWidget);
+
+    // Tap composite chip to open sheet
+    await tester.tap(find.byType(CompositeChapterChip));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open Chapters'), findsOneWidget);
+    expect(find.text('John 3'), findsOneWidget);
+
+    // Tap the current tab (John 3)
+    await tester.tap(find.text('John 3'));
+    await tester.pumpAndSettle();
+
+    // ChapterChooser dialog should now be visible for John!
+    expect(find.byType(ChapterChooser), findsOneWidget);
   });
 }

@@ -256,5 +256,46 @@ void main() {
       // Wrapped with ReorderableDelayedDragStartListener for long-press drag
       expect(find.byType(ReorderableDelayedDragStartListener), findsNWidgets(2));
     });
+
+    testWidgets('tapping active tab in sheet triggers onActiveTabTapped', (tester) async {
+      await tabManager.init();
+      tabManager.openTab(1, 1); // Genesis 1
+      tabManager.openTab(45, 8); // Romans 8 (active)
+
+      BibleTab? tappedActiveTab;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => ChapterTabsSheet.show(
+                  context,
+                  tabManager,
+                  onActiveTabTapped: (tab) => tappedActiveTab = tab,
+                ),
+                child: const Text('Open Sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
+
+      // Romans 8 is active
+      expect(find.text('Romans 8'), findsOneWidget);
+
+      // Tap active tab Romans 8
+      await tester.tap(find.text('Romans 8'));
+      await tester.pumpAndSettle();
+
+      expect(tappedActiveTab, isNotNull);
+      expect(tappedActiveTab?.bookId, equals(45));
+      expect(tappedActiveTab?.chapter, equals(8));
+      // Sheet should be dismissed
+      expect(find.text('Open Chapters'), findsNothing);
+    });
   });
 }
