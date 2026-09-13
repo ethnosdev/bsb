@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:database_builder/database_builder.dart';
 import 'package:scripture/scripture_core.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -65,66 +62,75 @@ void main() {
     });
 
     test('contains exactly 1,189 canonical chapters (929 OT, 260 NT)', () {
-      final totalChapters = db
-          .select(
-            'SELECT count(DISTINCT ${Schema.colReference} / 1000) as c '
-            'FROM ${Schema.bibleTextTable};',
-          )
-          .first['c'] as int;
+      final totalChapters =
+          db
+                  .select(
+                    'SELECT count(DISTINCT ${Schema.colReference} / 1000) as c '
+                    'FROM ${Schema.bibleTextTable};',
+                  )
+                  .first['c']
+              as int;
       expect(totalChapters, equals(kTotalChapters));
 
-      final otChapters = db
-          .select(
-            'SELECT count(DISTINCT ${Schema.colReference} / 1000) as c '
-            'FROM ${Schema.bibleTextTable} '
-            'WHERE ${Schema.colReference} / 1000000 <= $kOldTestamentBooks;',
-          )
-          .first['c'] as int;
+      final otChapters =
+          db
+                  .select(
+                    'SELECT count(DISTINCT ${Schema.colReference} / 1000) as c '
+                    'FROM ${Schema.bibleTextTable} '
+                    'WHERE ${Schema.colReference} / 1000000 <= $kOldTestamentBooks;',
+                  )
+                  .first['c']
+              as int;
       expect(otChapters, equals(kOldTestamentChapters));
 
-      final ntChapters = db
-          .select(
-            'SELECT count(DISTINCT ${Schema.colReference} / 1000) as c '
-            'FROM ${Schema.bibleTextTable} '
-            'WHERE ${Schema.colReference} / 1000000 > $kOldTestamentBooks;',
-          )
-          .first['c'] as int;
+      final ntChapters =
+          db
+                  .select(
+                    'SELECT count(DISTINCT ${Schema.colReference} / 1000) as c '
+                    'FROM ${Schema.bibleTextTable} '
+                    'WHERE ${Schema.colReference} / 1000000 > $kOldTestamentBooks;',
+                  )
+                  .first['c']
+              as int;
       expect(ntChapters, equals(kNewTestamentChapters));
     });
 
-    test(
-      'contains exactly 31,086 distinct canonical verses (23,145 OT, 7,941 NT)',
-      () {
-        final totalVerses = db
-            .select(
-              'SELECT count(DISTINCT ${Schema.colReference}) as c '
-              'FROM ${Schema.bibleTextTable} '
-              'WHERE ${Schema.colReference} % 1000 > 0;',
-            )
-            .first['c'] as int;
-        expect(totalVerses, equals(kTotalCanonicalVerses));
+    test('contains exactly 31,086 distinct canonical verses (23,145 OT, 7,941 NT)', () {
+      final totalVerses =
+          db
+                  .select(
+                    'SELECT count(DISTINCT ${Schema.colReference}) as c '
+                    'FROM ${Schema.bibleTextTable} '
+                    'WHERE ${Schema.colReference} % 1000 > 0;',
+                  )
+                  .first['c']
+              as int;
+      expect(totalVerses, equals(kTotalCanonicalVerses));
 
-        final otVerses = db
-            .select(
-              'SELECT count(DISTINCT ${Schema.colReference}) as c '
-              'FROM ${Schema.bibleTextTable} '
-              'WHERE ${Schema.colReference} % 1000 > 0 '
-              '  AND ${Schema.colReference} / 1000000 <= $kOldTestamentBooks;',
-            )
-            .first['c'] as int;
-        expect(otVerses, equals(kOldTestamentVerses));
+      final otVerses =
+          db
+                  .select(
+                    'SELECT count(DISTINCT ${Schema.colReference}) as c '
+                    'FROM ${Schema.bibleTextTable} '
+                    'WHERE ${Schema.colReference} % 1000 > 0 '
+                    '  AND ${Schema.colReference} / 1000000 <= $kOldTestamentBooks;',
+                  )
+                  .first['c']
+              as int;
+      expect(otVerses, equals(kOldTestamentVerses));
 
-        final ntVerses = db
-            .select(
-              'SELECT count(DISTINCT ${Schema.colReference}) as c '
-              'FROM ${Schema.bibleTextTable} '
-              'WHERE ${Schema.colReference} % 1000 > 0 '
-              '  AND ${Schema.colReference} / 1000000 > $kOldTestamentBooks;',
-            )
-            .first['c'] as int;
-        expect(ntVerses, equals(kNewTestamentVerses));
-      },
-    );
+      final ntVerses =
+          db
+                  .select(
+                    'SELECT count(DISTINCT ${Schema.colReference}) as c '
+                    'FROM ${Schema.bibleTextTable} '
+                    'WHERE ${Schema.colReference} % 1000 > 0 '
+                    '  AND ${Schema.colReference} / 1000000 > $kOldTestamentBooks;',
+                  )
+                  .first['c']
+              as int;
+      expect(ntVerses, equals(kNewTestamentVerses));
+    });
 
     test('every chapter in every book contains verse 1', () {
       final missingVerse1 = db.select('''
@@ -187,16 +193,15 @@ void main() {
 
     test('benchmark chapters have correct verse counts', () {
       int countVerses(int book, int ch) {
-        return db
-            .select(
+        return db.select(
               'SELECT count(DISTINCT ${Schema.colReference}) as c '
               'FROM ${Schema.bibleTextTable} '
               'WHERE ${Schema.colReference} / 1000000 = ? '
               '  AND (${Schema.colReference} % 1000000) / 1000 = ? '
               '  AND ${Schema.colReference} % 1000 > 0;',
               [book, ch],
-            )
-            .first['c'] as int;
+            ).first['c']
+            as int;
       }
 
       expect(countVerses(1, 1), equals(31)); // Genesis 1
@@ -211,28 +216,35 @@ void main() {
       expect(countVerses(66, 22), equals(21)); // Revelation 22
     });
 
-    test('references are strictly monotonic (non-decreasing) in bible table', () {
-      // Note: Habakkuk 3:19 is followed by a musical postscript (\d, ref 35003000).
-      final outOfOrder = db.select('''
+    test(
+      'references are strictly monotonic (non-decreasing) in bible table',
+      () {
+        // Note: Habakkuk 3:19 is followed by a musical postscript (\d, ref 35003000).
+        final outOfOrder =
+            db.select('''
         SELECT count(*) as c FROM (
           SELECT ${Schema.colReference} as ref,
                  LAG(${Schema.colReference}) OVER (ORDER BY ${Schema.colId}) as prev_ref
           FROM ${Schema.bibleTextTable}
         ) WHERE prev_ref IS NOT NULL AND ref < prev_ref
           AND ref != 35003000;
-      ''').first['c'] as int;
+      ''').first['c']
+                as int;
 
-      expect(outOfOrder, equals(0));
-    });
+        expect(outOfOrder, equals(0));
+      },
+    );
 
     test('all references are valid packed integers', () {
-      final invalidRefs = db.select('''
+      final invalidRefs =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colReference} / 1000000 < 1
            OR ${Schema.colReference} / 1000000 > 66
            OR (${Schema.colReference} % 1000000) / 1000 < 1
            OR ${Schema.colReference} % 1000 < 0;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(invalidRefs, equals(0));
     });
@@ -240,11 +252,13 @@ void main() {
     test(
       'verse 0 is only used for headings, titles, cross-references, or breaks',
       () {
-        final regularTextOnVerse0 = db.select('''
+        final regularTextOnVerse0 =
+            db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colReference} % 1000 = 0
           AND ${Schema.colFormat} NOT IN ('s1', 's2', 'r', 'd', 'ms', 'qa', 'b');
-      ''').first['c'] as int;
+      ''').first['c']
+                as int;
 
         expect(regularTextOnVerse0, equals(0));
       },
@@ -252,70 +266,87 @@ void main() {
   });
 
   group('Text Hygiene & USFM Parsing Quality', () {
-    test('zero occurrences of Words of Jesus tags (\\wj or \\wj*) in bible text', () {
-      final wjCount = db.select('''
+    test(
+      'zero occurrences of Words of Jesus tags (\\wj or \\wj*) in bible text',
+      () {
+        final wjCount =
+            db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colText} LIKE '%\\wj%'
            OR ${Schema.colText} LIKE '%\\wj*%';
-      ''').first['c'] as int;
+      ''').first['c']
+                as int;
 
-      expect(wjCount, equals(0));
-    });
+        expect(wjCount, equals(0));
+      },
+    );
 
     test('zero phantom rows with text = "\\wj"', () {
-      final phantomWj = db.select('''
+      final phantomWj =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE trim(${Schema.colText}) = '\\wj';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(phantomWj, equals(0));
     });
 
     test('zero unstripped \\ref* in cross-reference rows (format = "r")', () {
-      final unstrippedRef = db.select('''
+      final unstrippedRef =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colFormat} = 'r'
           AND ${Schema.colText} LIKE '%\\ref*%';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(unstrippedRef, equals(0));
     });
 
     test('cross-references (format = "r") do not contain raw parentheses', () {
-      final parensInCrossRefs = db.select('''
+      final parensInCrossRefs =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colFormat} = 'r'
           AND (${Schema.colText} LIKE '%(%' OR ${Schema.colText} LIKE '%)%');
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(parensInCrossRefs, equals(0));
     });
 
     test('zero rows where text starts with a backslash marker', () {
-      final startsWithBackslash = db.select('''
+      final startsWithBackslash =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colText} LIKE '\\%';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(startsWithBackslash, equals(0));
     });
 
     test('zero stray inline \\v or \\c markers in bible text', () {
-      final strayInlineMarkers = db.select('''
+      final strayInlineMarkers =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colText} LIKE '%\\v %'
            OR ${Schema.colText} LIKE '%\\c %';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(strayInlineMarkers, equals(0));
     });
 
     test('all footnotes (\\f) are properly closed with (\\f*)', () {
-      final unclosedFootnotes = db.select('''
+      final unclosedFootnotes =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE (LENGTH(${Schema.colText}) - LENGTH(REPLACE(${Schema.colText}, '\\f ', ''))) / 3 !=
               (LENGTH(${Schema.colText}) - LENGTH(REPLACE(${Schema.colText}, '\\f*', ''))) / 3;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(unclosedFootnotes, equals(0));
     });
@@ -346,55 +377,66 @@ void main() {
   });
 
   group('Paragraph Format Invariants', () {
-    test('every format value in bible table deserializes to ParagraphFormat', () {
-      final formats = db
-          .select(
-            'SELECT DISTINCT ${Schema.colFormat} as format '
-            'FROM ${Schema.bibleTextTable};',
-          )
-          .map((row) => row['format'] as String);
+    test(
+      'every format value in bible table deserializes to ParagraphFormat',
+      () {
+        final formats = db
+            .select(
+              'SELECT DISTINCT ${Schema.colFormat} as format '
+              'FROM ${Schema.bibleTextTable};',
+            )
+            .map((row) => row['format'] as String);
 
-      for (var format in formats) {
-        expect(
-          () => ParagraphFormat.fromJson(format),
-          returnsNormally,
-          reason: 'Unknown format: "$format"',
-        );
-      }
-    });
+        for (var format in formats) {
+          expect(
+            () => ParagraphFormat.fromJson(format),
+            returnsNormally,
+            reason: 'Unknown format: "$format"',
+          );
+        }
+      },
+    );
 
     test('empty text rows are strictly and exclusively format = "b"', () {
-      final emptyNonBreak = db.select('''
+      final emptyNonBreak =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE trim(${Schema.colText}) = '' AND ${Schema.colFormat} != 'b';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
       expect(emptyNonBreak, equals(0));
 
-      final nonEmptyBreak = db.select('''
+      final nonEmptyBreak =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE trim(${Schema.colText}) != '' AND ${Schema.colFormat} = 'b';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
       expect(nonEmptyBreak, equals(0));
     });
 
     test('no consecutive break rows (format = "b")', () {
-      final consecutiveBreaks = db.select('''
+      final consecutiveBreaks =
+          db.select('''
         SELECT count(*) as c FROM (
           SELECT ${Schema.colFormat} as format,
                  LAG(${Schema.colFormat}) OVER (ORDER BY ${Schema.colId}) as prev_format
           FROM ${Schema.bibleTextTable}
         ) WHERE format = 'b' AND prev_format = 'b';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(consecutiveBreaks, equals(0));
     });
 
     test('section headings (s1, s2) have non-empty text', () {
-      final emptyHeadings = db.select('''
+      final emptyHeadings =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colFormat} IN ('s1', 's2')
           AND trim(${Schema.colText}) = '';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(emptyHeadings, equals(0));
     });
@@ -402,31 +444,37 @@ void main() {
 
   group('Interlinear Table Integrity', () {
     test('interlinear table has expected word count (>440,000 words)', () {
-      final count = db
-          .select(
-            'SELECT count(*) as c FROM ${Schema.interlinearTable};',
-          )
-          .first['c'] as int;
+      final count =
+          db
+                  .select(
+                    'SELECT count(*) as c FROM ${Schema.interlinearTable};',
+                  )
+                  .first['c']
+              as int;
       expect(count, greaterThan(440000));
     });
 
     test('interlinear references are strictly monotonic (non-decreasing)', () {
-      final outOfOrder = db.select('''
+      final outOfOrder =
+          db.select('''
         SELECT count(*) as c FROM (
           SELECT ${Schema.ilColReference} as ref,
                  LAG(${Schema.ilColReference}) OVER (ORDER BY ${Schema.ilColId}) as prev_ref
           FROM ${Schema.interlinearTable}
         ) WHERE prev_ref IS NOT NULL AND ref < prev_ref;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(outOfOrder, equals(0));
     });
 
     test('interlinear does not contain verse 0 references', () {
-      final verse0Count = db.select('''
+      final verse0Count =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.interlinearTable}
         WHERE ${Schema.ilColReference} % 1000 = 0;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(verse0Count, equals(0));
     });
@@ -434,10 +482,12 @@ void main() {
     test(
       'interlinear covers all 31,085 canonical verses (only Neh 7:68 omitted)',
       () {
-        final distinctVerses = db.select('''
+        final distinctVerses =
+            db.select('''
         SELECT count(DISTINCT ${Schema.ilColReference}) as c
         FROM ${Schema.interlinearTable};
-      ''').first['c'] as int;
+      ''').first['c']
+                as int;
 
         expect(distinctVerses, equals(kInterlinearCanonicalVerses));
 
@@ -456,73 +506,91 @@ void main() {
     );
 
     test('every reference in interlinear exists in the bible table', () {
-      final orphans = db.select('''
+      final orphans =
+          db.select('''
         SELECT count(DISTINCT i.${Schema.ilColReference}) as c
         FROM ${Schema.interlinearTable} i
         LEFT JOIN ${Schema.bibleTextTable} b
           ON i.${Schema.ilColReference} = b.${Schema.colReference}
         WHERE b.${Schema.colReference} IS NULL;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(orphans, equals(0));
     });
 
-    test('language column matches testaments (OT: Hebrew/Aramaic, NT: Greek)', () {
-      final invalidLanguages = db.select('''
+    test(
+      'language column matches testaments (OT: Hebrew/Aramaic, NT: Greek)',
+      () {
+        final invalidLanguages =
+            db.select('''
         SELECT count(*) as c FROM ${Schema.interlinearTable}
         WHERE (${Schema.ilColReference} / 1000000 <= $kOldTestamentBooks AND ${Schema.ilColLanguage} NOT IN (0, 1))
            OR (${Schema.ilColReference} / 1000000 > $kOldTestamentBooks AND ${Schema.ilColLanguage} != 2);
-      ''').first['c'] as int;
+      ''').first['c']
+                as int;
 
-      expect(invalidLanguages, equals(0));
-    });
+        expect(invalidLanguages, equals(0));
+      },
+    );
 
     test('foreign keys to original table are all valid', () {
-      final missingOriginal = db.select('''
+      final missingOriginal =
+          db.select('''
         SELECT count(*) as c
         FROM ${Schema.interlinearTable} i
         LEFT JOIN ${Schema.originalLanguageTable} o
           ON i.${Schema.ilColOriginal} = o.${Schema.olColId}
         WHERE o.${Schema.olColId} IS NULL;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(missingOriginal, equals(0));
     });
 
     test('foreign keys to english table are all valid', () {
-      final missingEnglish = db.select('''
+      final missingEnglish =
+          db.select('''
         SELECT count(*) as c
         FROM ${Schema.interlinearTable} i
         LEFT JOIN ${Schema.englishTable} e
           ON i.${Schema.ilColEnglish} = e.${Schema.engColId}
         WHERE e.${Schema.engColId} IS NULL;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(missingEnglish, equals(0));
     });
 
     test('foreign keys to pos table are valid (or -1 when untagged)', () {
-      final invalidPos = db.select('''
+      final invalidPos =
+          db.select('''
         SELECT count(*) as c
         FROM ${Schema.interlinearTable} i
         LEFT JOIN ${Schema.partOfSpeechTable} p
           ON i.${Schema.ilColPartOfSpeech} = p.${Schema.posColId}
         WHERE i.${Schema.ilColPartOfSpeech} != -1
           AND p.${Schema.posColId} IS NULL;
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(invalidPos, equals(0));
     });
 
-    test('strongs numbers are either -1 (untagged) or positive integers <= 8674', () {
-      final invalidStrongs = db.select('''
+    test(
+      'strongs numbers are either -1 (untagged) or positive integers <= 8674',
+      () {
+        final invalidStrongs =
+            db.select('''
         SELECT count(*) as c FROM ${Schema.interlinearTable}
         WHERE ${Schema.ilColStrongsNumber} != -1
           AND (${Schema.ilColStrongsNumber} < 1 OR ${Schema.ilColStrongsNumber} > 8674);
-      ''').first['c'] as int;
+      ''').first['c']
+                as int;
 
-      expect(invalidStrongs, equals(0));
-    });
+        expect(invalidStrongs, equals(0));
+      },
+    );
 
     test('interlinear punctuation has zero HTML tags (such as </span>)', () {
       final rows = db.select('''
@@ -571,19 +639,23 @@ void main() {
 
   group('Foreign Tables Integrity (original, english, pos)', () {
     test('original table words are all non-empty strings', () {
-      final emptyOriginal = db.select('''
+      final emptyOriginal =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.originalLanguageTable}
         WHERE trim(${Schema.olColWord}) = '';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(emptyOriginal, equals(0));
     });
 
     test('english table words are all non-empty strings', () {
-      final emptyEnglish = db.select('''
+      final emptyEnglish =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.englishTable}
         WHERE trim(${Schema.engColWord}) = '';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(emptyEnglish, equals(0));
     });
@@ -597,10 +669,12 @@ void main() {
     });
 
     test('pos table names are all non-empty strings', () {
-      final emptyPos = db.select('''
+      final emptyPos =
+          db.select('''
         SELECT count(*) as c FROM ${Schema.partOfSpeechTable}
         WHERE trim(${Schema.posColName}) = '';
-      ''').first['c'] as int;
+      ''').first['c']
+              as int;
 
       expect(emptyPos, equals(0));
     });
@@ -627,7 +701,9 @@ void main() {
   group('Optimized Database Features', () {
     test('bible table has idx_bible_ref index', () {
       final indexes = db
-          .select("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'bible';")
+          .select(
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'bible';",
+          )
           .map((r) => r['name'] as String)
           .toList();
       expect(indexes, contains('idx_bible_ref'));
@@ -635,10 +711,15 @@ void main() {
 
     test('interlinear table has reference, strongs, and original indexes', () {
       final indexes = db
-          .select("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'interlinear';")
+          .select(
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'interlinear';",
+          )
           .map((r) => r['name'] as String)
           .toList();
-      expect(indexes, containsAll(['idx_il_ref', 'idx_il_strongs', 'idx_il_original']));
+      expect(
+        indexes,
+        containsAll(['idx_il_ref', 'idx_il_strongs', 'idx_il_original']),
+      );
     });
 
     test('lexicon content is readable markdown text', () {
@@ -651,8 +732,10 @@ void main() {
       expect(text, contains('alpha'));
     });
 
-    test('contentless FTS4 search with bible subquery produces clean verse text', () {
-      final rows = db.select('''
+    test(
+      'contentless FTS4 search with bible subquery produces clean verse text',
+      () {
+        final rows = db.select('''
         SELECT b.reference, group_concat(b.text, ' ') as text
         FROM bible b
         WHERE b.reference IN (
@@ -663,12 +746,16 @@ void main() {
         ORDER BY b.reference ASC
         LIMIT 5;
       ''');
-      expect(rows, isNotEmpty);
-      final firstRowText = rows.first['text'] as String;
-      final clean = cleanVerseText(firstRowText);
-      expect(clean, isNot(contains(r'\f')));
-      expect(clean, isNot(contains(r'\ft')));
-      expect(clean, equals('And God said, “Let there be light,” and there was light.'));
-    });
+        expect(rows, isNotEmpty);
+        final firstRowText = rows.first['text'] as String;
+        final clean = cleanVerseText(firstRowText);
+        expect(clean, isNot(contains(r'\f')));
+        expect(clean, isNot(contains(r'\ft')));
+        expect(
+          clean,
+          equals('And God said, “Let there be light,” and there was light.'),
+        );
+      },
+    );
   });
 }

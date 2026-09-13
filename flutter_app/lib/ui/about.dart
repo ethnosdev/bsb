@@ -1,6 +1,5 @@
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
-import 'package:bsb/core/strings.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/gestures.dart';
@@ -265,7 +264,7 @@ class _AboutPageState extends State<AboutPage> {
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.copy, size: 18),
                         label: const Text('Copy contact email'),
-                        onPressed: () => _copyEmail(context),
+                        onPressed: _copyEmail,
                       ),
                     ),
                     const SizedBox(height: 100),
@@ -284,7 +283,7 @@ class _AboutPageState extends State<AboutPage> {
     _versionNotifier.value = packageInfo.version;
   }
 
-  Future<void> _copyEmail(BuildContext context) async {
+  Future<void> _copyEmail() async {
     await Clipboard.setData(const ClipboardData(text: 'contact@ethnos.dev'));
     if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();

@@ -1,7 +1,6 @@
 import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/annotations/highlights_and_notes_page.dart';
 import 'package:bsb/ui/help.dart';
-import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 
@@ -49,7 +48,9 @@ class AppDrawer extends StatelessWidget {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const SettingsPage()),
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsPage(),
+                    ),
                   );
                 },
               ),
