@@ -159,14 +159,25 @@ class TabManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateActiveChapter(int bookId, int chapter) {
+  void updateActiveChapter(
+    int bookId,
+    int chapter, [
+    String? sectionHeading,
+    int? targetVerse,
+  ]) {
     final current = activeTab;
     if (current == null) return;
-    if (current.bookId == bookId && current.chapter == chapter) return;
+    if (current.bookId == bookId &&
+        current.chapter == chapter &&
+        current.sectionHeading == sectionHeading &&
+        current.targetVerse == targetVerse) {
+      return;
+    }
 
     current.bookId = bookId;
     current.chapter = chapter;
-    current.sectionHeading = null;
+    current.sectionHeading = sectionHeading;
+    current.targetVerse = targetVerse;
 
     _saveToPrefs();
     notifyListeners();

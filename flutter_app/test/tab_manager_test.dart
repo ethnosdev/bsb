@@ -69,6 +69,18 @@ void main() {
       expect(tabManager.tabs.length, 1);
     });
 
+    test('updateActiveChapter updates sectionHeading and targetVerse when provided', () async {
+      await tabManager.init();
+      tabManager.openTab(43, 2); // JHN 2
+      expect(tabManager.activeTab?.label, 'JHN 2');
+      expect(tabManager.activeTab?.sectionHeading, isNull);
+
+      tabManager.updateActiveChapter(43, 3, "John's Testimony about Jesus", 22);
+      expect(tabManager.activeTab?.label, 'JHN 3');
+      expect(tabManager.activeTab?.sectionHeading, "John's Testimony about Jesus");
+      expect(tabManager.activeTab?.targetVerse, 22);
+    });
+
     test('closeTab on active tab falls back to most recently visited tab (LRU)', () async {
       await tabManager.init();
       tabManager.openTab(1, 1); // GEN 1

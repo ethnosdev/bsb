@@ -62,6 +62,8 @@ class _ChapterTextState extends State<ChapterText>
   bool _isVerseScrubberVisible = false;
   bool _isScrubbing = false;
   Timer? _verseScrubberTimer;
+  Timer? _sectionScrollTimer;
+  Timer? _verseScrollTimer;
   bool _hasInitiallyShownScrubber = false;
 
   @override
@@ -161,6 +163,14 @@ class _ChapterTextState extends State<ChapterText>
       oldWidget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
       widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
     }
+    if (widget.targetSection == null) {
+      _sectionScrollTimer?.cancel();
+      _lastScrolledSection = null;
+    }
+    if (widget.targetVerse == null) {
+      _verseScrollTimer?.cancel();
+      _lastScrolledVerse = null;
+    }
     if (widget.targetSection != null &&
         (widget.targetSection != oldWidget.targetSection ||
             widget.targetSection != _lastScrolledSection)) {
@@ -176,6 +186,8 @@ class _ChapterTextState extends State<ChapterText>
   @override
   void dispose() {
     _verseScrubberTimer?.cancel();
+    _sectionScrollTimer?.cancel();
+    _verseScrollTimer?.cancel();
     widget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
     widget.activePageIndexListenable?.removeListener(_handleActivePageChange);
     manager.textParagraphNotifier.removeListener(_handleTextParagraphsLoaded);
@@ -201,6 +213,7 @@ class _ChapterTextState extends State<ChapterText>
     if (target == _lastScrolledSection) return;
     if (attempt == 0 && target == _activeTargetSection) return;
 
+    _sectionScrollTimer?.cancel();
     _activeTargetSection = target;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -214,7 +227,7 @@ class _ChapterTextState extends State<ChapterText>
         _activeTargetSection = null;
         widget.onTargetSectionScrolled?.call();
       } else if (attempt < 15) {
-        Future.delayed(const Duration(milliseconds: 50), () {
+        _sectionScrollTimer = Timer(const Duration(milliseconds: 50), () {
           if (mounted && widget.targetSection == target) {
             _scrollToTargetSection(target, attempt + 1);
           } else {
@@ -278,6 +291,7 @@ class _ChapterTextState extends State<ChapterText>
     if (target == _lastScrolledVerse) return;
     if (attempt == 0 && target == _activeTargetVerse) return;
 
+    _verseScrollTimer?.cancel();
     _activeTargetVerse = target;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -291,7 +305,7 @@ class _ChapterTextState extends State<ChapterText>
         _activeTargetVerse = null;
         widget.onTargetVerseScrolled?.call();
       } else if (attempt < 15) {
-        Future.delayed(const Duration(milliseconds: 50), () {
+        _verseScrollTimer = Timer(const Duration(milliseconds: 50), () {
           if (mounted && widget.targetVerse == target) {
             _scrollToTargetVerse(target, attempt + 1);
           } else {

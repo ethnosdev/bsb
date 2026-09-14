@@ -35,7 +35,12 @@ class TextScreen extends StatefulWidget {
   final String? initialSectionHeading;
   final int? initialTargetVerse;
   final ValueNotifier<(int, int)?>? chapterChooserNotifier;
-  final void Function(int bookId, int chapter)? onChapterChanged;
+  final void Function(
+    int bookId,
+    int chapter, [
+    String? sectionHeading,
+    int? targetVerse,
+  ])? onChapterChanged;
 
   @override
   State<TextScreen> createState() => _TextScreenState();
@@ -309,7 +314,7 @@ class _TextScreenState extends State<TextScreen> {
           onSectionSelected: (chapter, sectionHeading) {
             _chapterNotifier.value = null;
             _navigateToChapterAndSection(bookId, chapter, sectionHeading);
-            widget.onChapterChanged?.call(bookId, chapter);
+            widget.onChapterChanged?.call(bookId, chapter, sectionHeading);
           },
         );
       },

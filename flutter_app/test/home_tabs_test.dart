@@ -11,6 +11,8 @@ import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_chip.dart';
 import 'package:bsb/ui/tabs/composite_chip.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
+import 'package:bsb/infrastructure/section_heading.dart';
+import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:bsb/ui/text/text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,24 @@ class FakeDatabaseHelper implements DatabaseHelper {
 
   @override
   Future<List<UsfmLine>> getChapter(int bookId, int chapter) async => [];
+
+  @override
+  Future<List<SectionHeading>> getSectionHeadings(int bookId) async => [
+        const SectionHeading(
+          bookId: 43,
+          chapter: 2,
+          verse: 12,
+          text: 'Jesus Cleanses the Temple',
+          format: 's1',
+        ),
+        const SectionHeading(
+          bookId: 43,
+          chapter: 3,
+          verse: 22,
+          text: "John's Testimony about Jesus",
+          format: 's1',
+        ),
+      ];
 }
 
 class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
@@ -328,5 +348,89 @@ void main() {
 
     // AppBar is restored
     expect(find.byType(AppBar), findsOneWidget);
+  });
+
+  testWidgets(
+      'tapping tab, opening section headings, and selecting heading in different chapter navigates and preserves section heading (Issue #39)',
+      (tester) async {
+    tabManager.openTab(43, 2); // John 2
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ChapterChip), findsOneWidget);
+    expect(find.text('JHN 2'), findsOneWidget);
+
+    // Tap active tab to open ChapterChooser
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ChapterChooser), findsOneWidget);
+
+    // Tap section headings button
+    await tester.tap(find.byKey(const ValueKey('keypad_sections')));
+    await tester.pumpAndSettle();
+
+    // Section headings dialog should be open with John 2 and John 3 headings
+    expect(find.text("John's Testimony about Jesus"), findsOneWidget);
+
+    // Tap heading in chapter 3
+    await tester.tap(find.text("John's Testimony about Jesus"));
+    await tester.pump();
+
+    // Active tab is now John 3
+    expect(tabManager.activeTab?.chapter, equals(3));
+    expect(tabManager.activeTab?.label, equals('JHN 3'));
+
+    // ChapterText for John 3 received the targetSection
+    final chapterTextFinder = find.byWidgetPredicate((w) =>
+        w is ChapterText &&
+        w.bookId == 43 &&
+        w.chapter == 3 &&
+        w.targetSection == "John's Testimony about Jesus");
+    expect(chapterTextFinder, findsOneWidget);
+  });
+
+  testWidgets(
+      'tapping tab, opening section headings, and selecting heading in same chapter preserves section heading',
+      (tester) async {
+    tabManager.openTab(43, 2); // John 2
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('JHN 2'), findsOneWidget);
+
+    // Tap active tab to open ChapterChooser
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+
+    // Tap section headings button
+    await tester.tap(find.byKey(const ValueKey('keypad_sections')));
+    await tester.pumpAndSettle();
+
+    // Tap heading in chapter 2
+    await tester.tap(find.text('Jesus Cleanses the Temple'));
+    await tester.pump();
+
+    // Active tab remains John 2
+    expect(tabManager.activeTab?.chapter, equals(2));
+    expect(tabManager.activeTab?.label, equals('JHN 2'));
+
+    // ChapterText for John 2 received the targetSection
+    final chapterTextFinder = find.byWidgetPredicate((w) =>
+        w is ChapterText &&
+        w.bookId == 43 &&
+        w.chapter == 2 &&
+        w.targetSection == 'Jesus Cleanses the Temple');
+    expect(chapterTextFinder, findsOneWidget);
   });
 }

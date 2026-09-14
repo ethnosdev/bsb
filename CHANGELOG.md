@@ -1,3 +1,7 @@
+# 2.1.0 - 2026.09.12
+
+- Fix section header navigation bug (#39)
+
 # 2.0.0 - 2026.09.12
 
 - Multi-color highlighting.

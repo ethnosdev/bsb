@@ -326,8 +326,14 @@ class _HomePageState extends State<HomePage> {
                             initialSectionHeading: activeTab.sectionHeading,
                             initialTargetVerse: activeTab.targetVerse,
                             chapterChooserNotifier: _chapterChooserNotifier,
-                            onChapterChanged: (bookId, chapter) {
-                              _tabManager.updateActiveChapter(bookId, chapter);
+                            onChapterChanged:
+                                (bookId, chapter, [sectionHeading, targetVerse]) {
+                              _tabManager.updateActiveChapter(
+                                bookId,
+                                chapter,
+                                sectionHeading,
+                                targetVerse,
+                              );
                             },
                           ),
                         ),
