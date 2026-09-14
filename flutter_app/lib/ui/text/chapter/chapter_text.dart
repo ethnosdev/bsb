@@ -31,6 +31,7 @@ class ChapterText extends StatefulWidget {
     this.onSelectionChanged,
     this.onTargetSectionScrolled,
     this.onTargetVerseScrolled,
+    this.onToggleDistractionFree,
   });
 
   final int bookId;
@@ -44,6 +45,7 @@ class ChapterText extends StatefulWidget {
   onSelectionChanged;
   final VoidCallback? onTargetSectionScrolled;
   final VoidCallback? onTargetVerseScrolled;
+  final VoidCallback? onToggleDistractionFree;
 
   @override
   State<ChapterText> createState() => _ChapterTextState();
@@ -136,6 +138,31 @@ class _ChapterTextState extends State<ChapterText>
     if (widget.targetVerse != null) {
       _scrollToTargetVerse(widget.targetVerse);
     }
+  }
+
+  double _statusBarHeight = 0.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final topInset = MediaQuery.paddingOf(context).top;
+    if (topInset > _statusBarHeight) {
+      _statusBarHeight = topInset;
+    }
+  }
+
+  double get _topPadding => _statusBarHeight + kToolbarHeight + 16.0;
+
+  void _handleReaderTap() {
+    if (_selectionController.hasSelection) {
+      _selectionController.clear();
+      return;
+    }
+    if (_isVerseScrubberVisible && !_isScrubbing) {
+      _hideVerseScrubber();
+      return;
+    }
+    widget.onToggleDistractionFree?.call();
   }
 
   void _handleTextParagraphsLoaded() {
@@ -271,7 +298,7 @@ class _ChapterTextState extends State<ChapterText>
           if (targetOffset > 50.0 && maxScroll <= 0.0) {
             return false;
           }
-          final scrollOffset = (16.0 + targetOffset).clamp(0.0, maxScroll);
+          final scrollOffset = targetOffset.clamp(0.0, maxScroll);
           _scrollController.animateTo(
             scrollOffset,
             duration: const Duration(milliseconds: 350),
@@ -378,7 +405,7 @@ class _ChapterTextState extends State<ChapterText>
           if (targetOffset > 50.0 && maxScroll <= 0.0) {
             return false;
           }
-          final scrollOffset = (16.0 + targetOffset).clamp(0.0, maxScroll);
+          final scrollOffset = targetOffset.clamp(0.0, maxScroll);
           _scrollController.animateTo(
             scrollOffset,
             duration: const Duration(milliseconds: 350),
@@ -492,47 +519,53 @@ class _ChapterTextState extends State<ChapterText>
                             },
                             child: SingleChildScrollView(
                               controller: _scrollController,
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  left: 16.0,
-                                  top: 16.0,
-                                  right: 16.0,
-                                  bottom: screenHeight * 0.8,
-                                ),
-                                child: UsfmWidget(
-                                  verseLines: verseLines,
-                                  selectionController: _selectionController,
-                                  highlights: highlights,
-                                  noteMarkers: noteMarkers,
-                                  onFootnoteTapped: _onFootnoteTapped,
-                                  onNoteTapped: _onNoteTapped,
-                                  onAmbiguousTapped: _onAmbiguousTapped,
-                                  onWordTapped: (id) {
-                                    if (_isVerseScrubberVisible && !_isScrubbing) {
-                                      _hideVerseScrubber();
-                                    }
-                                    log("Tapped word $id");
-                                  },
-                                  onSelectionRequested: (wordId) {
-                                    ScriptureLogic.highlightVerse(
-                                      _selectionController,
-                                      verseLines,
-                                      wordId,
-                                    );
-                                  },
-                                  styleBuilder: (format) {
-                                    return UsfmParagraphStyle.usfmDefaults(
-                                      format: format == ParagraphFormat.p
-                                          ? ParagraphFormat.m
-                                          : format,
-                                      baseStyle: Theme.of(context).textTheme.bodyMedium!
-                                          .copyWith(fontSize: currentTextSize),
-                                    );
-                                  },
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _handleReaderTap,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      left: 16.0,
+                                      top: _topPadding,
+                                      right: 16.0,
+                                      bottom: screenHeight * 0.8,
+                                    ),
+                                  child: UsfmWidget(
+                                    verseLines: verseLines,
+                                    selectionController: _selectionController,
+                                    highlights: highlights,
+                                    noteMarkers: noteMarkers,
+                                    onFootnoteTapped: _onFootnoteTapped,
+                                    onNoteTapped: _onNoteTapped,
+                                    onAmbiguousTapped: _onAmbiguousTapped,
+                                    onTapWhitespace: _handleReaderTap,
+                                    onWordTapped: (id) {
+                                      log("Tapped word $id");
+                                      _handleReaderTap();
+                                    },
+                                    onSelectionRequested: (wordId) {
+                                      ScriptureLogic.highlightVerse(
+                                        _selectionController,
+                                        verseLines,
+                                        wordId,
+                                      );
+                                    },
+                                    styleBuilder: (format) {
+                                      return UsfmParagraphStyle.usfmDefaults(
+                                        format: format == ParagraphFormat.p
+                                            ? ParagraphFormat.m
+                                            : format,
+                                        baseStyle: Theme.of(context).textTheme.bodyMedium!
+                                            .copyWith(fontSize: currentTextSize),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                        ),
                           if (widget.activePageIndexListenable != null &&
                               widget.pageIndex != null)
                             ValueListenableBuilder<int>(

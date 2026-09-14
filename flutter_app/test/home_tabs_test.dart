@@ -259,7 +259,7 @@ void main() {
     expect(find.byType(ChapterChooser), findsOneWidget);
   });
 
-  testWidgets('three-dot menu shows Distraction free option and enters distraction free mode', (tester) async {
+  testWidgets('three-dot menu shows Search and Play Audio, and does not contain Distraction free', (tester) async {
     tabManager.openTab(43, 3); // John 3
 
     await tester.pumpWidget(
@@ -278,30 +278,13 @@ void main() {
     await tester.tap(moreButton);
     await tester.pumpAndSettle();
 
-    // Verify 'Distraction free' option exists
-    expect(find.text('Distraction free'), findsOneWidget);
-
-    // Tap 'Distraction free'
-    await tester.tap(find.text('Distraction free'));
-    await tester.pumpAndSettle();
-
-    // AppBar should now be hidden
-    expect(find.byType(AppBar), findsNothing);
-
-    // The top overlay should be visible with exit buttons
-    final exitButton = find.byIcon(Icons.fullscreen_exit);
-    expect(exitButton, findsOneWidget);
-    expect(find.byTooltip('Exit distraction free'), findsNWidgets(2)); // back arrow + fullscreen_exit
-
-    // Tapping exit button exits distraction free mode
-    await tester.tap(exitButton);
-    await tester.pumpAndSettle();
-
-    // AppBar is restored
-    expect(find.byType(AppBar), findsOneWidget);
+    // Verify options
+    expect(find.text('Search'), findsOneWidget);
+    expect(find.text('Play Audio'), findsOneWidget);
+    expect(find.text('Distraction free'), findsNothing);
   });
 
-  testWidgets('Kindle style overlay auto-hides and reappears when tapping top region', (tester) async {
+  testWidgets('tapping text screen enters and exits distraction free mode and pop route exits it', (tester) async {
     tabManager.openTab(43, 3); // John 3
 
     await tester.pumpWidget(
@@ -311,43 +294,69 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Enter distraction free mode
-    await tester.tap(find.byIcon(Icons.more_vert));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Distraction free'));
-    await tester.pump(); // enters mode, timer scheduled
+    final slideFinder = find.byKey(const Key('app_bar_animated_slide'));
+    expect(tester.widget<AnimatedSlide>(slideFinder).offset, equals(Offset.zero));
 
-    // Initially, top overlay is visible
-    expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
-
-    // Advance time by 3.5 seconds to trigger auto-hide
-    await tester.pump(const Duration(milliseconds: 3500));
+    // Tap text screen to enter distraction free mode
+    await tester.tapAt(const Offset(200, 300));
     await tester.pumpAndSettle();
 
-    // Now overlay is hidden (IgnorePointer is true)
-    final ignorePointerFinder =
-        find.byKey(const Key('distraction_free_overlay_ignore_pointer'));
-    expect(ignorePointerFinder, findsOneWidget);
-    final ignorePointerWidget =
-        tester.widget<IgnorePointer>(ignorePointerFinder);
-    expect(ignorePointerWidget.ignoring, isTrue);
+    expect(tester.widget<AnimatedSlide>(slideFinder).offset, equals(const Offset(0, -1)));
 
-    // Tap in top region (y = 40)
-    await tester.tapAt(const Offset(200, 40));
+    // Tap text screen again to exit distraction free mode
+    await tester.tapAt(const Offset(200, 300));
     await tester.pumpAndSettle();
 
-    // Overlay is visible again!
-    final ignorePointerWidget2 =
-        tester.widget<IgnorePointer>(ignorePointerFinder);
-    expect(ignorePointerWidget2.ignoring, isFalse);
+    expect(tester.widget<AnimatedSlide>(slideFinder).offset, equals(Offset.zero));
+
+    // Enter distraction free mode again
+    await tester.tapAt(const Offset(200, 300));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<AnimatedSlide>(slideFinder).offset, equals(const Offset(0, -1)));
 
     // Back gesture / PopScope should exit distraction free mode
     final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
     await widgetsAppState.didPopRoute();
     await tester.pumpAndSettle();
 
-    // AppBar is restored
-    expect(find.byType(AppBar), findsOneWidget);
+    expect(tester.widget<AnimatedSlide>(slideFinder).offset, equals(Offset.zero));
+  });
+
+  testWidgets('text position does not jump when entering or exiting distraction free mode', (tester) async {
+    tabManager.openTab(43, 3); // John 3
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Find the UsfmWidget in the active chapter and record its initial vertical position
+    final activeChapter = find.byKey(const ValueKey('chapter_43_3'));
+    final usfmFinder = find.descendant(
+      of: activeChapter,
+      matching: find.byType(UsfmWidget),
+    );
+    expect(usfmFinder, findsOneWidget);
+    final initialTop = tester.getTopLeft(usfmFinder).dy;
+
+    // Enter distraction free mode by tapping text screen
+    await tester.tapAt(const Offset(200, 300));
+    await tester.pumpAndSettle();
+
+    // Verify UsfmWidget is at the exact same vertical position (no jump!)
+    final distractionFreeTop = tester.getTopLeft(usfmFinder).dy;
+    expect(distractionFreeTop, equals(initialTop));
+
+    // Exit distraction free mode
+    await tester.tapAt(const Offset(200, 300));
+    await tester.pumpAndSettle();
+
+    // Verify UsfmWidget is still at the exact same vertical position
+    final restoredTop = tester.getTopLeft(usfmFinder).dy;
+    expect(restoredTop, equals(initialTop));
   });
 
   testWidgets(

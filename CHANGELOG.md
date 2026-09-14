@@ -1,6 +1,7 @@
 # 2.1.0 - 2026.09.12
 
-- Fix section header navigation bug (#39)
+- Fix section header navigation bug (#39).
+- Enter distraction-free mode on tap.
 
 # 2.0.0 - 2026.09.12
 

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
@@ -28,10 +26,6 @@ class _HomePageState extends State<HomePage> {
   final _chapterChooserNotifier = ValueNotifier<(int, int)?>(null);
   AudioPlaybackManager? _cachedAudioManager;
   bool _isDistractionFree = false;
-  bool _showDistractionFreeOverlay = false;
-  Timer? _overlayHideTimer;
-  Offset? _pointerDownPos;
-  DateTime? _pointerDownTime;
 
   @override
   void initState() {
@@ -61,7 +55,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _overlayHideTimer?.cancel();
     if (_isDistractionFree) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -71,40 +64,26 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  void _toggleDistractionFree() {
+    if (_isDistractionFree) {
+      _exitDistractionFree();
+    } else {
+      _enterDistractionFree();
+    }
+  }
+
   void _enterDistractionFree() {
     setState(() {
       _isDistractionFree = true;
-      _showDistractionFreeOverlay = true;
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _scheduleOverlayHide();
   }
 
   void _exitDistractionFree() {
-    _overlayHideTimer?.cancel();
     setState(() {
       _isDistractionFree = false;
-      _showDistractionFreeOverlay = false;
     });
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  }
-
-  void _scheduleOverlayHide() {
-    _overlayHideTimer?.cancel();
-    _overlayHideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && _isDistractionFree && _showDistractionFreeOverlay) {
-        setState(() {
-          _showDistractionFreeOverlay = false;
-        });
-      }
-    });
-  }
-
-  void _showOverlayAndScheduleHide() {
-    setState(() {
-      _showDistractionFreeOverlay = true;
-    });
-    _scheduleOverlayHide();
   }
 
   Widget _buildBookChooser() {
@@ -168,21 +147,91 @@ class _HomePageState extends State<HomePage> {
           child: Scaffold(
             drawer: _isDistractionFree ? null : const AppDrawer(),
             drawerEnableOpenDragGesture: !_isDistractionFree,
-            appBar: _isDistractionFree
-                ? null
+            extendBodyBehindAppBar: hasTabs && !isAdding,
+            appBar: (hasTabs && !isAdding)
+                ? PreferredSize(
+                    preferredSize: const Size.fromHeight(kToolbarHeight),
+                    child: AnimatedSlide(
+                      key: const Key('app_bar_animated_slide'),
+                      offset: _isDistractionFree
+                          ? const Offset(0, -1)
+                          : Offset.zero,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      child: AnimatedOpacity(
+                        opacity: _isDistractionFree ? 0.0 : 1.0,
+                        duration: const Duration(milliseconds: 250),
+                        child: IgnorePointer(
+                          ignoring: _isDistractionFree,
+                          child: AppBar(
+                            titleSpacing: 0,
+                            title: ChapterTabsBar(
+                              tabManager: _tabManager,
+                              onActiveTabTapped: (tab) {
+                                final chapterCount =
+                                    bookIdToChapterCountMap[tab.bookId] ?? 1;
+                                _chapterChooserNotifier.value =
+                                    (tab.bookId, chapterCount);
+                              },
+                            ),
+                            actions: [
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                tooltip: 'Open Chapter',
+                                onPressed: _tabManager.startAddingTab,
+                              ),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert),
+                                tooltip: 'More options',
+                                onSelected: (value) {
+                                  if (value == 'search') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SearchPage(
+                                          currentBookId: activeTab.bookId,
+                                        ),
+                                      ),
+                                    );
+                                  } else if (value == 'play') {
+                                    audioManager?.playOrToggleChapter(
+                                      activeTab.bookId,
+                                      activeTab.chapter,
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'search',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.search),
+                                        SizedBox(width: 12),
+                                        Expanded(child: Text('Search')),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'play',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.play_arrow),
+                                        SizedBox(width: 12),
+                                        Expanded(child: Text('Play Audio')),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
                 : AppBar(
                     titleSpacing: 0,
-                    title: !hasTabs
-                        ? const Text('Berean Standard Bible')
-                        : ChapterTabsBar(
-                            tabManager: _tabManager,
-                            onActiveTabTapped: (tab) {
-                              final chapterCount =
-                                  bookIdToChapterCountMap[tab.bookId] ?? 1;
-                              _chapterChooserNotifier.value =
-                                  (tab.bookId, chapterCount);
-                            },
-                          ),
+                    title: const Text('Berean Standard Bible'),
                     leading: isAdding
                         ? IconButton(
                             icon: const Icon(Icons.arrow_back),
@@ -197,222 +246,47 @@ class _HomePageState extends State<HomePage> {
                           tooltip: 'Cancel',
                           onPressed: _tabManager.cancelAddingTab,
                         )
-                      else ...[
-                        if (!hasTabs)
-                          IconButton(
-                            icon: const Icon(Icons.search),
-                            tooltip: 'Search',
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => SearchPage(
-                                    currentBookId: activeTab?.bookId,
-                                  ),
-                                ),
-                              );
-                            },
-                          )
-                        else ...[
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            tooltip: 'Open Chapter',
-                            onPressed: _tabManager.startAddingTab,
-                          ),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert),
-                            tooltip: 'More options',
-                            onSelected: (value) {
-                              if (value == 'search') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SearchPage(
-                                      currentBookId: activeTab.bookId,
-                                    ),
-                                  ),
-                                );
-                              } else if (value == 'play') {
-                                audioManager?.playOrToggleChapter(
-                                  activeTab.bookId,
-                                  activeTab.chapter,
-                                );
-                              } else if (value == 'distraction_free') {
-                                _enterDistractionFree();
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'search',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.search),
-                                    SizedBox(width: 12),
-                                    Expanded(child: Text('Search')),
-                                  ],
+                      else
+                        IconButton(
+                          icon: const Icon(Icons.search),
+                          tooltip: 'Search',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SearchPage(
+                                  currentBookId: activeTab?.bookId,
                                 ),
                               ),
-                              const PopupMenuItem(
-                                value: 'play',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.play_arrow),
-                                    SizedBox(width: 12),
-                                    Expanded(child: Text('Play Audio')),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'distraction_free',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.fullscreen),
-                                    SizedBox(width: 12),
-                                    Expanded(child: Text('Distraction free')),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
+                            );
+                          },
+                        ),
                     ],
                   ),
             body: (!hasTabs || isAdding)
                 ? SafeArea(
                     child: _buildBookChooser(),
                   )
-                : Listener(
-                    behavior: HitTestBehavior.translucent,
-                    onPointerDown: (event) {
-                      if (_isDistractionFree) {
-                        _pointerDownPos = event.position;
-                        _pointerDownTime = DateTime.now();
-                      }
-                    },
-                    onPointerUp: (event) {
-                      if (_isDistractionFree && _pointerDownPos != null) {
-                        final delta =
-                            (event.position - _pointerDownPos!).distance;
-                        final elapsed =
-                            DateTime.now().difference(_pointerDownTime!);
-                        if (delta < 15.0 &&
-                            elapsed < const Duration(milliseconds: 500)) {
-                          if (_showDistractionFreeOverlay) {
-                            if (event.position.dy > 90) {
-                              setState(() {
-                                _showDistractionFreeOverlay = false;
-                              });
-                              _overlayHideTimer?.cancel();
-                            }
-                          } else {
-                            if (event.position.dy < 90) {
-                              _showOverlayAndScheduleHide();
-                            }
-                          }
-                        }
-                        _pointerDownPos = null;
-                      }
-                    },
-                    child: Stack(
-                      children: [
-                        SafeArea(
-                          top: _isDistractionFree,
-                          bottom: false,
-                          child: TextScreen(
-                            key: const ValueKey('text_reader_screen'),
-                            bookId: activeTab.bookId,
-                            chapter: activeTab.chapter,
-                            initialSectionHeading: activeTab.sectionHeading,
-                            initialTargetVerse: activeTab.targetVerse,
-                            chapterChooserNotifier: _chapterChooserNotifier,
-                            onChapterChanged:
-                                (bookId, chapter, [sectionHeading, targetVerse]) {
-                              _tabManager.updateActiveChapter(
-                                bookId,
-                                chapter,
-                                sectionHeading,
-                                targetVerse,
-                              );
-                            },
-                          ),
-                        ),
-                        if (_isDistractionFree)
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: AnimatedSlide(
-                              offset: _showDistractionFreeOverlay
-                                  ? Offset.zero
-                                  : const Offset(0, -1),
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeInOut,
-                              child: AnimatedOpacity(
-                                opacity:
-                                    _showDistractionFreeOverlay ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 250),
-                                child: IgnorePointer(
-                                  key: const Key(
-                                      'distraction_free_overlay_ignore_pointer'),
-                                  ignoring: !_showDistractionFreeOverlay,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surfaceContainerHighest
-                                          .withValues(alpha: 0.95),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.15),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: SafeArea(
-                                      bottom: false,
-                                      child: SizedBox(
-                                        height: kToolbarHeight,
-                                        child: Row(
-                                          children: [
-                                            IconButton(
-                                              icon:
-                                                  const Icon(Icons.arrow_back),
-                                              tooltip: 'Exit distraction free',
-                                              onPressed: _exitDistractionFree,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                activeTab.label,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.fullscreen_exit),
-                                              tooltip: 'Exit distraction free',
-                                              onPressed: _exitDistractionFree,
-                                            ),
-                                            const SizedBox(width: 4),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                : SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: TextScreen(
+                      key: const ValueKey('text_reader_screen'),
+                      bookId: activeTab.bookId,
+                      chapter: activeTab.chapter,
+                      initialSectionHeading: activeTab.sectionHeading,
+                      initialTargetVerse: activeTab.targetVerse,
+                      chapterChooserNotifier: _chapterChooserNotifier,
+                      onToggleDistractionFree: _toggleDistractionFree,
+                      onChapterChanged:
+                          (bookId, chapter, [sectionHeading, targetVerse]) {
+                        _tabManager.updateActiveChapter(
+                          bookId,
+                          chapter,
+                          sectionHeading,
+                          targetVerse,
+                        );
+                      },
                     ),
                   ),
             bottomNavigationBar: (!_isDistractionFree &&

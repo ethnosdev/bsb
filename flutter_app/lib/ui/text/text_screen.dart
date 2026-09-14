@@ -28,6 +28,7 @@ class TextScreen extends StatefulWidget {
     this.initialTargetVerse,
     this.chapterChooserNotifier,
     this.onChapterChanged,
+    this.onToggleDistractionFree,
   });
 
   final int bookId;
@@ -41,6 +42,7 @@ class TextScreen extends StatefulWidget {
     String? sectionHeading,
     int? targetVerse,
   ])? onChapterChanged;
+  final VoidCallback? onToggleDistractionFree;
 
   @override
   State<TextScreen> createState() => _TextScreenState();
@@ -224,7 +226,8 @@ class _TextScreenState extends State<TextScreen> {
             activePageIndexListenable: _activePageIndexNotifier,
             showScrubberNotifier: _showScrubberNotifier,
             pageIndex: pageIndex,
-          targetSection: _isTargetSection(bookId, chapter)
+            onToggleDistractionFree: widget.onToggleDistractionFree,
+            targetSection: _isTargetSection(bookId, chapter)
               ? _pendingSectionHeading
               : null,
           targetVerse: _isTargetVerse(bookId, chapter)

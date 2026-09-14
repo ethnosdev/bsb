@@ -325,17 +325,15 @@ void main() {
     // Player bar is visible initially
     expect(find.byType(AudioPlayerBottomBar), findsOneWidget);
 
-    // Enter distraction free mode from 3-dot menu
-    await tester.tap(find.byIcon(Icons.more_vert));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Distraction free'));
+    // Enter distraction free mode by tapping the text screen
+    await tester.tapAt(const Offset(200, 300));
     await tester.pumpAndSettle();
 
     // Player bar is now hidden!
     expect(find.byType(AudioPlayerBottomBar), findsNothing);
 
-    // Exit distraction free mode via exit button
-    await tester.tap(find.byIcon(Icons.fullscreen_exit));
+    // Exit distraction free mode via tapping the text screen
+    await tester.tapAt(const Offset(200, 300));
     await tester.pumpAndSettle();
 
     // Player bar is restored!
