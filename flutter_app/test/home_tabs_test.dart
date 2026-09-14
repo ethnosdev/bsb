@@ -359,6 +359,51 @@ void main() {
     expect(restoredTop, equals(initialTop));
   });
 
+  testWidgets('text starts 16px below app bar and does not jump on iOS (with status bar)', (tester) async {
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3.0;
+    tester.view.padding = const FakeViewPadding(top: 47.0 * 3);
+    tester.view.viewPadding = const FakeViewPadding(top: 47.0 * 3);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+
+    tabManager.openTab(43, 3); // John 3
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final appBarFinder = find.byType(AppBar);
+    final appBarBottom = tester.getBottomLeft(appBarFinder).dy;
+    expect(appBarBottom, equals(103.0)); // 47 status bar + 56 toolbar
+
+    final activeChapter = find.byKey(const ValueKey('chapter_43_3'));
+    final usfmFinder = find.descendant(
+      of: activeChapter,
+      matching: find.byType(UsfmWidget),
+    );
+    expect(usfmFinder, findsOneWidget);
+    final initialTop = tester.getTopLeft(usfmFinder).dy;
+    expect(initialTop, equals(119.0)); // 103 + 16px margin
+
+    // Enter distraction free mode by tapping text screen
+    await tester.tapAt(const Offset(200, 300));
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(usfmFinder).dy, equals(119.0)); // No jump
+
+    // Exit distraction free mode
+    await tester.tapAt(const Offset(200, 300));
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(usfmFinder).dy, equals(119.0)); // No jump
+  });
+
   testWidgets(
       'tapping tab, opening section headings, and selecting heading in different chapter navigates and preserves section heading (Issue #39)',
       (tester) async {

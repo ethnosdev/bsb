@@ -140,18 +140,18 @@ class _ChapterTextState extends State<ChapterText>
     }
   }
 
-  double _statusBarHeight = 0.0;
+  double _maxTopInset = 0.0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final topInset = MediaQuery.paddingOf(context).top;
-    if (topInset > _statusBarHeight) {
-      _statusBarHeight = topInset;
+    if (topInset > _maxTopInset) {
+      _maxTopInset = topInset;
     }
   }
 
-  double get _topPadding => _statusBarHeight + kToolbarHeight + 16.0;
+  double get _topPadding => _maxTopInset + 16.0;
 
   void _handleReaderTap() {
     if (_selectionController.hasSelection) {
