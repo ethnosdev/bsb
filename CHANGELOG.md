@@ -1,7 +1,8 @@
-# 2.1.0 - 2026.09.12
+# 2.1.0 - 2026.09.15
 
 - Fix section header navigation bug (#39).
 - Enter distraction-free mode on tap.
+- Fix reference in section heading not tapable.
 
 # 2.0.0 - 2026.09.12
 
