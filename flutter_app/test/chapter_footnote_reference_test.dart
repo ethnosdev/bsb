@@ -582,6 +582,63 @@ void main() {
       );
       expect(openInNewButton, findsNothing);
     });
+
+    testWidgets('Tapping the word before a footnote marker in a section header opens the cross references footnote dialog', (tester) async {
+      fakeDb.chapterLines = [
+        UsfmLine(
+          bookChapterVerse: 1001000,
+          text: 'The Creation',
+          format: ParagraphFormat.s1,
+        ),
+        UsfmLine(
+          bookChapterVerse: 1001000,
+          text: 'John 1:1–5; Hebrews 11:1–3',
+          format: ParagraphFormat.r,
+        ),
+        UsfmLine(
+          bookChapterVerse: 1001001,
+          text: 'In the beginning God created the heavens and the earth.',
+          format: ParagraphFormat.p,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ChapterText(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the word 'Creation' in the section header
+      final creationFinder = find.byWidgetPredicate(
+        (w) => w is WordWidget && w.text == 'Creation',
+      );
+      expect(creationFinder, findsOneWidget);
+
+      // Tap 'Creation'
+      await tester.tap(creationFinder);
+      await tester.pumpAndSettle();
+
+      // Footnote dialog (AlertDialog) should be shown containing the cross references
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      final selectableFinder = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(SelectableText),
+      );
+      expect(selectableFinder, findsOneWidget);
+      final selectableWidget = tester.widget<SelectableText>(selectableFinder);
+      final textSpan = selectableWidget.textSpan!;
+      // Contains the cross reference text
+      expect(textSpan.toPlainText(), contains('John 1:1–5'));
+      expect(textSpan.toPlainText(), contains('Hebrews 11:1–3'));
+    });
   });
 }
 
