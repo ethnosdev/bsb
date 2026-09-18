@@ -1,4 +1,7 @@
+import 'package:bsb/app_state.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +33,7 @@ class BookChooser extends StatefulWidget {
   const BookChooser({
     super.key,
     required this.onSelected,
+    this.onVerseSelected,
     this.wideScreenBreakpoint = defaultWideScreenBreakpoint,
   });
 
@@ -37,6 +41,7 @@ class BookChooser extends StatefulWidget {
   static const double defaultWideScreenBreakpoint = 800.0;
 
   final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final void Function(int bookId, int chapter, int verse)? onVerseSelected;
   final double wideScreenBreakpoint;
 
   @override
@@ -61,7 +66,13 @@ class _BookChooserState extends State<BookChooser> {
   Color get generalEpistlesColor => nt2;
 
   void _onBookSelected(int bookId, int chapterCount) {
-    if (chapterCount == 1) {
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final showVerseGrid =
+        appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false;
+
+    if (chapterCount == 1 && !showVerseGrid) {
       widget.onSelected(bookId, 1);
       return;
     }
@@ -129,6 +140,14 @@ class _BookChooserState extends State<BookChooser> {
                     onSectionSelected: (chapter, sectionHeading) {
                       _chapterNotifier.value = null;
                       widget.onSelected(bookId, chapter, sectionHeading);
+                    },
+                    onVerseSelected: (chapter, verse) {
+                      _chapterNotifier.value = null;
+                      if (widget.onVerseSelected != null) {
+                        widget.onVerseSelected!(bookId, chapter, verse);
+                      } else {
+                        widget.onSelected(bookId, chapter);
+                      }
                     },
                   );
                 },

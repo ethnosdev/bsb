@@ -200,6 +200,14 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
+                SwitchListTile(
+                  title: const Text('Verse Grid'),
+                  subtitle: const Text('Select a verse after choosing a chapter'),
+                  value: manager.showVerseGrid,
+                  onChanged: (bool value) {
+                    manager.setShowVerseGrid(value);
+                  },
+                ),
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),

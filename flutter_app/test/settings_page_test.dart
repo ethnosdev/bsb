@@ -111,4 +111,31 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('SettingsPage allows toggling Verse Grid', (tester) async {
+    final userSettings = getIt<UserSettings>();
+    expect(userSettings.showVerseGrid, isFalse);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Verse Grid'), findsOneWidget);
+    final switchFinder = find.widgetWithText(SwitchListTile, 'Verse Grid');
+    expect(switchFinder, findsOneWidget);
+
+    final switchWidget = tester.widget<SwitchListTile>(switchFinder);
+    expect(switchWidget.value, isFalse);
+
+    // Tap the switch
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    expect(userSettings.showVerseGrid, isTrue);
+    final updatedSwitch = tester.widget<SwitchListTile>(switchFinder);
+    expect(updatedSwitch.value, isTrue);
+  });
 }

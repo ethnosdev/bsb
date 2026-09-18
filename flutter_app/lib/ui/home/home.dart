@@ -23,9 +23,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _tabManager = getIt<TabManager>();
-  final _chapterChooserNotifier = ValueNotifier<(int, int)?>(null);
+  final _chapterChooserNotifier = ValueNotifier<(int, int, int?)?>(null);
   AudioPlaybackManager? _cachedAudioManager;
   bool _isDistractionFree = false;
+
+  bool _resolveShowVerseGrid() {
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    if (appState != null) {
+      return appState.showVerseGridNotifier.value;
+    }
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    return userSettings?.showVerseGrid ?? false;
+  }
 
   @override
   void initState() {
@@ -100,15 +110,26 @@ class _HomePageState extends State<HomePage> {
       _tabManager.openTab(bookId, chapter, sectionHeading);
     }
 
+    void onVerseSelected(int bookId, int chapter, int verse) {
+      _chapterChooserNotifier.value = null;
+      _tabManager.openTab(bookId, chapter, null, verse);
+    }
+
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     if (appState != null) {
       return ValueListenableBuilder<BookChooserStyle>(
         valueListenable: appState.bookChooserStyleNotifier,
         builder: (context, style, _) {
           if (style == BookChooserStyle.list) {
-            return ListBookChooser(onSelected: onSelected);
+            return ListBookChooser(
+              onSelected: onSelected,
+              onVerseSelected: onVerseSelected,
+            );
           }
-          return BookChooser(onSelected: onSelected);
+          return BookChooser(
+            onSelected: onSelected,
+            onVerseSelected: onVerseSelected,
+          );
         },
       );
     }
@@ -117,9 +138,15 @@ class _HomePageState extends State<HomePage> {
         getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
     final style = userSettings?.bookChooserStyle ?? BookChooserStyle.grid;
     if (style == BookChooserStyle.list) {
-      return ListBookChooser(onSelected: onSelected);
+      return ListBookChooser(
+        onSelected: onSelected,
+        onVerseSelected: onVerseSelected,
+      );
     }
-    return BookChooser(onSelected: onSelected);
+    return BookChooser(
+      onSelected: onSelected,
+      onVerseSelected: onVerseSelected,
+    );
   }
 
   @override
@@ -193,8 +220,11 @@ class _HomePageState extends State<HomePage> {
                                 }
                                 final chapterCount =
                                     bookIdToChapterCountMap[tab.bookId] ?? 1;
+                                final initialChapter = _resolveShowVerseGrid()
+                                    ? tab.chapter
+                                    : null;
                                 _chapterChooserNotifier.value =
-                                    (tab.bookId, chapterCount);
+                                    (tab.bookId, chapterCount, initialChapter);
                               },
                             ),
                             actions: [

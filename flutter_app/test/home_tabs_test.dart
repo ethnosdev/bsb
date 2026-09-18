@@ -653,4 +653,33 @@ void main() {
     expect(find.byType(BookChooser), findsOneWidget);
     expect(find.byType(ChapterChooser), findsNothing);
   });
+
+  testWidgets(
+      'tapping active tab when showVerseGrid is true opens verse grid directly for active chapter',
+      (tester) async {
+    await userSettings.setShowVerseGrid(true);
+    tabManager.openTab(43, 2); // John 2
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap JHN 2 active tab chip
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+
+    // Directly opens GridVerseChooser for John 2
+    expect(find.byType(GridVerseChooser), findsOneWidget);
+    expect(find.text('John 2'), findsOneWidget);
+
+    // Tap back button returns to chapter chooser
+    await tester.tap(find.byKey(const ValueKey('verse_grid_back')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GridVerseChooser), findsNothing);
+    expect(find.byType(ChapterChooser), findsOneWidget);
+  });
 }

@@ -5,6 +5,7 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
+import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
@@ -17,6 +18,18 @@ class FakeChapterScrollDbHelper implements DatabaseHelper {
 
   @override
   Future<List<UsfmLine>> getChapter(int bookId, int chapter) async {
+    if (chapter == 119) {
+      return List.generate(
+        50,
+        (i) => UsfmLine(
+          bookChapterVerse: bookId * 1000000 + chapter * 1000 + (i + 1),
+          text:
+              'This is verse ${i + 1} with lots of words to ensure the text extends well past the viewport and creates scrollable content. ' *
+              4,
+          format: (i % 2 == 0) ? ParagraphFormat.m : ParagraphFormat.p,
+        ),
+      );
+    }
     return [
       UsfmLine(
         bookChapterVerse: 1001001,
@@ -125,4 +138,63 @@ void main() {
     // Must not trigger again
     expect(targetScrolledCount, equals(1));
   });
+
+  testWidgets(
+    'Using verse scrubber does not cause ChapterText to scroll back to initial targetVerse when scrubber auto hides',
+    (tester) async {
+      int targetScrolledCount = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ChapterText(
+              bookId: 19,
+              chapter: 119,
+              targetVerse: 40,
+              onTargetVerseScrolled: () {
+                targetScrolledCount++;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(targetScrolledCount, equals(1));
+
+      final scrollableFinder = find.byType(SingleChildScrollView);
+      final scrollPosition = tester.state<ScrollableState>(
+        find.descendant(of: scrollableFinder, matching: find.byType(Scrollable)),
+      ).position;
+      final initialScrollOffset = scrollPosition.pixels;
+
+      final scrubberFinder = find.byType(VerseScrubber);
+      expect(scrubberFinder, findsOneWidget);
+
+      final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
+      scrubberWidget.onVerseSelected(1);
+      await tester.pumpAndSettle();
+
+      final scrubbedOffset = tester.state<ScrollableState>(
+        find.descendant(of: scrollableFinder, matching: find.byType(Scrollable)),
+      ).position.pixels;
+
+      // Scrolling to verse 1 should move scroll position to 0 (top)
+      expect(scrubbedOffset, equals(0.0));
+      expect(scrubbedOffset, isNot(equals(initialScrollOffset)));
+
+      // Auto-hide timeout for verse scrubber is 3 seconds
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+
+      // targetScrolledCount must not have incremented
+      expect(targetScrolledCount, equals(1));
+
+      // Scroll position must remain at 0, not jump back down to verse 10
+      final offsetAfterAutoHide = tester.state<ScrollableState>(
+        find.descendant(of: scrollableFinder, matching: find.byType(Scrollable)),
+      ).position.pixels;
+      expect(offsetAfterAutoHide, equals(0.0));
+    },
+  );
 }

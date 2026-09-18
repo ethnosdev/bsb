@@ -6,6 +6,7 @@ import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
@@ -78,7 +79,17 @@ class _ChapterTextState extends State<ChapterText>
     return widget.activePageIndexListenable!.value == widget.pageIndex;
   }
 
+  bool get _isVerseSidebarEnabled {
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final showVerseGrid =
+        appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false;
+    return !showVerseGrid;
+  }
+
   void _handleActivePageChange() {
+    if (!_isVerseSidebarEnabled) return;
     if (_isActive) {
       _showVerseScrubberWithTimeout();
     } else {
@@ -87,6 +98,7 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _handleShowScrubberRequest() {
+    if (!_isVerseSidebarEnabled) return;
     if (_isActive) {
       _showVerseScrubberWithTimeout();
     }
@@ -95,6 +107,7 @@ class _ChapterTextState extends State<ChapterText>
   void _showVerseScrubberWithTimeout({
     Duration duration = const Duration(seconds: 3),
   }) {
+    if (!_isVerseSidebarEnabled) return;
     _verseScrubberTimer?.cancel();
     if (!_isVerseScrubberVisible) {
       setState(() {
@@ -120,8 +133,10 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _scrollFromScrubber(int verse) {
-    _lastScrolledVerse = null;
-    _scrollToTargetVerse(verse);
+    _verseScrollTimer?.cancel();
+    _activeTargetVerse = null;
+    _lastScrolledVerse = widget.targetVerse;
+    _performScrollToVerse(verse);
   }
 
   @override
@@ -166,6 +181,7 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _handleTextParagraphsLoaded() {
+    if (!_isVerseSidebarEnabled) return;
     final verseLines = manager.textParagraphNotifier.value;
     if (verseLines.isNotEmpty && !_hasInitiallyShownScrubber) {
       final hasMoreThan5Verses =
@@ -252,7 +268,9 @@ class _ChapterTextState extends State<ChapterText>
       if (success) {
         _lastScrolledSection = target;
         _activeTargetSection = null;
-        widget.onTargetSectionScrolled?.call();
+        if (target == widget.targetSection) {
+          widget.onTargetSectionScrolled?.call();
+        }
       } else if (attempt < 15) {
         _sectionScrollTimer = Timer(const Duration(milliseconds: 50), () {
           if (mounted && widget.targetSection == target) {
@@ -330,7 +348,9 @@ class _ChapterTextState extends State<ChapterText>
       if (success) {
         _lastScrolledVerse = target;
         _activeTargetVerse = null;
-        widget.onTargetVerseScrolled?.call();
+        if (target == widget.targetVerse) {
+          widget.onTargetVerseScrolled?.call();
+        }
       } else if (attempt < 15) {
         _verseScrollTimer = Timer(const Duration(milliseconds: 50), () {
           if (mounted && widget.targetVerse == target) {
@@ -482,7 +502,9 @@ class _ChapterTextState extends State<ChapterText>
             }
             final sortedVerses = verses.toList()..sort();
 
-            if (verseLines.isNotEmpty && !_hasInitiallyShownScrubber) {
+            if (verseLines.isNotEmpty &&
+                !_hasInitiallyShownScrubber &&
+                _isVerseSidebarEnabled) {
               if (sortedVerses.length > 5) {
                 _hasInitiallyShownScrubber = true;
                 if (_isActive) {
@@ -566,55 +588,7 @@ class _ChapterTextState extends State<ChapterText>
                             ),
                           ),
                         ),
-                          if (widget.activePageIndexListenable != null &&
-                              widget.pageIndex != null)
-                            ValueListenableBuilder<int>(
-                              valueListenable: widget.activePageIndexListenable!,
-                              builder: (context, activeIndex, _) {
-                                final isCurrentActivePage =
-                                    activeIndex == widget.pageIndex;
-                                return VerseScrubber(
-                                   verses: sortedVerses,
-                                   isActive: isCurrentActivePage,
-                                   isVisible: _isVerseScrubberVisible,
-                                   onVerseSelected: (verse) {
-                                     _scrollFromScrubber(verse);
-                                     _showVerseScrubberWithTimeout();
-                                   },
-                                   onDismiss: () {
-                                     _hideVerseScrubber();
-                                   },
-                                   onInteractionStart: () {
-                                     _isScrubbing = true;
-                                     _verseScrubberTimer?.cancel();
-                                   },
-                                   onInteractionEnd: () {
-                                     _isScrubbing = false;
-                                     _showVerseScrubberWithTimeout();
-                                   },
-                                 );
-                              },
-                            )
-                          else
-                            VerseScrubber(
-                              verses: sortedVerses,
-                              isVisible: _isVerseScrubberVisible,
-                              onVerseSelected: (verse) {
-                                _scrollFromScrubber(verse);
-                                _showVerseScrubberWithTimeout();
-                              },
-                              onDismiss: () {
-                                _hideVerseScrubber();
-                              },
-                              onInteractionStart: () {
-                                _isScrubbing = true;
-                                _verseScrubberTimer?.cancel();
-                              },
-                              onInteractionEnd: () {
-                                _isScrubbing = false;
-                                _showVerseScrubberWithTimeout();
-                              },
-                            ),
+                          _buildVerseScrubberOverlay(sortedVerses),
                         ],
                       ),
                     );
@@ -626,6 +600,79 @@ class _ChapterTextState extends State<ChapterText>
         );
       },
     );
+  }
+
+  Widget _buildVerseScrubberOverlay(List<int> sortedVerses) {
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    if (appState != null) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: appState.showVerseGridNotifier,
+        builder: (context, showVerseGrid, child) {
+          if (showVerseGrid) {
+            return const SizedBox.shrink();
+          }
+          return _buildVerseScrubberWidget(sortedVerses);
+        },
+      );
+    }
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    if (userSettings?.showVerseGrid ?? false) {
+      return const SizedBox.shrink();
+    }
+    return _buildVerseScrubberWidget(sortedVerses);
+  }
+
+  Widget _buildVerseScrubberWidget(List<int> sortedVerses) {
+    if (widget.activePageIndexListenable != null &&
+        widget.pageIndex != null) {
+      return ValueListenableBuilder<int>(
+        valueListenable: widget.activePageIndexListenable!,
+        builder: (context, activeIndex, _) {
+          final isCurrentActivePage = activeIndex == widget.pageIndex;
+          return VerseScrubber(
+            verses: sortedVerses,
+            isActive: isCurrentActivePage,
+            isVisible: _isVerseScrubberVisible,
+            onVerseSelected: (verse) {
+              _scrollFromScrubber(verse);
+              _showVerseScrubberWithTimeout();
+            },
+            onDismiss: () {
+              _hideVerseScrubber();
+            },
+            onInteractionStart: () {
+              _isScrubbing = true;
+              _verseScrubberTimer?.cancel();
+            },
+            onInteractionEnd: () {
+              _isScrubbing = false;
+              _showVerseScrubberWithTimeout();
+            },
+          );
+        },
+      );
+    } else {
+      return VerseScrubber(
+        verses: sortedVerses,
+        isVisible: _isVerseScrubberVisible,
+        onVerseSelected: (verse) {
+          _scrollFromScrubber(verse);
+          _showVerseScrubberWithTimeout();
+        },
+        onDismiss: () {
+          _hideVerseScrubber();
+        },
+        onInteractionStart: () {
+          _isScrubbing = true;
+          _verseScrubberTimer?.cancel();
+        },
+        onInteractionEnd: () {
+          _isScrubbing = false;
+          _showVerseScrubberWithTimeout();
+        },
+      );
+    }
   }
 
   Future<void> _onAmbiguousTapped({

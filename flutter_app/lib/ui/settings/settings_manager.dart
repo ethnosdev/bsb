@@ -55,4 +55,16 @@ class SettingsManager extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  bool get showVerseGrid =>
+      _appState?.showVerseGridNotifier.value ?? userSettings.showVerseGrid;
+
+  Future<void> setShowVerseGrid(bool show) async {
+    if (_appState != null) {
+      await _appState!.setShowVerseGrid(show);
+    } else {
+      await userSettings.setShowVerseGrid(show);
+    }
+    notifyListeners();
+  }
 }

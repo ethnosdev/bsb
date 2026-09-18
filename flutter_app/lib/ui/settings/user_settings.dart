@@ -129,6 +129,18 @@ class UserSettings {
       await _prefs.setString(_chapterChooserStyleKey, style.name);
     }
   }
+
+  static const _showVerseGridKey = 'showVerseGrid';
+
+  bool get showVerseGrid => _prefs.getBool(_showVerseGridKey) ?? false;
+
+  Future<void> setShowVerseGrid(bool show) async {
+    if (!show) {
+      await _prefs.remove(_showVerseGridKey);
+    } else {
+      await _prefs.setBool(_showVerseGridKey, true);
+    }
+  }
 }
 
 enum BookChooserStyle {

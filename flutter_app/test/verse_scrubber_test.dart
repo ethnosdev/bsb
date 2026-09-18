@@ -4,6 +4,7 @@ import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
@@ -336,6 +337,37 @@ void main() {
       expect(hiddenScrubber.isVisible, isFalse);
     });
 
+    testWidgets('verse scrubber does not show when showVerseGrid is true in settings', (tester) async {
+      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+      final userSettings = getIt<UserSettings>();
+      await userSettings.setShowVerseGrid(true);
+
+      final appState = AppState();
+      await appState.init();
+      getIt.registerSingleton<AppState>(appState);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ChapterText(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(VerseScrubber), findsNothing);
+
+      // Now toggle showVerseGrid to false
+      await appState.setShowVerseGrid(false);
+      await tester.pumpAndSettle();
+
+      // Scrubber should now appear
+      expect(find.byType(VerseScrubber), findsOneWidget);
+    });
+
     testWidgets('showScrubberNotifier makes scrubber reappear on active page', (tester) async {
       getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
       final showScrubberNotifier = ValueNotifier<int>(0);
@@ -649,5 +681,89 @@ void main() {
       // Scrubber should NOT be visible
       expect(getActiveScrubber().isVisible, isFalse);
     });
+
+    testWidgets(
+      'TextScreen with initialTargetVerse: selecting a verse in VerseScrubber does not scroll back to initialTargetVerse when scrubber auto hides',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: TextScreen(
+                bookId: 1,
+                chapter: 1,
+                initialTargetVerse: 10,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final chapterTextFinder = find.byKey(const ValueKey('chapter_1_1'));
+        expect(chapterTextFinder, findsOneWidget);
+        final chapterText = tester.widget<ChapterText>(chapterTextFinder);
+        // ChapterText should have received targetVerse: null after onTargetVerseScrolled ran
+        expect(chapterText.targetVerse, isNull);
+
+        final scrollableFinder = find.descendant(
+          of: chapterTextFinder,
+          matching: find.byType(Scrollable),
+        );
+        final scrollPosition = tester.state<ScrollableState>(scrollableFinder).position;
+
+        VerseScrubber getActiveScrubber() {
+          return tester
+              .widgetList<VerseScrubber>(find.byType(VerseScrubber))
+              .firstWhere((s) => s.isActive);
+        }
+
+        final scrubber = getActiveScrubber();
+        scrubber.onVerseSelected(1);
+        await tester.pumpAndSettle();
+
+        expect(scrollPosition.pixels, equals(0.0));
+
+        // Wait 3 seconds for scrubber auto-hide
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+
+        expect(scrollPosition.pixels, equals(0.0));
+      },
+    );
+
+    testWidgets(
+      'when showVerseGrid is true, swiping towards next chapter and sliding back does not summon GridVerseChooser or VerseScrubber',
+      (tester) async {
+        getIt<AppState>().setShowVerseGrid(true);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: TextScreen(
+                bookId: 1,
+                chapter: 1,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially, neither verse grid chooser nor scrubber is open
+        expect(find.byType(GridVerseChooser), findsNothing);
+        expect(find.byType(VerseScrubber), findsNothing);
+
+        // Start swiping towards next chapter (drag left) by 50px and release to settle back
+        final gesture = await tester.startGesture(const Offset(300, 300));
+        await gesture.moveBy(const Offset(-25, 0));
+        await tester.pump();
+        await gesture.moveBy(const Offset(-25, 0));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        // Neither GridVerseChooser nor VerseScrubber should be summoned
+        expect(find.byType(GridVerseChooser), findsNothing);
+        expect(find.byType(VerseScrubber), findsNothing);
+      },
+    );
   });
 }

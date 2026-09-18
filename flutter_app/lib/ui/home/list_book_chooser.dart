@@ -1,4 +1,7 @@
+import 'package:bsb/app_state.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
@@ -6,9 +9,11 @@ class ListBookChooser extends StatefulWidget {
   const ListBookChooser({
     super.key,
     required this.onSelected,
+    this.onVerseSelected,
   });
 
   final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final void Function(int bookId, int chapter, int verse)? onVerseSelected;
 
   @override
   State<ListBookChooser> createState() => _ListBookChooserState();
@@ -29,7 +34,13 @@ class _ListBookChooserState extends State<ListBookChooser> {
   }
 
   void _onBookSelected(int bookId, int chapterCount) {
-    if (chapterCount == 1) {
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final showVerseGrid =
+        appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false;
+
+    if (chapterCount == 1 && !showVerseGrid) {
       widget.onSelected(bookId, 1);
       return;
     }
@@ -75,6 +86,14 @@ class _ListBookChooserState extends State<ListBookChooser> {
               onSectionSelected: (chapter, sectionHeading) {
                 _chapterNotifier.value = null;
                 widget.onSelected(bookId, chapter, sectionHeading);
+              },
+              onVerseSelected: (chapter, verse) {
+                _chapterNotifier.value = null;
+                if (widget.onVerseSelected != null) {
+                  widget.onVerseSelected!(bookId, chapter, verse);
+                } else {
+                  widget.onSelected(bookId, chapter);
+                }
               },
             );
           },

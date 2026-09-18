@@ -14,6 +14,7 @@ import 'package:scripture/scripture.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/highlight_palette_sheet.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
@@ -35,7 +36,7 @@ class TextScreen extends StatefulWidget {
   final int chapter;
   final String? initialSectionHeading;
   final int? initialTargetVerse;
-  final ValueNotifier<(int, int)?>? chapterChooserNotifier;
+  final ValueNotifier<(int, int, int?)?>? chapterChooserNotifier;
   final void Function(
     int bookId,
     int chapter, [
@@ -52,8 +53,8 @@ class _TextScreenState extends State<TextScreen> {
   final _screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
-  final _internalChapterNotifier = ValueNotifier<(int, int)?>(null);
-  ValueNotifier<(int, int)?> get _chapterNotifier =>
+  final _internalChapterNotifier = ValueNotifier<(int, int, int?)?>(null);
+  ValueNotifier<(int, int, int?)?> get _chapterNotifier =>
       widget.chapterChooserNotifier ?? _internalChapterNotifier;
   final _showBottomBarNotifier = ValueNotifier<bool>(false);
   late final ValueNotifier<int> _activePageIndexNotifier;
@@ -178,6 +179,16 @@ class _TextScreenState extends State<TextScreen> {
         chapter == _targetVerseChapter;
   }
 
+  bool _resolveShowVerseGrid() {
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    if (appState != null) {
+      return appState.showVerseGridNotifier.value;
+    }
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    return userSettings?.showVerseGrid ?? false;
+  }
+
   Widget _buildChapterTextPageView() {
     final pageView = NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -207,7 +218,9 @@ class _TextScreenState extends State<TextScreen> {
                           .abs() <
                       50.0;
               if (_swipedTowardsNextChapter && settledBack) {
-                _showScrubberNotifier.value++;
+                if (!_resolveShowVerseGrid()) {
+                  _showScrubberNotifier.value++;
+                }
               }
               _hasHorizontalUserDrag = false;
               _swipedTowardsNextChapter = false;
@@ -238,9 +251,17 @@ class _TextScreenState extends State<TextScreen> {
               ? _pendingTargetVerse
               : null,
           onTargetSectionScrolled: () {
-            _pendingSectionHeading = null;
-            _targetSectionBookId = null;
-            _targetSectionChapter = null;
+            if (mounted) {
+              setState(() {
+                _pendingSectionHeading = null;
+                _targetSectionBookId = null;
+                _targetSectionChapter = null;
+              });
+            } else {
+              _pendingSectionHeading = null;
+              _targetSectionBookId = null;
+              _targetSectionChapter = null;
+            }
             if (getIt.isRegistered<TabManager>()) {
               final activeTab = getIt<TabManager>().activeTab;
               if (activeTab != null) {
@@ -249,9 +270,17 @@ class _TextScreenState extends State<TextScreen> {
             }
           },
           onTargetVerseScrolled: () {
-            _pendingTargetVerse = null;
-            _targetVerseBookId = null;
-            _targetVerseChapter = null;
+            if (mounted) {
+              setState(() {
+                _pendingTargetVerse = null;
+                _targetVerseBookId = null;
+                _targetVerseChapter = null;
+              });
+            } else {
+              _pendingTargetVerse = null;
+              _targetVerseBookId = null;
+              _targetVerseChapter = null;
+            }
             if (getIt.isRegistered<TabManager>()) {
               final activeTab = getIt<TabManager>().activeTab;
               if (activeTab != null) {
@@ -302,16 +331,17 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   Widget _buildChapterChooserOverlay() {
-    return ValueListenableBuilder<(int, int)?>(
+    return ValueListenableBuilder<(int, int, int?)?>(
       valueListenable: _chapterNotifier,
       builder: (context, bookChapter, child) {
         if (bookChapter == null) {
           return const SizedBox();
         }
-        final (bookId, chapterCount) = bookChapter;
+        final (bookId, chapterCount, initialChapter) = bookChapter;
         return ChapterChooser(
           bookId: bookId,
           chapterCount: chapterCount,
+          initialChapter: initialChapter,
           onChapterSelected: (chapter) {
             _chapterNotifier.value = null;
             if (chapter == null) return;
@@ -322,6 +352,11 @@ class _TextScreenState extends State<TextScreen> {
             _chapterNotifier.value = null;
             _navigateToChapterAndSection(bookId, chapter, sectionHeading);
             widget.onChapterChanged?.call(bookId, chapter, sectionHeading);
+          },
+          onVerseSelected: (chapter, verse) {
+            _chapterNotifier.value = null;
+            _navigateToChapterAndSection(bookId, chapter, null, verse);
+            widget.onChapterChanged?.call(bookId, chapter, null, verse);
           },
         );
       },
