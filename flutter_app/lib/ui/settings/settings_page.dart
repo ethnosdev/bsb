@@ -158,6 +158,48 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
+                ListTile(
+                  title: const Text('Chapter Chooser Layout'),
+                  subtitle: Text(
+                    manager.chapterChooserStyle == ChapterChooserStyle.grid
+                        ? 'Grid'
+                        : 'Keypad',
+                  ),
+                  trailing: Icon(
+                    manager.chapterChooserStyle == ChapterChooserStyle.grid
+                        ? Icons.grid_on
+                        : Icons.dialpad,
+                  ),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Chapter Chooser Layout'),
+                        content: SegmentedButton<ChapterChooserStyle>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment<ChapterChooserStyle>(
+                              value: ChapterChooserStyle.keypad,
+                              label: Text('Keypad'),
+                              icon: Icon(Icons.dialpad),
+                            ),
+                            ButtonSegment<ChapterChooserStyle>(
+                              value: ChapterChooserStyle.grid,
+                              label: Text('Grid'),
+                              icon: Icon(Icons.grid_on),
+                            ),
+                          ],
+                          selected: {manager.chapterChooserStyle},
+                          onSelectionChanged:
+                              (Set<ChapterChooserStyle> selection) {
+                            manager.setChapterChooserStyle(selection.first);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),

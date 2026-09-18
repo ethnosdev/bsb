@@ -74,4 +74,41 @@ void main() {
     expect(userSettings.bookChooserStyle, equals(BookChooserStyle.list));
     expect(find.text('List'), findsOneWidget);
   });
+
+  testWidgets('SettingsPage allows changing Chapter Chooser Layout between Keypad and Grid', (tester) async {
+    final userSettings = getIt<UserSettings>();
+    expect(userSettings.chapterChooserStyle, equals(ChapterChooserStyle.keypad));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chapter Chooser Layout'), findsOneWidget);
+    expect(find.text('Keypad'), findsOneWidget);
+
+    // Tap to open choice dialog
+    await tester.tap(find.text('Chapter Chooser Layout'));
+    await tester.pumpAndSettle();
+
+    // Tap 'Grid' segment in dialog
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Grid'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(userSettings.chapterChooserStyle, equals(ChapterChooserStyle.grid));
+    expect(
+      find.descendant(
+        of: find.widgetWithText(ListTile, 'Chapter Chooser Layout'),
+        matching: find.text('Grid'),
+      ),
+      findsOneWidget,
+    );
+  });
 }

@@ -9,11 +9,14 @@ class AppState {
   final textSizeNotifier = ValueNotifier<double>(FontScale.defaultBaseSize);
   final bookChooserStyleNotifier =
       ValueNotifier<BookChooserStyle>(BookChooserStyle.grid);
+  final chapterChooserStyleNotifier =
+      ValueNotifier<ChapterChooserStyle>(ChapterChooserStyle.keypad);
 
   Future<void> init() async {
     themeNotifier.value = userSettings.themeMode;
     textSizeNotifier.value = userSettings.textSize;
     bookChooserStyleNotifier.value = userSettings.bookChooserStyle;
+    chapterChooserStyleNotifier.value = userSettings.chapterChooserStyle;
   }
 
   Future<void> setTextSize(double size) async {
@@ -25,6 +28,11 @@ class AppState {
   Future<void> setBookChooserStyle(BookChooserStyle style) async {
     bookChooserStyleNotifier.value = style;
     await userSettings.setBookChooserStyle(style);
+  }
+
+  Future<void> setChapterChooserStyle(ChapterChooserStyle style) async {
+    chapterChooserStyleNotifier.value = style;
+    await userSettings.setChapterChooserStyle(style);
   }
 }
 

@@ -1,8 +1,12 @@
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Widget createTestApp(Widget child) {
   return MaterialApp(
@@ -422,4 +426,228 @@ void main() {
       expect(find.byKey(const ValueKey('keypad_sections')), findsOneWidget);
     });
   });
+
+  group('GridChapterChooser Widget Tests', () {
+    testWidgets('displays book name from bookId or bookName', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          const GridChapterChooser(
+            bookId: 1,
+            chapterCount: 50,
+          ),
+        ),
+      );
+
+      expect(find.text('Genesis'), findsOneWidget);
+      expect(find.byKey(const ValueKey('keypad_sections')), findsOneWidget);
+
+      await tester.pumpWidget(
+        createTestApp(
+          const GridChapterChooser(
+            bookName: 'Exodus',
+            chapterCount: 40,
+          ),
+        ),
+      );
+
+      expect(find.text('Exodus'), findsOneWidget);
+    });
+
+    testWidgets('section headings button opens dialog and invokes callback',
+        (tester) async {
+      int? selectedChapter;
+      String? selectedHeading;
+      final testHeadings = [
+        const SectionHeading(
+          bookId: 1,
+          chapter: 1,
+          verse: 1,
+          text: 'The Creation',
+          format: 's1',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          GridChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+            headingsLoader: (bookId) async => testHeadings,
+            onChapterSelected: (c) => selectedChapter = c,
+            onSectionSelected: (c, h) {
+              selectedChapter = c;
+              selectedHeading = h;
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('keypad_sections')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Genesis Sections'), findsOneWidget);
+      expect(find.text('The Creation'), findsOneWidget);
+
+      await tester.tap(find.text('The Creation'));
+      await tester.pumpAndSettle();
+
+      expect(selectedChapter, equals(1));
+      expect(selectedHeading, equals('The Creation'));
+    });
+
+    testWidgets('tapping on grid tile selects chapter', (tester) async {
+      int? selectedChapter;
+      await tester.pumpWidget(
+        createTestApp(
+          GridChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+            onChapterSelected: (c) => selectedChapter = c,
+          ),
+        ),
+      );
+
+      final gridFinder = find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_ChapterGridWidget',
+      );
+      expect(gridFinder, findsOneWidget);
+
+      // Top-left cell of the grid corresponds to chapter 1
+      final topLeft = tester.getTopLeft(gridFinder);
+      await tester.tapAt(topLeft + const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(selectedChapter, equals(1));
+    });
+
+    testWidgets('scrim tap dismisses chooser with null', (tester) async {
+      int? selectedChapter;
+      bool dismissed = false;
+
+      await tester.pumpWidget(
+        createTestApp(
+          GridChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+            onChapterSelected: (c) {
+              selectedChapter = c;
+              dismissed = true;
+            },
+          ),
+        ),
+      );
+
+      // Tap outside dialog near top-left of the screen
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(dismissed, isTrue);
+      expect(selectedChapter, isNull);
+    });
+
+    testWidgets('escape key dismisses chooser with null', (tester) async {
+      int? selectedChapter;
+      bool dismissed = false;
+
+      await tester.pumpWidget(
+        createTestApp(
+          GridChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+            onChapterSelected: (c) {
+              selectedChapter = c;
+              dismissed = true;
+            },
+          ),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(dismissed, isTrue);
+      expect(selectedChapter, isNull);
+    });
+  });
+
+  group('ChapterChooser Style Selection Tests', () {
+    setUp(() async {
+      await getIt.reset();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    testWidgets('defaults to KeypadChapterChooser when nothing registered',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          const ChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+          ),
+        ),
+      );
+
+      expect(find.byType(KeypadChapterChooser), findsOneWidget);
+      expect(find.byType(GridChapterChooser), findsNothing);
+    });
+
+    testWidgets('renders GridChapterChooser when style override is grid',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          const ChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+            style: ChapterChooserStyle.grid,
+          ),
+        ),
+      );
+
+      expect(find.byType(GridChapterChooser), findsOneWidget);
+      expect(find.byType(KeypadChapterChooser), findsNothing);
+    });
+
+    testWidgets('reacts to AppState.chapterChooserStyleNotifier changes',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final userSettings = UserSettings();
+      await userSettings.init();
+      getIt.registerSingleton<UserSettings>(userSettings);
+
+      final appState = AppState();
+      await appState.init();
+      getIt.registerSingleton<AppState>(appState);
+
+      await tester.pumpWidget(
+        createTestApp(
+          const ChapterChooser(
+            bookName: 'Genesis',
+            chapterCount: 50,
+          ),
+        ),
+      );
+
+      // Default is keypad
+      expect(find.byType(KeypadChapterChooser), findsOneWidget);
+      expect(find.byType(GridChapterChooser), findsNothing);
+
+      // Switch to grid in AppState
+      await appState.setChapterChooserStyle(ChapterChooserStyle.grid);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GridChapterChooser), findsOneWidget);
+      expect(find.byType(KeypadChapterChooser), findsNothing);
+
+      // Switch back to keypad
+      await appState.setChapterChooserStyle(ChapterChooserStyle.keypad);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KeypadChapterChooser), findsOneWidget);
+      expect(find.byType(GridChapterChooser), findsNothing);
+    });
+  });
 }
+

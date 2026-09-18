@@ -1,15 +1,27 @@
+import 'dart:math';
+
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/section_headings_dialog.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-class ChapterChooser extends StatefulWidget {
+export 'package:bsb/ui/settings/user_settings.dart' show ChapterChooserStyle;
+
+/// Generic chapter chooser widget that displays either a keypad or a grid
+/// of chapter numbers based on user settings or an explicit [style] override.
+class ChapterChooser extends StatelessWidget {
   const ChapterChooser({
     super.key,
     this.bookName,
     this.bookId,
     required this.chapterCount,
+    this.style,
     this.headingsLoader,
     this.onChapterSelected,
     this.onSectionSelected,
@@ -25,6 +37,9 @@ class ChapterChooser extends StatefulWidget {
   /// Total number of chapters in the selected book.
   final int chapterCount;
 
+  /// Optional style override. If null, the style configured in settings is used.
+  final ChapterChooserStyle? style;
+
   /// Optional custom loader for section headings (used primarily in tests).
   final Future<List<SectionHeading>> Function(int bookId)? headingsLoader;
 
@@ -36,10 +51,76 @@ class ChapterChooser extends StatefulWidget {
   final void Function(int chapter, String sectionHeading)? onSectionSelected;
 
   @override
-  State<ChapterChooser> createState() => _ChapterChooserState();
+  Widget build(BuildContext context) {
+    if (style != null) {
+      return _buildChooser(style!);
+    }
+
+    final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    if (appState != null) {
+      return ValueListenableBuilder<ChapterChooserStyle>(
+        valueListenable: appState.chapterChooserStyleNotifier,
+        builder: (context, currentStyle, _) {
+          return _buildChooser(currentStyle);
+        },
+      );
+    }
+
+    final userSettings =
+        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final currentStyle =
+        userSettings?.chapterChooserStyle ?? ChapterChooserStyle.keypad;
+    return _buildChooser(currentStyle);
+  }
+
+  Widget _buildChooser(ChapterChooserStyle currentStyle) {
+    switch (currentStyle) {
+      case ChapterChooserStyle.grid:
+        return GridChapterChooser(
+          bookName: bookName,
+          bookId: bookId,
+          chapterCount: chapterCount,
+          headingsLoader: headingsLoader,
+          onChapterSelected: onChapterSelected,
+          onSectionSelected: onSectionSelected,
+        );
+      case ChapterChooserStyle.keypad:
+        return KeypadChapterChooser(
+          bookName: bookName,
+          bookId: bookId,
+          chapterCount: chapterCount,
+          headingsLoader: headingsLoader,
+          onChapterSelected: onChapterSelected,
+          onSectionSelected: onSectionSelected,
+        );
+    }
+  }
 }
 
-class _ChapterChooserState extends State<ChapterChooser> {
+/// A chapter chooser that uses a numeric keypad layout.
+class KeypadChapterChooser extends StatefulWidget {
+  const KeypadChapterChooser({
+    super.key,
+    this.bookName,
+    this.bookId,
+    required this.chapterCount,
+    this.headingsLoader,
+    this.onChapterSelected,
+    this.onSectionSelected,
+  });
+
+  final String? bookName;
+  final int? bookId;
+  final int chapterCount;
+  final Future<List<SectionHeading>> Function(int bookId)? headingsLoader;
+  final void Function(int? chapter)? onChapterSelected;
+  final void Function(int chapter, String sectionHeading)? onSectionSelected;
+
+  @override
+  State<KeypadChapterChooser> createState() => _KeypadChapterChooserState();
+}
+
+class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
   String _enteredText = '';
 
   String get _displayBookName {
@@ -53,7 +134,7 @@ class _ChapterChooserState extends State<ChapterChooser> {
   }
 
   @override
-  void didUpdateWidget(covariant ChapterChooser oldWidget) {
+  void didUpdateWidget(covariant KeypadChapterChooser oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chapterCount != widget.chapterCount) {
       if (_enteredText.isNotEmpty && _matchingChapters(_enteredText).isEmpty) {
@@ -426,5 +507,548 @@ class _ChapterChooserState extends State<ChapterChooser> {
         widget.onChapterSelected?.call(heading.chapter);
       }
     }
+  }
+}
+
+/// A chapter chooser that displays a compact grid of all chapter numbers.
+class GridChapterChooser extends StatefulWidget {
+  const GridChapterChooser({
+    super.key,
+    this.bookName,
+    this.bookId,
+    required this.chapterCount,
+    this.headingsLoader,
+    this.onChapterSelected,
+    this.onSectionSelected,
+  });
+
+  final String? bookName;
+  final int? bookId;
+  final int chapterCount;
+  final Future<List<SectionHeading>> Function(int bookId)? headingsLoader;
+  final void Function(int? chapter)? onChapterSelected;
+  final void Function(int chapter, String sectionHeading)? onSectionSelected;
+
+  @override
+  State<GridChapterChooser> createState() => _GridChapterChooserState();
+}
+
+class _GridChapterChooserState extends State<GridChapterChooser> {
+  String get _displayBookName {
+    if (widget.bookName != null && widget.bookName!.isNotEmpty) {
+      return widget.bookName!;
+    }
+    if (widget.bookId != null) {
+      return bookIdToBookNameMap[widget.bookId] ?? '';
+    }
+    return '';
+  }
+
+  Future<void> _openSectionHeadings() async {
+    final heading = await showDialog<SectionHeading>(
+      context: context,
+      builder: (context) => SectionHeadingsDialog(
+        bookId: widget.bookId ?? 1,
+        bookName: _displayBookName,
+        headingsLoader: widget.headingsLoader,
+      ),
+    );
+    if (heading != null) {
+      if (widget.onSectionSelected != null) {
+        widget.onSectionSelected!(heading.chapter, heading.text);
+      } else {
+        widget.onChapterSelected?.call(heading.chapter);
+      }
+    }
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      widget.onChapterSelected?.call(null);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final screenSize = MediaQuery.sizeOf(context);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          widget.onChapterSelected?.call(null);
+        }
+      },
+      child: Stack(
+        children: [
+          // Barrier / Scrim
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onChapterSelected?.call(null),
+              child: Container(
+                color: theme.colorScheme.scrim.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+          // Grid Dialog
+          Center(
+            child: Focus(
+              autofocus: true,
+              onKeyEvent: _handleKeyEvent,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {}, // Prevent taps inside dialog from closing it
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(24),
+                  color: theme.colorScheme.surfaceContainerHigh,
+                  clipBehavior: Clip.none,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      minWidth: 280,
+                      maxWidth: min(screenSize.width * 0.95, 420.0),
+                      maxHeight: screenSize.height * 0.9,
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildHeader(theme),
+                        const SizedBox(height: 12),
+                        Flexible(
+                          child: _ChapterGridWidget(
+                            chapterCount: widget.chapterCount,
+                            onChapterSelected: widget.onChapterSelected,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: IconButton(
+            key: const ValueKey('keypad_sections'),
+            icon: const Icon(Icons.format_list_bulleted, size: 22),
+            padding: EdgeInsets.zero,
+            onPressed: _openSectionHeadings,
+            tooltip: 'Section Headings',
+          ),
+        ),
+        Expanded(
+          child: Text(
+            _displayBookName,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 40),
+      ],
+    );
+  }
+}
+
+class _ChapterGridWidget extends LeafRenderObjectWidget {
+  const _ChapterGridWidget({
+    required this.chapterCount,
+    this.onChapterSelected,
+  });
+
+  final int chapterCount;
+  final void Function(int? chapter)? onChapterSelected;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    final theme = Theme.of(context);
+    return _RenderChapterGrid(
+      chapterCount: chapterCount,
+      onChapterSelected: onChapterSelected,
+      textStyle: theme.textTheme.bodyMedium ?? const TextStyle(),
+      gridColor: theme.colorScheme.surfaceContainerHighest,
+      gridHighlightColor: theme.colorScheme.primary,
+      textColor: theme.colorScheme.onSurface,
+      highlightTextColor: theme.colorScheme.onPrimary,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+      BuildContext context, covariant _RenderChapterGrid renderObject) {
+    final theme = Theme.of(context);
+    renderObject
+      ..chapterCount = chapterCount
+      ..onChapterSelected = onChapterSelected
+      ..textStyle = theme.textTheme.bodyMedium ?? const TextStyle()
+      ..gridColor = theme.colorScheme.surfaceContainerHighest
+      ..gridHighlightColor = theme.colorScheme.primary
+      ..textColor = theme.colorScheme.onSurface
+      ..highlightTextColor = theme.colorScheme.onPrimary;
+  }
+}
+
+class _RenderChapterGrid extends RenderBox {
+  _RenderChapterGrid({
+    required this._chapterCount,
+    this._onChapterSelected,
+    required this._textStyle,
+    required this._gridColor,
+    required this._gridHighlightColor,
+    required this._textColor,
+    required this._highlightTextColor,
+  }) {
+    _gridPaint.color = _gridColor;
+    _highlightPaint.color = _gridHighlightColor;
+  }
+
+  final _gridPaint = Paint();
+  final _highlightPaint = Paint();
+
+  int? _highlightedChapter;
+  bool _showOffsetTile = false;
+
+  int get chapterCount => _chapterCount;
+  int _chapterCount;
+  set chapterCount(int value) {
+    if (_chapterCount == value) return;
+    _chapterCount = value;
+    markNeedsLayout();
+  }
+
+  void Function(int? chapter)? get onChapterSelected => _onChapterSelected;
+  void Function(int? chapter)? _onChapterSelected;
+  set onChapterSelected(void Function(int? chapter)? value) {
+    if (_onChapterSelected == value) return;
+    _onChapterSelected = value;
+  }
+
+  TextStyle get textStyle => _textStyle;
+  TextStyle _textStyle;
+  set textStyle(TextStyle value) {
+    if (_textStyle == value) return;
+    _textStyle = value;
+    markNeedsLayout();
+  }
+
+  Color get gridColor => _gridColor;
+  Color _gridColor;
+  set gridColor(Color value) {
+    if (_gridColor == value) return;
+    _gridColor = value;
+    _gridPaint.color = value;
+    markNeedsPaint();
+  }
+
+  Color get gridHighlightColor => _gridHighlightColor;
+  Color _gridHighlightColor;
+  set gridHighlightColor(Color value) {
+    if (_gridHighlightColor == value) return;
+    _gridHighlightColor = value;
+    _highlightPaint.color = value;
+    markNeedsPaint();
+  }
+
+  Color get textColor => _textColor;
+  Color _textColor;
+  set textColor(Color value) {
+    if (_textColor == value) return;
+    _textColor = value;
+    markNeedsPaint();
+  }
+
+  Color get highlightTextColor => _highlightTextColor;
+  Color _highlightTextColor;
+  set highlightTextColor(Color value) {
+    if (_highlightTextColor == value) return;
+    _highlightTextColor = value;
+    markNeedsPaint();
+  }
+
+  @override
+  void performLayout() {
+    size = computeDryLayout(constraints);
+  }
+
+  Size _gridSize = Size.zero;
+  Size _tileSize = Size.zero;
+  int _rows = 0;
+  int _columns = 0;
+  double _scaledFontSize = 14.0;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    _rows = (chapterCount / 10).ceil();
+    _columns = chapterCount < 10 ? chapterCount : 10;
+    const desiredTileWidth = 36.0;
+    final desiredTileHeight = (chapterCount > 100) ? 28.0 : 36.0;
+
+    final maxGridWidth = constraints.maxWidth.isFinite
+        ? constraints.maxWidth
+        : _columns * desiredTileWidth;
+    final gridWidth = min(maxGridWidth, _columns * desiredTileWidth);
+    final tileWidth = gridWidth / _columns;
+
+    final maxGridHeight = constraints.maxHeight.isFinite
+        ? constraints.maxHeight
+        : _rows * desiredTileHeight;
+    final gridHeight = min(maxGridHeight, _rows * desiredTileHeight);
+    final tileHeight = gridHeight / _rows;
+
+    _gridSize = Size(tileWidth * _columns, tileHeight * _rows);
+    _tileSize = Size(tileWidth, tileHeight);
+
+    _scaledFontSize = _calculateOptimalFontSize("150");
+
+    return _gridSize;
+  }
+
+  double _calculateOptimalFontSize(String sampleText) {
+    final initialFontSize = textStyle.fontSize ?? 14.0;
+    if (_tileSize.width <= 0 || _tileSize.height <= 0) return initialFontSize;
+
+    double scaleFactor = 1.0;
+    TextPainter textPainter;
+    do {
+      textPainter = TextPainter(
+        text: TextSpan(
+          text: sampleText,
+          style: textStyle.copyWith(fontSize: initialFontSize * scaleFactor),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+
+      if (textPainter.width <= _tileSize.width * 0.85 &&
+          textPainter.height <= _tileSize.height * 0.85) {
+        break;
+      }
+
+      scaleFactor *= 0.9;
+    } while (scaleFactor > 0.3);
+
+    return initialFontSize * scaleFactor;
+  }
+
+  @override
+  bool hitTestSelf(Offset position) => true;
+
+  int? _getChapterAtPosition(Offset position) {
+    if (!(Offset.zero & _gridSize).contains(position)) {
+      return null;
+    }
+
+    final col = (position.dx / _tileSize.width).floor();
+    final row = (position.dy / _tileSize.height).floor();
+    final chapter = row * _columns + col + 1;
+
+    if (chapter <= chapterCount && chapter > 0) {
+      return chapter;
+    }
+    return null;
+  }
+
+  void _updateHighlightedChapter(Offset position, bool isMove) {
+    final newHighlight = _getChapterAtPosition(position);
+    if (newHighlight != _highlightedChapter || _showOffsetTile != isMove) {
+      _highlightedChapter = newHighlight;
+      _showOffsetTile = isMove;
+      markNeedsPaint();
+    }
+  }
+
+  @override
+  void handleEvent(PointerEvent event, BoxHitTestEntry entry) {
+    if (event is PointerDownEvent) {
+      _updateHighlightedChapter(event.localPosition, false);
+    } else if (event is PointerHoverEvent) {
+      _updateHighlightedChapter(event.localPosition, false);
+    } else if (event is PointerMoveEvent) {
+      _updateHighlightedChapter(event.localPosition, true);
+    } else if (event is PointerUpEvent) {
+      final chapter = _getChapterAtPosition(event.localPosition);
+      if (chapter != null) {
+        onChapterSelected?.call(chapter);
+      }
+      _highlightedChapter = null;
+      _showOffsetTile = false;
+      markNeedsPaint();
+    } else if (event is PointerCancelEvent) {
+      _highlightedChapter = null;
+      _showOffsetTile = false;
+      markNeedsPaint();
+    }
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) {
+    final cols = chapterCount < 10 ? chapterCount : 10;
+    return cols * 24.0;
+  }
+
+  @override
+  double computeMaxIntrinsicWidth(double height) {
+    final cols = chapterCount < 10 ? chapterCount : 10;
+    return cols * 40.0;
+  }
+
+  @override
+  double computeMinIntrinsicHeight(double width) {
+    final rows = (chapterCount / 10).ceil();
+    return rows * 20.0;
+  }
+
+  @override
+  double computeMaxIntrinsicHeight(double width) {
+    final rows = (chapterCount / 10).ceil();
+    final desiredH = (chapterCount > 100) ? 28.0 : 36.0;
+    return rows * desiredH;
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final canvas = context.canvas;
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+
+    _paintGrid(canvas);
+    _paintChapters(context);
+
+    canvas.restore();
+  }
+
+  void _paintGrid(Canvas canvas) {
+    final gridRect = Offset.zero & _gridSize;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(gridRect, const Radius.circular(8)),
+      _gridPaint,
+    );
+  }
+
+  void _paintChapters(PaintingContext context) {
+    for (var row = 0; row < _rows; row++) {
+      for (var col = 0; col < _columns; col++) {
+        final index = row * _columns + col + 1;
+        if (index <= chapterCount) {
+          _paintChapter(context, row, col, index);
+        }
+      }
+    }
+  }
+
+  void _paintChapter(PaintingContext context, int row, int col, int index) {
+    final canvas = context.canvas;
+    canvas.save();
+    canvas.translate(
+      col * _tileSize.width,
+      row * _tileSize.height,
+    );
+
+    if (_highlightedChapter == index) {
+      _paintHighlight(context, index);
+    }
+
+    _paintChapterNumber(context, index);
+    canvas.restore();
+  }
+
+  void _paintHighlight(PaintingContext context, int index) {
+    final canvas = context.canvas;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Offset.zero & _tileSize, const Radius.circular(4)),
+      _highlightPaint,
+    );
+
+    if (_showOffsetTile) {
+      _paintOffsetTile(context, index);
+    }
+  }
+
+  void _paintOffsetTile(PaintingContext context, int index) {
+    const verticalOffset = 60.0;
+    final canvas = context.canvas;
+    final offsetTileSize = Size(_tileSize.width * 2, _tileSize.height * 2);
+    final offsetPosition = Offset(
+      -_tileSize.width / 2,
+      -verticalOffset - _tileSize.height / 2,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        offsetPosition & offsetTileSize,
+        const Radius.circular(8),
+      ),
+      _highlightPaint,
+    );
+
+    final textPainter = _createTextPainter(
+      index.toString(),
+      fontSize: _scaledFontSize * 2,
+      color: highlightTextColor,
+    );
+
+    textPainter.paint(
+      context.canvas,
+      Offset(
+        (-_tileSize.width / 2) + (offsetTileSize.width - textPainter.width) / 2,
+        -verticalOffset -
+            _tileSize.height / 2 +
+            (offsetTileSize.height - textPainter.height) / 2,
+      ),
+    );
+  }
+
+  void _paintChapterNumber(PaintingContext context, int index) {
+    final textPainter = _createTextPainter(
+      index.toString(),
+      color: _highlightedChapter == index ? highlightTextColor : textColor,
+    );
+
+    textPainter.paint(
+      context.canvas,
+      Offset(
+        (_tileSize.width - textPainter.width) / 2,
+        (_tileSize.height - textPainter.height) / 2,
+      ),
+    );
+  }
+
+  TextPainter _createTextPainter(String text,
+      {Color? color, double? fontSize}) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: textStyle.copyWith(
+          color: color,
+          fontSize: fontSize ?? _scaledFontSize,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    return textPainter;
   }
 }

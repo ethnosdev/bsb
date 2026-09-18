@@ -111,6 +111,24 @@ class UserSettings {
       await _prefs.setString(_bookChooserStyleKey, style.name);
     }
   }
+
+  static const _chapterChooserStyleKey = 'chapterChooserStyle';
+
+  ChapterChooserStyle get chapterChooserStyle {
+    final value = _prefs.getString(_chapterChooserStyleKey);
+    if (value == 'grid') {
+      return ChapterChooserStyle.grid;
+    }
+    return ChapterChooserStyle.keypad;
+  }
+
+  Future<void> setChapterChooserStyle(ChapterChooserStyle style) async {
+    if (style == ChapterChooserStyle.keypad) {
+      await _prefs.remove(_chapterChooserStyleKey);
+    } else {
+      await _prefs.setString(_chapterChooserStyleKey, style.name);
+    }
+  }
 }
 
 enum BookChooserStyle {
@@ -118,6 +136,14 @@ enum BookChooserStyle {
   list('List');
 
   const BookChooserStyle(this.displayName);
+  final String displayName;
+}
+
+enum ChapterChooserStyle {
+  keypad('Keypad'),
+  grid('Grid');
+
+  const ChapterChooserStyle(this.displayName);
   final String displayName;
 }
 

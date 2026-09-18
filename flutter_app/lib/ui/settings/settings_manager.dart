@@ -42,4 +42,17 @@ class SettingsManager extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  ChapterChooserStyle get chapterChooserStyle =>
+      _appState?.chapterChooserStyleNotifier.value ??
+      userSettings.chapterChooserStyle;
+
+  Future<void> setChapterChooserStyle(ChapterChooserStyle style) async {
+    if (_appState != null) {
+      await _appState!.setChapterChooserStyle(style);
+    } else {
+      await userSettings.setChapterChooserStyle(style);
+    }
+    notifyListeners();
+  }
 }
