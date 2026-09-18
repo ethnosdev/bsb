@@ -131,6 +131,7 @@ class _TextScreenState extends State<TextScreen> {
         widget.chapter != oldWidget.chapter ||
         widget.initialSectionHeading != oldWidget.initialSectionHeading ||
         widget.initialTargetVerse != oldWidget.initialTargetVerse) {
+      _chapterNotifier.value = null;
       _navigateToChapterAndSection(
         widget.bookId,
         widget.chapter,
@@ -142,6 +143,9 @@ class _TextScreenState extends State<TextScreen> {
 
   @override
   void dispose() {
+    if (widget.chapterChooserNotifier != null) {
+      widget.chapterChooserNotifier!.value = null;
+    }
     _pageController.dispose();
     _showBottomBarNotifier.dispose();
     _activePageIndexNotifier.dispose();

@@ -196,57 +196,65 @@ class _ChapterChooserState extends State<ChapterChooser> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Stack(
-      children: [
-        // Barrier / Scrim
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => widget.onChapterSelected?.call(null),
-            child: Container(
-              color: theme.colorScheme.scrim.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-        // Keypad Popup
-        Center(
-          child: Focus(
-            autofocus: true,
-            onKeyEvent: _handleKeyEvent,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          widget.onChapterSelected?.call(null);
+        }
+      },
+      child: Stack(
+        children: [
+          // Barrier / Scrim
+          Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () {}, // Prevent taps inside dialog from closing it
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(24),
-                color: theme.colorScheme.surfaceContainerHigh,
-                clipBehavior: Clip.antiAlias,
-                child: Container(
-                  width: 320,
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildHeader(theme),
-                      const SizedBox(height: 12),
-                      _buildDisplay(theme),
-                      const SizedBox(height: 16),
-                      _buildKeypadRow(['1', '2', '3']),
-                      const SizedBox(height: 8),
-                      _buildKeypadRow(['4', '5', '6']),
-                      const SizedBox(height: 8),
-                      _buildKeypadRow(['7', '8', '9']),
-                      const SizedBox(height: 8),
-                      _buildBottomRow(theme),
-                    ],
+              onTap: () => widget.onChapterSelected?.call(null),
+              child: Container(
+                color: theme.colorScheme.scrim.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+          // Keypad Popup
+          Center(
+            child: Focus(
+              autofocus: true,
+              onKeyEvent: _handleKeyEvent,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {}, // Prevent taps inside dialog from closing it
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(24),
+                  color: theme.colorScheme.surfaceContainerHigh,
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    width: 320,
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildHeader(theme),
+                        const SizedBox(height: 12),
+                        _buildDisplay(theme),
+                        const SizedBox(height: 16),
+                        _buildKeypadRow(['1', '2', '3']),
+                        const SizedBox(height: 8),
+                        _buildKeypadRow(['4', '5', '6']),
+                        const SizedBox(height: 8),
+                        _buildKeypadRow(['7', '8', '9']),
+                        const SizedBox(height: 8),
+                        _buildBottomRow(theme),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

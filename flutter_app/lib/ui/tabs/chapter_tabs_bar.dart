@@ -10,10 +10,12 @@ class ChapterTabsBar extends StatelessWidget {
     super.key,
     required this.tabManager,
     required this.onActiveTabTapped,
+    this.onTabsSheetOpened,
   });
 
   final TabManager tabManager;
   final void Function(BibleTab activeTab) onActiveTabTapped;
+  final VoidCallback? onTabsSheetOpened;
 
   double _estimateChipWidth(BuildContext context, BibleTab tab, bool isActive) {
     final textPainter = TextPainter(
@@ -111,11 +113,14 @@ class ChapterTabsBar extends StatelessWidget {
             child: CompositeChapterChip(
               activeTab: activeTab,
               otherTabsCount: tabs.length - 1,
-              onTap: () => ChapterTabsSheet.show(
-                context,
-                tabManager,
-                onActiveTabTapped: onActiveTabTapped,
-              ),
+              onTap: () {
+                onTabsSheetOpened?.call();
+                ChapterTabsSheet.show(
+                  context,
+                  tabManager,
+                  onActiveTabTapped: onActiveTabTapped,
+                );
+              },
             ),
           ),
         );

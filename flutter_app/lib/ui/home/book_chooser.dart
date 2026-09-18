@@ -77,6 +77,12 @@ class _BookChooserState extends State<BookChooser> {
   }
 
   @override
+  void dispose() {
+    _chapterNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {

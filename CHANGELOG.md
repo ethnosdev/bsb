@@ -1,3 +1,7 @@
+# 2.2.0
+
+- Fix bug with chapter chooser not disappearing.
+
 # 2.1.0 - 2026.09.15
 
 - Fix section header navigation bug (#39).

@@ -30,10 +30,17 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _tabManager.addListener(_onTabManagerChanged);
     if (getIt.isRegistered<AudioPlaybackManager>()) {
       _cachedAudioManager = getIt<AudioPlaybackManager>();
       _cachedAudioManager!.isPlayerVisible
           .addListener(_onPlayerVisibilityChanged);
+    }
+  }
+
+  void _onTabManagerChanged() {
+    if (_chapterChooserNotifier.value != null) {
+      _chapterChooserNotifier.value = null;
     }
   }
 
@@ -55,6 +62,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _tabManager.removeListener(_onTabManagerChanged);
     if (_isDistractionFree) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -88,6 +96,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildBookChooser() {
     void onSelected(int bookId, int chapter, [String? sectionHeading]) {
+      _chapterChooserNotifier.value = null;
       _tabManager.openTab(bookId, chapter, sectionHeading);
     }
 
@@ -134,10 +143,12 @@ class _HomePageState extends State<HomePage> {
         }
 
         return PopScope(
-          canPop: !isAdding && !_isDistractionFree,
+          canPop: !isAdding && !_isDistractionFree && _chapterChooserNotifier.value == null,
           onPopInvokedWithResult: (didPop, result) {
             if (!didPop) {
-              if (_isDistractionFree) {
+              if (_chapterChooserNotifier.value != null) {
+                _chapterChooserNotifier.value = null;
+              } else if (_isDistractionFree) {
                 _exitDistractionFree();
               } else if (isAdding) {
                 _tabManager.cancelAddingTab();
@@ -146,6 +157,11 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             drawer: _isDistractionFree ? null : const AppDrawer(),
+            onDrawerChanged: (isOpen) {
+              if (isOpen) {
+                _chapterChooserNotifier.value = null;
+              }
+            },
             drawerEnableOpenDragGesture: !_isDistractionFree,
             extendBodyBehindAppBar: hasTabs && !isAdding,
             appBar: (hasTabs && !isAdding)
@@ -167,7 +183,14 @@ class _HomePageState extends State<HomePage> {
                             titleSpacing: 0,
                             title: ChapterTabsBar(
                               tabManager: _tabManager,
+                              onTabsSheetOpened: () {
+                                _chapterChooserNotifier.value = null;
+                              },
                               onActiveTabTapped: (tab) {
+                                if (_chapterChooserNotifier.value != null) {
+                                  _chapterChooserNotifier.value = null;
+                                  return;
+                                }
                                 final chapterCount =
                                     bookIdToChapterCountMap[tab.bookId] ?? 1;
                                 _chapterChooserNotifier.value =
@@ -178,12 +201,16 @@ class _HomePageState extends State<HomePage> {
                               IconButton(
                                 icon: const Icon(Icons.add),
                                 tooltip: 'Open Chapter',
-                                onPressed: _tabManager.startAddingTab,
+                                onPressed: () {
+                                  _chapterChooserNotifier.value = null;
+                                  _tabManager.startAddingTab();
+                                },
                               ),
                               PopupMenuButton<String>(
                                 icon: const Icon(Icons.more_vert),
                                 tooltip: 'More options',
                                 onSelected: (value) {
+                                  _chapterChooserNotifier.value = null;
                                   if (value == 'search') {
                                     Navigator.push(
                                       context,
@@ -251,6 +278,7 @@ class _HomePageState extends State<HomePage> {
                           icon: const Icon(Icons.search),
                           tooltip: 'Search',
                           onPressed: () {
+                            _chapterChooserNotifier.value = null;
                             Navigator.push(
                               context,
                               MaterialPageRoute(

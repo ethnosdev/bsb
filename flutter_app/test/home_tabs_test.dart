@@ -487,4 +487,170 @@ void main() {
         w.targetSection == 'Jesus Cleanses the Temple');
     expect(chapterTextFinder, findsOneWidget);
   });
+
+  testWidgets(
+      'closing active tab dismisses chapter chooser so it does not persist when opening another book',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Start with no tabs, showing BookChooser
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 1) Select Genesis from BookChooser: chapter selection menu appears
+    await tester.tap(find.text('Gen'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+    expect(find.text('Genesis'), findsOneWidget);
+
+    // 2) Select chapter 9: goes to Genesis 9
+    await tester.tap(find.byKey(const ValueKey('keypad_9')));
+    await tester.pumpAndSettle();
+    expect(tabManager.activeTab?.label, equals('GEN 9'));
+    expect(find.byType(ChapterChooser), findsNothing);
+
+    // 3) Select active tab chip ("GEN 9"): chapter selection menu appears
+    await tester.tap(find.text('GEN 9'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+    expect(find.text('Genesis'), findsOneWidget);
+
+    // 4) Select "X" in the active tab chip to close tab: goes to 66 books selection screen
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(tabManager.tabs, isEmpty);
+    expect(find.byType(ChapterChooser), findsNothing);
+
+    // 5) Select another book (ex: "Exo"): chapter selection menu appears
+    await tester.tap(find.text('Exo'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+    expect(find.text('Exodus'), findsOneWidget);
+
+    // 6) Select "1" and "Go"
+    await tester.tap(find.byKey(const ValueKey('keypad_1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('keypad_go')));
+    await tester.pumpAndSettle();
+
+    // Exodus chapter chooser disappears and Exodus 1 is shown; Genesis chooser is NOT underneath!
+    expect(tabManager.activeTab?.label, equals('EXO 1'));
+    expect(find.byType(ChapterChooser), findsNothing);
+    expect(find.text('Genesis'), findsNothing);
+  });
+
+  testWidgets('tapping active tab again toggles chapter chooser closed',
+      (tester) async {
+    tabManager.openTab(43, 2); // John 2
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('JHN 2'), findsOneWidget);
+    expect(find.byType(ChapterChooser), findsNothing);
+
+    // Tap active tab to open ChapterChooser
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+
+    // Tap active tab again to toggle it off
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsNothing);
+  });
+
+  testWidgets(
+      'closing active tab when multiple tabs exist dismisses chapter chooser',
+      (tester) async {
+    tabManager.openTab(43, 2); // John 2
+    tabManager.openTab(45, 8); // Romans 8 (active)
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tabManager.activeTab?.label, equals('ROM 8'));
+
+    // Open ChapterChooser on ROM 8
+    await tester.tap(find.text('ROM 8'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+
+    // Close ROM 8 tab by tapping its close icon
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    // Active tab switches to JHN 2, and chapter chooser is dismissed
+    expect(tabManager.activeTab?.label, equals('JHN 2'));
+    expect(find.byType(ChapterChooser), findsNothing);
+  });
+
+  testWidgets(
+      'switching to a different tab dismisses chapter chooser',
+      (tester) async {
+    tabManager.openTab(43, 2); // John 2
+    tabManager.openTab(45, 8); // Romans 8 (active)
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open ChapterChooser on ROM 8
+    await tester.tap(find.text('ROM 8'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+
+    // Tap JHN 2 tab
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+
+    // Active tab switches to JHN 2, chapter chooser is dismissed
+    expect(tabManager.activeTab?.label, equals('JHN 2'));
+    expect(find.byType(ChapterChooser), findsNothing);
+  });
+
+  testWidgets(
+      'tapping add tab button (+) dismisses chapter chooser',
+      (tester) async {
+    tabManager.openTab(43, 2); // John 2
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open ChapterChooser on JHN 2
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ChapterChooser), findsOneWidget);
+
+    // Tap + button
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    // BookChooser is shown, ChapterChooser is gone
+    expect(tabManager.isAddingTab, isTrue);
+    expect(find.byType(BookChooser), findsOneWidget);
+    expect(find.byType(ChapterChooser), findsNothing);
+  });
 }
