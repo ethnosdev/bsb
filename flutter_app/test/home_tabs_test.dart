@@ -11,6 +11,7 @@ import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_chip.dart';
 import 'package:bsb/ui/tabs/composite_chip.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
+import 'package:bsb/ui/tabs/chapter_tabs_sheet.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:bsb/ui/text/text_screen.dart';
@@ -249,10 +250,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open Chapters'), findsOneWidget);
-    expect(find.text('John 3'), findsOneWidget);
+    final sheetItem = find.descendant(
+      of: find.byType(ChapterTabsSheet),
+      matching: find.text('John 3'),
+    );
+    expect(sheetItem, findsOneWidget);
 
     // Tap the current tab (John 3)
-    await tester.tap(find.text('John 3'));
+    await tester.tap(sheetItem);
     await tester.pumpAndSettle();
 
     // ChapterChooser dialog should now be visible for John!
@@ -383,25 +388,25 @@ void main() {
     expect(appBarBottom, equals(103.0)); // 47 status bar + 56 toolbar
 
     final activeChapter = find.byKey(const ValueKey('chapter_43_3'));
-    final usfmFinder = find.descendant(
+    final headerFinder = find.descendant(
       of: activeChapter,
-      matching: find.byType(UsfmWidget),
+      matching: find.byKey(const ValueKey('chapter_header_43_3')),
     );
-    expect(usfmFinder, findsOneWidget);
-    final initialTop = tester.getTopLeft(usfmFinder).dy;
+    expect(headerFinder, findsOneWidget);
+    final initialTop = tester.getTopLeft(headerFinder).dy;
     expect(initialTop, equals(119.0)); // 103 + 16px margin
 
     // Enter distraction free mode by tapping text screen
     await tester.tapAt(const Offset(200, 300));
     await tester.pumpAndSettle();
 
-    expect(tester.getTopLeft(usfmFinder).dy, equals(119.0)); // No jump
+    expect(tester.getTopLeft(headerFinder).dy, equals(119.0)); // No jump
 
     // Exit distraction free mode
     await tester.tapAt(const Offset(200, 300));
     await tester.pumpAndSettle();
 
-    expect(tester.getTopLeft(usfmFinder).dy, equals(119.0)); // No jump
+    expect(tester.getTopLeft(headerFinder).dy, equals(119.0)); // No jump
   });
 
   testWidgets(
@@ -673,7 +678,13 @@ void main() {
 
     // Directly opens GridVerseChooser for John 2
     expect(find.byType(GridVerseChooser), findsOneWidget);
-    expect(find.text('John 2'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(GridVerseChooser),
+        matching: find.text('John 2'),
+      ),
+      findsOneWidget,
+    );
 
     // Tap back button returns to chapter chooser
     await tester.tap(find.byKey(const ValueKey('verse_grid_back')));

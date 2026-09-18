@@ -4,6 +4,7 @@
 - Allow users to choose the old grid-style chapter chooser in settings.
 - Add an alternate verse chooser grid in settings.
 - Show full book name as a popup in the grid book chooser.
+- Show book name and chapter number at the beginning of each chapter.
 
 # 2.1.0 - 2026.09.15
 

@@ -15,6 +15,8 @@ import 'package:bsb/ui/text/note_viewer_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show BoxParentData;
+import 'package:database_builder/database_builder.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
@@ -71,6 +73,14 @@ class _ChapterTextState extends State<ChapterText>
 
   @override
   bool get wantKeepAlive => true;
+
+  String get _chapterTitle {
+    final book = bookIdToFullNameMap[widget.bookId] ??
+        (bookIdToBookNameMap[widget.bookId] == 'Psalms'
+            ? 'Psalm'
+            : bookIdToBookNameMap[widget.bookId] ?? '');
+    return '$book ${widget.chapter}';
+  }
 
   bool get _isActive {
     if (widget.activePageIndexListenable == null || widget.pageIndex == null) {
@@ -311,7 +321,10 @@ class _ChapterTextState extends State<ChapterText>
         final text = _getParagraphText(child);
         if (_matchesHeading(text, target)) {
           final parentData = child.parentData as PassageParentData;
-          final targetOffset = parentData.offset.dy;
+          final passageOffset = (passage!.parentData is BoxParentData)
+              ? (passage!.parentData as BoxParentData).offset.dy
+              : 0.0;
+          final targetOffset = passageOffset + parentData.offset.dy;
           final maxScroll = _scrollController.position.maxScrollExtent;
           if (targetOffset > 50.0 && maxScroll <= 0.0) {
             return false;
@@ -420,7 +433,10 @@ class _ChapterTextState extends State<ChapterText>
 
         if (matches) {
           final parentData = child.parentData as PassageParentData;
-          final targetOffset = parentData.offset.dy;
+          final passageOffset = (passage!.parentData is BoxParentData)
+              ? (passage!.parentData as BoxParentData).offset.dy
+              : 0.0;
+          final targetOffset = passageOffset + parentData.offset.dy;
           final maxScroll = _scrollController.position.maxScrollExtent;
           if (targetOffset > 50.0 && maxScroll <= 0.0) {
             return false;
@@ -553,37 +569,68 @@ class _ChapterTextState extends State<ChapterText>
                                       right: 16.0,
                                       bottom: screenHeight * 0.8,
                                     ),
-                                  child: UsfmWidget(
-                                    verseLines: verseLines,
-                                    selectionController: _selectionController,
-                                    highlights: highlights,
-                                    noteMarkers: noteMarkers,
-                                    onFootnoteTapped: _onFootnoteTapped,
-                                    onNoteTapped: _onNoteTapped,
-                                    onAmbiguousTapped: _onAmbiguousTapped,
-                                    onTapWhitespace: _handleReaderTap,
-                                    onWordTapped: (id) {
-                                      log("Tapped word $id");
-                                      _handleReaderTap();
-                                    },
-                                    onSelectionRequested: (wordId) {
-                                      ScriptureLogic.highlightVerse(
-                                        _selectionController,
-                                        verseLines,
-                                        wordId,
-                                      );
-                                    },
-                                    styleBuilder: (format) {
-                                      return UsfmParagraphStyle.usfmDefaults(
-                                        format: format == ParagraphFormat.p
-                                            ? ParagraphFormat.m
-                                            : format,
-                                        baseStyle: Theme.of(context).textTheme.bodyMedium!
-                                            .copyWith(fontSize: currentTextSize),
-                                      );
-                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              bottom: 24.0),
+                                          child: Text(
+                                            _chapterTitle,
+                                            key: ValueKey(
+                                                'chapter_header_${widget.bookId}_${widget.chapter}'),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headlineMedium
+                                                ?.copyWith(
+                                                  fontSize:
+                                                      currentTextSize * 1.5,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                        UsfmWidget(
+                                          verseLines: verseLines,
+                                          selectionController:
+                                              _selectionController,
+                                          highlights: highlights,
+                                          noteMarkers: noteMarkers,
+                                          onFootnoteTapped: _onFootnoteTapped,
+                                          onNoteTapped: _onNoteTapped,
+                                          onAmbiguousTapped: _onAmbiguousTapped,
+                                          onTapWhitespace: _handleReaderTap,
+                                          onWordTapped: (id) {
+                                            log("Tapped word $id");
+                                            _handleReaderTap();
+                                          },
+                                          onSelectionRequested: (wordId) {
+                                            ScriptureLogic.highlightVerse(
+                                              _selectionController,
+                                              verseLines,
+                                              wordId,
+                                            );
+                                          },
+                                          styleBuilder: (format) {
+                                            return UsfmParagraphStyle
+                                                .usfmDefaults(
+                                              format:
+                                                  format == ParagraphFormat.p
+                                                      ? ParagraphFormat.m
+                                                      : format,
+                                              baseStyle: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium!
+                                                  .copyWith(
+                                                      fontSize:
+                                                          currentTextSize),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
                               ),
                             ),
                           ),

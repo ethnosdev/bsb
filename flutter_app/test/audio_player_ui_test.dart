@@ -284,7 +284,13 @@ void main() {
     // Verify AudioPlayerBottomBar is shown
     expect(find.byType(AudioPlayerBottomBar), findsOneWidget);
     expect(find.byType(ProgressBar), findsOneWidget);
-    expect(find.text('Genesis 1'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AudioPlayerBottomBar),
+        matching: find.text('Genesis 1'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('AudioPlayerBottomBar close button closes the player', (tester) async {
