@@ -302,4 +302,268 @@ void main() {
       expect(darkBorder.top.color, equals(Colors.black));
     });
   });
+
+  group('BookChooser Popup and Drag Tests', () {
+    void setNarrowScreen(WidgetTester tester) {
+      tester.view.physicalSize = const Size(600, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    testWidgets('tapping and holding on a book displays a popup of the full book name',
+        (tester) async {
+      setNarrowScreen(tester);
+      await tester.pumpWidget(
+        createTestApp(
+          BookChooser(onSelected: (_, _, [_]) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initially no popup
+      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+
+      // Touch down on 'Gen'
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      await tester.pump();
+
+      // Popup should appear with "Genesis"
+      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+      expect(popupFinder, findsOneWidget);
+      expect(
+        find.descendant(
+          of: popupFinder,
+          matching: find.text('Genesis'),
+        ),
+        findsOneWidget,
+      );
+
+      // Release
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // Popup disappears
+      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+    });
+
+    testWidgets('displays full book name for Psalms', (tester) async {
+      setNarrowScreen(tester);
+      await tester.pumpWidget(
+        createTestApp(
+          BookChooser(onSelected: (_, _, [_]) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Touch 'Psa' -> popup "Psalms"
+      final gesturePsa =
+          await tester.startGesture(tester.getCenter(find.text('Psa')));
+      await tester.pump();
+
+      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+      expect(popupFinder, findsOneWidget);
+      expect(
+        find.descendant(
+          of: popupFinder,
+          matching: find.text('Psalms'),
+        ),
+        findsOneWidget,
+      );
+
+      await gesturePsa.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('displays full book name for Song of Solomon', (tester) async {
+      setNarrowScreen(tester);
+      await tester.pumpWidget(
+        createTestApp(
+          BookChooser(onSelected: (_, _, [_]) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Touch 'Song' -> popup "Song of Solomon"
+      final gestureSong =
+          await tester.startGesture(tester.getCenter(find.text('Song')));
+      await tester.pump();
+
+      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+      expect(popupFinder, findsOneWidget);
+      expect(
+        find.descendant(
+          of: popupFinder,
+          matching: find.text('Song of Solomon'),
+        ),
+        findsOneWidget,
+      );
+
+      await gestureSong.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('dragging across books updates popup and selects book on release',
+        (tester) async {
+      setNarrowScreen(tester);
+
+      await tester.pumpWidget(
+        createTestApp(
+          BookChooser(onSelected: (_, _, [_]) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Start gesture on 'Gen'
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      await tester.pump();
+
+      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+      expect(
+        find.descendant(of: popupFinder, matching: find.text('Genesis')),
+        findsOneWidget,
+      );
+
+      // Drag to 'Exo'
+      await gesture.moveTo(tester.getCenter(find.text('Exo')));
+      await tester.pump();
+
+      expect(
+        find.descendant(of: popupFinder, matching: find.text('Exodus')),
+        findsOneWidget,
+      );
+
+      // Drag to 'Lev'
+      await gesture.moveTo(tester.getCenter(find.text('Lev')));
+      await tester.pump();
+
+      expect(
+        find.descendant(of: popupFinder, matching: find.text('Leviticus')),
+        findsOneWidget,
+      );
+
+      // Release over 'Lev'
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // Popup dismissed and ChapterChooser opened for Leviticus (bookId 3)
+      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+      expect(find.byType(ChapterChooser), findsOneWidget);
+    });
+
+    testWidgets('highlighted tile uses primary color theme', (tester) async {
+      setNarrowScreen(tester);
+      final theme = ThemeData.light(useMaterial3: true);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(
+            body: BookChooser(onSelected: (_, _, [_]) {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Touch down on 'Gen'
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      await tester.pump();
+
+      // First BookItem should be highlighted with theme.colorScheme.primary
+      final bookItems = tester.widgetList<BookItem>(find.byType(BookItem));
+      expect(bookItems.first.isHighlighted, isTrue);
+
+      final materialFinder = find.descendant(
+        of: find.byType(BookItem).first,
+        matching: find.byType(Material),
+      );
+      final materialWidget = tester.widget<Material>(materialFinder);
+      expect(materialWidget.color, equals(theme.colorScheme.primary));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('dragging outside grid dismisses popup without selecting',
+        (tester) async {
+      setNarrowScreen(tester);
+      int? selectedBookId;
+
+      await tester.pumpWidget(
+        createTestApp(
+          BookChooser(
+            onSelected: (bookId, chapter, [section]) {
+              selectedBookId = bookId;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Touch down on 'Gen'
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('book_chooser_popup')), findsOneWidget);
+
+      // Drag far off to the left/top
+      await gesture.moveTo(const Offset(-80, -80));
+      await tester.pump();
+
+      // Popup dismissed
+      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+
+      // Release outside
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // No book was selected
+      expect(selectedBookId, isNull);
+      expect(find.byType(ChapterChooser), findsNothing);
+    });
+
+    testWidgets(
+        'displays popup above the chosen book even for top row over the AppBar',
+        (tester) async {
+      setNarrowScreen(tester);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(useMaterial3: true),
+          home: Scaffold(
+            appBar: AppBar(title: const Text('Choose a Book')),
+            body: BookChooser(onSelected: (_, _, [_]) {}),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Touch down on 'Gen' in row 0
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      await tester.pump();
+
+      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+      expect(popupFinder, findsOneWidget);
+      expect(
+        find.descendant(of: popupFinder, matching: find.text('Genesis')),
+        findsOneWidget,
+      );
+
+      final tileRect = tester.getRect(find.text('Gen'));
+      final popupRect = tester.getRect(popupFinder);
+
+      // The popup bottom must be above the tile top (floating over the AppBar)
+      expect(popupRect.bottom, lessThan(tileRect.top));
+
+      // The popup top should be within the AppBar area (less than kToolbarHeight)
+      expect(popupRect.top, lessThan(kToolbarHeight));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+  });
 }

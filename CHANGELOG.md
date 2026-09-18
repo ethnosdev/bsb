@@ -3,6 +3,7 @@
 - Fix bug with chapter chooser not disappearing.
 - Allow users to choose the old grid-style chapter chooser in settings.
 - Add an alternate verse chooser grid in settings.
+- Show full book name as a popup in the grid book chooser.
 
 # 2.1.0 - 2026.09.15
 
