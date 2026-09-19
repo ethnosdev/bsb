@@ -130,15 +130,41 @@ class UserSettings {
     }
   }
 
-  static const _showVerseGridKey = 'showVerseGrid';
+  static const _verseChooserStyleKey = 'verseChooserStyle';
 
-  bool get showVerseGrid => _prefs.getBool(_showVerseGridKey) ?? false;
+  VerseChooserStyle get verseChooserStyle {
+    final value = _prefs.getString(_verseChooserStyleKey);
+    if (value == 'grid') {
+      return VerseChooserStyle.grid;
+    }
+    return VerseChooserStyle.sidebar;
+  }
+
+  Future<void> setVerseChooserStyle(VerseChooserStyle style) async {
+    if (style == VerseChooserStyle.sidebar) {
+      await _prefs.remove(_verseChooserStyleKey);
+    } else {
+      await _prefs.setString(_verseChooserStyleKey, style.name);
+    }
+  }
+
+  bool get showVerseGrid => verseChooserStyle == VerseChooserStyle.grid;
 
   Future<void> setShowVerseGrid(bool show) async {
-    if (!show) {
-      await _prefs.remove(_showVerseGridKey);
+    await setVerseChooserStyle(
+      show ? VerseChooserStyle.grid : VerseChooserStyle.sidebar,
+    );
+  }
+
+  static const _wordsOfJesusInRedKey = 'wordsOfJesusInRed';
+
+  bool get wordsOfJesusInRed => _prefs.getBool(_wordsOfJesusInRedKey) ?? false;
+
+  Future<void> setWordsOfJesusInRed(bool value) async {
+    if (!value) {
+      await _prefs.remove(_wordsOfJesusInRedKey);
     } else {
-      await _prefs.setBool(_showVerseGridKey, true);
+      await _prefs.setBool(_wordsOfJesusInRedKey, true);
     }
   }
 }
@@ -156,6 +182,14 @@ enum ChapterChooserStyle {
   grid('Grid');
 
   const ChapterChooserStyle(this.displayName);
+  final String displayName;
+}
+
+enum VerseChooserStyle {
+  sidebar('Sidebar'),
+  grid('Grid');
+
+  const VerseChooserStyle(this.displayName);
   final String displayName;
 }
 

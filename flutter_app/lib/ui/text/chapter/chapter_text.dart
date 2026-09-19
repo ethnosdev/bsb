@@ -493,13 +493,19 @@ class _ChapterTextState extends State<ChapterText>
     final textSizeListenable = getIt.isRegistered<AppState>()
         ? getIt<AppState>().textSizeNotifier
         : ValueNotifier<double>(manager.textSize);
+    final wordsOfJesusInRedListenable = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().wordsOfJesusInRedNotifier
+        : ValueNotifier<bool>(false);
 
     return ValueListenableBuilder<double>(
       valueListenable: textSizeListenable,
       builder: (context, currentTextSize, child) {
-        return ValueListenableBuilder<List<UsfmLine>>(
-          valueListenable: manager.textParagraphNotifier,
-          builder: (context, verseLines, child) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: wordsOfJesusInRedListenable,
+          builder: (context, wordsOfJesusInRed, child) {
+            return ValueListenableBuilder<List<UsfmLine>>(
+              valueListenable: manager.textParagraphNotifier,
+              builder: (context, verseLines, child) {
             if (verseLines.isNotEmpty &&
                 widget.targetSection != null &&
                 _lastScrolledSection != widget.targetSection) {
@@ -613,7 +619,7 @@ class _ChapterTextState extends State<ChapterText>
                                             );
                                           },
                                           styleBuilder: (format) {
-                                            return UsfmParagraphStyle
+                                            final base = UsfmParagraphStyle
                                                 .usfmDefaults(
                                               format:
                                                   format == ParagraphFormat.p
@@ -626,6 +632,19 @@ class _ChapterTextState extends State<ChapterText>
                                                       fontSize:
                                                           currentTextSize),
                                             );
+                                            if (wordsOfJesusInRed) {
+                                              final isDark = brightness ==
+                                                  Brightness.dark;
+                                              final redColor = isDark
+                                                  ? const Color(0xFFFF8A80)
+                                                  : const Color(0xFFB71C1C);
+                                              return base.copyWith(
+                                                wordsOfJesusStyle: base
+                                                    .textStyle
+                                                    .copyWith(color: redColor),
+                                              );
+                                            }
+                                            return base;
                                           },
                                         ),
                                       ],
@@ -647,6 +666,8 @@ class _ChapterTextState extends State<ChapterText>
         );
       },
     );
+  },
+);
   }
 
   Widget _buildVerseScrubberOverlay(List<int> sortedVerses) {
@@ -867,13 +888,28 @@ class _ChapterTextState extends State<ChapterText>
                           .withValues(alpha: 0.3),
                       onFootnoteTapped: _onFootnoteTapped,
                       styleBuilder: (format) {
-                        return UsfmParagraphStyle.usfmDefaults(
+                        final base = UsfmParagraphStyle.usfmDefaults(
                           format: format == ParagraphFormat.p
                               ? ParagraphFormat.m
                               : format,
                           baseStyle: Theme.of(context).textTheme.bodyMedium!
                               .copyWith(fontSize: manager.textSize),
                         );
+                        final isRed = getIt.isRegistered<AppState>()
+                            ? getIt<AppState>().wordsOfJesusInRedNotifier.value
+                            : false;
+                        if (isRed) {
+                          final isDark =
+                              Theme.of(context).brightness == Brightness.dark;
+                          final redColor = isDark
+                              ? const Color(0xFFFF8A80)
+                              : const Color(0xFFB71C1C);
+                          return base.copyWith(
+                            wordsOfJesusStyle:
+                                base.textStyle.copyWith(color: redColor),
+                          );
+                        }
+                        return base;
                       },
                       showHeadings: false,
                       showVerseNumbers: false,

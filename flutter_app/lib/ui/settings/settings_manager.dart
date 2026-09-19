@@ -67,4 +67,30 @@ class SettingsManager extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  VerseChooserStyle get verseChooserStyle =>
+      _appState?.verseChooserStyleNotifier.value ??
+      userSettings.verseChooserStyle;
+
+  Future<void> setVerseChooserStyle(VerseChooserStyle style) async {
+    if (_appState != null) {
+      await _appState!.setVerseChooserStyle(style);
+    } else {
+      await userSettings.setVerseChooserStyle(style);
+    }
+    notifyListeners();
+  }
+
+  bool get wordsOfJesusInRed =>
+      _appState?.wordsOfJesusInRedNotifier.value ??
+      userSettings.wordsOfJesusInRed;
+
+  Future<void> setWordsOfJesusInRed(bool value) async {
+    if (_appState != null) {
+      await _appState!.setWordsOfJesusInRed(value);
+    } else {
+      await userSettings.setWordsOfJesusInRed(value);
+    }
+    notifyListeners();
+  }
 }

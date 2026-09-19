@@ -267,25 +267,46 @@ void main() {
 
   group('Text Hygiene & USFM Parsing Quality', () {
     test(
-      'zero occurrences of Words of Jesus tags (\\wj or \\wj*) in bible text',
+      'all Words of Jesus tags (\\wj) are properly closed with (\\wj*) in each row',
       () {
-        final wjCount =
-            db.select('''
-        SELECT count(*) as c FROM ${Schema.bibleTextTable}
-        WHERE ${Schema.colText} LIKE '%\\wj%'
-           OR ${Schema.colText} LIKE '%\\wj*%';
-      ''').first['c']
-                as int;
+        final rows = db.select('''
+          SELECT ${Schema.colReference}, ${Schema.colText} as text FROM ${Schema.bibleTextTable}
+          WHERE ${Schema.colText} LIKE '%\\wj%';
+        ''');
 
-        expect(wjCount, equals(0));
+        final openRegex = RegExp(r'\\wj(?![*a-zA-Z])');
+        final closeRegex = RegExp(r'\\wj\*');
+
+        for (final row in rows) {
+          final text = row['text'] as String;
+          final opens = openRegex.allMatches(text).length;
+          final closes = closeRegex.allMatches(text).length;
+          expect(
+            opens,
+            equals(closes),
+            reason:
+                'Row ${row[Schema.colReference]} has $opens opens and $closes closes: $text',
+          );
+        }
       },
     );
 
-    test('zero phantom rows with text = "\\wj"', () {
+    test('Words of Jesus tags appear in expected New Testament books', () {
+      final wjCount =
+          db.select('''
+        SELECT count(*) as c FROM ${Schema.bibleTextTable}
+        WHERE ${Schema.colText} LIKE '%\\wj%';
+      ''').first['c']
+              as int;
+
+      expect(wjCount, greaterThan(1000));
+    });
+
+    test('zero phantom rows with text = "\\wj" or "\\wj*"', () {
       final phantomWj =
           db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
-        WHERE trim(${Schema.colText}) = '\\wj';
+        WHERE trim(${Schema.colText}) IN ('\\wj', '\\wj*');
       ''').first['c']
               as int;
 
@@ -316,11 +337,12 @@ void main() {
       expect(parensInCrossRefs, equals(0));
     });
 
-    test('zero rows where text starts with a backslash marker', () {
+    test('zero rows where text starts with a non-wj backslash marker', () {
       final startsWithBackslash =
           db.select('''
         SELECT count(*) as c FROM ${Schema.bibleTextTable}
-        WHERE ${Schema.colText} LIKE '\\%';
+        WHERE ${Schema.colText} LIKE '\\%'
+          AND ${Schema.colText} NOT LIKE '\\wj%';
       ''').first['c']
               as int;
 
@@ -351,7 +373,7 @@ void main() {
       expect(unclosedFootnotes, equals(0));
     });
 
-    test('Matthew 5:15 has clean text starting without \\wj', () {
+    test('Matthew 5:15 has properly formatted Words of Jesus', () {
       final rows = db.select('''
         SELECT ${Schema.colText} as text FROM ${Schema.bibleTextTable}
         WHERE ${Schema.colReference} = 40005015;
@@ -359,8 +381,9 @@ void main() {
 
       expect(rows, isNotEmpty);
       final text = rows.first['text'] as String;
-      expect(text, startsWith('Neither do people light a lamp'));
-      expect(text, isNot(contains(r'\wj')));
+      expect(text, contains('Neither do people light a lamp'));
+      expect(text, contains(r'\wj'));
+      expect(text, contains(r'\wj*'));
     });
 
     test('Psalm 112:1 contains expected footnote with \\fqa markup', () {

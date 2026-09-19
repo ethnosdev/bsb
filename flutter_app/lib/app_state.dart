@@ -12,6 +12,9 @@ class AppState {
   final chapterChooserStyleNotifier =
       ValueNotifier<ChapterChooserStyle>(ChapterChooserStyle.keypad);
   final showVerseGridNotifier = ValueNotifier<bool>(false);
+  final verseChooserStyleNotifier =
+      ValueNotifier<VerseChooserStyle>(VerseChooserStyle.sidebar);
+  final wordsOfJesusInRedNotifier = ValueNotifier<bool>(false);
 
   Future<void> init() async {
     themeNotifier.value = userSettings.themeMode;
@@ -19,6 +22,8 @@ class AppState {
     bookChooserStyleNotifier.value = userSettings.bookChooserStyle;
     chapterChooserStyleNotifier.value = userSettings.chapterChooserStyle;
     showVerseGridNotifier.value = userSettings.showVerseGrid;
+    verseChooserStyleNotifier.value = userSettings.verseChooserStyle;
+    wordsOfJesusInRedNotifier.value = userSettings.wordsOfJesusInRed;
   }
 
   Future<void> setTextSize(double size) async {
@@ -39,7 +44,20 @@ class AppState {
 
   Future<void> setShowVerseGrid(bool show) async {
     showVerseGridNotifier.value = show;
+    verseChooserStyleNotifier.value =
+        show ? VerseChooserStyle.grid : VerseChooserStyle.sidebar;
     await userSettings.setShowVerseGrid(show);
+  }
+
+  Future<void> setVerseChooserStyle(VerseChooserStyle style) async {
+    verseChooserStyleNotifier.value = style;
+    showVerseGridNotifier.value = style == VerseChooserStyle.grid;
+    await userSettings.setVerseChooserStyle(style);
+  }
+
+  Future<void> setWordsOfJesusInRed(bool value) async {
+    wordsOfJesusInRedNotifier.value = value;
+    await userSettings.setWordsOfJesusInRed(value);
   }
 }
 

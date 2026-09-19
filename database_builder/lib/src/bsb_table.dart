@@ -37,11 +37,11 @@ Future<void> createBsbTable(DatabaseHelper dbHelper) async {
     for (String newLine in lines) {
       if (newLine.trim().isEmpty) continue;
 
-      // Remove Words of Jesus tags (\wj and \wj*), as the app does not style
-      // them and \wj can precede \v in USFM (e.g. "\p \wj \v 15 ...").
-      newLine = newLine
-          .replaceAll(r'\wj*', '')
-          .replaceAll(RegExp(r'\\wj\s*'), '');
+      // Normalize Words of Jesus tags (\wj and \wj*):
+      // - Shift punctuation inside closing tags
+      // - Normalize \wj before \v
+      // - Split spans crossing verse boundaries so all verse rows are self-contained
+      newLine = _normalizeUsfmLine(newLine);
 
       // split at a space or a newline and take the text before it
       String marker = newLine.split(RegExp(r'[ \n]'))[0];
@@ -331,4 +331,38 @@ bool _shouldInsertBreak(String oldMarker, String currentMarker) {
 
   // Otherwise, this is a new block element and it gets a break!
   return true;
+}
+
+String _normalizeUsfmLine(String line) {
+  if (!line.contains(r'\wj')) return line;
+
+  // 1. Shift trailing quotes/punctuation before \wj* so word boundaries remain intact
+  // e.g. "receive.’\wj*”" -> "receive.’”\wj*"
+  line = line.replaceAllMapped(
+    RegExp(r'\\wj\*([”\)?]+)'),
+    (m) => '${m[1]}\\wj*',
+  );
+
+  // 2. Normalize \wj before \v
+  // e.g. "\p \wj \v 15 “Let" -> "\p \v 15 \wj “Let"
+  line = line.replaceAllMapped(
+    RegExp(r'\\wj\s*\\v\s*(\d+)'),
+    (m) => '\\v ${m[1]} \\wj ',
+  );
+
+  // 3. Balance \wj spans across verse boundaries
+  // While \v appears inside \wj ... \wj*, close \wj* before \v and reopen \wj after
+  while (true) {
+    final match = RegExp(
+      r'\\wj(?![*a-zA-Z])((?:(?!\\wj\*).)*?)\\v\s*(\d+)',
+    ).firstMatch(line);
+    if (match == null) break;
+    final prefix = line.substring(0, match.start);
+    final inside = match.group(1)!;
+    final verseNum = match.group(2)!;
+    final rest = line.substring(match.end);
+    line = '$prefix\\wj$inside\\wj* \\v $verseNum \\wj$rest';
+  }
+
+  return line;
 }

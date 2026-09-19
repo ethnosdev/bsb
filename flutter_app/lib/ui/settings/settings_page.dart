@@ -117,8 +117,26 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
+                SwitchListTile(
+                  title: const Text('Words of Jesus in Red'),
+                  value: manager.wordsOfJesusInRed,
+                  onChanged: (bool value) {
+                    manager.setWordsOfJesusInRed(value);
+                  },
+                ),
+                const Divider(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text(
+                    'Navigation',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 ListTile(
-                  title: const Text('Book Chooser Layout'),
+                  title: const Text('Book Chooser'),
                   subtitle: Text(
                     manager.bookChooserStyle == BookChooserStyle.list
                         ? 'List'
@@ -133,7 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Book Chooser Layout'),
+                        title: const Text('Book Chooser'),
                         content: SegmentedButton<BookChooserStyle>(
                           showSelectedIcon: false,
                           segments: const [
@@ -159,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
                 ListTile(
-                  title: const Text('Chapter Chooser Layout'),
+                  title: const Text('Chapter Chooser'),
                   subtitle: Text(
                     manager.chapterChooserStyle == ChapterChooserStyle.grid
                         ? 'Grid'
@@ -167,14 +185,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   trailing: Icon(
                     manager.chapterChooserStyle == ChapterChooserStyle.grid
-                        ? Icons.grid_on
+                        ? Icons.grid_view
                         : Icons.dialpad,
                   ),
                   onTap: () {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Chapter Chooser Layout'),
+                        title: const Text('Chapter Chooser'),
                         content: SegmentedButton<ChapterChooserStyle>(
                           showSelectedIcon: false,
                           segments: const [
@@ -186,7 +204,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ButtonSegment<ChapterChooserStyle>(
                               value: ChapterChooserStyle.grid,
                               label: Text('Grid'),
-                              icon: Icon(Icons.grid_on),
+                              icon: Icon(Icons.grid_view),
                             ),
                           ],
                           selected: {manager.chapterChooserStyle},
@@ -200,12 +218,46 @@ class _SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
-                SwitchListTile(
-                  title: const Text('Verse Grid'),
-                  subtitle: const Text('Select a verse after choosing a chapter'),
-                  value: manager.showVerseGrid,
-                  onChanged: (bool value) {
-                    manager.setShowVerseGrid(value);
+                ListTile(
+                  title: const Text('Verse Chooser'),
+                  subtitle: Text(
+                    manager.verseChooserStyle == VerseChooserStyle.grid
+                        ? 'Grid'
+                        : 'Sidebar',
+                  ),
+                  trailing: Icon(
+                    manager.verseChooserStyle == VerseChooserStyle.grid
+                        ? Icons.grid_view
+                        : Icons.view_sidebar,
+                  ),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Verse Chooser'),
+                        content: SegmentedButton<VerseChooserStyle>(
+                          showSelectedIcon: false,
+                          segments: const [
+                            ButtonSegment<VerseChooserStyle>(
+                              value: VerseChooserStyle.sidebar,
+                              label: Text('Sidebar'),
+                              icon: Icon(Icons.view_sidebar),
+                            ),
+                            ButtonSegment<VerseChooserStyle>(
+                              value: VerseChooserStyle.grid,
+                              label: Text('Grid'),
+                              icon: Icon(Icons.grid_view),
+                            ),
+                          ],
+                          selected: {manager.verseChooserStyle},
+                          onSelectionChanged:
+                              (Set<VerseChooserStyle> selection) {
+                            manager.setVerseChooserStyle(selection.first);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    );
                   },
                 ),
                 const Divider(),
