@@ -61,6 +61,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   bool _isDistractionFree = false;
 
   final Map<String, List<UsfmLine>> _passageCache = {};
+  final _selectionController = ScriptureSelectionController();
   bool _isLoading = true;
 
   @override
@@ -84,6 +85,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
 
   @override
   void dispose() {
+    _selectionController.dispose();
     if (_isDistractionFree) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -283,7 +285,8 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
           else
             UsfmWidget(
               verseLines: lines,
-              selectionController: ScriptureSelectionController(),
+              selectionController: _selectionController,
+              showSelectionHandles: false,
               showHeadings: false,
               showVerseNumbers: true,
               onTapWhitespace: _toggleDistractionFree,

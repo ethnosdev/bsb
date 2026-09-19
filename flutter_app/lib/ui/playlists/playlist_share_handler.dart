@@ -78,9 +78,10 @@ class PlaylistShareHandler {
     }
   }
 
-  /// Determines whether the playlist's encoded share data can fit into a single QR code.
+  /// Generates and validates a [QrCode] for [playlist]. Returns `null` if the data
+  /// exceeds the maximum QR capacity or fails validation.
   /// Standard QR (Version 40) at lowest error correction (Level L) can store at most ~2,953 bytes.
-  static bool canFitInQr(Playlist playlist) {
+  static QrCode? tryGenerateQrCode(Playlist playlist) {
     try {
       final shareUrl = encodePlaylistToUrl(playlist);
       final qrCode = QrCode.fromData(
@@ -89,11 +90,14 @@ class PlaylistShareHandler {
       );
       // Accessing QrImage forces dataCache evaluation to catch InputTooLongException
       QrImage(qrCode);
-      return true;
+      return qrCode;
     } catch (_) {
-      return false;
+      return null;
     }
   }
+
+  /// Determines whether the playlist's encoded share data can fit into a single QR code.
+  static bool canFitInQr(Playlist playlist) => tryGenerateQrCode(playlist) != null;
 
   // --- Export File ---
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:uuid/uuid.dart';
 
@@ -292,8 +293,8 @@ class Playlist {
           runtimeType == other.runtimeType &&
           id == other.id &&
           title == other.title &&
-          items.length == other.items.length;
+          listEquals(items, other.items);
 
   @override
-  int get hashCode => Object.hash(id, title, items.length);
+  int get hashCode => Object.hash(id, title, Object.hashAll(items));
 }

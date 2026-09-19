@@ -15,25 +15,10 @@ class PlaylistQrDialog extends StatelessWidget {
     );
   }
 
-  static (bool isValid, QrCode? qrCode) _validateData(String data) {
-    try {
-      final qrCode = QrCode.fromData(
-        data: data,
-        errorCorrectLevel: QrErrorCorrectLevel.L,
-      );
-      // QrCode.fromData does not calculate dataCache eagerly; QrImage forces validation
-      QrImage(qrCode);
-      return (true, qrCode);
-    } catch (_) {
-      return (false, null);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final shareUrl = PlaylistShareHandler.encodePlaylistToUrl(playlist);
-    final (isValid, qrCode) = _validateData(shareUrl);
-    final isTooLarge = !isValid || qrCode == null;
+    final qrCode = PlaylistShareHandler.tryGenerateQrCode(playlist);
+    final isTooLarge = qrCode == null;
 
     return AlertDialog(
       title: Text(

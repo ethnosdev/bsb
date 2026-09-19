@@ -23,6 +23,7 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
   late final TextEditingController _titleController;
   final _playlistService = getIt<PlaylistService>();
   final _dbHelper = getIt<DatabaseHelper>();
+  late final PlaylistShareHandler _shareHandler;
 
   late List<PlaylistItem> _items;
   final Map<String, String> _snippetCache = {};
@@ -30,6 +31,7 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
   @override
   void initState() {
     super.initState();
+    _shareHandler = PlaylistShareHandler(playlistService: _playlistService);
     _titleController = TextEditingController(text: widget.playlist.title);
     _items = List.from(widget.playlist.items);
     _loadSnippets();
@@ -197,9 +199,9 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
             onSelected: (val) {
               final playlist = _buildPlaylist();
               if (val == 'share') {
-                PlaylistShareHandler().exportPlaylistFile(context, playlist);
+                _shareHandler.exportPlaylistFile(context, playlist);
               } else if (val == 'link') {
-                PlaylistShareHandler().copyShareLink(context, playlist);
+                _shareHandler.copyShareLink(context, playlist);
               } else if (val == 'qr') {
                 PlaylistQrDialog.show(context, playlist);
               }
