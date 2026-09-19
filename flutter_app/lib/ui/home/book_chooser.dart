@@ -152,7 +152,10 @@ class BookChooser extends StatefulWidget {
   const BookChooser({
     super.key,
     required this.onSelected,
+    this.onBookSelected,
     this.onVerseSelected,
+    this.showVerseGrid,
+    this.verseStyle,
     this.wideScreenBreakpoint = defaultWideScreenBreakpoint,
   });
 
@@ -160,7 +163,10 @@ class BookChooser extends StatefulWidget {
   static const double defaultWideScreenBreakpoint = 800.0;
 
   final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final void Function(int bookId)? onBookSelected;
   final void Function(int bookId, int chapter, int verse)? onVerseSelected;
+  final bool? showVerseGrid;
+  final VerseChooserStyle? verseStyle;
   final double wideScreenBreakpoint;
 
   @override
@@ -225,11 +231,16 @@ class _BookChooserState extends State<BookChooser> {
     if (_overlayController.isShowing) {
       _overlayController.hide();
     }
+    if (widget.onBookSelected != null) {
+      widget.onBookSelected!(bookId);
+      return;
+    }
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     final userSettings =
         getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
-    final showVerseGrid =
-        appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false;
+    final showVerseGrid = widget.showVerseGrid ??
+        (widget.verseStyle != null ||
+            (appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false));
 
     if (chapterCount == 1 && !showVerseGrid) {
       widget.onSelected(bookId, 1);
@@ -239,10 +250,18 @@ class _BookChooserState extends State<BookChooser> {
   }
 
   void _goToFirstChapter(int bookId) {
+    if (widget.onBookSelected != null) {
+      widget.onBookSelected!(bookId);
+      return;
+    }
     widget.onSelected(bookId, 1);
   }
 
   void _goToLastChapter(int bookId, int lastChapter) {
+    if (widget.onBookSelected != null) {
+      widget.onBookSelected!(bookId);
+      return;
+    }
     widget.onSelected(bookId, lastChapter);
   }
 
@@ -601,6 +620,8 @@ class _BookChooserState extends State<BookChooser> {
                     return ChapterChooser(
                       bookId: bookId,
                       chapterCount: chapterCount,
+                      showVerseGrid: widget.showVerseGrid,
+                      verseStyle: widget.verseStyle,
                       onChapterSelected: (chapter) {
                         _chapterNotifier.value = null;
                         if (chapter == null) return;

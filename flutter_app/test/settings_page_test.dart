@@ -40,13 +40,13 @@ void main() {
     expect(find.text('Navigation'), findsOneWidget);
     expect(find.text('Book Chooser'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Import Annotations'), 200);
+    await tester.scrollUntilVisible(find.text('Import Backup'), 200);
     expect(find.text('Backup & Annotations'), findsOneWidget);
-    expect(find.text('Export Annotations'), findsOneWidget);
-    expect(find.text('Import Annotations'), findsOneWidget);
+    expect(find.text('Export Backup'), findsOneWidget);
+    expect(find.text('Import Backup'), findsOneWidget);
 
-    // Tapping Export Annotations opens the format choice sheet
-    await tester.tap(find.text('Export Annotations'));
+    // Tapping Export Backup opens the format choice sheet
+    await tester.tap(find.text('Export Backup'));
     await tester.pumpAndSettle();
 
     expect(find.text('Export Backup (JSON)'), findsOneWidget);

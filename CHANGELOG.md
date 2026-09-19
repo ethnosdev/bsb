@@ -6,6 +6,7 @@
 - Show full book name as a popup in the grid book chooser.
 - Show book name and chapter number at the beginning of each chapter.
 - Add words of Jesus in red option to settings.
+- Playlists (ordered collection of Bible passages and notes).
 
 # 2.1.0 - 2026.09.15
 

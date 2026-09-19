@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:bsb/infrastructure/annotation_models.dart';
+import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/reference.dart';
 
 enum AnnotationImportMode {
@@ -11,23 +12,26 @@ enum AnnotationImportMode {
 class AnnotationImportResult {
   final int highlightsImported;
   final int notesImported;
+  final int playlistsImported;
   final AnnotationImportMode mode;
 
   const AnnotationImportResult({
     required this.highlightsImported,
     required this.notesImported,
+    this.playlistsImported = 0,
     required this.mode,
   });
 }
 
 class AnnotationBackup {
-  static const int currentVersion = 1;
+  static const int currentVersion = 2;
 
   final int version;
   final String app;
   final DateTime exportedAt;
   final List<Highlight> highlights;
   final List<Note> notes;
+  final List<Playlist> playlists;
 
   AnnotationBackup({
     this.version = currentVersion,
@@ -35,6 +39,7 @@ class AnnotationBackup {
     required this.exportedAt,
     required this.highlights,
     required this.notes,
+    this.playlists = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +49,7 @@ class AnnotationBackup {
       'exported_at': exportedAt.toIso8601String(),
       'highlights': highlights.map((h) => h.toMap()).toList(),
       'notes': notes.map((n) => n.toMap()).toList(),
+      'playlists': playlists.map((p) => p.toMap()).toList(),
     };
   }
 
@@ -72,12 +78,19 @@ class AnnotationBackup {
         .map((m) => Note.fromMap(m))
         .toList();
 
+    final rawPlaylists = map['playlists'] as List<dynamic>? ?? [];
+    final playlists = rawPlaylists
+        .whereType<Map<String, dynamic>>()
+        .map((m) => Playlist.fromMap(m))
+        .toList();
+
     return AnnotationBackup(
       version: version,
       app: app,
       exportedAt: exportedAt,
       highlights: highlights,
       notes: notes,
+      playlists: playlists,
     );
   }
 
@@ -134,6 +147,24 @@ class AnnotationBackup {
           buffer.writeln();
         }
         buffer.writeln(n.content);
+        buffer.writeln();
+      }
+    }
+
+    if (playlists.isNotEmpty) {
+      buffer.writeln('## Playlists (${playlists.length})');
+      buffer.writeln();
+      for (final p in playlists) {
+        buffer.writeln('### ${p.title}');
+        buffer.writeln();
+        for (int i = 0; i < p.items.length; i++) {
+          final item = p.items[i];
+          if (item.isReference) {
+            buffer.writeln('${i + 1}. **${item.reference}**');
+          } else {
+            buffer.writeln('> Note: ${item.noteText}');
+          }
+        }
         buffer.writeln();
       }
     }

@@ -37,13 +37,13 @@ class AnnotationFileHandler {
 
     if (!context.mounted) return;
 
-    if (backup.highlights.isEmpty && backup.notes.isEmpty) {
+    if (backup.highlights.isEmpty && backup.notes.isEmpty && backup.playlists.isEmpty) {
       final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Export Annotations'),
+          title: const Text('Export Backup'),
           content: const Text(
-            'You currently have no highlights or notes saved. Do you still want to export an empty backup?',
+            'You currently have no highlights, notes, or playlists saved. Do you still want to export an empty backup?',
           ),
           actions: [
             TextButton(
@@ -62,14 +62,14 @@ class AnnotationFileHandler {
 
     if (!context.mounted) return;
 
-    final fileName = 'bsb_annotations_${_todayDateString()}.json';
+    final fileName = 'bsb_backup_${_todayDateString()}.json';
     final jsonContent = backup.toJson(pretty: true);
 
     await _saveOrShareFile(
       context: context,
       content: jsonContent,
       fileName: fileName,
-      dialogTitle: 'Export Annotations Backup (JSON)',
+      dialogTitle: 'Export Backup (JSON)',
       allowedExtensions: ['json'],
     );
   }
@@ -79,10 +79,10 @@ class AnnotationFileHandler {
 
     if (!context.mounted) return;
 
-    if (backup.highlights.isEmpty && backup.notes.isEmpty) {
+    if (backup.highlights.isEmpty && backup.notes.isEmpty && backup.playlists.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No highlights or notes to export as Markdown.'),
+          content: Text('No highlights, notes, or playlists to export as Markdown.'),
         ),
       );
       return;
@@ -180,7 +180,9 @@ class AnnotationFileHandler {
 
     final existingBackup = await _annotationService.createBackup();
     final hasExisting =
-        existingBackup.highlights.isNotEmpty || existingBackup.notes.isNotEmpty;
+        existingBackup.highlights.isNotEmpty ||
+        existingBackup.notes.isNotEmpty ||
+        existingBackup.playlists.isNotEmpty;
 
     if (!context.mounted) return;
 
@@ -188,6 +190,7 @@ class AnnotationFileHandler {
       context: context,
       highlightsCount: backup.highlights.length,
       notesCount: backup.notes.length,
+      playlistsCount: backup.playlists.length,
       hasExisting: hasExisting,
     );
 
@@ -202,7 +205,7 @@ class AnnotationFileHandler {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Imported ${importResult.highlightsImported} highlights and ${importResult.notesImported} notes (${mode == AnnotationImportMode.merge ? 'merged' : 'replaced'}).',
+            'Imported ${importResult.highlightsImported} highlights, ${importResult.notesImported} notes, and ${importResult.playlistsImported} playlists (${mode == AnnotationImportMode.merge ? 'merged' : 'replaced'}).',
           ),
         ),
       );
@@ -213,6 +216,7 @@ class AnnotationFileHandler {
     required BuildContext context,
     required int highlightsCount,
     required int notesCount,
+    required int playlistsCount,
     required bool hasExisting,
   }) async {
     AnnotationImportMode selectedMode = AnnotationImportMode.merge;
@@ -223,13 +227,13 @@ class AnnotationFileHandler {
         return StatefulBuilder(
           builder: (dialogCtx, setDialogState) {
             return AlertDialog(
-              title: const Text('Import Annotations'),
+              title: const Text('Import Backup'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Found $highlightsCount highlights and $notesCount notes in the backup file.',
+                    'Found $highlightsCount highlights, $notesCount notes, and $playlistsCount playlists in the backup file.',
                     style: Theme.of(ctx).textTheme.bodyMedium,
                   ),
                   if (hasExisting) ...[

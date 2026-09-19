@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-export 'package:bsb/ui/settings/user_settings.dart' show ChapterChooserStyle;
+export 'package:bsb/ui/settings/user_settings.dart' show ChapterChooserStyle, VerseChooserStyle;
 
 /// Generic chapter chooser widget that displays either a keypad or a grid
 /// of chapter numbers based on user settings or an explicit [style] override.
@@ -27,6 +27,7 @@ class ChapterChooser extends StatefulWidget {
     required this.chapterCount,
     this.initialChapter,
     this.style,
+    this.verseStyle,
     this.showVerseGrid,
     this.headingsLoader,
     this.verseCountLoader,
@@ -50,6 +51,9 @@ class ChapterChooser extends StatefulWidget {
 
   /// Optional style override. If null, the style configured in settings is used.
   final ChapterChooserStyle? style;
+
+  /// Optional verse chooser style override. If null, the style configured in settings is used.
+  final VerseChooserStyle? verseStyle;
 
   /// Optional override for showing the verse grid after chapter selection.
   /// If null, the setting configured in [UserSettings.showVerseGrid] is used.
@@ -105,6 +109,9 @@ class _ChapterChooserState extends State<ChapterChooser> {
   bool _resolveShowVerseGrid() {
     if (widget.showVerseGrid != null) {
       return widget.showVerseGrid!;
+    }
+    if (widget.verseStyle != null) {
+      return true;
     }
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     if (appState != null) {
@@ -170,14 +177,35 @@ class _ChapterChooserState extends State<ChapterChooser> {
   @override
   Widget build(BuildContext context) {
     if (_chosenChapter != null) {
-      return GridVerseChooser(
-        bookName: widget.bookName,
-        bookId: widget.bookId,
-        chapter: _chosenChapter!,
-        verseCount: _getVerseCount(_chosenChapter!),
-        onVerseSelected: _onVerseChosen,
-        onBackPressed: _onBackPressedFromVerse,
-      );
+      final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+      final userSettings =
+          getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+      final verseStyle = widget.verseStyle ??
+          (widget.showVerseGrid == true
+              ? VerseChooserStyle.grid
+              : (appState?.verseChooserStyleNotifier.value ??
+                  userSettings?.verseChooserStyle ??
+                  VerseChooserStyle.sidebar));
+
+      if (verseStyle == VerseChooserStyle.grid) {
+        return GridVerseChooser(
+          bookName: widget.bookName,
+          bookId: widget.bookId,
+          chapter: _chosenChapter!,
+          verseCount: _getVerseCount(_chosenChapter!),
+          onVerseSelected: _onVerseChosen,
+          onBackPressed: _onBackPressedFromVerse,
+        );
+      } else {
+        return KeypadVerseChooser(
+          bookName: widget.bookName,
+          bookId: widget.bookId,
+          chapter: _chosenChapter!,
+          verseCount: _getVerseCount(_chosenChapter!),
+          onVerseSelected: _onVerseChosen,
+          onBackPressed: _onBackPressedFromVerse,
+        );
+      }
     }
 
     if (widget.style != null) {
@@ -231,63 +259,54 @@ class _ChapterChooserState extends State<ChapterChooser> {
   }
 }
 
-/// A chapter chooser that uses a numeric keypad layout.
-class KeypadChapterChooser extends StatefulWidget {
-  const KeypadChapterChooser({
+/// A reusable numeric keypad chooser widget for selecting chapters or verses.
+class NumericKeypadChooser extends StatefulWidget {
+  const NumericKeypadChooser({
     super.key,
-    this.bookName,
-    this.bookId,
-    required this.chapterCount,
-    this.headingsLoader,
-    this.onChapterSelected,
-    this.onSectionSelected,
+    required this.title,
+    required this.label,
+    required this.maxCount,
+    this.initialValue,
+    this.showHeadings = false,
+    this.onHeadingsPressed,
+    this.onSelected,
+    this.onDismiss,
+    this.onBackPressed,
   });
 
-  final String? bookName;
-  final int? bookId;
-  final int chapterCount;
-  final Future<List<SectionHeading>> Function(int bookId)? headingsLoader;
-  final void Function(int? chapter)? onChapterSelected;
-  final void Function(int chapter, String sectionHeading)? onSectionSelected;
+  final String title;
+  final String label;
+  final int maxCount;
+  final int? initialValue;
+  final bool showHeadings;
+  final VoidCallback? onHeadingsPressed;
+  final ValueChanged<int>? onSelected;
+  final VoidCallback? onDismiss;
+  final VoidCallback? onBackPressed;
 
   @override
-  State<KeypadChapterChooser> createState() => _KeypadChapterChooserState();
+  State<NumericKeypadChooser> createState() => _NumericKeypadChooserState();
 }
 
-class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
+class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
   String _enteredText = '';
 
-  String get _displayBookName {
-    final resolvedBookId = widget.bookId ??
-        (widget.bookName != null ? fullNameToBookIdMap[widget.bookName] : null);
-    if (resolvedBookId != null &&
-        bookIdToBookNameMap.containsKey(resolvedBookId)) {
-      return bookIdToBookNameMap[resolvedBookId]!;
-    }
-    if (widget.bookName != null && widget.bookName!.isNotEmpty) {
-      return widget.bookName!;
-    }
-    return '';
-  }
-
   @override
-  void didUpdateWidget(covariant KeypadChapterChooser oldWidget) {
+  void didUpdateWidget(covariant NumericKeypadChooser oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.chapterCount != widget.chapterCount) {
-      if (_enteredText.isNotEmpty && _matchingChapters(_enteredText).isEmpty) {
+    if (oldWidget.maxCount != widget.maxCount) {
+      if (_enteredText.isNotEmpty && _matchingItems(_enteredText).isEmpty) {
         _enteredText = '';
       }
     }
   }
 
-  /// Returns all valid chapters (1..chapterCount) whose string representation
-  /// starts with [prefix].
-  List<int> _matchingChapters(String prefix) {
+  List<int> _matchingItems(String prefix) {
     if (prefix.isEmpty || prefix.startsWith('0')) {
       return const [];
     }
     final matches = <int>[];
-    for (var c = 1; c <= widget.chapterCount; c++) {
+    for (var c = 1; c <= widget.maxCount; c++) {
       if (c.toString().startsWith(prefix)) {
         matches.add(c);
       }
@@ -295,26 +314,24 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
     return matches;
   }
 
-  /// Returns true if typing [digit] after [_enteredText] leads to at least
-  /// one valid chapter.
   bool _isDigitValid(int digit) {
     final candidate = '$_enteredText$digit';
-    return _matchingChapters(candidate).isNotEmpty;
+    return _matchingItems(candidate).isNotEmpty;
   }
 
   bool get _canGo {
-    final chapter = int.tryParse(_enteredText);
-    return chapter != null && chapter >= 1 && chapter <= widget.chapterCount;
+    final val = int.tryParse(_enteredText);
+    return val != null && val >= 1 && val <= widget.maxCount;
   }
 
   void _handleDigit(int digit) {
     final newText = '$_enteredText$digit';
-    final matches = _matchingChapters(newText);
+    final matches = _matchingItems(newText);
     if (matches.length == 1) {
       setState(() {
         _enteredText = newText;
       });
-      widget.onChapterSelected?.call(matches.first);
+      widget.onSelected?.call(matches.first);
     } else {
       setState(() {
         _enteredText = newText;
@@ -331,9 +348,9 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
   }
 
   void _handleGo() {
-    final chapter = int.tryParse(_enteredText);
-    if (chapter != null && chapter >= 1 && chapter <= widget.chapterCount) {
-      widget.onChapterSelected?.call(chapter);
+    final val = int.tryParse(_enteredText);
+    if (val != null && val >= 1 && val <= widget.maxCount) {
+      widget.onSelected?.call(val);
     }
   }
 
@@ -403,7 +420,7 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
     }
 
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      widget.onChapterSelected?.call(null);
+      widget.onDismiss?.call();
       return KeyEventResult.handled;
     }
 
@@ -418,7 +435,7 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          widget.onChapterSelected?.call(null);
+          widget.onDismiss?.call();
         }
       },
       child: Stack(
@@ -427,7 +444,7 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () => widget.onChapterSelected?.call(null),
+              onTap: () => widget.onDismiss?.call(),
               child: Container(
                 color: theme.colorScheme.scrim.withValues(alpha: 0.5),
               ),
@@ -440,31 +457,36 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
               onKeyEvent: _handleKeyEvent,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () {}, // Prevent taps inside dialog from closing it
+                onTap: () {},
                 child: Material(
                   elevation: 8,
                   borderRadius: BorderRadius.circular(24),
                   color: theme.colorScheme.surfaceContainerHigh,
                   clipBehavior: Clip.antiAlias,
-                  child: Container(
-                    width: 320,
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildHeader(theme),
-                        const SizedBox(height: 12),
-                        _buildDisplay(theme),
-                        const SizedBox(height: 16),
-                        _buildKeypadRow(['1', '2', '3']),
-                        const SizedBox(height: 8),
-                        _buildKeypadRow(['4', '5', '6']),
-                        const SizedBox(height: 8),
-                        _buildKeypadRow(['7', '8', '9']),
-                        const SizedBox(height: 8),
-                        _buildBottomRow(theme),
-                      ],
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: SingleChildScrollView(
+                      child: Container(
+                        width: 320,
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildHeader(theme),
+                            const SizedBox(height: 8),
+                            _buildDisplay(theme),
+                            const SizedBox(height: 12),
+                            _buildKeypadRow(['1', '2', '3']),
+                            const SizedBox(height: 6),
+                            _buildKeypadRow(['4', '5', '6']),
+                            const SizedBox(height: 6),
+                            _buildKeypadRow(['7', '8', '9']),
+                            const SizedBox(height: 6),
+                            _buildBottomRow(theme),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -477,22 +499,34 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
   }
 
   Widget _buildHeader(ThemeData theme) {
+    Widget? leading;
+    if (widget.onBackPressed != null) {
+      leading = IconButton(
+        icon: const Icon(Icons.arrow_back, size: 22),
+        padding: EdgeInsets.zero,
+        onPressed: widget.onBackPressed,
+        tooltip: 'Back',
+      );
+    } else if (widget.showHeadings && widget.onHeadingsPressed != null) {
+      leading = IconButton(
+        key: const ValueKey('keypad_sections'),
+        icon: const Icon(Icons.format_list_bulleted, size: 22),
+        padding: EdgeInsets.zero,
+        onPressed: widget.onHeadingsPressed,
+        tooltip: 'Section Headings',
+      );
+    }
+
     return Row(
       children: [
         SizedBox(
           width: 40,
           height: 40,
-          child: IconButton(
-            key: const ValueKey('keypad_sections'),
-            icon: const Icon(Icons.format_list_bulleted, size: 22),
-            padding: EdgeInsets.zero,
-            onPressed: _openSectionHeadings,
-            tooltip: 'Section Headings',
-          ),
+          child: leading,
         ),
         Expanded(
           child: Text(
-            _displayBookName,
+            widget.title,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -508,8 +542,8 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
 
   Widget _buildDisplay(ThemeData theme) {
     final displayText = _enteredText.isNotEmpty
-        ? 'Chapter $_enteredText'
-        : 'Chapter (1–${widget.chapterCount})';
+        ? '${widget.label} $_enteredText'
+        : '${widget.label} (1–${widget.maxCount})';
 
     return Container(
       height: 52,
@@ -627,6 +661,44 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
       ],
     );
   }
+}
+
+/// A chapter chooser that uses a numeric keypad layout.
+class KeypadChapterChooser extends StatefulWidget {
+  const KeypadChapterChooser({
+    super.key,
+    this.bookName,
+    this.bookId,
+    required this.chapterCount,
+    this.headingsLoader,
+    this.onChapterSelected,
+    this.onSectionSelected,
+  });
+
+  final String? bookName;
+  final int? bookId;
+  final int chapterCount;
+  final Future<List<SectionHeading>> Function(int bookId)? headingsLoader;
+  final void Function(int? chapter)? onChapterSelected;
+  final void Function(int chapter, String sectionHeading)? onSectionSelected;
+
+  @override
+  State<KeypadChapterChooser> createState() => _KeypadChapterChooserState();
+}
+
+class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
+  String get _displayBookName {
+    final resolvedBookId = widget.bookId ??
+        (widget.bookName != null ? fullNameToBookIdMap[widget.bookName] : null);
+    if (resolvedBookId != null &&
+        bookIdToBookNameMap.containsKey(resolvedBookId)) {
+      return bookIdToBookNameMap[resolvedBookId]!;
+    }
+    if (widget.bookName != null && widget.bookName!.isNotEmpty) {
+      return widget.bookName!;
+    }
+    return '';
+  }
 
   Future<void> _openSectionHeadings() async {
     final heading = await showDialog<SectionHeading>(
@@ -644,6 +716,63 @@ class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
         widget.onChapterSelected?.call(heading.chapter);
       }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NumericKeypadChooser(
+      title: _displayBookName,
+      label: 'Chapter',
+      maxCount: widget.chapterCount,
+      showHeadings: true,
+      onHeadingsPressed: _openSectionHeadings,
+      onSelected: (chapter) => widget.onChapterSelected?.call(chapter),
+      onDismiss: () => widget.onChapterSelected?.call(null),
+    );
+  }
+}
+
+/// A verse chooser that uses a numeric keypad layout.
+class KeypadVerseChooser extends StatelessWidget {
+  const KeypadVerseChooser({
+    super.key,
+    this.bookName,
+    this.bookId,
+    required this.chapter,
+    required this.verseCount,
+    this.onVerseSelected,
+    this.onBackPressed,
+  });
+
+  final String? bookName;
+  final int? bookId;
+  final int chapter;
+  final int verseCount;
+  final void Function(int? verse)? onVerseSelected;
+  final VoidCallback? onBackPressed;
+
+  String get _displayTitle {
+    final resolvedBookId = bookId ??
+        (bookName != null ? fullNameToBookIdMap[bookName] : null);
+    final bName = (resolvedBookId != null &&
+            bookIdToFullNameMap.containsKey(resolvedBookId))
+        ? bookIdToFullNameMap[resolvedBookId]!
+        : (bookName ?? '');
+    final name = (bName == 'Psalms') ? 'Psalm' : bName;
+    return '$name $chapter';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NumericKeypadChooser(
+      title: _displayTitle,
+      label: 'Verse',
+      maxCount: verseCount,
+      showHeadings: false,
+      onBackPressed: onBackPressed,
+      onSelected: (verse) => onVerseSelected?.call(verse),
+      onDismiss: () => onVerseSelected?.call(null),
+    );
   }
 }
 

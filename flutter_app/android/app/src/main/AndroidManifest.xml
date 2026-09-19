@@ -37,6 +37,24 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Intent filter for custom URL scheme bsb://playlist -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bsb" android:host="playlist" />
+            </intent-filter>
+            <!-- Intent filter for opening .bsbplaylist files -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.bsbplaylist" />
+                <data android:host="*" />
+            </intent-filter>
         </activity>
         
         <service android:name="com.ryanheise.audioservice.AudioService"

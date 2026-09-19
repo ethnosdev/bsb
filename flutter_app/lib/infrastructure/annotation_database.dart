@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'annotation_models.dart';
+import 'playlist_models.dart';
 
 class AnnotationDatabaseHelper {
   static const _databaseName = "user_annotations.db";
-  static const _databaseVersion = 1;
+  static const _databaseVersion = 4;
 
   Database? _db;
 
@@ -16,12 +17,14 @@ class AnnotationDatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final databasesPath = await getDatabasesPath();
-    final path = join(databasesPath, _databaseName);
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, _databaseName);
+
     return await openDatabase(
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -62,6 +65,62 @@ class AnnotationDatabaseHelper {
     await db.execute('''
       CREATE INDEX idx_notes_book_chapter 
       ON notes(book_id, chapter)
+    ''');
+
+    await _createPlaylistTables(db);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createPlaylistTables(db);
+    }
+    if (oldVersion < 3) {
+      try {
+        await db.execute('ALTER TABLE playlist_items ADD COLUMN note_title TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 4) {
+      try {
+        await db.execute('ALTER TABLE playlist_items ADD COLUMN start_word_id INTEGER');
+      } catch (_) {}
+      try {
+        await db.execute('ALTER TABLE playlist_items ADD COLUMN end_word_id INTEGER');
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _createPlaylistTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS playlists (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS playlist_items (
+        id TEXT PRIMARY KEY,
+        playlist_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        book_id INTEGER,
+        chapter INTEGER,
+        verse INTEGER,
+        end_chapter INTEGER,
+        end_verse INTEGER,
+        start_word_id INTEGER,
+        end_word_id INTEGER,
+        note_title TEXT,
+        note_text TEXT,
+        order_index INTEGER NOT NULL,
+        FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_playlist_items_order 
+      ON playlist_items(playlist_id, order_index)
     ''');
   }
 
@@ -223,6 +282,113 @@ class AnnotationDatabaseHelper {
       );
     }
     await batch.commit(noResult: true);
+  }
+
+  // Playlists CRUD
+  Future<List<Playlist>> getAllPlaylists() async {
+    final db = await database;
+    final playlistMaps = await db.query(
+      'playlists',
+      orderBy: 'updated_at DESC',
+    );
+    if (playlistMaps.isEmpty) return [];
+
+    final itemMaps = await db.query(
+      'playlist_items',
+      orderBy: 'order_index ASC',
+    );
+
+    final itemsByPlaylist = <String, List<PlaylistItem>>{};
+    for (final m in itemMaps) {
+      final pid = m['playlist_id'] as String;
+      itemsByPlaylist.putIfAbsent(pid, () => []).add(PlaylistItem.fromMap(m));
+    }
+
+    return playlistMaps.map((m) {
+      final id = m['id'] as String;
+      return Playlist.fromMap(m, itemsByPlaylist[id] ?? []);
+    }).toList();
+  }
+
+  Future<Playlist?> getPlaylistById(String id) async {
+    final db = await database;
+    final maps = await db.query(
+      'playlists',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+
+    final itemMaps = await db.query(
+      'playlist_items',
+      where: 'playlist_id = ?',
+      whereArgs: [id],
+      orderBy: 'order_index ASC',
+    );
+    final items = itemMaps.map((m) => PlaylistItem.fromMap(m)).toList();
+    return Playlist.fromMap(maps.first, items);
+  }
+
+  Future<void> savePlaylist(Playlist playlist) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.insert(
+        'playlists',
+        playlist.toMap(includeItems: false),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      await txn.delete(
+        'playlist_items',
+        where: 'playlist_id = ?',
+        whereArgs: [playlist.id],
+      );
+
+      final batch = txn.batch();
+      for (int i = 0; i < playlist.items.length; i++) {
+        final item = playlist.items[i];
+        final itemMap = item.toMap();
+        itemMap['playlist_id'] = playlist.id;
+        itemMap['order_index'] = i;
+        batch.insert(
+          'playlist_items',
+          itemMap,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
+  Future<void> deletePlaylist(String id) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'playlist_items',
+        where: 'playlist_id = ?',
+        whereArgs: [id],
+      );
+      await txn.delete(
+        'playlists',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
+  }
+
+  Future<void> batchInsertPlaylists(List<Playlist> playlists) async {
+    for (final p in playlists) {
+      await savePlaylist(p);
+    }
+  }
+
+  Future<void> clearAllPlaylists() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('playlist_items');
+      await txn.delete('playlists');
+    });
   }
 
   Future<void> close() async {

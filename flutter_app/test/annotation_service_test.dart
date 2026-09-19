@@ -1,6 +1,7 @@
 import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
+import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
@@ -139,6 +140,43 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
     for (final n in notes) {
       await insertNote(n);
     }
+  }
+
+  final List<Playlist> _playlists = [];
+
+  @override
+  Future<List<Playlist>> getAllPlaylists() async => List.from(_playlists);
+
+  @override
+  Future<Playlist?> getPlaylistById(String id) async {
+    try {
+      return _playlists.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> savePlaylist(Playlist playlist) async {
+    _playlists.removeWhere((p) => p.id == playlist.id);
+    _playlists.add(playlist);
+  }
+
+  @override
+  Future<void> deletePlaylist(String id) async {
+    _playlists.removeWhere((p) => p.id == id);
+  }
+
+  @override
+  Future<void> batchInsertPlaylists(List<Playlist> playlists) async {
+    for (final p in playlists) {
+      await savePlaylist(p);
+    }
+  }
+
+  @override
+  Future<void> clearAllPlaylists() async {
+    _playlists.clear();
   }
 }
 

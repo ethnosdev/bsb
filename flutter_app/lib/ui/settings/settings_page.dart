@@ -273,17 +273,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.backup_outlined),
-                  title: const Text('Export Annotations'),
-                  subtitle: const Text('Backup highlights and notes to a file'),
+                  title: const Text('Export Backup'),
+                  subtitle: const Text('Backup highlights, notes, and playlists to a file'),
                   onTap: () {
                     _showExportChoiceDialog(context);
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.restore_outlined),
-                  title: const Text('Import Annotations'),
+                  title: const Text('Import Backup'),
                   subtitle: const Text(
-                    'Restore highlights and notes from a backup file',
+                    'Restore highlights, notes, and playlists from a backup file',
                   ),
                   onTap: () {
                     AnnotationFileHandler().importJson(context);

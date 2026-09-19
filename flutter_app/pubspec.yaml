@@ -32,6 +32,8 @@ dependencies:
   audio_video_progress_bar: ^2.0.3
   rxdart: ^0.28.0
   audio_session: ^0.2.4
+  qr_flutter: ^4.1.0
+  app_links: ^6.3.0
 
 dev_dependencies:
   flutter_test: 

@@ -26,6 +26,7 @@ class ParsedReference {
   final int bookId;
   final int chapter;
   final int? verse;
+  final int? endChapter;
   final int? endVerse;
   final bool isExactVerse;
 
@@ -33,6 +34,7 @@ class ParsedReference {
     required this.bookId,
     required this.chapter,
     this.verse,
+    this.endChapter,
     this.endVerse,
     required this.isExactVerse,
   });
@@ -42,6 +44,7 @@ class ParsedReference {
       bookId: bookId,
       chapter: chapter,
       verse: verse ?? 1,
+      endChapter: endChapter,
       endVerse: endVerse,
     );
   }

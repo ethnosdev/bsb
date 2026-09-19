@@ -112,6 +112,48 @@ class ScriptureReferenceParser {
     // Normalizing hyphens and spaces
     raw = raw.replaceAll('–', '-').replaceAll('—', '-');
 
+    // Pattern 0: Cross-chapter verse range e.g. "Luke 23:50-24:12", "Lk 23:50 - 24:12"
+    final crossRegex = RegExp(
+      r'^([1-3iI]{1,3}\s*)?([a-zA-Z\s]+?)\s*(\d+)\s*[:.]\s*(\d+)\s*-\s*(\d+)\s*[:.]\s*(\d+)$',
+    );
+    final crossMatch = crossRegex.firstMatch(raw);
+    if (crossMatch != null) {
+      final prefix = crossMatch.group(1) ?? '';
+      final namePart = crossMatch.group(2) ?? '';
+      final fullBookStr = (prefix + namePart)
+          .toLowerCase()
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      final bookId = _bookLookup[fullBookStr];
+      if (bookId != null) {
+        final startChapter = int.tryParse(crossMatch.group(3)!);
+        final startVerse = int.tryParse(crossMatch.group(4)!);
+        final endChapter = int.tryParse(crossMatch.group(5)!);
+        final endVerse = int.tryParse(crossMatch.group(6)!);
+        final maxChapters = bookIdToChapterCountMap[bookId] ?? 150;
+        if (startChapter != null &&
+            startVerse != null &&
+            endChapter != null &&
+            endVerse != null &&
+            startChapter > 0 &&
+            startChapter <= maxChapters &&
+            endChapter >= startChapter &&
+            endChapter <= maxChapters &&
+            startVerse > 0 &&
+            endVerse > 0 &&
+            (endChapter > startChapter || endVerse >= startVerse)) {
+          return ParsedReference(
+            bookId: bookId,
+            chapter: startChapter,
+            verse: startVerse,
+            endChapter: endChapter == startChapter ? null : endChapter,
+            endVerse: endVerse,
+            isExactVerse: true,
+          );
+        }
+      }
+    }
+
     // Pattern 1: Book followed by Chapter:Verse[-EndVerse] or Chapter.Verse or Chapter Verse
     // e.g. "John 3:16", "Jn 3.16", "1 Cor 13:4-7", "Romans 8 28"
     final cvRegex = RegExp(

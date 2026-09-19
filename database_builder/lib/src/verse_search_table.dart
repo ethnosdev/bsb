@@ -1,12 +1,19 @@
 import 'database_helper.dart';
 import 'schema.dart';
 
-final _footnoteRegex = RegExp(r'\\f\s*[+-]?\s*.*?(?:\\f\*|$)', dotAll: true);
+final _footnoteRegex =
+    RegExp(r'\\[fx]e?\s*[+-]?\s*.*?(?:\\[fx]e?\*|$)', dotAll: true);
 final _usfmTagRegex = RegExp(r'\\[a-zA-Z0-9*]+');
 final _whitespaceRegex = RegExp(r'\s+');
 
 String cleanVerseText(String rawText) {
-  var clean = rawText.replaceAll(_footnoteRegex, '');
+  var clean = rawText.replaceAllMapped(_footnoteRegex, (match) {
+    if (match.end < match.input.length &&
+        RegExp(r'[a-zA-Z]').hasMatch(match.input[match.end])) {
+      return ' ';
+    }
+    return '';
+  });
   clean = clean.replaceAll(_usfmTagRegex, '');
   clean = clean.replaceAll(_whitespaceRegex, ' ').trim();
   return clean;

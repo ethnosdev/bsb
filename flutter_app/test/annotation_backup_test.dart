@@ -39,13 +39,13 @@ void main() {
       );
 
       final jsonString = backup.toJson();
-      expect(jsonString, contains('"version": 1'));
+      expect(jsonString, contains('"version": 2'));
       expect(jsonString, contains('"app": "bsb"'));
       expect(jsonString, contains('Blessed is he whose transgression is forgiven'));
       expect(jsonString, contains('A pivotal verse on God\'s unconditional love.'));
 
       final restored = AnnotationBackup.fromJson(jsonString);
-      expect(restored.version, equals(1));
+      expect(restored.version, equals(2));
       expect(restored.app, equals('bsb'));
       expect(restored.highlights.length, equals(1));
       expect(restored.highlights.first.id, equals('h1'));
@@ -56,6 +56,36 @@ void main() {
       expect(restored.notes.first.id, equals('n1'));
       expect(restored.notes.first.content, equals('A pivotal verse on God\'s unconditional love.'));
       expect(restored.notes.first.passageText, equals('For God so loved the world'));
+      expect(restored.playlists, isEmpty);
+    });
+
+    test('backward compatibility: deserializes version 1 backup without playlists', () {
+      const v1Json = '''
+      {
+        "version": 1,
+        "app": "bsb",
+        "exported_at": "2026-09-10T15:00:00.000Z",
+        "highlights": [
+          {
+            "id": "h1",
+            "book_id": 19,
+            "chapter": 32,
+            "start_word_id": 19032001000,
+            "end_word_id": 19032001005,
+            "color": "yellow",
+            "created_at": 1788256800000,
+            "updated_at": 1788258600000
+          }
+        ],
+        "notes": []
+      }
+      ''';
+
+      final restored = AnnotationBackup.fromJson(v1Json);
+      expect(restored.version, 1);
+      expect(restored.highlights.length, 1);
+      expect(restored.notes, isEmpty);
+      expect(restored.playlists, isEmpty);
     });
 
     test('handles dates stored as milliseconds since epoch or ISO string', () {

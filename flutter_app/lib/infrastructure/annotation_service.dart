@@ -264,10 +264,12 @@ class AnnotationService {
     final notes = await _dbHelper.getAllNotes(
       orderBy: 'book_id ASC, chapter ASC, start_word_id ASC',
     );
+    final playlists = await _dbHelper.getAllPlaylists();
     return AnnotationBackup(
       exportedAt: DateTime.now(),
       highlights: highlights,
       notes: notes,
+      playlists: playlists,
     );
   }
 
@@ -288,12 +290,15 @@ class AnnotationService {
     if (mode == AnnotationImportMode.replace) {
       await _dbHelper.clearAllHighlights();
       await _dbHelper.clearAllNotes();
+      await _dbHelper.clearAllPlaylists();
       await _dbHelper.batchInsertHighlights(backup.highlights);
       await _dbHelper.batchInsertNotes(backup.notes);
+      await _dbHelper.batchInsertPlaylists(backup.playlists);
       _notifyChange();
       return AnnotationImportResult(
         highlightsImported: backup.highlights.length,
         notesImported: backup.notes.length,
+        playlistsImported: backup.playlists.length,
         mode: mode,
       );
     }
@@ -331,10 +336,23 @@ class AnnotationService {
       await _dbHelper.batchInsertNotes(notesToInsert);
     }
 
+    int playlistsCount = 0;
+    for (final p in backup.playlists) {
+      final existing = await _dbHelper.getPlaylistById(p.id);
+      if (existing == null) {
+        await _dbHelper.savePlaylist(p);
+        playlistsCount++;
+      } else if (!p.updatedAt.isBefore(existing.updatedAt)) {
+        await _dbHelper.savePlaylist(p);
+        playlistsCount++;
+      }
+    }
+
     _notifyChange();
     return AnnotationImportResult(
       highlightsImported: highlightsCount,
       notesImported: notesCount,
+      playlistsImported: playlistsCount,
       mode: mode,
     );
   }

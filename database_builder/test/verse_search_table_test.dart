@@ -24,6 +24,31 @@ void main() {
       final cleaned = cleanVerseText(raw);
       expect(cleaned, equals('In the beginning'));
     });
+
+    test('strips words of Jesus markers while preserving spoken text', () {
+      const raw = r'\wj “What do you want?”\wj* He asked.';
+      final cleaned = cleanVerseText(raw);
+      expect(cleaned, equals('“What do you want?” He asked.'));
+    });
+
+    test('strips footnote and words of jesus combined', () {
+      const raw =
+          r'\wj  “Come and see,”\wj* He replied. So they went and saw where He was staying, and spent that day with Him. It was about the tenth hour.\f + \fr 1:39 \ft That is, about four in the afternoon\f*';
+      final cleaned = cleanVerseText(raw);
+      expect(
+        cleaned,
+        equals(
+          '“Come and see,” He replied. So they went and saw where He was staying, and spent that day with Him. It was about the tenth hour.',
+        ),
+      );
+    });
+
+    test('handles footnote directly followed by word without space', () {
+      const raw =
+          r'She named him Samuel,\f + \fr 1:20 \fqa Samuel \ft sounds like Hebrew\f*saying, “Because...”';
+      final cleaned = cleanVerseText(raw);
+      expect(cleaned, equals('She named him Samuel, saying, “Because...”'));
+    });
   });
 
   group('verses_search FTS4 table', () {

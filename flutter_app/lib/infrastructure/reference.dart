@@ -11,9 +11,19 @@ class Reference {
         assert(chapter >= 1 && chapter <= 150),
         assert(endChapter == null || endChapter >= chapter),
         assert(verse == null || verse >= 0),
-        assert(verse == null || endChapter == null),
         assert(verse != null || endVerse == null),
-        assert(endVerse == null || (verse != null && verse <= endVerse));
+        assert(
+          endChapter == null ||
+              verse == null ||
+              endChapter > chapter ||
+              (endChapter == chapter && (endVerse == null || verse <= endVerse)),
+        ),
+        assert(
+          endVerse == null ||
+              verse == null ||
+              endChapter != null ||
+              verse <= endVerse,
+        );
 
   /// [packedInt] is in the form BBCCCVVV
   factory Reference.fromVerseId({required int packedInt, int? packedIntEnd}) {
@@ -22,12 +32,22 @@ class Reference {
     final bookId = packedInt ~/ bookMultiplier;
     final chapter = (packedInt % bookMultiplier) ~/ chapterMultiplier;
     final verse = packedInt % chapterMultiplier;
+    int? endChapter;
     int? endVerse;
     if (packedIntEnd != null) {
+      endChapter = (packedIntEnd % bookMultiplier) ~/ chapterMultiplier;
       endVerse = packedIntEnd % chapterMultiplier;
+      if (endChapter == chapter) {
+        endChapter = null;
+      }
     }
     return Reference(
-        bookId: bookId, chapter: chapter, verse: verse, endVerse: endVerse);
+      bookId: bookId,
+      chapter: chapter,
+      verse: verse,
+      endVerse: endVerse,
+      endChapter: endChapter,
+    );
   }
 
   /// [packedInt] is in the form BBCCCVVVWWW
@@ -38,12 +58,22 @@ class Reference {
     final bookId = packedInt ~/ bookMultiplier;
     final chapter = (packedInt % bookMultiplier) ~/ chapterMultiplier;
     final verse = (packedInt % chapterMultiplier) ~/ verseMultiplier;
+    int? endChapter;
     int? endVerse;
     if (packedIntEnd != null) {
+      endChapter = (packedIntEnd % bookMultiplier) ~/ chapterMultiplier;
       endVerse = (packedIntEnd % chapterMultiplier) ~/ verseMultiplier;
+      if (endChapter == chapter) {
+        endChapter = null;
+      }
     }
     return Reference(
-        bookId: bookId, chapter: chapter, verse: verse, endVerse: endVerse);
+      bookId: bookId,
+      chapter: chapter,
+      verse: verse,
+      endVerse: endVerse,
+      endChapter: endChapter,
+    );
   }
 
   final int bookId;
@@ -63,13 +93,45 @@ class Reference {
       final targetEndChapter = endChapter ?? chapter;
       return bookId * 1000000 + targetEndChapter * 1000 + 999;
     }
-    return (endVerse == null)
-        ? null
-        : bookId * 1000000 + chapter * 1000 + endVerse!;
+    if (endVerse == null && (endChapter == null || endChapter == chapter)) {
+      return null;
+    }
+    final targetEndChapter = endChapter ?? chapter;
+    final targetEndVerse = endVerse ?? 999;
+    return bookId * 1000000 + targetEndChapter * 1000 + targetEndVerse;
   }
 
   static Reference? tryParse(String reference) {
-    // reference can be in the form:
+    final cleanRef = reference.trim();
+    if (cleanRef.isEmpty) return null;
+
+    // First check for cross-chapter verse range: "Luke 23:50–24:12" or "1 Cor 13:1-14:5"
+    final crossChapterRegex = RegExp(
+      r'^((?:[1-3]\s)?[A-Z][a-z]+(?:\s+[a-zA-Z]+)*)\s+(\d+):(\d+)[–\-—](\d+):(\d+)$',
+    );
+    final crossMatch = crossChapterRegex.firstMatch(cleanRef);
+    if (crossMatch != null) {
+      final bookName = crossMatch.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim();
+      final bookId = fullNameToBookIdMap[bookName];
+      if (bookId == null) return null;
+      final startChapter = int.parse(crossMatch.group(2)!);
+      final startVerse = int.parse(crossMatch.group(3)!);
+      final endChapter = int.parse(crossMatch.group(4)!);
+      final endVerse = int.parse(crossMatch.group(5)!);
+      final maxChapters = bookIdToChapterCountMap[bookId] ?? 150;
+      if (startChapter < 1 || startChapter > maxChapters) return null;
+      if (endChapter < startChapter || endChapter > maxChapters) return null;
+      if (endChapter == startChapter && endVerse < startVerse) return null;
+      return Reference(
+        bookId: bookId,
+        chapter: startChapter,
+        verse: startVerse,
+        endChapter: endChapter == startChapter ? null : endChapter,
+        endVerse: endVerse,
+      );
+    }
+
+    // Standard reference:
     // - "1 Corinthians 1:1" or "Romans 1:1–3" (or with hyphen "1:1-3")
     // - "Leviticus 13" or "Psalm 23"
     // - "1 Samuel 21–29" or "Psalms 56–60" (or with hyphen)
@@ -78,7 +140,7 @@ class Reference {
       caseSensitive: true,
     );
 
-    final match = regex.firstMatch(reference);
+    final match = regex.firstMatch(cleanRef);
     if (match == null) {
       return null;
     }
@@ -124,14 +186,22 @@ class Reference {
   @override
   String toString() {
     final bookName =
-        (bookId == 19 && endChapter != null && endChapter != chapter)
+        (bookId == 19 && endChapter != null && endChapter != chapter && verse == null)
             ? 'Psalms'
-            : bookIdToFullNameMap[bookId];
+            : (bookId == 19 && verse != null)
+                ? 'Psalm'
+                : bookIdToFullNameMap[bookId];
     if (verse == null) {
       if (endChapter != null && endChapter != chapter) {
         return '$bookName $chapter–$endChapter';
       }
       return '$bookName $chapter';
+    }
+    if (endChapter != null && endChapter != chapter) {
+      if (endVerse != null) {
+        return '$bookName $chapter:$verse–$endChapter:$endVerse';
+      }
+      return '$bookName $chapter:$verse–$endChapter';
     }
     if (endVerse != null && endVerse != verse) {
       return '$bookName $chapter:$verse–$endVerse';

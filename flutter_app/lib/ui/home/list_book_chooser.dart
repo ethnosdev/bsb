@@ -9,11 +9,17 @@ class ListBookChooser extends StatefulWidget {
   const ListBookChooser({
     super.key,
     required this.onSelected,
+    this.onBookSelected,
     this.onVerseSelected,
+    this.showVerseGrid,
+    this.verseStyle,
   });
 
   final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final void Function(int bookId)? onBookSelected;
   final void Function(int bookId, int chapter, int verse)? onVerseSelected;
+  final bool? showVerseGrid;
+  final VerseChooserStyle? verseStyle;
 
   @override
   State<ListBookChooser> createState() => _ListBookChooserState();
@@ -34,11 +40,16 @@ class _ListBookChooserState extends State<ListBookChooser> {
   }
 
   void _onBookSelected(int bookId, int chapterCount) {
+    if (widget.onBookSelected != null) {
+      widget.onBookSelected!(bookId);
+      return;
+    }
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     final userSettings =
         getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
-    final showVerseGrid =
-        appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false;
+    final showVerseGrid = widget.showVerseGrid ??
+        (widget.verseStyle != null ||
+            (appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false));
 
     if (chapterCount == 1 && !showVerseGrid) {
       widget.onSelected(bookId, 1);
@@ -78,6 +89,8 @@ class _ListBookChooserState extends State<ListBookChooser> {
             return ChapterChooser(
               bookId: bookId,
               chapterCount: chapterCount,
+              showVerseGrid: widget.showVerseGrid,
+              verseStyle: widget.verseStyle,
               onChapterSelected: (chapter) {
                 _chapterNotifier.value = null;
                 if (chapter == null) return;
