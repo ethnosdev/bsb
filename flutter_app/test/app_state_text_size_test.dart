@@ -1,7 +1,6 @@
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:bsb/ui/settings/settings_manager.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +31,7 @@ void main() {
 
       await appState.init();
       expect(appState.textSizeNotifier.value, equals(18.0));
+      expect(appState.textSize, equals(18.0));
     });
 
     test('setTextSize updates notifier and persists to UserSettings', () async {
@@ -40,7 +40,18 @@ void main() {
 
       await appState.setTextSize(24.0);
       expect(appState.textSizeNotifier.value, equals(24.0));
+      expect(appState.textSize, equals(24.0));
       expect(userSettings.textSize, equals(24.0));
+    });
+
+    test('updateTextSizePreview updates notifier without persisting to UserSettings', () async {
+      final appState = AppState();
+      await appState.init();
+
+      appState.updateTextSizePreview(22.0);
+      expect(appState.textSizeNotifier.value, equals(22.0));
+      expect(appState.textSize, equals(22.0));
+      expect(userSettings.textSize, equals(18.0)); // UserSettings remains unmutated
     });
 
     test('setTextSize clamps values outside allowed range', () async {
@@ -55,36 +66,22 @@ void main() {
       expect(appState.textSizeNotifier.value, equals(FontScale.maxBaseSize));
       expect(userSettings.textSize, equals(FontScale.maxBaseSize));
     });
-  });
 
-  group('SettingsManager integration with AppState', () {
-    test('reads from and updates AppState when registered', () async {
+    test('AppState notifies listeners when text size or settings change', () async {
       final appState = AppState();
       await appState.init();
-      getIt.registerSingleton<AppState>(appState);
 
-      final settingsManager = SettingsManager();
-      expect(settingsManager.textSize, equals(18.0));
-
-      bool notified = false;
-      settingsManager.addListener(() {
-        notified = true;
+      int notifyCount = 0;
+      appState.addListener(() {
+        notifyCount++;
       });
 
-      await settingsManager.setTextSize(22.0);
-      expect(notified, isTrue);
-      expect(settingsManager.textSize, equals(22.0));
-      expect(appState.textSizeNotifier.value, equals(22.0));
-      expect(userSettings.textSize, equals(22.0));
-    });
+      await appState.setTextSize(21.0);
+      expect(notifyCount, greaterThan(0));
 
-    test('falls back to UserSettings when AppState is not registered', () async {
-      final settingsManager = SettingsManager();
-      expect(settingsManager.textSize, equals(18.0));
-
-      await settingsManager.setTextSize(16.0);
-      expect(settingsManager.textSize, equals(16.0));
-      expect(userSettings.textSize, equals(16.0));
+      final prevCount = notifyCount;
+      appState.updateTextSizePreview(23.0);
+      expect(notifyCount, greaterThan(prevCount));
     });
   });
 }

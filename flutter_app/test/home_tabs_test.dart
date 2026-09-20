@@ -693,4 +693,30 @@ void main() {
     expect(find.byType(GridVerseChooser), findsNothing);
     expect(find.byType(ChapterChooser), findsOneWidget);
   });
+
+  testWidgets('pressing system back when chapter chooser is open closes chapter chooser', (tester) async {
+    tabManager.openTab(43, 1); // John 1
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap active tab to open ChapterChooser
+    await tester.tap(find.text('JHN 1'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ChapterChooser), findsOneWidget);
+
+    // Trigger system back
+    final dynamic widgetsAppState = tester.state(find.byType(WidgetsApp));
+    await widgetsAppState.didPopRoute();
+    await tester.pumpAndSettle();
+
+    // ChapterChooser is closed, HomePage remains
+    expect(find.byType(ChapterChooser), findsNothing);
+    expect(find.byType(HomePage), findsOneWidget);
+  });
 }

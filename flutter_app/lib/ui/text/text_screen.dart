@@ -484,9 +484,9 @@ class _TextScreenState extends State<TextScreen> {
     bool shouldClear = true;
     switch (index) {
       case 0:
-        await _handleHighlight(reference);
+        shouldClear = await _handleHighlight(reference);
       case 1:
-        await _handleNote(reference);
+        shouldClear = await _handleNote(reference);
       case 2:
         await _handleCopy();
       case 3:
@@ -501,16 +501,18 @@ class _TextScreenState extends State<TextScreen> {
     }
   }
 
-  Future<void> _handleHighlight(Reference reference) async {
-    if (_activeController == null || !_activeController!.hasSelection) return;
+  Future<bool> _handleHighlight(Reference reference) async {
+    if (_activeController == null || !_activeController!.hasSelection) return false;
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
     final selectedText = _activeController!.getSelectedText();
     final annotationService = getIt<AnnotationService>();
 
+    bool acted = false;
     await HighlightPaletteSheet.show(
       context: context,
       onColorSelected: (color) async {
+        acted = true;
         await annotationService.addHighlight(
           bookId: reference.bookId,
           chapter: reference.chapter,
@@ -521,6 +523,7 @@ class _TextScreenState extends State<TextScreen> {
         );
       },
       onClear: () async {
+        acted = true;
         await annotationService.clearHighlightsInRange(
           bookId: reference.bookId,
           chapter: reference.chapter,
@@ -529,10 +532,11 @@ class _TextScreenState extends State<TextScreen> {
         );
       },
     );
+    return acted;
   }
 
-  Future<void> _handleNote(Reference reference) async {
-    if (_activeController == null || !_activeController!.hasSelection) return;
+  Future<bool> _handleNote(Reference reference) async {
+    if (_activeController == null || !_activeController!.hasSelection) return false;
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
     final bodyText = _activeController!.getSelectedText();
@@ -542,11 +546,13 @@ class _TextScreenState extends State<TextScreen> {
     );
     final annotationService = getIt<AnnotationService>();
 
+    bool acted = false;
     await NoteEditorSheet.show(
       context: context,
       title: fullRef.toString(),
       passageText: bodyText,
       onSave: (content) async {
+        acted = true;
         await annotationService.saveNote(
           bookId: reference.bookId,
           chapter: reference.chapter,
@@ -557,6 +563,7 @@ class _TextScreenState extends State<TextScreen> {
         );
       },
     );
+    return acted;
   }
 
   Future<void> _handleCopy() async {

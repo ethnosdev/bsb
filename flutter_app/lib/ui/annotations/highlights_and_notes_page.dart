@@ -171,7 +171,11 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
         }
         if (text != null) {
           _snippetCache[key] = text;
-          _annotationService.updateHighlight(h.copyWith(text: text));
+          _annotationService.updateSnippetText(
+            id: h.id,
+            text: text,
+            isNote: false,
+          );
           hasNew = true;
         }
       }
@@ -195,14 +199,10 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
         }
         if (text != null) {
           _snippetCache[key] = text;
-          _annotationService.saveNote(
-            bookId: n.bookId,
-            chapter: n.chapter,
-            startWordId: n.startWordId,
-            endWordId: n.endWordId,
-            content: n.content,
-            passageText: text,
-            existingNoteId: n.id,
+          _annotationService.updateSnippetText(
+            id: n.id,
+            text: text,
+            isNote: true,
           );
           hasNew = true;
         }

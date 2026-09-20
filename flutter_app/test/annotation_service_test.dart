@@ -53,6 +53,14 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
+  Future<void> updateHighlightText(String id, String text) async {
+    final index = _highlights.indexWhere((h) => h.id == id);
+    if (index != -1) {
+      _highlights[index] = _highlights[index].copyWith(text: text);
+    }
+  }
+
+  @override
   Future<void> deleteHighlight(String id) async {
     _highlights.removeWhere((h) => h.id == id);
   }
@@ -126,6 +134,14 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
+  Future<void> updateNotePassageText(String id, String text) async {
+    final index = _notes.indexWhere((n) => n.id == id);
+    if (index != -1) {
+      _notes[index] = _notes[index].copyWith(passageText: text);
+    }
+  }
+
+  @override
   Future<void> deleteNote(String id) async {
     _notes.removeWhere((n) => n.id == id);
   }
@@ -160,6 +176,19 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   Future<void> savePlaylist(Playlist playlist) async {
     _playlists.removeWhere((p) => p.id == playlist.id);
     _playlists.add(playlist);
+  }
+
+  @override
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    final index = _playlists.indexWhere((p) => p.id == playlist.id);
+    if (index != -1) {
+      _playlists[index] = _playlists[index].copyWith(
+        title: playlist.title,
+        updatedAt: playlist.updatedAt,
+      );
+    } else {
+      _playlists.add(playlist);
+    }
   }
 
   @override

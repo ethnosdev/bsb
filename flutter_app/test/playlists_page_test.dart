@@ -5,6 +5,7 @@ import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/drawer.dart';
+import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/playlists/playlists_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -21,8 +22,11 @@ class FakePlaylistDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
+  int getAllPlaylistsCallCount = 0;
+
   @override
   Future<List<Playlist>> getAllPlaylists() async {
+    getAllPlaylistsCallCount++;
     final list = List<Playlist>.from(_playlists);
     list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return list;
@@ -41,6 +45,19 @@ class FakePlaylistDbHelper implements AnnotationDatabaseHelper {
   Future<void> savePlaylist(Playlist playlist) async {
     _playlists.removeWhere((p) => p.id == playlist.id);
     _playlists.add(playlist);
+  }
+
+  @override
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    final index = _playlists.indexWhere((p) => p.id == playlist.id);
+    if (index != -1) {
+      _playlists[index] = _playlists[index].copyWith(
+        title: playlist.title,
+        updatedAt: playlist.updatedAt,
+      );
+    } else {
+      _playlists.add(playlist);
+    }
   }
 
   @override
@@ -207,5 +224,51 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Playlists'), findsOneWidget);
+  });
+
+  testWidgets('PlaylistsPage suppresses background reloads while editor page is active', (tester) async {
+    final playlist = Playlist(
+      id: 'p1',
+      title: 'Study 1',
+      updatedAt: DateTime(2026, 1, 1),
+    );
+    await playlistService.savePlaylist(playlist);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PlaylistsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final initialCount = fakeDb.getAllPlaylistsCallCount;
+    expect(initialCount, greaterThan(0));
+
+    // Open 3-dot menu on playlist card and select edit
+    await tester.tap(find.descendant(of: find.byType(Card), matching: find.byIcon(Icons.more_vert)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Verify PlaylistEditorPage is open
+    expect(find.byType(PlaylistEditorPage), findsOneWidget);
+
+    final countAfterOpen = fakeDb.getAllPlaylistsCallCount;
+
+    // Simulate saving while editor is open (e.g., typing or reordering)
+    await playlistService.updatePlaylistMetadata(playlist.copyWith(title: 'Study 1 Modified'));
+    await tester.pumpAndSettle();
+
+    // getAllPlaylists should NOT have been called in PlaylistsPage because editor is open
+    expect(fakeDb.getAllPlaylistsCallCount, countAfterOpen);
+
+    // Pop the editor to return to PlaylistsPage
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.pop();
+    await tester.pumpAndSettle();
+
+    // Now returning to PlaylistsPage triggers a single reload
+    expect(fakeDb.getAllPlaylistsCallCount, countAfterOpen + 1);
   });
 }

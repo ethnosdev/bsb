@@ -33,9 +33,13 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     _eventSubscription = _player.playbackEventStream.listen(_broadcastState);
 
     // Auto-advance to next chapter when current playback completes
-    _stateSubscription = _player.playerStateStream.listen((state) {
+    _stateSubscription = _player.playerStateStream.listen((state) async {
       if (state.processingState == ProcessingState.completed) {
-        skipToNext();
+        try {
+          await skipToNext();
+        } catch (_) {
+          await stop();
+        }
       }
     });
   }

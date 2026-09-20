@@ -1,16 +1,11 @@
 import '../database.dart';
 import '../reference.dart';
-import 'scripture_reference_parser.dart';
 import 'search_models.dart';
 
 class BibleSearchService {
   final DatabaseHelper dbHelper;
 
   BibleSearchService({required this.dbHelper});
-
-  ParsedReference? parseReference(String query) {
-    return ScriptureReferenceParser.tryParse(query);
-  }
 
   Future<String?> getVerseText(Reference reference) async {
     return dbHelper.getVerseText(reference.packedVerse);

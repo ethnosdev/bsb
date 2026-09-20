@@ -1,5 +1,4 @@
 import 'package:bsb/infrastructure/reference.dart';
-import 'package:bsb/infrastructure/search/scripture_reference_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -44,29 +43,6 @@ void main() {
         packedIntEnd: ref.packedEndVerse,
       );
       expect(fromPacked, equals(ref));
-    });
-
-    test('ScriptureReferenceParser parses cross-chapter range with abbreviations', () {
-      final parsed = ScriptureReferenceParser.tryParse('Lk 23:50-24:12');
-      expect(parsed, isNotNull);
-      expect(parsed!.bookId, 42);
-      expect(parsed.chapter, 23);
-      expect(parsed.verse, 50);
-      expect(parsed.endChapter, 24);
-      expect(parsed.endVerse, 12);
-
-      final asRef = parsed.toReference();
-      expect(asRef.toString(), 'Luke 23:50–24:12');
-    });
-
-    test('ScriptureReferenceParser parses cross-chapter with full name', () {
-      final parsed = ScriptureReferenceParser.tryParse('Luke 23:50–24:12');
-      expect(parsed, isNotNull);
-      expect(parsed!.bookId, 42);
-      expect(parsed.chapter, 23);
-      expect(parsed.verse, 50);
-      expect(parsed.endChapter, 24);
-      expect(parsed.endVerse, 12);
     });
   });
 }

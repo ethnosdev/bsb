@@ -43,6 +43,10 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   final ValueNotifier<bool> isPlayerVisible = ValueNotifier<bool>(false);
 
+  @override
+  final ValueNotifier<String?> playbackErrorNotifier =
+      ValueNotifier<String?>(null);
+
   final BehaviorSubject<PlaybackState> playbackStateSubject =
       BehaviorSubject<PlaybackState>.seeded(
     PlaybackState(

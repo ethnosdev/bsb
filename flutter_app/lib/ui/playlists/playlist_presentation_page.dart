@@ -1,13 +1,13 @@
 import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
-import 'package:bsb/ui/settings/settings_manager.dart';
-import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -43,12 +43,12 @@ List<UsfmLine> stripFootnotesFromLines(List<UsfmLine> lines) {
 
 class PlaylistPresentationPage extends StatefulWidget {
   final Playlist playlist;
-  final SettingsManager? settingsManager;
+  final AppState? appState;
 
   const PlaylistPresentationPage({
     super.key,
     required this.playlist,
-    this.settingsManager,
+    this.appState,
   });
 
   @override
@@ -57,7 +57,7 @@ class PlaylistPresentationPage extends StatefulWidget {
 
 class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   final _dbHelper = getIt<DatabaseHelper>();
-  late final SettingsManager? _settingsManager;
+  late final AppState? _appState;
   bool _isDistractionFree = false;
 
   final Map<String, List<UsfmLine>> _passageCache = {};
@@ -67,8 +67,8 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   @override
   void initState() {
     super.initState();
-    _settingsManager = widget.settingsManager ??
-        (getIt.isRegistered<UserSettings>() ? SettingsManager() : null);
+    _appState = widget.appState ??
+        (getIt.isRegistered<AppState>() ? getIt<AppState>() : null);
     _loadPassages();
   }
 
@@ -143,13 +143,76 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final currentTextSize = _settingsManager?.textSize ?? 20.0;
-
-    final isRed = getIt.isRegistered<AppState>()
-        ? getIt<AppState>().wordsOfJesusInRedNotifier.value
-        : false;
     final redColor = isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
     final topPadding = _maxTopInset + kToolbarHeight + 16.0;
+
+    final appState = _appState;
+    final double baseTextSize =
+        appState?.textSizeNotifier.value ?? FontScale.defaultBaseSize;
+    final bool defaultIsRed =
+        appState?.wordsOfJesusInRedNotifier.value ?? false;
+
+    Widget buildContent(double currentTextSize, bool isRed) {
+      return _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : widget.playlist.items.isEmpty
+              ? Center(
+                  child: Text(
+                    'No passages or notes in this playlist yet.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                )
+              : ListView.separated(
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: topPadding,
+                    bottom: 40,
+                  ),
+                  itemCount: widget.playlist.items.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 32),
+                  itemBuilder: (context, index) {
+                    final item = widget.playlist.items[index];
+                    if (item.isReference) {
+                      return _buildPassageView(
+                        context: context,
+                        item: item,
+                        textSize: currentTextSize,
+                        isRed: isRed,
+                        redColor: redColor,
+                      );
+                    } else {
+                      return _buildNoteView(context, item, currentTextSize);
+                    }
+                  },
+                );
+    }
+
+    Widget contentBody;
+    if (appState != null) {
+      contentBody = ValueListenableBuilder<double>(
+        valueListenable: appState.textSizeNotifier,
+        builder: (context, currentSize, _) {
+          return ValueListenableBuilder<bool>(
+            valueListenable: appState.wordsOfJesusInRedNotifier,
+            builder: (context, isRed, _) {
+              return ZoomWrapper(
+                initialScale: currentSize,
+                minScale: FontScale.minBaseSize,
+                maxScale: FontScale.maxBaseSize,
+                onScaleChanged: (newScale) {
+                  appState.setTextSize(newScale);
+                },
+                builder: (context, scale) => buildContent(scale, isRed),
+              );
+            },
+          );
+        },
+      );
+    } else {
+      contentBody = buildContent(baseTextSize, defaultIsRed);
+    }
 
     return PopScope(
       canPop: !_isDistractionFree,
@@ -191,39 +254,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
           child: SafeArea(
             top: false,
             bottom: true,
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : widget.playlist.items.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No passages or notes in this playlist yet.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: EdgeInsets.only(
-                          left: 20,
-                          right: 20,
-                          top: topPadding,
-                          bottom: 40,
-                        ),
-                        itemCount: widget.playlist.items.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 32),
-                        itemBuilder: (context, index) {
-                          final item = widget.playlist.items[index];
-                          if (item.isReference) {
-                            return _buildPassageView(
-                              context: context,
-                              item: item,
-                              textSize: currentTextSize,
-                              isRed: isRed,
-                              redColor: redColor,
-                            );
-                          } else {
-                            return _buildNoteView(context, item, currentTextSize);
-                          }
-                        },
-                      ),
+            child: contentBody,
           ),
         ),
       ),

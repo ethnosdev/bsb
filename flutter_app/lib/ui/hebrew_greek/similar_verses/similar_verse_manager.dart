@@ -33,6 +33,7 @@ class SimilarVerseManager {
   final isLoadingNotifier = ValueNotifier<bool>(true);
   final countsNotifier =
       ValueNotifier<({int exact, int strongs})>((exact: 0, strongs: 0));
+  final Map<(int, WordSearchMode, int), VerseDisplayContent> _contentCache = {};
 
   late OriginalWord word;
   int exactCount = 0;
@@ -70,6 +71,7 @@ class SimilarVerseManager {
   }
 
   void dispose() {
+    _contentCache.clear();
     similarVersesNotifier.dispose();
     searchModeNotifier.dispose();
     isLoadingNotifier.dispose();
@@ -107,11 +109,21 @@ class SimilarVerseManager {
     Reference reference,
     Color highlightColor,
   ) async {
+    final key = (
+      reference.packedVerse,
+      searchModeNotifier.value,
+      highlightColor.toARGB32(),
+    );
+    final cached = _contentCache[key];
+    if (cached != null) return cached;
+
     final data = await _dbHelper.getOriginalLanguageData(reference);
-    return VerseDisplayContent(
+    final content = VerseDisplayContent(
       english: _formatEnglish(data, highlightColor),
       original: _formatOriginal(data, highlightColor),
     );
+    _contentCache[key] = content;
+    return content;
   }
 
   TextSpan _formatEnglish(

@@ -3,8 +3,20 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
 
-class AppState {
-  final userSettings = getIt<UserSettings>();
+class AppState extends ChangeNotifier {
+  final UserSettings userSettings;
+
+  AppState({UserSettings? userSettings})
+      : userSettings = userSettings ?? getIt<UserSettings>() {
+    themeNotifier.addListener(notifyListeners);
+    textSizeNotifier.addListener(notifyListeners);
+    bookChooserStyleNotifier.addListener(notifyListeners);
+    chapterChooserStyleNotifier.addListener(notifyListeners);
+    showVerseGridNotifier.addListener(notifyListeners);
+    verseChooserStyleNotifier.addListener(notifyListeners);
+    wordsOfJesusInRedNotifier.addListener(notifyListeners);
+  }
+
   final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
   final textSizeNotifier = ValueNotifier<double>(FontScale.defaultBaseSize);
   final bookChooserStyleNotifier =
@@ -16,6 +28,15 @@ class AppState {
       ValueNotifier<VerseChooserStyle>(VerseChooserStyle.sidebar);
   final wordsOfJesusInRedNotifier = ValueNotifier<bool>(false);
 
+  ThemeMode get themeMode => themeNotifier.value;
+  double get textSize => textSizeNotifier.value;
+  BookChooserStyle get bookChooserStyle => bookChooserStyleNotifier.value;
+  ChapterChooserStyle get chapterChooserStyle =>
+      chapterChooserStyleNotifier.value;
+  bool get showVerseGrid => showVerseGridNotifier.value;
+  VerseChooserStyle get verseChooserStyle => verseChooserStyleNotifier.value;
+  bool get wordsOfJesusInRed => wordsOfJesusInRedNotifier.value;
+
   Future<void> init() async {
     themeNotifier.value = userSettings.themeMode;
     textSizeNotifier.value = userSettings.textSize;
@@ -24,6 +45,15 @@ class AppState {
     showVerseGridNotifier.value = userSettings.showVerseGrid;
     verseChooserStyleNotifier.value = userSettings.verseChooserStyle;
     wordsOfJesusInRedNotifier.value = userSettings.wordsOfJesusInRed;
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    themeNotifier.value = mode;
+    await userSettings.setThemeMode(mode);
+  }
+
+  void updateTextSizePreview(double size) {
+    textSizeNotifier.value = FontScale.clampBase(size);
   }
 
   Future<void> setTextSize(double size) async {
@@ -59,5 +89,23 @@ class AppState {
     wordsOfJesusInRedNotifier.value = value;
     await userSettings.setWordsOfJesusInRed(value);
   }
-}
 
+  @override
+  void dispose() {
+    themeNotifier.removeListener(notifyListeners);
+    textSizeNotifier.removeListener(notifyListeners);
+    bookChooserStyleNotifier.removeListener(notifyListeners);
+    chapterChooserStyleNotifier.removeListener(notifyListeners);
+    showVerseGridNotifier.removeListener(notifyListeners);
+    verseChooserStyleNotifier.removeListener(notifyListeners);
+    wordsOfJesusInRedNotifier.removeListener(notifyListeners);
+    themeNotifier.dispose();
+    textSizeNotifier.dispose();
+    bookChooserStyleNotifier.dispose();
+    chapterChooserStyleNotifier.dispose();
+    showVerseGridNotifier.dispose();
+    verseChooserStyleNotifier.dispose();
+    wordsOfJesusInRedNotifier.dispose();
+    super.dispose();
+  }
+}

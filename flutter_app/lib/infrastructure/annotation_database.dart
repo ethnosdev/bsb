@@ -164,6 +164,16 @@ class AnnotationDatabaseHelper {
     );
   }
 
+  Future<void> updateHighlightText(String id, String text) async {
+    final db = await database;
+    await db.update(
+      'highlights',
+      {'text': text},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> deleteHighlight(String id) async {
     final db = await database;
     await db.delete(
@@ -253,6 +263,16 @@ class AnnotationDatabaseHelper {
       note.toMap(),
       where: 'id = ?',
       whereArgs: [note.id],
+    );
+  }
+
+  Future<void> updateNotePassageText(String id, String text) async {
+    final db = await database;
+    await db.update(
+      'notes',
+      {'passage_text': text},
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 
@@ -359,6 +379,23 @@ class AnnotationDatabaseHelper {
       }
       await batch.commit(noResult: true);
     });
+  }
+
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    final db = await database;
+    final count = await db.update(
+      'playlists',
+      playlist.toMap(includeItems: false),
+      where: 'id = ?',
+      whereArgs: [playlist.id],
+    );
+    if (count == 0) {
+      await db.insert(
+        'playlists',
+        playlist.toMap(includeItems: false),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 
   Future<void> deletePlaylist(String id) async {

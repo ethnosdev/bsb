@@ -28,6 +28,19 @@ class FakePlaylistDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    final index = _playlists.indexWhere((p) => p.id == playlist.id);
+    if (index != -1) {
+      _playlists[index] = _playlists[index].copyWith(
+        title: playlist.title,
+        updatedAt: playlist.updatedAt,
+      );
+    } else {
+      _playlists.add(playlist);
+    }
+  }
+
+  @override
   Future<void> deletePlaylist(String id) async {
     _playlists.removeWhere((p) => p.id == id);
   }

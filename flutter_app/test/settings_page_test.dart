@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
@@ -16,6 +17,9 @@ void main() {
     final userSettings = UserSettings();
     await userSettings.init();
     getIt.registerSingleton<UserSettings>(userSettings);
+    final appState = AppState(userSettings: userSettings);
+    await appState.init();
+    getIt.registerSingleton<AppState>(appState);
     getIt.registerSingleton<AnnotationService>(
       AnnotationService(dbHelper: FakeAnnotationDbHelper()),
     );

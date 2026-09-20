@@ -5,6 +5,7 @@ import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/home/list_book_chooser.dart';
+import 'package:bsb/ui/playlists/playlist_share_handler.dart';
 import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_tabs_bar.dart';
@@ -25,6 +26,7 @@ class _HomePageState extends State<HomePage> {
   final _tabManager = getIt<TabManager>();
   final _chapterChooserNotifier = ValueNotifier<(int, int, int?)?>(null);
   AudioPlaybackManager? _cachedAudioManager;
+  PlaylistShareHandler? _playlistShareHandler;
   bool _isDistractionFree = false;
 
   bool _resolveShowVerseGrid() {
@@ -45,7 +47,10 @@ class _HomePageState extends State<HomePage> {
       _cachedAudioManager = getIt<AudioPlaybackManager>();
       _cachedAudioManager!.isPlayerVisible
           .addListener(_onPlayerVisibilityChanged);
+      _cachedAudioManager!.playbackErrorNotifier.addListener(_onAudioError);
     }
+    _playlistShareHandler = PlaylistShareHandler();
+    _playlistShareHandler!.initDeepLinks(context);
   }
 
   void _onTabManagerChanged() {
@@ -78,8 +83,22 @@ class _HomePageState extends State<HomePage> {
     }
     _cachedAudioManager?.isPlayerVisible
         .removeListener(_onPlayerVisibilityChanged);
+    _cachedAudioManager?.playbackErrorNotifier.removeListener(_onAudioError);
+    _playlistShareHandler?.dispose();
     _chapterChooserNotifier.dispose();
     super.dispose();
+  }
+
+  void _onAudioError() {
+    final err = _cachedAudioManager?.playbackErrorNotifier.value;
+    if (err != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   void _toggleDistractionFree() {
@@ -169,19 +188,24 @@ class _HomePageState extends State<HomePage> {
           });
         }
 
-        return PopScope(
-          canPop: !isAdding && !_isDistractionFree && _chapterChooserNotifier.value == null,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop) {
-              if (_chapterChooserNotifier.value != null) {
-                _chapterChooserNotifier.value = null;
-              } else if (_isDistractionFree) {
-                _exitDistractionFree();
-              } else if (isAdding) {
-                _tabManager.cancelAddingTab();
-              }
-            }
-          },
+        return ValueListenableBuilder<(int, int, int?)?>(
+          valueListenable: _chapterChooserNotifier,
+          builder: (context, chapterChooserValue, _) {
+            return PopScope(
+              canPop: !isAdding &&
+                  !_isDistractionFree &&
+                  chapterChooserValue == null,
+              onPopInvokedWithResult: (didPop, result) {
+                if (!didPop) {
+                  if (_chapterChooserNotifier.value != null) {
+                    _chapterChooserNotifier.value = null;
+                  } else if (_isDistractionFree) {
+                    _exitDistractionFree();
+                  } else if (isAdding) {
+                    _tabManager.cancelAddingTab();
+                  }
+                }
+              },
           child: Scaffold(
             drawer: _isDistractionFree ? null : const AppDrawer(),
             onDrawerChanged: (isOpen) {
@@ -356,5 +380,7 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
+  },
+);
   }
 }

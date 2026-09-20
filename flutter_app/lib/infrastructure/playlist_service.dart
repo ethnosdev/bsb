@@ -23,6 +23,11 @@ class PlaylistService {
     changeNotifier.value++;
   }
 
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    await _dbHelper.updatePlaylistMetadata(playlist);
+    changeNotifier.value++;
+  }
+
   Future<void> deletePlaylist(String id) async {
     await _dbHelper.deletePlaylist(id);
     changeNotifier.value++;
@@ -39,7 +44,7 @@ class PlaylistService {
 
   Future<Playlist> touchPlaylist(Playlist playlist) async {
     final updated = playlist.copyWith(updatedAt: DateTime.now());
-    await savePlaylist(updated);
+    await updatePlaylistMetadata(updated);
     return updated;
   }
 

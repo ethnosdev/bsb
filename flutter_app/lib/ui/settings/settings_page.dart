@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
-
+import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
+import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/annotations/annotation_file_handler.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-
-import 'settings_manager.dart';
+import 'package:flutter/material.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -14,7 +13,13 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final manager = SettingsManager();
+  late final AppState appState;
+
+  @override
+  void initState() {
+    super.initState();
+    appState = getIt<AppState>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,23 +28,23 @@ class _SettingsPageState extends State<SettingsPage> {
       body: SafeArea(
         top: false,
         child: ListenableBuilder(
-          listenable: manager,
+          listenable: appState,
           builder: (context, widget) {
             return ListView(
               children: [
                 ListTile(
                   title: const Text('Light-Dark Theme'),
                   subtitle: Text(
-                    manager.themeMode == ThemeMode.light
+                    appState.themeMode == ThemeMode.light
                         ? 'Light'
-                        : manager.themeMode == ThemeMode.dark
+                        : appState.themeMode == ThemeMode.dark
                         ? 'Dark'
                         : 'Match device settings',
                   ),
                   trailing: Icon(
-                    manager.themeMode == ThemeMode.light
+                    appState.themeMode == ThemeMode.light
                         ? Icons.light_mode
-                        : manager.themeMode == ThemeMode.dark
+                        : appState.themeMode == ThemeMode.dark
                         ? Icons.dark_mode
                         : Icons.smartphone,
                   ),
@@ -63,9 +68,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               icon: Icon(Icons.dark_mode),
                             ),
                           ],
-                          selected: {manager.themeMode},
+                          selected: {appState.themeMode},
                           onSelectionChanged: (Set<ThemeMode> selection) {
-                            manager.setThemeMode(selection.first);
+                            appState.setThemeMode(selection.first);
                             Navigator.of(context).pop();
                           },
                         ),
@@ -76,7 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ListTile(
                   title: const Text('Text Size'),
                   trailing: Text(
-                    '${manager.textSize}',
+                    '${appState.textSize}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   onTap: () {
@@ -91,22 +96,25 @@ class _SettingsPageState extends State<SettingsPage> {
                                 const Spacer(),
                                 Text(
                                   'Text Size',
-                                  style: TextStyle(fontSize: manager.textSize),
+                                  style: TextStyle(fontSize: appState.textSize),
                                 ),
                                 const Spacer(),
                                 Slider(
-                                  value: manager.textSize,
+                                  value: appState.textSize,
                                   min: FontScale.minBaseSize,
                                   max: FontScale.maxBaseSize,
                                   divisions:
                                       (FontScale.maxBaseSize -
                                               FontScale.minBaseSize)
                                           .toInt(),
-                                  label: manager.textSize.toStringAsFixed(1),
+                                  label: appState.textSize.toStringAsFixed(1),
                                   onChanged: (value) {
                                     setState(() {
-                                      manager.setTextSize(value);
+                                      appState.updateTextSizePreview(value);
                                     });
+                                  },
+                                  onChangeEnd: (value) {
+                                    appState.setTextSize(value);
                                   },
                                 ),
                               ],
@@ -119,9 +127,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 SwitchListTile(
                   title: const Text('Words of Jesus in Red'),
-                  value: manager.wordsOfJesusInRed,
+                  value: appState.wordsOfJesusInRed,
                   onChanged: (bool value) {
-                    manager.setWordsOfJesusInRed(value);
+                    appState.setWordsOfJesusInRed(value);
                   },
                 ),
                 const Divider(),
@@ -138,12 +146,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ListTile(
                   title: const Text('Book Chooser'),
                   subtitle: Text(
-                    manager.bookChooserStyle == BookChooserStyle.list
+                    appState.bookChooserStyle == BookChooserStyle.list
                         ? 'List'
                         : 'Grid',
                   ),
                   trailing: Icon(
-                    manager.bookChooserStyle == BookChooserStyle.list
+                    appState.bookChooserStyle == BookChooserStyle.list
                         ? Icons.view_list
                         : Icons.grid_view,
                   ),
@@ -166,9 +174,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               icon: Icon(Icons.view_list),
                             ),
                           ],
-                          selected: {manager.bookChooserStyle},
+                          selected: {appState.bookChooserStyle},
                           onSelectionChanged: (Set<BookChooserStyle> selection) {
-                            manager.setBookChooserStyle(selection.first);
+                            appState.setBookChooserStyle(selection.first);
                             Navigator.of(context).pop();
                           },
                         ),
@@ -179,12 +187,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ListTile(
                   title: const Text('Chapter Chooser'),
                   subtitle: Text(
-                    manager.chapterChooserStyle == ChapterChooserStyle.grid
+                    appState.chapterChooserStyle == ChapterChooserStyle.grid
                         ? 'Grid'
                         : 'Keypad',
                   ),
                   trailing: Icon(
-                    manager.chapterChooserStyle == ChapterChooserStyle.grid
+                    appState.chapterChooserStyle == ChapterChooserStyle.grid
                         ? Icons.grid_view
                         : Icons.dialpad,
                   ),
@@ -207,10 +215,10 @@ class _SettingsPageState extends State<SettingsPage> {
                               icon: Icon(Icons.grid_view),
                             ),
                           ],
-                          selected: {manager.chapterChooserStyle},
+                          selected: {appState.chapterChooserStyle},
                           onSelectionChanged:
                               (Set<ChapterChooserStyle> selection) {
-                            manager.setChapterChooserStyle(selection.first);
+                            appState.setChapterChooserStyle(selection.first);
                             Navigator.of(context).pop();
                           },
                         ),
@@ -221,12 +229,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ListTile(
                   title: const Text('Verse Chooser'),
                   subtitle: Text(
-                    manager.verseChooserStyle == VerseChooserStyle.grid
+                    appState.verseChooserStyle == VerseChooserStyle.grid
                         ? 'Grid'
                         : 'Sidebar',
                   ),
                   trailing: Icon(
-                    manager.verseChooserStyle == VerseChooserStyle.grid
+                    appState.verseChooserStyle == VerseChooserStyle.grid
                         ? Icons.grid_view
                         : Icons.view_sidebar,
                   ),
@@ -249,10 +257,10 @@ class _SettingsPageState extends State<SettingsPage> {
                               icon: Icon(Icons.grid_view),
                             ),
                           ],
-                          selected: {manager.verseChooserStyle},
+                          selected: {appState.verseChooserStyle},
                           onSelectionChanged:
                               (Set<VerseChooserStyle> selection) {
-                            manager.setVerseChooserStyle(selection.first);
+                            appState.setVerseChooserStyle(selection.first);
                             Navigator.of(context).pop();
                           },
                         ),

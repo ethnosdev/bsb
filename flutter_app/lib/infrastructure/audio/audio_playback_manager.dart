@@ -15,6 +15,8 @@ class PositionData {
 class AudioPlaybackManager {
   final BsbAudioHandler audioHandler;
   final ValueNotifier<bool> isPlayerVisible = ValueNotifier<bool>(false);
+  final ValueNotifier<String?> playbackErrorNotifier =
+      ValueNotifier<String?>(null);
 
   AudioPlaybackManager({required this.audioHandler});
 
@@ -37,21 +39,27 @@ class AudioPlaybackManager {
   /// Starts or resumes playing the given chapter and ensures player bar is visible.
   Future<void> playOrToggleChapter(int bookId, int chapter) async {
     isPlayerVisible.value = true;
+    playbackErrorNotifier.value = null;
 
     final currentBook = audioHandler.currentBookId;
     final currentChap = audioHandler.currentChapter;
 
-    if (currentBook == bookId && currentChap == chapter) {
-      if (audioHandler.player.playing) {
-        // If already playing, keep playing (and player is made visible)
-        return;
-      } else {
-        await audioHandler.play();
-        return;
+    try {
+      if (currentBook == bookId && currentChap == chapter) {
+        if (audioHandler.player.playing) {
+          // If already playing, keep playing (and player is made visible)
+          return;
+        } else {
+          await audioHandler.play();
+          return;
+        }
       }
-    }
 
-    await audioHandler.playChapter(bookId, chapter);
+      await audioHandler.playChapter(bookId, chapter);
+    } catch (e) {
+      playbackErrorNotifier.value =
+          'Unable to play audio. Check internet connection.';
+    }
   }
 
   Future<void> play() async {
@@ -92,5 +100,6 @@ class AudioPlaybackManager {
 
   void dispose() {
     isPlayerVisible.dispose();
+    playbackErrorNotifier.dispose();
   }
 }

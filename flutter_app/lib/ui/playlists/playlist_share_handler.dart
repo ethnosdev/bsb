@@ -14,12 +14,15 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 class PlaylistShareHandler {
-  final PlaylistService _playlistService;
+  final PlaylistService? _playlistService;
   AppLinks? _appLinks;
   StreamSubscription<Uri>? _sub;
 
   PlaylistShareHandler({PlaylistService? playlistService})
-      : _playlistService = playlistService ?? getIt<PlaylistService>();
+      : _playlistService = playlistService ??
+            (getIt.isRegistered<PlaylistService>()
+                ? getIt<PlaylistService>()
+                : null);
 
   static Rect? _getSharePositionOrigin(BuildContext context) {
     final box = context.findRenderObject() as RenderBox?;
@@ -305,7 +308,7 @@ class PlaylistShareHandler {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && _playlistService != null) {
       await _playlistService.savePlaylist(playlist);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
@@ -21,26 +23,53 @@ class PlaylistEditorPage extends StatefulWidget {
 
 class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
   late final TextEditingController _titleController;
+  late final FocusNode _titleFocusNode;
   final _playlistService = getIt<PlaylistService>();
   final _dbHelper = getIt<DatabaseHelper>();
   late final PlaylistShareHandler _shareHandler;
 
   late List<PlaylistItem> _items;
   final Map<String, String> _snippetCache = {};
+  Timer? _titleDebounceTimer;
+  late String _lastSavedTitle;
 
   @override
   void initState() {
     super.initState();
     _shareHandler = PlaylistShareHandler(playlistService: _playlistService);
     _titleController = TextEditingController(text: widget.playlist.title);
+    _titleFocusNode = FocusNode()..addListener(_onTitleFocusChanged);
+    _lastSavedTitle = widget.playlist.title;
     _items = List.from(widget.playlist.items);
     _loadSnippets();
   }
 
   @override
   void dispose() {
+    _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _titleFocusNode.dispose();
+    if (_titleDebounceTimer?.isActive ?? false) {
+      _titleDebounceTimer?.cancel();
+      _saveTitle();
+    }
     _titleController.dispose();
     super.dispose();
+  }
+
+  void _onTitleFocusChanged() {
+    if (!_titleFocusNode.hasFocus) {
+      if (_titleDebounceTimer?.isActive ?? false) {
+        _titleDebounceTimer?.cancel();
+        _saveTitle();
+      }
+    }
+  }
+
+  void _onTitleChanged(String _) {
+    _titleDebounceTimer?.cancel();
+    _titleDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _saveTitle();
+    });
   }
 
   Future<void> _loadSnippets() async {
@@ -65,7 +94,20 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
     );
   }
 
+  Future<void> _saveTitle() async {
+    _titleDebounceTimer?.cancel();
+    final newTitle = _titleController.text.trim().isEmpty ? 'Untitled Playlist' : _titleController.text.trim();
+    if (newTitle == _lastSavedTitle.trim()) {
+      return;
+    }
+    _lastSavedTitle = _titleController.text;
+    final updated = _buildPlaylist();
+    await _playlistService.updatePlaylistMetadata(updated);
+  }
+
   Future<void> _savePlaylist() async {
+    _titleDebounceTimer?.cancel();
+    _lastSavedTitle = _titleController.text;
     final updated = _buildPlaylist();
     await _playlistService.savePlaylist(updated);
   }
@@ -171,7 +213,7 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
   }
 
   void _present() {
-    _savePlaylist();
+    _saveTitle();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -184,8 +226,16 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (_titleDebounceTimer?.isActive ?? false) {
+          _titleDebounceTimer?.cancel();
+          _saveTitle();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
         title: const Text('Edit Playlist'),
         actions: [
           IconButton(
@@ -243,13 +293,14 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             child: TextField(
               controller: _titleController,
+              focusNode: _titleFocusNode,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               decoration: const InputDecoration(
                 labelText: 'Playlist Title',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
-              onChanged: (_) => _savePlaylist(),
+              onChanged: _onTitleChanged,
             ),
           ),
 
@@ -336,7 +387,8 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildPassageTile(PlaylistItem item, int index) {

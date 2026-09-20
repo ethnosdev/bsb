@@ -19,12 +19,12 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   late final PlaylistShareHandler _shareHandler;
   List<Playlist> _playlists = [];
   bool _isLoading = true;
+  bool _isEditorOrPresentationOpen = false;
 
   @override
   void initState() {
     super.initState();
     _shareHandler = PlaylistShareHandler(playlistService: _playlistService);
-    _shareHandler.initDeepLinks(context);
     _playlistService.changeNotifier.addListener(_loadPlaylists);
     _loadPlaylists();
   }
@@ -37,6 +37,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   }
 
   Future<void> _loadPlaylists() async {
+    if (_isEditorOrPresentationOpen) return;
     final list = await _playlistService.getPlaylists();
     if (mounted) {
       setState(() {
@@ -90,12 +91,15 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
       await _playlistService.savePlaylist(newPlaylist);
 
       if (mounted) {
-        Navigator.push(
+        _isEditorOrPresentationOpen = true;
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => PlaylistEditorPage(playlist: newPlaylist),
           ),
         );
+        _isEditorOrPresentationOpen = false;
+        if (mounted) _loadPlaylists();
       }
     }
   }
@@ -103,24 +107,30 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
   Future<void> _openEditor(Playlist playlist) async {
     final touched = await _playlistService.touchPlaylist(playlist);
     if (mounted) {
-      Navigator.push(
+      _isEditorOrPresentationOpen = true;
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PlaylistEditorPage(playlist: touched),
         ),
       );
+      _isEditorOrPresentationOpen = false;
+      if (mounted) _loadPlaylists();
     }
   }
 
   Future<void> _present(Playlist playlist) async {
     final touched = await _playlistService.touchPlaylist(playlist);
     if (mounted) {
-      Navigator.push(
+      _isEditorOrPresentationOpen = true;
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => PlaylistPresentationPage(playlist: touched),
         ),
       );
+      _isEditorOrPresentationOpen = false;
+      if (mounted) _loadPlaylists();
     }
   }
 

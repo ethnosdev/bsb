@@ -37,6 +37,20 @@ class AnnotationService {
     return _dbHelper.getNoteById(id);
   }
 
+  /// Updates cached passage/snippet text in database without firing changeNotifier
+  /// or mutating update timestamps.
+  Future<void> updateSnippetText({
+    required String id,
+    required String text,
+    required bool isNote,
+  }) async {
+    if (isNote) {
+      await _dbHelper.updateNotePassageText(id, text);
+    } else {
+      await _dbHelper.updateHighlightText(id, text);
+    }
+  }
+
   /// Adds a highlight to the given word range, merging/overriding any
   /// existing highlights that overlap with the new range (including
   /// splitting/trimming overridden colors).

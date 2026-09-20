@@ -72,6 +72,14 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
+  Future<void> updateHighlightText(String id, String text) async {
+    final idx = _highlights.indexWhere((h) => h.id == id);
+    if (idx != -1) {
+      _highlights[idx] = _highlights[idx].copyWith(text: text);
+    }
+  }
+
+  @override
   Future<void> deleteHighlight(String id) async {
     _highlights.removeWhere((h) => h.id == id);
   }
@@ -108,6 +116,14 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
     final idx = _notes.indexWhere((n) => n.id == note.id);
     if (idx != -1) {
       _notes[idx] = note;
+    }
+  }
+
+  @override
+  Future<void> updateNotePassageText(String id, String text) async {
+    final idx = _notes.indexWhere((n) => n.id == id);
+    if (idx != -1) {
+      _notes[idx] = _notes[idx].copyWith(passageText: text);
     }
   }
 

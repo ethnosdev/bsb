@@ -17,11 +17,50 @@ class AboutPage extends StatefulWidget {
 
 class _AboutPageState extends State<AboutPage> {
   final _versionNotifier = ValueNotifier<String>('');
+  late final TapGestureRecognizer _bibleHubRecognizer;
+  late final TapGestureRecognizer _discoveryBibleRecognizer;
+  late final TapGestureRecognizer _openBibleRecognizer;
+  late final TapGestureRecognizer _publicDomainRecognizer;
+  late final TapGestureRecognizer _copyrightArticleRecognizer;
+  late final TapGestureRecognizer _ethnosDevRecognizer;
+  late final TapGestureRecognizer _gitHubRecognizer;
 
   @override
   void initState() {
     super.initState();
+    _bibleHubRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch('https://biblehub.com/');
+    _discoveryBibleRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch('https://discoverybible.com/');
+    _openBibleRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch('https://openbible.com/');
+    _publicDomainRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch(
+            'https://creativecommons.org/publicdomain/zero/1.0/',
+          );
+    _copyrightArticleRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch(
+            'https://sellingjesus.org/articles/copyright-and-the-bible',
+          );
+    _ethnosDevRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch('https://ethnos.dev');
+    _gitHubRecognizer = TapGestureRecognizer()
+      ..onTap = () => _launch('https://github.com/ethnosdev/bsb');
+
     _lookupVersionNumber();
+  }
+
+  @override
+  void dispose() {
+    _versionNotifier.dispose();
+    _bibleHubRecognizer.dispose();
+    _discoveryBibleRecognizer.dispose();
+    _openBibleRecognizer.dispose();
+    _publicDomainRecognizer.dispose();
+    _copyrightArticleRecognizer.dispose();
+    _ethnosDevRecognizer.dispose();
+    _gitHubRecognizer.dispose();
+    super.dispose();
   }
 
   @override
@@ -125,10 +164,7 @@ class _AboutPageState extends State<AboutPage> {
                                 color: launchColor,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  _launch('https://biblehub.com/');
-                                },
+                              recognizer: _bibleHubRecognizer,
                             ),
                             const TextSpan(text: ", "),
                             TextSpan(
@@ -137,10 +173,7 @@ class _AboutPageState extends State<AboutPage> {
                                 color: launchColor,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  _launch('https://discoverybible.com/');
-                                },
+                              recognizer: _discoveryBibleRecognizer,
                             ),
                             const TextSpan(text: ", "),
                             TextSpan(
@@ -149,10 +182,7 @@ class _AboutPageState extends State<AboutPage> {
                                 color: launchColor,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  _launch('https://openbible.com/');
-                                },
+                              recognizer: _openBibleRecognizer,
                             ),
                             const TextSpan(
                               text:
@@ -165,12 +195,7 @@ class _AboutPageState extends State<AboutPage> {
                                 color: launchColor,
                                 decoration: TextDecoration.underline,
                               ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  _launch(
-                                    'https://creativecommons.org/publicdomain/zero/1.0/',
-                                  );
-                                },
+                              recognizer: _publicDomainRecognizer,
                             ),
                             const TextSpan(text: "."),
                           ],
@@ -193,12 +218,7 @@ class _AboutPageState extends State<AboutPage> {
                               color: launchColor,
                               decoration: TextDecoration.underline,
                             ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                _launch(
-                                  'https://sellingjesus.org/articles/copyright-and-the-bible',
-                                );
-                              },
+                            recognizer: _copyrightArticleRecognizer,
                           ),
                         ],
                       ),
@@ -215,10 +235,7 @@ class _AboutPageState extends State<AboutPage> {
                               color: launchColor,
                               decoration: TextDecoration.underline,
                             ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                _launch('https://ethnos.dev');
-                              },
+                            recognizer: _ethnosDevRecognizer,
                           ),
                           const TextSpan(
                             text:
@@ -232,10 +249,7 @@ class _AboutPageState extends State<AboutPage> {
                               color: launchColor,
                               decoration: TextDecoration.underline,
                             ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                _launch('https://github.com/ethnosdev/bsb');
-                              },
+                            recognizer: _gitHubRecognizer,
                           ),
                           const TextSpan(text: "."),
                         ],

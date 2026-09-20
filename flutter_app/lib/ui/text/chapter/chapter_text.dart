@@ -807,26 +807,12 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _onFootnoteTapped(String footnoteText) {
-    final details = formatFootnote(
-      footnote: footnoteText,
-      highlightColor: Theme.of(context).colorScheme.primary,
-      keywords: manager.footnoteKeywords(),
-      onTapKeyword: (keyword, count) async {
-        if (count == 1) {
-          Navigator.of(context).pop();
-        }
-        final text = await manager.lookupFootnoteDetails(keyword);
-        if (text == null) return;
-        _showDetailsDialog(keyword, text);
-      },
-    );
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        content: SelectableText.rich(
-          details,
-          style: TextStyle(fontSize: manager.textSize),
-        ),
+      builder: (context) => _FootnoteDialog(
+        footnoteText: footnoteText,
+        manager: manager,
+        onShowDetails: _showDetailsDialog,
       ),
     );
   }
@@ -925,11 +911,75 @@ class _ChapterTextState extends State<ChapterText>
   }
 }
 
+class _FootnoteDialog extends StatefulWidget {
+  final String footnoteText;
+  final ChapterManager manager;
+  final void Function(String keyword, List<UsfmLine> details) onShowDetails;
+
+  const _FootnoteDialog({
+    required this.footnoteText,
+    required this.manager,
+    required this.onShowDetails,
+  });
+
+  @override
+  State<_FootnoteDialog> createState() => _FootnoteDialogState();
+}
+
+class _FootnoteDialogState extends State<_FootnoteDialog> {
+  final List<GestureRecognizer> _recognizers = [];
+  TextSpan? _content;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _disposeRecognizers();
+    _content = formatFootnote(
+      footnote: widget.footnoteText,
+      highlightColor: Theme.of(context).colorScheme.primary,
+      keywords: widget.manager.footnoteKeywords(),
+      recognizersToDispose: _recognizers,
+      onTapKeyword: (keyword, count) async {
+        if (count == 1) {
+          Navigator.of(context).pop();
+        }
+        final text = await widget.manager.lookupFootnoteDetails(keyword);
+        if (text == null) return;
+        widget.onShowDetails(keyword, text);
+      },
+    );
+  }
+
+  void _disposeRecognizers() {
+    for (final r in _recognizers) {
+      r.dispose();
+    }
+    _recognizers.clear();
+  }
+
+  @override
+  void dispose() {
+    _disposeRecognizers();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      content: SelectableText.rich(
+        _content ?? const TextSpan(),
+        style: TextStyle(fontSize: widget.manager.textSize),
+      ),
+    );
+  }
+}
+
 TextSpan formatFootnote({
   required String footnote,
   required Color highlightColor,
   required RegExp keywords,
   required void Function(String tappedKeyword, int keywordCount) onTapKeyword,
+  List<GestureRecognizer>? recognizersToDispose,
 }) {
   // Make semicolon-separated content display on new lines
   final note = footnote.replaceAll('; ', ';\n');
@@ -974,6 +1024,11 @@ TextSpan formatFootnote({
       isItalic = true;
     } else {
       // Add the matched keyword as a tappable span
+      final recognizer = TapGestureRecognizer()
+        ..onTap = () {
+          onTapKeyword(matchedText, keywordCount);
+        };
+      recognizersToDispose?.add(recognizer);
       spans.add(
         TextSpan(
           text: matchedText,
@@ -981,10 +1036,7 @@ TextSpan formatFootnote({
             color: highlightColor,
             fontStyle: isItalic ? FontStyle.italic : null,
           ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () {
-              onTapKeyword(matchedText, keywordCount);
-            },
+          recognizer: recognizer,
         ),
       );
     }

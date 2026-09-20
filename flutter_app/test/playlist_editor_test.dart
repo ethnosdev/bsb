@@ -28,10 +28,28 @@ class FakePlaylistDbHelper implements AnnotationDatabaseHelper {
     }
   }
 
+  int savePlaylistCallCount = 0;
+  int updateMetadataCallCount = 0;
+
   @override
   Future<void> savePlaylist(Playlist playlist) async {
+    savePlaylistCallCount++;
     _playlists.removeWhere((p) => p.id == playlist.id);
     _playlists.add(playlist);
+  }
+
+  @override
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    updateMetadataCallCount++;
+    final index = _playlists.indexWhere((p) => p.id == playlist.id);
+    if (index != -1) {
+      _playlists[index] = _playlists[index].copyWith(
+        title: playlist.title,
+        updatedAt: playlist.updatedAt,
+      );
+    } else {
+      _playlists.add(playlist);
+    }
   }
 
   @override
@@ -315,5 +333,49 @@ void main() {
     expect(find.byKey(const ValueKey('passage_trim_button')), findsOneWidget);
     // Both the playlist list tile and the dialog preview header show the Trimmed badge
     expect(find.text('Trimmed'), findsNWidgets(2));
+  });
+
+  testWidgets('PlaylistEditorPage debounces title changes and updates metadata only without full save', (tester) async {
+    final playlist = Playlist(
+      id: 'p6',
+      title: 'Original Title',
+      items: [
+        PlaylistItem.note(
+          id: 'n1',
+          text: 'Note 1',
+          orderIndex: 0,
+        ),
+      ],
+    );
+    await playlistService.savePlaylist(playlist);
+
+    fakeDb.savePlaylistCallCount = 0;
+    fakeDb.updateMetadataCallCount = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlaylistEditorPage(playlist: playlist),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final titleFinder = find.widgetWithText(TextField, 'Original Title');
+    await tester.enterText(titleFinder, 'Updated Title');
+
+    // Immediately before 500ms debounce
+    expect(fakeDb.updateMetadataCallCount, 0);
+    expect(fakeDb.savePlaylistCallCount, 0);
+
+    // Advance 600ms to allow debounce timer to fire
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+
+    // Metadata update should have fired, but NOT full save
+    expect(fakeDb.updateMetadataCallCount, 1);
+    expect(fakeDb.savePlaylistCallCount, 0);
+
+    final saved = await playlistService.getPlaylist('p6');
+    expect(saved?.title, 'Updated Title');
+    expect(saved?.items.length, 1);
   });
 }

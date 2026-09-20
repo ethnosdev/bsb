@@ -3,7 +3,6 @@ import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/help.dart';
-import 'package:bsb/ui/settings/settings_manager.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
@@ -114,7 +113,7 @@ void main() {
     expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(14.0)));
   });
 
-  testWidgets('SettingsManager changes propagate to ValueListenableBuilder consumers', (tester) async {
+  testWidgets('AppState changes propagate to ValueListenableBuilder consumers', (tester) async {
     double? observedSize;
 
     await tester.pumpWidget(
@@ -132,8 +131,7 @@ void main() {
     expect(observedSize, equals(20.0));
     expect(find.text('Current: 20.0'), findsOneWidget);
 
-    final manager = SettingsManager();
-    await manager.setTextSize(28.0);
+    await appState.setTextSize(28.0);
     await tester.pump();
 
     expect(observedSize, equals(28.0));

@@ -580,6 +580,37 @@ void main() {
 
       similarManager.dispose();
     });
+
+    test('getVerseContent caches result and returns identical instance on subsequent calls', () async {
+      final testWord = OriginalWord(
+        id: 1,
+        originalId: 200,
+        language: Language.greek,
+        word: 'ἀγαπᾷ',
+        transliteration: 'agapa',
+        englishGloss: 'loves',
+        strongsNumber: 25,
+        partOfSpeech: 'V-PIA-3S',
+        bsbSort: 2,
+      );
+      fakeDb.words.clear();
+      fakeDb.words.addAll([testWord]);
+      fakeDb.exactMatches.clear();
+      fakeDb.exactMatches.add(Reference(bookId: 43, chapter: 3, verse: 35));
+
+      final similarManager = SimilarVerseManager();
+      await similarManager.init(
+        testWord,
+        initialMode: WordSearchMode.exactForm,
+      );
+
+      final ref = Reference(bookId: 43, chapter: 3, verse: 35);
+      final first = await similarManager.getVerseContent(ref, Colors.blue);
+      final second = await similarManager.getVerseContent(ref, Colors.blue);
+
+      expect(identical(first, second), isTrue);
+      similarManager.dispose();
+    });
   });
 
   group('HebrewGreekScreen Widget Tests', () {

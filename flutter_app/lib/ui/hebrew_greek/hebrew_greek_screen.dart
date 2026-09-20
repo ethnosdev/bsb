@@ -42,13 +42,15 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
   @override
   void initState() {
     super.initState();
-    manager.init(widget.bookId, widget.chapter, widget.verse);
-    _pageIndex = widget.verse - 1;
+    final safeVerse = widget.verse <= 0 ? 1 : widget.verse;
+    manager.init(widget.bookId, widget.chapter, safeVerse);
+    _pageIndex = safeVerse - 1;
     _pageController = PageController(
       initialPage: _pageIndex,
     );
     _pageController.addListener(() {
-      final currentIndex = (_pageController.page ?? widget.verse - 1).round();
+      final currentIndex =
+          (_pageController.page ?? _pageIndex.toDouble()).round();
       if (_pageIndex != currentIndex) {
         _pageIndex = currentIndex;
         manager.updateTitle(
