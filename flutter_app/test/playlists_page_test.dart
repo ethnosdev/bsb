@@ -21,7 +21,6 @@ class FakePlaylistDbHelper implements AnnotationDatabaseHelper {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
-  @override
   int getAllPlaylistsCallCount = 0;
 
   @override
