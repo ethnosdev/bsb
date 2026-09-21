@@ -1,4 +1,4 @@
-# 2.2.0
+# 2.2.0 - 2026.09.19
 
 - Fix bug with chapter chooser not disappearing.
 - Allow users to choose the old grid-style chapter chooser in settings.
