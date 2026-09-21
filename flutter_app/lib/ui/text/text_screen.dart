@@ -71,6 +71,7 @@ class _TextScreenState extends State<TextScreen> {
   int? _targetVerseChapter;
   int? _pendingTargetVerse;
   ScriptureSelectionController? _activeController;
+  final ValueNotifier<int> _zoomStartNotifier = ValueNotifier<int>(0);
   final _moreKey = GlobalKey();
   late Language _currentLanguage;
 
@@ -161,6 +162,7 @@ class _TextScreenState extends State<TextScreen> {
     _showBottomBarNotifier.dispose();
     _activePageIndexNotifier.dispose();
     _showScrubberNotifier.dispose();
+    _zoomStartNotifier.dispose();
     _internalChapterNotifier.dispose();
     _screenManager.dispose();
     super.dispose();
@@ -252,6 +254,7 @@ class _TextScreenState extends State<TextScreen> {
             chapter: chapter,
             activePageIndexListenable: _activePageIndexNotifier,
             showScrubberNotifier: _showScrubberNotifier,
+            zoomStartNotifier: _zoomStartNotifier,
             pageIndex: pageIndex,
             onToggleDistractionFree: widget.onToggleDistractionFree,
             targetSection: _isTargetSection(bookId, chapter)
@@ -331,6 +334,9 @@ class _TextScreenState extends State<TextScreen> {
           initialScale: currentSize,
           minScale: FontScale.minBaseSize,
           maxScale: FontScale.maxBaseSize,
+          onZoomStart: (_) {
+            _zoomStartNotifier.value++;
+          },
           onScaleChanged: (newScale) {
             appState.setTextSize(newScale);
           },

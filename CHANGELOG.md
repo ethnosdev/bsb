@@ -3,6 +3,7 @@
 - Fix two-tap bug on verse grid chooser.
 - Shortcut for navigating to verse 1 in the grid verse chooser is to tap the chapter title.
 - Show the sidebar verse chooser when chapter content doesn't all fit (not just a fixed 10 verses--but still a minimum of 4 verses).
+- Keep the top visible verse at the top of the screen when resizing text.
 
 # 2.2.0 - 2026.09.19
 

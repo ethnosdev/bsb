@@ -9,6 +9,7 @@ class ZoomWrapper extends StatefulWidget {
     this.maxScale = 50.0,
     this.getInitialScale,
     this.onZoomStart,
+    this.onZoomEnd,
     required this.onScaleChanged,
     required this.builder,
   });
@@ -18,6 +19,7 @@ class ZoomWrapper extends StatefulWidget {
   final double maxScale;
   final double Function()? getInitialScale;
   final void Function(Offset focalPoint)? onZoomStart;
+  final VoidCallback? onZoomEnd;
   final ValueChanged<double> onScaleChanged;
   final Widget Function(BuildContext context, double scale) builder;
 
@@ -69,6 +71,7 @@ class _ZoomWrapperState extends State<ZoomWrapper> {
               if ((_visualScale - 1.0).abs() > 0.01) {
                 widget.onScaleChanged(newAbsoluteScale.roundToDouble());
               }
+              widget.onZoomEnd?.call();
               setState(() {
                 _visualScale = 1.0;
               });

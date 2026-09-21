@@ -30,6 +30,7 @@ class ChapterText extends StatefulWidget {
     this.targetVerse,
     this.activePageIndexListenable,
     this.showScrubberNotifier,
+    this.zoomStartNotifier,
     this.pageIndex,
     this.onSelectionChanged,
     this.onTargetSectionScrolled,
@@ -43,6 +44,7 @@ class ChapterText extends StatefulWidget {
   final int? targetVerse;
   final ValueListenable<int>? activePageIndexListenable;
   final ValueListenable<int>? showScrubberNotifier;
+  final ValueListenable<int>? zoomStartNotifier;
   final int? pageIndex;
   final void Function(ScriptureSelectionController controller)?
   onSelectionChanged;
@@ -63,6 +65,9 @@ class _ChapterTextState extends State<ChapterText>
   int? _lastScrolledVerse;
   String? _activeTargetSection;
   int? _activeTargetVerse;
+
+  int? _verseAtZoomStart;
+  double? _lastRenderedTextSize;
 
   final GlobalKey _contentColumnKey = GlobalKey();
   bool _doesContentOverflow = false;
@@ -208,6 +213,7 @@ class _ChapterTextState extends State<ChapterText>
     super.initState();
     widget.activePageIndexListenable?.addListener(_handleActivePageChange);
     widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
+    widget.zoomStartNotifier?.addListener(_handleZoomStart);
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     _selectionController.addListener(_handleSelectionChange);
     if (widget.targetSection != null) {
@@ -216,6 +222,11 @@ class _ChapterTextState extends State<ChapterText>
     if (widget.targetVerse != null) {
       _scrollToTargetVerse(widget.targetVerse);
     }
+  }
+
+  void _handleZoomStart() {
+    if (!_isActive) return;
+    _verseAtZoomStart = _getTopVisibleVerse();
   }
 
   double _maxTopInset = 0.0;
@@ -254,10 +265,16 @@ class _ChapterTextState extends State<ChapterText>
       oldWidget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
       widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
     }
+    if (widget.zoomStartNotifier != oldWidget.zoomStartNotifier) {
+      oldWidget.zoomStartNotifier?.removeListener(_handleZoomStart);
+      widget.zoomStartNotifier?.addListener(_handleZoomStart);
+    }
     if (widget.bookId != oldWidget.bookId || widget.chapter != oldWidget.chapter) {
       _hasInitiallyShownScrubber = false;
       _doesContentOverflow = false;
       _isVerseScrubberVisible = false;
+      _verseAtZoomStart = null;
+      _lastRenderedTextSize = null;
       _verseScrubberTimer?.cancel();
       manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     }
@@ -287,6 +304,7 @@ class _ChapterTextState extends State<ChapterText>
     _sectionScrollTimer?.cancel();
     _verseScrollTimer?.cancel();
     widget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
+    widget.zoomStartNotifier?.removeListener(_handleZoomStart);
     widget.activePageIndexListenable?.removeListener(_handleActivePageChange);
     _selectionController.removeListener(_handleSelectionChange);
     _selectionController.dispose();
@@ -365,9 +383,7 @@ class _ChapterTextState extends State<ChapterText>
         final text = _getParagraphText(child);
         if (_matchesHeading(text, target)) {
           final parentData = child.parentData as PassageParentData;
-          final passageOffset = (passage!.parentData is BoxParentData)
-              ? (passage!.parentData as BoxParentData).offset.dy
-              : 0.0;
+          final passageOffset = _getPassageOffsetInColumn(passage!);
           final targetOffset = passageOffset + parentData.offset.dy;
           final maxScroll = _scrollController.position.maxScrollExtent;
           if (targetOffset > 50.0 && maxScroll <= 0.0) {
@@ -422,21 +438,9 @@ class _ChapterTextState extends State<ChapterText>
     });
   }
 
-  bool _performScrollToVerse(int targetVerse) {
-    if (!_scrollController.hasClients) return false;
-    if (!_scrollController.position.hasContentDimensions) return false;
-
-    if (targetVerse == 1) {
-      _scrollController.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOut,
-      );
-      return true;
-    }
-
+  RenderPassage? _findRenderPassage() {
     final renderObject = context.findRenderObject();
-    if (renderObject == null || !renderObject.attached) return false;
+    if (renderObject == null || !renderObject.attached) return null;
 
     RenderPassage? passage;
     void findPassage(RenderObject ro) {
@@ -448,55 +452,214 @@ class _ChapterTextState extends State<ChapterText>
       ro.visitChildren(findPassage);
     }
     findPassage(renderObject);
+    return passage;
+  }
 
-    if (passage == null || !passage!.hasSize) return false;
+  int? _extractVerseFromElement(RenderBox elem) {
+    if (elem is RenderVerseNumber) {
+      return int.tryParse(elem.number);
+    }
+    if (elem is RenderWord) {
+      final v = (elem.id ~/ 1000) % 1000;
+      return v > 0 ? v : null;
+    }
+    if (elem is RenderTextAtom) {
+      RenderBox? atomChild = elem.firstChild;
+      while (atomChild != null) {
+        if (atomChild is RenderWord) {
+          final v = (atomChild.id ~/ 1000) % 1000;
+          if (v > 0) return v;
+        }
+        atomChild = (atomChild.parentData as TextAtomParentData).nextSibling;
+      }
+    }
+    return null;
+  }
 
-    final targetVerseStr = targetVerse.toString();
-    final expectedPackedRef =
-        widget.bookId * 1000000 + widget.chapter * 1000 + targetVerse;
+  int? _getVerseAtPassageY(RenderPassage passage, double passageY) {
+    if (passageY <= 0) return 1;
 
-    RenderBox? child = passage!.firstChild;
+    int? lastSeenVerse;
+
+    RenderBox? child = passage.firstChild;
     while (child != null) {
       if (child is RenderParagraph) {
-        bool matches = false;
-        void checkParagraph(RenderObject ro) {
-          if (matches) return;
-          if (ro is RenderVerseNumber && ro.number == targetVerseStr) {
-            matches = true;
-            return;
-          }
-          if (ro is RenderWord) {
-            if (ro.id ~/ 1000 == expectedPackedRef) {
-              matches = true;
-              return;
+        final parentData = child.parentData as PassageParentData;
+        final paragraphTop = parentData.offset.dy;
+        final paragraphBottom = paragraphTop + child.size.height;
+
+        RenderBox? elem = child.firstChild;
+        while (elem != null) {
+          final elemData = elem.parentData as ParagraphParentData;
+          final elemY = paragraphTop + elemData.offset.dy;
+          final v = _extractVerseFromElement(elem);
+
+          if (v != null) {
+            if (elemY <= passageY + 4.0) {
+              lastSeenVerse = v;
+            } else {
+              return lastSeenVerse ?? v;
             }
           }
-          ro.visitChildren(checkParagraph);
+          elem = elemData.nextSibling;
         }
-        checkParagraph(child);
 
-        if (matches) {
-          final parentData = child.parentData as PassageParentData;
-          final passageOffset = (passage!.parentData is BoxParentData)
-              ? (passage!.parentData as BoxParentData).offset.dy
-              : 0.0;
-          final targetOffset = passageOffset + parentData.offset.dy;
-          final maxScroll = _scrollController.position.maxScrollExtent;
-          if (targetOffset > 50.0 && maxScroll <= 0.0) {
-            return false;
+        if (passageY < paragraphBottom) {
+          final dyInParagraph =
+              (passageY - paragraphTop).clamp(0.0, child.size.height);
+          final wordId =
+              child.getWordClosestToOffset(Offset(50.0, dyInParagraph));
+          if (wordId != null && wordId > 0) {
+            final ref = Reference.fromWordId(packedInt: wordId);
+            if (ref.verse != null && ref.verse! > 0) {
+              return ref.verse;
+            }
           }
-          final scrollOffset = targetOffset.clamp(0.0, maxScroll);
-          _scrollController.animateTo(
-            scrollOffset,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeInOut,
-          );
-          return true;
+          if (lastSeenVerse != null) return lastSeenVerse;
         }
       }
       child = (child.parentData as PassageParentData).nextSibling;
     }
-    return false;
+
+    return lastSeenVerse ?? 1;
+  }
+
+  double _getPassageOffsetInColumn(RenderPassage passage) {
+    final columnBox =
+        _contentColumnKey.currentContext?.findRenderObject() as RenderBox?;
+    if (columnBox != null && columnBox.attached && passage.attached) {
+      try {
+        return passage.localToGlobal(Offset.zero, ancestor: columnBox).dy;
+      } catch (_) {}
+    }
+    return (passage.parentData is BoxParentData)
+        ? (passage.parentData as BoxParentData).offset.dy
+        : 0.0;
+  }
+
+  int? _getTopVisibleVerse() {
+    if (!_scrollController.hasClients) return null;
+    final passage = _findRenderPassage();
+    if (passage == null || !passage.hasSize) return null;
+
+    final scrollOffset = _scrollController.position.pixels;
+    final passageOffset = _getPassageOffsetInColumn(passage);
+
+    final passageY = scrollOffset - passageOffset;
+    return _getVerseAtPassageY(passage, passageY);
+  }
+
+  double? _findVerseDyInParagraph(
+    RenderParagraph paragraph,
+    String targetVerseStr,
+    int expectedPackedRef,
+  ) {
+    RenderBox? elem = paragraph.firstChild;
+    while (elem != null) {
+      final elemData = elem.parentData as ParagraphParentData;
+      if (elem is RenderVerseNumber && elem.number == targetVerseStr) {
+        return elemData.offset.dy;
+      }
+      if (elem is RenderWord && elem.id ~/ 1000 == expectedPackedRef) {
+        return elemData.offset.dy;
+      }
+      if (elem is RenderTextAtom) {
+        RenderBox? atomChild = elem.firstChild;
+        while (atomChild != null) {
+          if (atomChild is RenderWord &&
+              atomChild.id ~/ 1000 == expectedPackedRef) {
+            final atomData = atomChild.parentData as TextAtomParentData;
+            return elemData.offset.dy + atomData.offset.dy;
+          }
+          atomChild =
+              (atomChild.parentData as TextAtomParentData).nextSibling;
+        }
+      }
+      elem = elemData.nextSibling;
+    }
+    return null;
+  }
+
+  double? _getVerseOffset(RenderPassage passage, int targetVerse) {
+    if (targetVerse == 1) return 0.0;
+
+    final passageOffset = _getPassageOffsetInColumn(passage);
+    final targetVerseStr = targetVerse.toString();
+    final expectedPackedRef =
+        widget.bookId * 1000000 + widget.chapter * 1000 + targetVerse;
+
+    RenderBox? child = passage.firstChild;
+    while (child != null) {
+      if (child is RenderParagraph) {
+        final verseDy = _findVerseDyInParagraph(
+          child,
+          targetVerseStr,
+          expectedPackedRef,
+        );
+
+        if (verseDy != null) {
+          final parentData = child.parentData as PassageParentData;
+          return passageOffset + parentData.offset.dy + verseDy;
+        }
+      }
+      child = (child.parentData as PassageParentData).nextSibling;
+    }
+    return null;
+  }
+
+  bool _performScrollToVerse(int targetVerse, {bool animate = true}) {
+    if (!_scrollController.hasClients) return false;
+    if (!_scrollController.position.hasContentDimensions) return false;
+
+    if (targetVerse == 1) {
+      if (animate) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _scrollController.jumpTo(0.0);
+      }
+      return true;
+    }
+
+    final passage = _findRenderPassage();
+    if (passage == null || !passage.hasSize) return false;
+
+    final targetOffset = _getVerseOffset(passage, targetVerse);
+    if (targetOffset == null) return false;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    if (targetOffset > 50.0 && maxScroll <= 0.0) {
+      return false;
+    }
+    final scrollOffset = targetOffset.clamp(0.0, maxScroll);
+    if (animate) {
+      _scrollController.animateTo(
+        scrollOffset,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _scrollController.jumpTo(scrollOffset);
+    }
+    return true;
+  }
+
+  void _scheduleRestoreVerseAfterResize(int? verse, [int attempt = 0]) {
+    if (verse == null || !_isActive) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isActive) return;
+      final success = _performScrollToVerse(verse, animate: false);
+      if (!success && attempt < 5) {
+        Timer(const Duration(milliseconds: 30), () {
+          if (mounted && _isActive) {
+            _scheduleRestoreVerseAfterResize(verse, attempt + 1);
+          }
+        });
+      }
+    });
   }
 
   String _getParagraphText(RenderBox p) {
@@ -544,6 +707,14 @@ class _ChapterTextState extends State<ChapterText>
     return ValueListenableBuilder<double>(
       valueListenable: textSizeListenable,
       builder: (context, currentTextSize, child) {
+        if (_lastRenderedTextSize != null &&
+            (currentTextSize - _lastRenderedTextSize!).abs() > 0.01) {
+          final verseToRestore = _verseAtZoomStart ?? _getTopVisibleVerse();
+          _verseAtZoomStart = null;
+          _scheduleRestoreVerseAfterResize(verseToRestore);
+        }
+        _lastRenderedTextSize = currentTextSize;
+
         return ValueListenableBuilder<bool>(
           valueListenable: wordsOfJesusInRedListenable,
           builder: (context, wordsOfJesusInRed, child) {
