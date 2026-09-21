@@ -128,11 +128,21 @@ class _TextScreenState extends State<TextScreen> {
   @override
   void didUpdateWidget(covariant TextScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.bookId != oldWidget.bookId ||
-        widget.chapter != oldWidget.chapter ||
-        widget.initialSectionHeading != oldWidget.initialSectionHeading ||
-        widget.initialTargetVerse != oldWidget.initialTargetVerse) {
-      _chapterNotifier.value = null;
+    final bookOrChapterChanged = widget.bookId != oldWidget.bookId ||
+        widget.chapter != oldWidget.chapter;
+    final newSectionHeading = widget.initialSectionHeading != null &&
+        widget.initialSectionHeading != oldWidget.initialSectionHeading;
+    final newTargetVerse = widget.initialTargetVerse != null &&
+        widget.initialTargetVerse != oldWidget.initialTargetVerse;
+
+    if (bookOrChapterChanged || newSectionHeading || newTargetVerse) {
+      if (bookOrChapterChanged && _chapterNotifier.value != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _chapterNotifier.value = null;
+          }
+        });
+      }
       _navigateToChapterAndSection(
         widget.bookId,
         widget.chapter,

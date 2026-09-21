@@ -1,3 +1,7 @@
+# 2.3.0
+
+- Fix two-tap bug on verse grid chooser.
+
 # 2.2.0 - 2026.09.19
 
 - Fix bug with chapter chooser not disappearing.

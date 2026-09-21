@@ -18,6 +18,7 @@ import 'package:bsb/ui/text/text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
+import 'package:scripture/scripture_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeDatabaseHelper implements DatabaseHelper {
@@ -25,7 +26,21 @@ class FakeDatabaseHelper implements DatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async => [];
+  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async {
+    if (chapter == 2) {
+      return List.generate(
+        30,
+        (i) => UsfmLine(
+          bookChapterVerse: bookId * 1000000 + chapter * 1000 + (i + 1),
+          text:
+              'This is verse ${i + 1} with lots of words to ensure the text extends well past the viewport and creates scrollable content. ' *
+              4,
+          format: (i % 2 == 0) ? ParagraphFormat.m : ParagraphFormat.p,
+        ),
+      );
+    }
+    return [];
+  }
 
   @override
   Future<List<SectionHeading>> getSectionHeadings(int bookId) async => [
@@ -692,6 +707,42 @@ void main() {
 
     expect(find.byType(GridVerseChooser), findsNothing);
     expect(find.byType(ChapterChooser), findsOneWidget);
+  });
+
+  testWidgets(
+      'tapping active tab after selecting verse in verse grid chooser opens verse grid on first tap',
+      (tester) async {
+    await userSettings.setShowVerseGrid(true);
+    tabManager.openTab(43, 2); // John 2
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 1) Tap active tab chip JHN 2 to open verse grid chooser
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GridVerseChooser), findsOneWidget);
+
+    // 2) Select a verse by tapping on the verse grid
+    final gridFinder = find.byType(GridVerseChooser);
+    expect(gridFinder, findsOneWidget);
+    // Tap somewhere inside the grid
+    final center = tester.getCenter(gridFinder);
+    await tester.tapAt(center);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GridVerseChooser), findsNothing);
+
+    // 3) Tap active tab chip JHN 2 again
+    await tester.tap(find.text('JHN 2'));
+    await tester.pumpAndSettle();
+
+    // Should open verse grid on first tap
+    expect(find.byType(GridVerseChooser), findsOneWidget);
   });
 
   testWidgets('pressing system back when chapter chooser is open closes chapter chooser', (tester) async {
