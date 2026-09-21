@@ -64,6 +64,8 @@ class _ChapterTextState extends State<ChapterText>
   String? _activeTargetSection;
   int? _activeTargetVerse;
 
+  final GlobalKey _contentColumnKey = GlobalKey();
+  bool _doesContentOverflow = false;
   bool _isVerseScrubberVisible = false;
   bool _isScrubbing = false;
   Timer? _verseScrubberTimer;
@@ -98,9 +100,61 @@ class _ChapterTextState extends State<ChapterText>
     return !showVerseGrid;
   }
 
+  void _scheduleOverflowCheck(List<int> sortedVerses) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _checkContentOverflow(sortedVerses);
+    });
+  }
+
+  void _checkContentOverflow(List<int> sortedVerses) {
+    if (!mounted) return;
+    if (sortedVerses.length < 4) {
+      if (_doesContentOverflow) {
+        setState(() {
+          _doesContentOverflow = false;
+          _isVerseScrubberVisible = false;
+        });
+      }
+      return;
+    }
+
+    final renderBox =
+        _contentColumnKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.hasSize) return;
+
+    final contentHeight = _topPadding + renderBox.size.height;
+    final viewportHeight = (_scrollController.hasClients &&
+            _scrollController.position.hasViewportDimension)
+        ? _scrollController.position.viewportDimension
+        : MediaQuery.sizeOf(context).height;
+
+    final overflows = contentHeight > viewportHeight;
+    final overflowChanged = overflows != _doesContentOverflow;
+
+    if (overflowChanged) {
+      _doesContentOverflow = overflows;
+      if (!overflows && _isVerseScrubberVisible) {
+        _isVerseScrubberVisible = false;
+      }
+    }
+
+    if (overflows && !_hasInitiallyShownScrubber && _isVerseSidebarEnabled) {
+      _hasInitiallyShownScrubber = true;
+      if (_isActive) {
+        _showVerseScrubberWithTimeout();
+        return;
+      }
+    }
+
+    if (overflowChanged) {
+      setState(() {});
+    }
+  }
+
   void _handleActivePageChange() {
     if (!_isVerseSidebarEnabled) return;
-    if (_isActive) {
+    if (_isActive && _doesContentOverflow) {
       _showVerseScrubberWithTimeout();
     } else {
       _hideVerseScrubber();
@@ -108,7 +162,7 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _handleShowScrubberRequest() {
-    if (!_isVerseSidebarEnabled) return;
+    if (!_isVerseSidebarEnabled || !_doesContentOverflow) return;
     if (_isActive) {
       _showVerseScrubberWithTimeout();
     }
@@ -117,7 +171,7 @@ class _ChapterTextState extends State<ChapterText>
   void _showVerseScrubberWithTimeout({
     Duration duration = const Duration(seconds: 3),
   }) {
-    if (!_isVerseSidebarEnabled) return;
+    if (!_isVerseSidebarEnabled || !_doesContentOverflow) return;
     _verseScrubberTimer?.cancel();
     if (!_isVerseScrubberVisible) {
       setState(() {
@@ -154,7 +208,6 @@ class _ChapterTextState extends State<ChapterText>
     super.initState();
     widget.activePageIndexListenable?.addListener(_handleActivePageChange);
     widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
-    manager.textParagraphNotifier.addListener(_handleTextParagraphsLoaded);
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     _selectionController.addListener(_handleSelectionChange);
     if (widget.targetSection != null) {
@@ -190,21 +243,6 @@ class _ChapterTextState extends State<ChapterText>
     widget.onToggleDistractionFree?.call();
   }
 
-  void _handleTextParagraphsLoaded() {
-    if (!_isVerseSidebarEnabled) return;
-    final verseLines = manager.textParagraphNotifier.value;
-    if (verseLines.isNotEmpty && !_hasInitiallyShownScrubber) {
-      final hasMoreThan5Verses =
-          verseLines.map((l) => l.verse).where((v) => v > 0).toSet().length > 5;
-      if (hasMoreThan5Verses) {
-        _hasInitiallyShownScrubber = true;
-        if (_isActive) {
-          _showVerseScrubberWithTimeout();
-        }
-      }
-    }
-  }
-
   @override
   void didUpdateWidget(covariant ChapterText oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -215,6 +253,13 @@ class _ChapterTextState extends State<ChapterText>
     if (widget.showScrubberNotifier != oldWidget.showScrubberNotifier) {
       oldWidget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
       widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
+    }
+    if (widget.bookId != oldWidget.bookId || widget.chapter != oldWidget.chapter) {
+      _hasInitiallyShownScrubber = false;
+      _doesContentOverflow = false;
+      _isVerseScrubberVisible = false;
+      _verseScrubberTimer?.cancel();
+      manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     }
     if (widget.targetSection == null) {
       _sectionScrollTimer?.cancel();
@@ -243,7 +288,6 @@ class _ChapterTextState extends State<ChapterText>
     _verseScrollTimer?.cancel();
     widget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
     widget.activePageIndexListenable?.removeListener(_handleActivePageChange);
-    manager.textParagraphNotifier.removeListener(_handleTextParagraphsLoaded);
     _selectionController.removeListener(_handleSelectionChange);
     _selectionController.dispose();
     _scrollController.dispose();
@@ -524,19 +568,8 @@ class _ChapterTextState extends State<ChapterText>
             }
             final sortedVerses = verses.toList()..sort();
 
-            if (verseLines.isNotEmpty &&
-                !_hasInitiallyShownScrubber &&
-                _isVerseSidebarEnabled) {
-              if (sortedVerses.length > 5) {
-                _hasInitiallyShownScrubber = true;
-                if (_isActive) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      _showVerseScrubberWithTimeout();
-                    }
-                  });
-                }
-              }
+            if (sortedVerses.isNotEmpty) {
+              _scheduleOverflowCheck(sortedVerses);
             }
 
             return ValueListenableBuilder<List<Highlight>>(
@@ -576,6 +609,7 @@ class _ChapterTextState extends State<ChapterText>
                                       bottom: screenHeight * 0.8,
                                     ),
                                     child: Column(
+                                      key: _contentColumnKey,
                                       crossAxisAlignment:
                                           CrossAxisAlignment.stretch,
                                       children: [
@@ -702,6 +736,7 @@ class _ChapterTextState extends State<ChapterText>
             verses: sortedVerses,
             isActive: isCurrentActivePage,
             isVisible: _isVerseScrubberVisible,
+            canScroll: _doesContentOverflow,
             onVerseSelected: (verse) {
               _scrollFromScrubber(verse);
               _showVerseScrubberWithTimeout();
@@ -724,6 +759,7 @@ class _ChapterTextState extends State<ChapterText>
       return VerseScrubber(
         verses: sortedVerses,
         isVisible: _isVerseScrubberVisible,
+        canScroll: _doesContentOverflow,
         onVerseSelected: (verse) {
           _scrollFromScrubber(verse);
           _showVerseScrubberWithTimeout();

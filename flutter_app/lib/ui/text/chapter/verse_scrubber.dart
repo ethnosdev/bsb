@@ -19,6 +19,7 @@ class VerseScrubber extends StatefulWidget {
     required this.verses,
     required this.isVisible,
     this.isActive = true,
+    this.canScroll = true,
     required this.onVerseSelected,
     this.onDismiss,
     this.onInteractionStart,
@@ -33,6 +34,9 @@ class VerseScrubber extends StatefulWidget {
 
   /// Whether the host page is currently the active chapter.
   final bool isActive;
+
+  /// Whether the chapter content overflows the viewport and requires scrolling.
+  final bool canScroll;
 
   /// Callback when a verse is selected (on tap or drag release).
   final ValueChanged<int> onVerseSelected;
@@ -153,8 +157,9 @@ class _VerseScrubberState extends State<VerseScrubber> {
 
   @override
   Widget build(BuildContext context) {
-    // Edge case: No need to show verse bar at all if there are less than 10 verses (9 or fewer)
-    if (widget.verses.length < 10) {
+    // Edge case: No need to show verse bar at all if there are less than 4 verses
+    // or if the chapter fits completely on screen without scrolling.
+    if (widget.verses.length < 4 || !widget.canScroll) {
       return const SizedBox.shrink();
     }
 

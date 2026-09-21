@@ -26,7 +26,8 @@ class FakeTenVerseDbHelper implements DatabaseHelper {
       10,
       (i) => UsfmLine(
         bookChapterVerse: bookId * 1000000 + chapter * 1000 + (i + 1),
-        text: 'Verse text ${i + 1}.',
+        text:
+            'This is verse text ${i + 1}. In the beginning God created the heavens and the earth. Now the earth was formless and void, and darkness was over the surface of the deep.',
         format: ParagraphFormat.p,
       ),
     );
@@ -43,7 +44,43 @@ class FakeThreeVerseDbHelper implements DatabaseHelper {
       3,
       (i) => UsfmLine(
         bookChapterVerse: bookId * 1000000 + chapter * 1000 + (i + 1),
-        text: 'Short verse text ${i + 1}.',
+        text:
+            'Long verse text ${i + 1} that overflows the screen vertically. In the beginning God created the heavens and the earth.',
+        format: ParagraphFormat.p,
+      ),
+    );
+  }
+}
+
+class FakeFiveVerseShortDbHelper implements DatabaseHelper {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async {
+    return List.generate(
+      5,
+      (i) => UsfmLine(
+        bookChapterVerse: bookId * 1000000 + chapter * 1000 + (i + 1),
+        text: 'V${i + 1}.',
+        format: ParagraphFormat.p,
+      ),
+    );
+  }
+}
+
+class FakeFiveVerseLongDbHelper implements DatabaseHelper {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async {
+    return List.generate(
+      5,
+      (i) => UsfmLine(
+        bookChapterVerse: bookId * 1000000 + chapter * 1000 + (i + 1),
+        text:
+            'This is verse text ${i + 1} with extensive content so that 5 verses comfortably overflow the visible viewport on screen. In the beginning was the Word, and the Word was with God, and the Word was God. He was with God in the beginning.',
         format: ParagraphFormat.p,
       ),
     );
@@ -65,12 +102,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VerseScrubber Widget Tests', () {
-    testWidgets('does not render when verses length < 10 (9 or fewer)', (tester) async {
+    testWidgets('does not render when verses length < 4 (3 or fewer)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: VerseScrubber(
-              verses: List.generate(9, (i) => i + 1),
+              verses: List.generate(3, (i) => i + 1),
               isVisible: true,
               onVerseSelected: (_) {},
             ),
@@ -83,8 +120,27 @@ void main() {
       expect(find.text('1'), findsNothing);
     });
 
-    testWidgets('renders all numbers when verses length is between 10 and 30', (tester) async {
-      final verses = List.generate(10, (i) => i + 1);
+    testWidgets('does not render when canScroll is false', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VerseScrubber(
+              verses: List.generate(10, (i) => i + 1),
+              isVisible: true,
+              canScroll: false,
+              onVerseSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(VerseScrubber), findsOneWidget);
+      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
+      expect(find.text('1'), findsNothing);
+    });
+
+    testWidgets('renders all numbers when verses length is between 4 and 30 and canScroll is true', (tester) async {
+      final verses = List.generate(6, (i) => i + 1);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -92,6 +148,7 @@ void main() {
             body: VerseScrubber(
               verses: verses,
               isVisible: true,
+              canScroll: true,
               onVerseSelected: (_) {},
             ),
           ),
@@ -99,7 +156,7 @@ void main() {
       );
 
       expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsOneWidget);
-      for (var i = 1; i <= 10; i++) {
+      for (var i = 1; i <= 6; i++) {
         expect(find.text('$i'), findsOneWidget);
       }
     });
@@ -290,7 +347,7 @@ void main() {
       getIt.reset();
     });
 
-    testWidgets('does not show scrubber for chapter with < 10 verses', (tester) async {
+    testWidgets('does not show scrubber for chapter with < 4 verses even if overflowing', (tester) async {
       getIt.registerSingleton<DatabaseHelper>(FakeThreeVerseDbHelper());
 
       await tester.pumpWidget(
@@ -306,6 +363,53 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
+    });
+
+    testWidgets('does not show scrubber for chapter with >= 4 verses if content fits entirely on screen', (tester) async {
+      getIt.registerSingleton<DatabaseHelper>(FakeFiveVerseShortDbHelper());
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ChapterText(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
+    });
+
+    testWidgets('shows scrubber for chapter with 5 verses (< 10) when content overflows screen and auto-hides', (tester) async {
+      getIt.registerSingleton<DatabaseHelper>(FakeFiveVerseLongDbHelper());
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ChapterText(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrubberFinder = find.byType(VerseScrubber);
+      expect(scrubberFinder, findsOneWidget);
+
+      final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
+      expect(scrubberWidget.isVisible, isTrue);
+
+      // Advance clock by 3 seconds
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
+      expect(hiddenScrubber.isVisible, isFalse);
     });
 
     testWidgets('shows scrubber on initial load for chapter with >= 10 verses and auto-hides after 3s', (tester) async {
