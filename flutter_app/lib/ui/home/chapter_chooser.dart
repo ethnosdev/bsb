@@ -1080,14 +1080,22 @@ class _GridVerseChooserState extends State<GridVerseChooser> {
         else
           const SizedBox(width: 40),
         Expanded(
-          child: Text(
-            '$_displayBookName ${widget.chapter}',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+          child: InkWell(
+            key: const ValueKey('verse_grid_title'),
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => widget.onVerseSelected?.call(1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Text(
+                '$_displayBookName ${widget.chapter}',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
         const SizedBox(width: 40),

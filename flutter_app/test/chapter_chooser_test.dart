@@ -850,6 +850,37 @@ void main() {
       expect(selectedVerse, equals(1));
     });
 
+    testWidgets('tapping title in GridVerseChooser navigates to verse 1',
+        (tester) async {
+      int? selectedChapter;
+      int? selectedVerse;
+
+      await tester.pumpWidget(
+        createTestApp(
+          ChapterChooser(
+            bookName: 'Matthew',
+            chapterCount: 28,
+            initialChapter: 3,
+            showVerseGrid: true,
+            onVerseSelected: (c, v) {
+              selectedChapter = c;
+              selectedVerse = v;
+            },
+          ),
+        ),
+      );
+
+      expect(find.byType(GridVerseChooser), findsOneWidget);
+      expect(find.text('Matthew 3'), findsOneWidget);
+
+      // Tap title
+      await tester.tap(find.byKey(const ValueKey('verse_grid_title')));
+      await tester.pumpAndSettle();
+
+      expect(selectedChapter, equals(3));
+      expect(selectedVerse, equals(1));
+    });
+
     testWidgets('back button in GridVerseChooser returns to chapter chooser',
         (tester) async {
       await tester.pumpWidget(
