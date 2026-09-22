@@ -4,6 +4,8 @@ import 'dart:developer';
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/reading_plan_models.dart';
+import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -19,7 +21,6 @@ import 'package:flutter/rendering.dart' show BoxParentData;
 import 'package:database_builder/database_builder.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
-
 
 class ChapterText extends StatefulWidget {
   const ChapterText({
@@ -82,7 +83,8 @@ class _ChapterTextState extends State<ChapterText>
   bool get wantKeepAlive => true;
 
   String get _chapterTitle {
-    final book = bookIdToFullNameMap[widget.bookId] ??
+    final book =
+        bookIdToFullNameMap[widget.bookId] ??
         (bookIdToBookNameMap[widget.bookId] == 'Psalms'
             ? 'Psalm'
             : bookIdToBookNameMap[widget.bookId] ?? '');
@@ -98,10 +100,13 @@ class _ChapterTextState extends State<ChapterText>
 
   bool get _isVerseSidebarEnabled {
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     final showVerseGrid =
-        appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false;
+        appState?.showVerseGridNotifier.value ??
+        userSettings?.showVerseGrid ??
+        false;
     return !showVerseGrid;
   }
 
@@ -129,7 +134,8 @@ class _ChapterTextState extends State<ChapterText>
     if (renderBox == null || !renderBox.hasSize) return;
 
     final contentHeight = _topPadding + renderBox.size.height;
-    final viewportHeight = (_scrollController.hasClients &&
+    final viewportHeight =
+        (_scrollController.hasClients &&
             _scrollController.position.hasViewportDimension)
         ? _scrollController.position.viewportDimension
         : MediaQuery.sizeOf(context).height;
@@ -257,19 +263,25 @@ class _ChapterTextState extends State<ChapterText>
   @override
   void didUpdateWidget(covariant ChapterText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.activePageIndexListenable != oldWidget.activePageIndexListenable) {
-      oldWidget.activePageIndexListenable?.removeListener(_handleActivePageChange);
+    if (widget.activePageIndexListenable !=
+        oldWidget.activePageIndexListenable) {
+      oldWidget.activePageIndexListenable?.removeListener(
+        _handleActivePageChange,
+      );
       widget.activePageIndexListenable?.addListener(_handleActivePageChange);
     }
     if (widget.showScrubberNotifier != oldWidget.showScrubberNotifier) {
-      oldWidget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
+      oldWidget.showScrubberNotifier?.removeListener(
+        _handleShowScrubberRequest,
+      );
       widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
     }
     if (widget.zoomStartNotifier != oldWidget.zoomStartNotifier) {
       oldWidget.zoomStartNotifier?.removeListener(_handleZoomStart);
       widget.zoomStartNotifier?.addListener(_handleZoomStart);
     }
-    if (widget.bookId != oldWidget.bookId || widget.chapter != oldWidget.chapter) {
+    if (widget.bookId != oldWidget.bookId ||
+        widget.chapter != oldWidget.chapter) {
       _hasInitiallyShownScrubber = false;
       _doesContentOverflow = false;
       _isVerseScrubberVisible = false;
@@ -373,6 +385,7 @@ class _ChapterTextState extends State<ChapterText>
       }
       ro.visitChildren(findPassage);
     }
+
     findPassage(renderObject);
 
     if (passage == null || !passage!.hasSize) return false;
@@ -451,6 +464,7 @@ class _ChapterTextState extends State<ChapterText>
       }
       ro.visitChildren(findPassage);
     }
+
     findPassage(renderObject);
     return passage;
   }
@@ -505,10 +519,13 @@ class _ChapterTextState extends State<ChapterText>
         }
 
         if (passageY < paragraphBottom) {
-          final dyInParagraph =
-              (passageY - paragraphTop).clamp(0.0, child.size.height);
-          final wordId =
-              child.getWordClosestToOffset(Offset(50.0, dyInParagraph));
+          final dyInParagraph = (passageY - paragraphTop).clamp(
+            0.0,
+            child.size.height,
+          );
+          final wordId = child.getWordClosestToOffset(
+            Offset(50.0, dyInParagraph),
+          );
           if (wordId != null && wordId > 0) {
             final ref = Reference.fromWordId(packedInt: wordId);
             if (ref.verse != null && ref.verse! > 0) {
@@ -571,8 +588,7 @@ class _ChapterTextState extends State<ChapterText>
             final atomData = atomChild.parentData as TextAtomParentData;
             return elemData.offset.dy + atomData.offset.dy;
           }
-          atomChild =
-              (atomChild.parentData as TextAtomParentData).nextSibling;
+          atomChild = (atomChild.parentData as TextAtomParentData).nextSibling;
         }
       }
       elem = elemData.nextSibling;
@@ -671,6 +687,7 @@ class _ChapterTextState extends State<ChapterText>
       }
       ro.visitChildren(collectWords);
     }
+
     collectWords(p);
     return words.join(' ');
   }
@@ -690,6 +707,101 @@ class _ChapterTextState extends State<ChapterText>
     return cleanText == cleanTarget ||
         cleanText.startsWith(cleanTarget) ||
         cleanTarget.startsWith(cleanText);
+  }
+
+  Widget _buildReadingPlanButton() {
+    if (!getIt.isRegistered<ReadingPlanService>()) {
+      return const SizedBox.shrink();
+    }
+    final service = getIt<ReadingPlanService>();
+    return ValueListenableBuilder<UserPlanProgress?>(
+      valueListenable: service.activeProgressNotifier,
+      builder: (context, progress, child) {
+        if (progress == null || progress.isPlanFinished) {
+          return const SizedBox.shrink();
+        }
+        final plan = service.getActivePlan();
+        if (plan == null) return const SizedBox.shrink();
+
+        final nextDayNum = progress.nextUncompletedDayNumber;
+        if (nextDayNum <= 0 || nextDayNum > plan.days.length) {
+          return const SizedBox.shrink();
+        }
+
+        final currentDay = plan.days[nextDayNum - 1];
+
+        final readingIndex = currentDay.readings.indexWhere(
+          (r) =>
+              r.bookId == widget.bookId &&
+              widget.chapter >= r.startChapter &&
+              widget.chapter <= r.endChapter,
+        );
+
+        if (readingIndex == -1) return const SizedBox.shrink();
+
+        final reading = currentDay.readings[readingIndex];
+        final isCompleted = progress.isReadingCompleted(nextDayNum, reading);
+
+        final isLastChapterOfReading = widget.chapter == reading.endChapter;
+        final isLastReadingOfDay =
+            readingIndex == currentDay.readings.length - 1;
+        final isFinished = isLastReadingOfDay && isLastChapterOfReading;
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 48.0, bottom: 24.0),
+          child: Center(
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () async {
+                if (isLastChapterOfReading && !isCompleted) {
+                  await service.toggleReadingComplete(nextDayNum, reading);
+                }
+
+                if (!isFinished) {
+                  int nextBookId = widget.bookId;
+                  int nextChapter = widget.chapter + 1;
+
+                  if (isLastChapterOfReading) {
+                    final nextReading = currentDay.readings[readingIndex + 1];
+                    nextBookId = nextReading.bookId;
+                    nextChapter = nextReading.startChapter;
+                  }
+
+                  if (getIt.isRegistered<TabManager>()) {
+                    getIt<TabManager>().openTab(
+                      nextBookId,
+                      nextChapter,
+                      null,
+                      null,
+                    );
+                  }
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Day $nextDayNum completed!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: Icon(isFinished ? Icons.check_circle : Icons.arrow_forward),
+              label: Text(isFinished ? 'Finished' : 'Next Chapter'),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -721,147 +833,162 @@ class _ChapterTextState extends State<ChapterText>
             return ValueListenableBuilder<List<UsfmLine>>(
               valueListenable: manager.textParagraphNotifier,
               builder: (context, verseLines, child) {
-            if (verseLines.isNotEmpty &&
-                widget.targetSection != null &&
-                _lastScrolledSection != widget.targetSection) {
-              _scrollToTargetSection(widget.targetSection);
-            }
-            if (verseLines.isNotEmpty &&
-                widget.targetVerse != null &&
-                _lastScrolledVerse != widget.targetVerse) {
-              _scrollToTargetVerse(widget.targetVerse);
-            }
-            final verses = <int>{};
-            for (final line in verseLines) {
-              if (line.verse > 0) {
-                verses.add(line.verse);
-              }
-            }
-            final sortedVerses = verses.toList()..sort();
+                if (verseLines.isNotEmpty &&
+                    widget.targetSection != null &&
+                    _lastScrolledSection != widget.targetSection) {
+                  _scrollToTargetSection(widget.targetSection);
+                }
+                if (verseLines.isNotEmpty &&
+                    widget.targetVerse != null &&
+                    _lastScrolledVerse != widget.targetVerse) {
+                  _scrollToTargetVerse(widget.targetVerse);
+                }
+                final verses = <int>{};
+                for (final line in verseLines) {
+                  if (line.verse > 0) {
+                    verses.add(line.verse);
+                  }
+                }
+                final sortedVerses = verses.toList()..sort();
 
-            if (sortedVerses.isNotEmpty) {
-              _scheduleOverflowCheck(sortedVerses);
-            }
+                if (sortedVerses.isNotEmpty) {
+                  _scheduleOverflowCheck(sortedVerses);
+                }
 
-            return ValueListenableBuilder<List<Highlight>>(
-              valueListenable: manager.highlightsNotifier,
-              builder: (context, rawHighlights, child) {
-                final highlights = rawHighlights
-                    .map((h) => h.toHighlightRange(brightness))
-                    .toList();
-                return ValueListenableBuilder<List<NoteMarker>>(
-                  valueListenable: manager.noteMarkersNotifier,
-                  builder: (context, noteMarkers, child) {
-                    return ClipRect(
-                      child: Stack(
-                        children: [
-                          NotificationListener<ScrollNotification>(
-                            onNotification: (notification) {
-                              if (notification is ScrollStartNotification &&
-                                  notification.dragDetails != null) {
-                                if (_isVerseScrubberVisible && !_isScrubbing) {
-                                  _hideVerseScrubber();
-                                }
-                              }
-                              return false;
-                            },
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: _handleReaderTap,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      left: 16.0,
-                                      top: _topPadding,
-                                      right: 16.0,
-                                      bottom: screenHeight * 0.8,
-                                    ),
-                                    child: Column(
-                                      key: _contentColumnKey,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              bottom: 24.0),
-                                          child: Text(
-                                            _chapterTitle,
-                                            key: ValueKey(
-                                                'chapter_header_${widget.bookId}_${widget.chapter}'),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .headlineMedium
-                                                ?.copyWith(
-                                                  fontSize:
-                                                      currentTextSize * 1.5,
-                                                  fontWeight: FontWeight.bold,
+                return ValueListenableBuilder<List<Highlight>>(
+                  valueListenable: manager.highlightsNotifier,
+                  builder: (context, rawHighlights, child) {
+                    final highlights = rawHighlights
+                        .map((h) => h.toHighlightRange(brightness))
+                        .toList();
+                    return ValueListenableBuilder<List<NoteMarker>>(
+                      valueListenable: manager.noteMarkersNotifier,
+                      builder: (context, noteMarkers, child) {
+                        return ClipRect(
+                          child: Stack(
+                            children: [
+                              NotificationListener<ScrollNotification>(
+                                onNotification: (notification) {
+                                  if (notification is ScrollStartNotification &&
+                                      notification.dragDetails != null) {
+                                    if (_isVerseScrubberVisible &&
+                                        !_isScrubbing) {
+                                      _hideVerseScrubber();
+                                    }
+                                  }
+                                  return false;
+                                },
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: _handleReaderTap,
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: Padding(
+                                        padding: EdgeInsets.only(
+                                          left: 16.0,
+                                          top: _topPadding,
+                                          right: 16.0,
+                                          bottom: screenHeight * 0.8,
+                                        ),
+                                        child: Column(
+                                          key: _contentColumnKey,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 24.0,
+                                              ),
+                                              child: Text(
+                                                _chapterTitle,
+                                                key: ValueKey(
+                                                  'chapter_header_${widget.bookId}_${widget.chapter}',
                                                 ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                        UsfmWidget(
-                                          verseLines: verseLines,
-                                          selectionController:
-                                              _selectionController,
-                                          highlights: highlights,
-                                          noteMarkers: noteMarkers,
-                                          onFootnoteTapped: _onFootnoteTapped,
-                                          onNoteTapped: _onNoteTapped,
-                                          onAmbiguousTapped: _onAmbiguousTapped,
-                                          onTapWhitespace: _handleReaderTap,
-                                          onWordTapped: (id) {
-                                            log("Tapped word $id");
-                                            _handleReaderTap();
-                                          },
-                                          onSelectionRequested: (wordId) {
-                                            ScriptureLogic.highlightVerse(
-                                              _selectionController,
-                                              verseLines,
-                                              wordId,
-                                            );
-                                          },
-                                          styleBuilder: (format) {
-                                            final base = UsfmParagraphStyle
-                                                .usfmDefaults(
-                                              format:
-                                                  format == ParagraphFormat.p
-                                                      ? ParagraphFormat.m
-                                                      : format,
-                                              baseStyle: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .headlineMedium
+                                                    ?.copyWith(
                                                       fontSize:
-                                                          currentTextSize),
-                                            );
-                                            if (wordsOfJesusInRed) {
-                                              final isDark = brightness ==
-                                                  Brightness.dark;
-                                              final redColor = isDark
-                                                  ? const Color(0xFFFF8A80)
-                                                  : const Color(0xFFB71C1C);
-                                              return base.copyWith(
-                                                wordsOfJesusStyle: base
-                                                    .textStyle
-                                                    .copyWith(color: redColor),
-                                              );
-                                            }
-                                            return base;
-                                          },
+                                                          currentTextSize * 1.5,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+                                            UsfmWidget(
+                                              verseLines: verseLines,
+                                              selectionController:
+                                                  _selectionController,
+                                              highlights: highlights,
+                                              noteMarkers: noteMarkers,
+                                              onFootnoteTapped:
+                                                  _onFootnoteTapped,
+                                              onNoteTapped: _onNoteTapped,
+                                              onAmbiguousTapped:
+                                                  _onAmbiguousTapped,
+                                              onTapWhitespace: _handleReaderTap,
+                                              onWordTapped: (id) {
+                                                log("Tapped word $id");
+                                                _handleReaderTap();
+                                              },
+                                              onSelectionRequested: (wordId) {
+                                                ScriptureLogic.highlightVerse(
+                                                  _selectionController,
+                                                  verseLines,
+                                                  wordId,
+                                                );
+                                              },
+                                              styleBuilder: (format) {
+                                                final base =
+                                                    UsfmParagraphStyle.usfmDefaults(
+                                                      format:
+                                                          format ==
+                                                              ParagraphFormat.p
+                                                          ? ParagraphFormat.m
+                                                          : format,
+                                                      baseStyle:
+                                                          Theme.of(context)
+                                                              .textTheme
+                                                              .bodyMedium!
+                                                              .copyWith(
+                                                                fontSize:
+                                                                    currentTextSize,
+                                                              ),
+                                                    );
+                                                if (wordsOfJesusInRed) {
+                                                  final isDark =
+                                                      brightness ==
+                                                      Brightness.dark;
+                                                  final redColor = isDark
+                                                      ? const Color(0xFFFF8A80)
+                                                      : const Color(0xFFB71C1C);
+                                                  return base.copyWith(
+                                                    wordsOfJesusStyle: base
+                                                        .textStyle
+                                                        .copyWith(
+                                                          color: redColor,
+                                                        ),
+                                                  );
+                                                }
+                                                return base;
+                                              },
+                                            ),
+                                            _buildReadingPlanButton(),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
                                   ),
+                                ),
                               ),
-                            ),
+                              _buildVerseScrubberOverlay(sortedVerses),
+                            ],
                           ),
-                        ),
-                          _buildVerseScrubberOverlay(sortedVerses),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 );
@@ -871,8 +998,6 @@ class _ChapterTextState extends State<ChapterText>
         );
       },
     );
-  },
-);
   }
 
   Widget _buildVerseScrubberOverlay(List<int> sortedVerses) {
@@ -888,8 +1013,9 @@ class _ChapterTextState extends State<ChapterText>
         },
       );
     }
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     if (userSettings?.showVerseGrid ?? false) {
       return const SizedBox.shrink();
     }
@@ -897,8 +1023,7 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   Widget _buildVerseScrubberWidget(List<int> sortedVerses) {
-    if (widget.activePageIndexListenable != null &&
-        widget.pageIndex != null) {
+    if (widget.activePageIndexListenable != null && widget.pageIndex != null) {
       return ValueListenableBuilder<int>(
         valueListenable: widget.activePageIndexListenable!,
         builder: (context, activeIndex, _) {
@@ -964,8 +1089,9 @@ class _ChapterTextState extends State<ChapterText>
       context: context,
       title: ref.toString(),
       notePreview: note?.content ?? '',
-      footnotePreview:
-          footnoteText.replaceAll(RegExp(r'\\[a-z0-9*]+'), '').trim(),
+      footnotePreview: footnoteText
+          .replaceAll(RegExp(r'\\[a-z0-9*]+'), '')
+          .trim(),
       onSelectNote: () => _onNoteTapped(noteId),
       onSelectFootnote: () => _onFootnoteTapped(footnoteText),
     );
@@ -1039,8 +1165,7 @@ class _ChapterTextState extends State<ChapterText>
               children: [
                 Row(
                   children: [
-                    if (reference != null)
-                      const SizedBox(width: 48),
+                    if (reference != null) const SizedBox(width: 48),
                     Expanded(
                       child: Text(
                         title,
@@ -1056,9 +1181,8 @@ class _ChapterTextState extends State<ChapterText>
                         icon: const Icon(Icons.open_in_new),
                         tooltip: 'Open in new tab',
                         onPressed: () {
-                          Navigator.of(context).popUntil(
-                            (route) => route is! PopupRoute,
-                          );
+                          Navigator.of(context)
+                              .popUntil((route) => route is! PopupRoute);
                           if (getIt.isRegistered<TabManager>()) {
                             getIt<TabManager>().openTab(
                               reference.bookId,
@@ -1098,8 +1222,9 @@ class _ChapterTextState extends State<ChapterText>
                               ? const Color(0xFFFF8A80)
                               : const Color(0xFFB71C1C);
                           return base.copyWith(
-                            wordsOfJesusStyle:
-                                base.textStyle.copyWith(color: redColor),
+                            wordsOfJesusStyle: base.textStyle.copyWith(
+                              color: redColor,
+                            ),
                           );
                         }
                         return base;
