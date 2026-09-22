@@ -710,9 +710,8 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   Widget _buildReadingPlanButton() {
-    if (!getIt.isRegistered<ReadingPlanService>()) {
+    if (!getIt.isRegistered<ReadingPlanService>())
       return const SizedBox.shrink();
-    }
     final service = getIt<ReadingPlanService>();
     return ValueListenableBuilder<UserPlanProgress?>(
       valueListenable: service.activeProgressNotifier,
@@ -749,54 +748,68 @@ class _ChapterTextState extends State<ChapterText>
 
         return Padding(
           padding: const EdgeInsets.only(top: 48.0, bottom: 24.0),
-          child: Center(
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reading plan',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.7),
+                  ),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 6),
+                FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (isLastChapterOfReading && !isCompleted) {
+                      await service.toggleReadingComplete(nextDayNum, reading);
+                    }
+
+                    if (!isFinished) {
+                      int nextBookId = widget.bookId;
+                      int nextChapter = widget.chapter + 1;
+
+                      if (isLastChapterOfReading) {
+                        final nextReading =
+                            currentDay.readings[readingIndex + 1];
+                        nextBookId = nextReading.bookId;
+                        nextChapter = nextReading.startChapter;
+                      }
+
+                      if (getIt.isRegistered<TabManager>()) {
+                        getIt<TabManager>().openTab(
+                          nextBookId,
+                          nextChapter,
+                          null,
+                          null,
+                        );
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Day $nextDayNum completed!'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(isFinished ? 'Finished' : 'Next Chapter'),
                 ),
-              ),
-              onPressed: () async {
-                if (isLastChapterOfReading && !isCompleted) {
-                  await service.toggleReadingComplete(nextDayNum, reading);
-                }
-
-                if (!isFinished) {
-                  int nextBookId = widget.bookId;
-                  int nextChapter = widget.chapter + 1;
-
-                  if (isLastChapterOfReading) {
-                    final nextReading = currentDay.readings[readingIndex + 1];
-                    nextBookId = nextReading.bookId;
-                    nextChapter = nextReading.startChapter;
-                  }
-
-                  if (getIt.isRegistered<TabManager>()) {
-                    getIt<TabManager>().openTab(
-                      nextBookId,
-                      nextChapter,
-                      null,
-                      null,
-                    );
-                  }
-                } else {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Day $nextDayNum completed!'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                }
-              },
-              icon: Icon(isFinished ? Icons.check_circle : Icons.arrow_forward),
-              label: Text(isFinished ? 'Finished' : 'Next Chapter'),
+              ],
             ),
           ),
         );
