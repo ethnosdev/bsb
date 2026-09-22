@@ -6,6 +6,7 @@
 - Keep the top visible verse at the top of the screen when resizing text.
 - Reading Plans.
 - Fix orientation change not restoring verse position.
+- Fix spaces after em dashes in text.
 
 # 2.2.0 - 2026.09.19
 
