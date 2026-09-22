@@ -199,6 +199,7 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                   PlanDayTile(
                     day: nextDay,
                     progress: widget.progress,
+                    plan: widget.plan,
                     isHighlighted: true,
                   ),
                   const SizedBox(height: 12),
@@ -225,6 +226,7 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
             key: ValueKey('day_${day.dayNumber}'),
             day: day,
             progress: widget.progress,
+            plan: widget.plan,
             isHighlighted: isNextUp,
           );
         },

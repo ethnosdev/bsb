@@ -7,21 +7,50 @@ import 'package:flutter/material.dart';
 class PlanDayTile extends StatelessWidget {
   final PlanDay day;
   final UserPlanProgress progress;
+  final ReadingPlan plan;
   final bool isHighlighted;
 
   const PlanDayTile({
     super.key,
     required this.day,
     required this.progress,
+    required this.plan,
     this.isHighlighted = false,
   });
 
   void _onReadTapped(BuildContext context, PlanReading reading) {
-    getIt<TabManager>().openTab(
+    final previousChapters = <({int bookId, int chapter})>[];
+
+    // Find where this reading is in the current day
+    final readingIndex = day.readings.indexOf(reading);
+
+    if (readingIndex > 0) {
+      // Previous reading in the same day
+      final prev = day.readings[readingIndex - 1];
+      previousChapters.add(
+        (bookId: prev.bookId, chapter: prev.endChapter),
+      );
+    }
+
+    if (readingIndex <= 0) {
+      // First reading in this day — look at the previous day's last reading
+      final dayIndex = day.dayNumber - 1; // 0-based index
+      if (dayIndex > 0) {
+        final prevDay = plan.days[dayIndex - 1];
+        if (prevDay.readings.isNotEmpty) {
+          final prevReading = prevDay.readings.last;
+          previousChapters.add(
+            (bookId: prevReading.bookId, chapter: prevReading.endChapter),
+          );
+        }
+      }
+    }
+
+    getIt<TabManager>().openTabOrReuse(
       reading.bookId,
       reading.startChapter,
-      null,
-      1,
+      previousChapters: previousChapters,
+      targetVerse: 1,
     );
     Navigator.of(context).popUntil((route) => route.isFirst);
   }

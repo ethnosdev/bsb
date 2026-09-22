@@ -117,6 +117,55 @@ class TabManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Opens a tab for [bookId]:[chapter], but first checks whether any of the
+  /// [previousChapters] already have an open tab. If one does, that tab is
+  /// reused (navigated to the new chapter) instead of opening a new tab.
+  void openTabOrReuse(
+    int bookId,
+    int chapter, {
+    List<({int bookId, int chapter})> previousChapters = const [],
+    String? sectionHeading,
+    int? targetVerse,
+  }) {
+    // If the exact chapter is already open, just select it.
+    final existingIndex = _tabs.indexWhere(
+      (t) => t.bookId == bookId && t.chapter == chapter,
+    );
+    if (existingIndex != -1) {
+      final tab = _tabs[existingIndex];
+      if (sectionHeading != null) tab.sectionHeading = sectionHeading;
+      if (targetVerse != null) tab.targetVerse = targetVerse;
+      _activeTabId = tab.id;
+      _recordHistory(tab.id);
+      _saveToPrefs();
+      notifyListeners();
+      return;
+    }
+
+    // Try to find an open tab for one of the previous chapters and reuse it.
+    for (final prev in previousChapters) {
+      final prevIndex = _tabs.indexWhere(
+        (t) => t.bookId == prev.bookId && t.chapter == prev.chapter,
+      );
+      if (prevIndex != -1) {
+        final tab = _tabs[prevIndex];
+        tab.bookId = bookId;
+        tab.chapter = chapter;
+        tab.sectionHeading = sectionHeading;
+        tab.targetVerse = targetVerse;
+        tab.scrollOffset = 0.0;
+        _activeTabId = tab.id;
+        _recordHistory(tab.id);
+        _saveToPrefs();
+        notifyListeners();
+        return;
+      }
+    }
+
+    // No reusable tab found — fall through to normal open.
+    openTab(bookId, chapter, sectionHeading, targetVerse);
+  }
+
   void selectTab(String tabId) {
     if (!_tabs.any((t) => t.id == tabId)) return;
     _activeTabId = tabId;

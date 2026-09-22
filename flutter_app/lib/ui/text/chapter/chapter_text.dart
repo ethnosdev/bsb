@@ -790,11 +790,12 @@ class _ChapterTextState extends State<ChapterText>
                       }
 
                       if (getIt.isRegistered<TabManager>()) {
-                        getIt<TabManager>().openTab(
+                        getIt<TabManager>().openTabOrReuse(
                           nextBookId,
                           nextChapter,
-                          null,
-                          null,
+                          previousChapters: [
+                            (bookId: widget.bookId, chapter: widget.chapter),
+                          ],
                         );
                       }
                     } else {
