@@ -62,6 +62,7 @@ class _ChapterTextState extends State<ChapterText>
   final manager = ChapterManager();
   final _selectionController = ScriptureSelectionController();
   final _scrollController = ScrollController();
+  double? _lastScreenHeight;
   String? _lastScrolledSection;
   int? _lastScrolledVerse;
   String? _activeTargetSection;
@@ -821,6 +822,12 @@ class _ChapterTextState extends State<ChapterText>
   Widget build(BuildContext context) {
     super.build(context);
     final screenHeight = MediaQuery.sizeOf(context).height;
+    if (_lastScreenHeight != null &&
+        (screenHeight - _lastScreenHeight!).abs() > 10) {
+      final verseToRestore = _getTopVisibleVerse();
+      _scheduleRestoreVerseAfterResize(verseToRestore);
+    }
+    _lastScreenHeight = screenHeight;
     final brightness = Theme.of(context).brightness;
     final textSizeListenable = getIt.isRegistered<AppState>()
         ? getIt<AppState>().textSizeNotifier

@@ -16,3 +16,5 @@ migrate_working_dir/
 # Untracked supplemental files
 bsb_tables.xlsx
 bsb.pdf
+
+.opencode/
