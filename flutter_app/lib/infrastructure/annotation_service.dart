@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 import 'annotation_backup.dart';
 import 'annotation_database.dart';
 import 'annotation_models.dart';
+import 'reading_plan_service.dart';
+import 'service_locator.dart';
 
 class AnnotationService {
   final AnnotationDatabaseHelper _dbHelper;
@@ -279,11 +281,13 @@ class AnnotationService {
       orderBy: 'book_id ASC, chapter ASC, start_word_id ASC',
     );
     final playlists = await _dbHelper.getAllPlaylists();
+    final readingPlans = await _dbHelper.getAllPlanProgress();
     return AnnotationBackup(
       exportedAt: DateTime.now(),
       highlights: highlights,
       notes: notes,
       playlists: playlists,
+      readingPlans: readingPlans,
     );
   }
 
@@ -305,14 +309,20 @@ class AnnotationService {
       await _dbHelper.clearAllHighlights();
       await _dbHelper.clearAllNotes();
       await _dbHelper.clearAllPlaylists();
+      await _dbHelper.clearAllPlanProgress();
       await _dbHelper.batchInsertHighlights(backup.highlights);
       await _dbHelper.batchInsertNotes(backup.notes);
       await _dbHelper.batchInsertPlaylists(backup.playlists);
+      await _dbHelper.batchInsertPlanProgress(backup.readingPlans);
+      if (getIt.isRegistered<ReadingPlanService>()) {
+        await getIt<ReadingPlanService>().init();
+      }
       _notifyChange();
       return AnnotationImportResult(
         highlightsImported: backup.highlights.length,
         notesImported: backup.notes.length,
         playlistsImported: backup.playlists.length,
+        readingPlansImported: backup.readingPlans.length,
         mode: mode,
       );
     }
@@ -362,11 +372,41 @@ class AnnotationService {
       }
     }
 
+    int readingPlansCount = 0;
+    for (final rp in backup.readingPlans) {
+      final existing = await _dbHelper.getPlanProgress(rp.planId);
+      if (existing == null) {
+        await _dbHelper.savePlanProgress(rp);
+        readingPlansCount++;
+      } else {
+        final mergedDays = {...existing.completedDays, ...rp.completedDays};
+        final mergedReadings = {...existing.completedReadingIds, ...rp.completedReadingIds};
+        final latestReadAt = (existing.lastReadAt == null)
+            ? rp.lastReadAt
+            : (rp.lastReadAt == null
+                ? existing.lastReadAt
+                : (rp.lastReadAt!.isAfter(existing.lastReadAt!) ? rp.lastReadAt : existing.lastReadAt));
+        final merged = existing.copyWith(
+          completedDays: mergedDays,
+          completedReadingIds: mergedReadings,
+          lastReadAt: latestReadAt,
+          isActive: existing.isActive || rp.isActive,
+        );
+        await _dbHelper.savePlanProgress(merged);
+        readingPlansCount++;
+      }
+    }
+
+    if (getIt.isRegistered<ReadingPlanService>()) {
+      await getIt<ReadingPlanService>().init();
+    }
+
     _notifyChange();
     return AnnotationImportResult(
       highlightsImported: highlightsCount,
       notesImported: notesCount,
       playlistsImported: playlistsCount,
+      readingPlansImported: readingPlansCount,
       mode: mode,
     );
   }

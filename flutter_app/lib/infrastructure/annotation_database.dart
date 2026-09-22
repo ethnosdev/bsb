@@ -3,10 +3,11 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'annotation_models.dart';
 import 'playlist_models.dart';
+import 'reading_plan_models.dart';
 
 class AnnotationDatabaseHelper {
   static const _databaseName = "user_annotations.db";
-  static const _databaseVersion = 4;
+  static const _databaseVersion = 5;
 
   Database? _db;
 
@@ -68,6 +69,7 @@ class AnnotationDatabaseHelper {
     ''');
 
     await _createPlaylistTables(db);
+    await _createReadingPlanTables(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -86,6 +88,9 @@ class AnnotationDatabaseHelper {
       try {
         await db.execute('ALTER TABLE playlist_items ADD COLUMN end_word_id INTEGER');
       } catch (_) {}
+    }
+    if (oldVersion < 5) {
+      await _createReadingPlanTables(db);
     }
   }
 
@@ -426,6 +431,95 @@ class AnnotationDatabaseHelper {
       await txn.delete('playlist_items');
       await txn.delete('playlists');
     });
+  }
+
+  Future<void> _createReadingPlanTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS reading_plan_progress (
+        plan_id TEXT PRIMARY KEY,
+        track_id TEXT NOT NULL,
+        pace_id TEXT NOT NULL,
+        total_days INTEGER NOT NULL,
+        started_at INTEGER NOT NULL,
+        last_read_at INTEGER,
+        completed_days TEXT NOT NULL,
+        completed_readings TEXT NOT NULL,
+        is_active INTEGER NOT NULL
+      )
+    ''');
+  }
+
+  Future<List<UserPlanProgress>> getAllPlanProgress() async {
+    final db = await database;
+    final maps = await db.query('reading_plan_progress');
+    return maps.map((m) => UserPlanProgress.fromMap(m)).toList();
+  }
+
+  Future<UserPlanProgress?> getPlanProgress(String planId) async {
+    final db = await database;
+    final maps = await db.query(
+      'reading_plan_progress',
+      where: 'plan_id = ?',
+      whereArgs: [planId],
+    );
+    if (maps.isEmpty) return null;
+    return UserPlanProgress.fromMap(maps.first);
+  }
+
+  Future<UserPlanProgress?> getActivePlanProgress() async {
+    final db = await database;
+    final maps = await db.query(
+      'reading_plan_progress',
+      where: 'is_active = 1',
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return UserPlanProgress.fromMap(maps.first);
+  }
+
+  Future<void> savePlanProgress(UserPlanProgress progress) async {
+    final db = await database;
+    await db.insert(
+      'reading_plan_progress',
+      progress.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> setActivePlan(String planId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.update(
+        'reading_plan_progress',
+        {'is_active': 0},
+      );
+      await txn.update(
+        'reading_plan_progress',
+        {'is_active': 1},
+        where: 'plan_id = ?',
+        whereArgs: [planId],
+      );
+    });
+  }
+
+  Future<void> deletePlanProgress(String planId) async {
+    final db = await database;
+    await db.delete(
+      'reading_plan_progress',
+      where: 'plan_id = ?',
+      whereArgs: [planId],
+    );
+  }
+
+  Future<void> batchInsertPlanProgress(List<UserPlanProgress> list) async {
+    for (final p in list) {
+      await savePlanProgress(p);
+    }
+  }
+
+  Future<void> clearAllPlanProgress() async {
+    final db = await database;
+    await db.delete('reading_plan_progress');
   }
 
   Future<void> close() async {

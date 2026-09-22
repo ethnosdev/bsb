@@ -3,6 +3,8 @@ import 'package:bsb/infrastructure/annotation_backup.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 
+import 'package:bsb/infrastructure/reading_plan_models.dart';
+
 import 'annotation_service_test.dart';
 
 void main() {
@@ -32,20 +34,32 @@ void main() {
     );
 
     test('serializes to Map and JSON and deserializes correctly', () {
+      final samplePlan = UserPlanProgress(
+        planId: 'through_bible_sequential',
+        trackId: 'through_the_bible',
+        paceId: 'finish_in_year_sequential',
+        totalDays: 365,
+        startedAt: DateTime.parse('2026-09-01T00:00:00.000Z'),
+        completedDays: {1, 2, 3},
+        completedReadingIds: {'1_gen_1_3', '2_gen_4_6', '3_gen_7_9'},
+        isActive: true,
+      );
       final backup = AnnotationBackup(
         exportedAt: DateTime.parse('2026-09-10T15:00:00.000Z'),
         highlights: [sampleHighlight],
         notes: [sampleNote],
+        readingPlans: [samplePlan],
       );
 
       final jsonString = backup.toJson();
-      expect(jsonString, contains('"version": 2'));
+      expect(jsonString, contains('"version": 3'));
       expect(jsonString, contains('"app": "bsb"'));
       expect(jsonString, contains('Blessed is he whose transgression is forgiven'));
       expect(jsonString, contains('A pivotal verse on God\'s unconditional love.'));
+      expect(jsonString, contains('"plan_id": "through_bible_sequential"'));
 
       final restored = AnnotationBackup.fromJson(jsonString);
-      expect(restored.version, equals(2));
+      expect(restored.version, equals(3));
       expect(restored.app, equals('bsb'));
       expect(restored.highlights.length, equals(1));
       expect(restored.highlights.first.id, equals('h1'));
@@ -57,6 +71,29 @@ void main() {
       expect(restored.notes.first.content, equals('A pivotal verse on God\'s unconditional love.'));
       expect(restored.notes.first.passageText, equals('For God so loved the world'));
       expect(restored.playlists, isEmpty);
+      expect(restored.readingPlans.length, equals(1));
+      expect(restored.readingPlans.first.planId, equals('through_bible_sequential'));
+      expect(restored.readingPlans.first.completedDays, equals({1, 2, 3}));
+    });
+
+    test('backward compatibility: deserializes version 2 backup without reading_plans', () {
+      const v2Json = '''
+      {
+        "version": 2,
+        "app": "bsb",
+        "exported_at": "2026-09-10T15:00:00.000Z",
+        "highlights": [],
+        "notes": [],
+        "playlists": []
+      }
+      ''';
+
+      final restored = AnnotationBackup.fromJson(v2Json);
+      expect(restored.version, 2);
+      expect(restored.highlights, isEmpty);
+      expect(restored.notes, isEmpty);
+      expect(restored.playlists, isEmpty);
+      expect(restored.readingPlans, isEmpty);
     });
 
     test('backward compatibility: deserializes version 1 backup without playlists', () {

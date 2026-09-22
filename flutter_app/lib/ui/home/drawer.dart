@@ -2,6 +2,7 @@ import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/annotations/highlights_and_notes_page.dart';
 import 'package:bsb/ui/help.dart';
 import 'package:bsb/ui/playlists/playlists_page.dart';
+import 'package:bsb/ui/reading_plans/reading_plans_page.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 
@@ -51,6 +52,18 @@ class AppDrawer extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const PlaylistsPage(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                title: const Text('Reading Plans'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ReadingPlansPage(),
                     ),
                   );
                 },

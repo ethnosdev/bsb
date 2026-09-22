@@ -2,6 +2,7 @@ import 'package:bsb/app_state.dart';
 import 'package:bsb/core/strings.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/home.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -15,6 +16,7 @@ Future<void> main() async {
   await getIt<UserSettings>().init();
   await getIt<TabManager>().init();
   await getIt<AppState>().init();
+  await getIt<ReadingPlanService>().init();
   await initAudioService();
   runApp(const MyApp());
 }

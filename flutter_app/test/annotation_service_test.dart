@@ -2,6 +2,7 @@ import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
+import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
@@ -206,6 +207,63 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   @override
   Future<void> clearAllPlaylists() async {
     _playlists.clear();
+  }
+
+  final List<UserPlanProgress> _readingPlans = [];
+
+  @override
+  Future<List<UserPlanProgress>> getAllPlanProgress() async => List.from(_readingPlans);
+
+  @override
+  Future<UserPlanProgress?> getPlanProgress(String planId) async {
+    try {
+      return _readingPlans.firstWhere((p) => p.planId == planId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<UserPlanProgress?> getActivePlanProgress() async {
+    try {
+      return _readingPlans.firstWhere((p) => p.isActive);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> savePlanProgress(UserPlanProgress progress) async {
+    _readingPlans.removeWhere((p) => p.planId == progress.planId);
+    _readingPlans.add(progress);
+  }
+
+  @override
+  Future<void> setActivePlan(String planId) async {
+    for (int i = 0; i < _readingPlans.length; i++) {
+      if (_readingPlans[i].planId == planId) {
+        _readingPlans[i] = _readingPlans[i].copyWith(isActive: true);
+      } else {
+        _readingPlans[i] = _readingPlans[i].copyWith(isActive: false);
+      }
+    }
+  }
+
+  @override
+  Future<void> deletePlanProgress(String planId) async {
+    _readingPlans.removeWhere((p) => p.planId == planId);
+  }
+
+  @override
+  Future<void> batchInsertPlanProgress(List<UserPlanProgress> list) async {
+    for (final p in list) {
+      await savePlanProgress(p);
+    }
+  }
+
+  @override
+  Future<void> clearAllPlanProgress() async {
+    _readingPlans.clear();
   }
 }
 

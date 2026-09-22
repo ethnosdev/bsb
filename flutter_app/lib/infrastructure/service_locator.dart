@@ -6,6 +6,7 @@ import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
+import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
 import 'package:bsb/ui/search/search_manager.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -24,6 +25,9 @@ void setupServiceLocator() {
   );
   getIt.registerLazySingleton<PlaylistService>(
     () => PlaylistService(dbHelper: getIt<AnnotationDatabaseHelper>()),
+  );
+  getIt.registerLazySingleton<ReadingPlanService>(
+    () => ReadingPlanService(dbHelper: getIt<AnnotationDatabaseHelper>()),
   );
   getIt.registerLazySingleton<BibleSearchService>(
     () => BibleSearchService(dbHelper: getIt<DatabaseHelper>()),

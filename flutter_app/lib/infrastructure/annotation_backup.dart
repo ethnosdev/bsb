@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
+import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/infrastructure/reference.dart';
 
 enum AnnotationImportMode {
@@ -13,18 +14,20 @@ class AnnotationImportResult {
   final int highlightsImported;
   final int notesImported;
   final int playlistsImported;
+  final int readingPlansImported;
   final AnnotationImportMode mode;
 
   const AnnotationImportResult({
     required this.highlightsImported,
     required this.notesImported,
     this.playlistsImported = 0,
+    this.readingPlansImported = 0,
     required this.mode,
   });
 }
 
 class AnnotationBackup {
-  static const int currentVersion = 2;
+  static const int currentVersion = 3;
 
   final int version;
   final String app;
@@ -32,6 +35,7 @@ class AnnotationBackup {
   final List<Highlight> highlights;
   final List<Note> notes;
   final List<Playlist> playlists;
+  final List<UserPlanProgress> readingPlans;
 
   AnnotationBackup({
     this.version = currentVersion,
@@ -40,6 +44,7 @@ class AnnotationBackup {
     required this.highlights,
     required this.notes,
     this.playlists = const [],
+    this.readingPlans = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -50,6 +55,7 @@ class AnnotationBackup {
       'highlights': highlights.map((h) => h.toMap()).toList(),
       'notes': notes.map((n) => n.toMap()).toList(),
       'playlists': playlists.map((p) => p.toMap()).toList(),
+      'reading_plans': readingPlans.map((rp) => rp.toMap()).toList(),
     };
   }
 
@@ -84,6 +90,12 @@ class AnnotationBackup {
         .map((m) => Playlist.fromMap(m))
         .toList();
 
+    final rawPlans = map['reading_plans'] as List<dynamic>? ?? [];
+    final readingPlans = rawPlans
+        .whereType<Map<String, dynamic>>()
+        .map((m) => UserPlanProgress.fromMap(m))
+        .toList();
+
     return AnnotationBackup(
       version: version,
       app: app,
@@ -91,6 +103,7 @@ class AnnotationBackup {
       highlights: highlights,
       notes: notes,
       playlists: playlists,
+      readingPlans: readingPlans,
     );
   }
 
@@ -164,6 +177,20 @@ class AnnotationBackup {
           } else {
             buffer.writeln('> Note: ${item.noteText}');
           }
+        }
+        buffer.writeln();
+      }
+    }
+
+    if (readingPlans.isNotEmpty) {
+      buffer.writeln('## Reading Plans (${readingPlans.length})');
+      buffer.writeln();
+      for (final rp in readingPlans) {
+        buffer.writeln('### ${rp.planId}');
+        buffer.writeln('- Completed Days: ${rp.completedDays.length} / ${rp.totalDays} (${(rp.progressPercentage * 100).toStringAsFixed(1)}%)');
+        buffer.writeln('- Started: ${_formatDate(rp.startedAt)}');
+        if (rp.lastReadAt != null) {
+          buffer.writeln('- Last Read: ${_formatDate(rp.lastReadAt!)}');
         }
         buffer.writeln();
       }
