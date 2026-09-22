@@ -27,18 +27,6 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
     super.dispose();
   }
 
-  void _jumpToNextDay() {
-    final nextDay = widget.progress.nextUncompletedDayNumber;
-    if (nextDay <= 0 || nextDay > widget.plan.days.length) return;
-    // Estimated offset per card: ~110px. Day 1 is around offset 240 (after header + next up card).
-    final targetOffset = 260.0 + (nextDay - 1) * 110.0;
-    _scrollController.animateTo(
-      targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -49,13 +37,18 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
         : null;
 
     final completedCount = widget.progress.completedDays.length;
-    final remainingCount = (widget.progress.totalDays - completedCount).clamp(0, widget.progress.totalDays);
+    final remainingCount = (widget.progress.totalDays - completedCount).clamp(
+      0,
+      widget.progress.totalDays,
+    );
 
     return Scaffold(
       body: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.only(top: 12, bottom: 32),
-        itemCount: widget.plan.days.length + 2, // header card + next up card + all days
+        itemCount:
+            widget.plan.days.length +
+            2, // header card + next up card + all days
         itemBuilder: (context, index) {
           if (index == 0) {
             // Header summary card
@@ -104,7 +97,8 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                         child: LinearProgressIndicator(
                           value: widget.progress.progressPercentage,
                           minHeight: 10,
-                          backgroundColor: theme.colorScheme.surfaceContainerLowest,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerLowest,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -128,9 +122,13 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        isFinished ? 'Plan Completed!' : '$remainingCount days remaining',
+                        isFinished
+                            ? 'Plan Completed!'
+                            : '$remainingCount days remaining',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                          color: theme.textTheme.bodySmall?.color?.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                       ),
                     ],
@@ -144,10 +142,17 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
             // Next up / completion card
             if (isFinished) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Card(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.3,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -160,7 +165,9 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                         const SizedBox(height: 8),
                         Text(
                           'Congratulations!',
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -182,22 +189,13 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Next Up',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.arrow_downward, size: 16),
-                        label: const Text('Jump to Schedule'),
-                        onPressed: _jumpToNextDay,
-                      ),
-                    ],
+                  Text(
+                    'Next Up',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+                  const SizedBox(height: 12),
                   PlanDayTile(
                     day: nextDay,
                     progress: widget.progress,
