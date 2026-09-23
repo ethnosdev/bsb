@@ -1,4 +1,4 @@
-# 2.3.0
+# 2.3.0 - 2026.09.22
 
 - Fix two-tap bug on verse grid chooser.
 - Shortcut for navigating to verse 1 in the grid verse chooser is to tap the chapter title.
