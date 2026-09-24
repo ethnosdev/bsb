@@ -208,6 +208,15 @@ class TabManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  void closeAllTabs() {
+    _tabs.clear();
+    _history.clear();
+    _activeTabId = null;
+    _isAddingTab = false;
+    _saveToPrefs();
+    notifyListeners();
+  }
+
   void updateActiveChapter(
     int bookId,
     int chapter, [

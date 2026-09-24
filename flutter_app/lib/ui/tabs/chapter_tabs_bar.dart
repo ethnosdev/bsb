@@ -121,6 +121,7 @@ class ChapterTabsBar extends StatelessWidget {
                   onActiveTabTapped: onActiveTabTapped,
                 );
               },
+              onCloseAll: () => tabManager.closeAllTabs(),
             ),
           ),
         );

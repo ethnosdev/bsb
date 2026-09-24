@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'bible_tab.dart';
 import 'tab_manager.dart';
 
@@ -58,14 +59,22 @@ class ChapterTabsSheet extends StatelessWidget {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.4,
+                      ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 16, 8),
-                  child: Row(
+                ListTile(
+                  contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                    20,
+                    4,
+                    24,
+                    4,
+                  ),
+                  title: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
                         child: Text(
@@ -78,7 +87,10 @@ class ChapterTabsSheet extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(12),
@@ -91,12 +103,15 @@ class ChapterTabsSheet extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
                     ],
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close all tabs',
+                    onPressed: () {
+                      tabManager.closeAllTabs();
+                      Navigator.pop(context);
+                    },
                   ),
                 ),
                 const Divider(height: 1),
@@ -138,7 +153,9 @@ class ChapterTabsSheet extends StatelessWidget {
                                 direction: DismissDirection.endToStart,
                                 background: Container(
                                   alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
                                   color: colorScheme.errorContainer,
                                   child: Icon(
                                     Icons.delete_outline,
