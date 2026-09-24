@@ -116,12 +116,16 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '$completedCount of ${widget.progress.totalDays} days completed',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
+                          Flexible(
+                            child: Text(
+                              '$completedCount of ${widget.progress.totalDays} days completed',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             '${(widget.progress.progressPercentage * 100).toStringAsFixed(1)}%',
                             style: theme.textTheme.bodyMedium?.copyWith(
