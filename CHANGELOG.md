@@ -1,3 +1,7 @@
+# 2.4.0
+
+- Update About text.
+
 # 2.3.0 - 2026.09.22
 
 - Fix two-tap bug on verse grid chooser.

@@ -35,13 +35,11 @@ class _AboutPageState extends State<AboutPage> {
     _openBibleRecognizer = TapGestureRecognizer()
       ..onTap = () => _launch('https://openbible.com/');
     _publicDomainRecognizer = TapGestureRecognizer()
-      ..onTap = () => _launch(
-            'https://creativecommons.org/publicdomain/zero/1.0/',
-          );
+      ..onTap = () =>
+          _launch('https://creativecommons.org/publicdomain/zero/1.0/');
     _copyrightArticleRecognizer = TapGestureRecognizer()
-      ..onTap = () => _launch(
-            'https://sellingjesus.org/articles/copyright-and-the-bible',
-          );
+      ..onTap = () =>
+          _launch('https://sellingjesus.org/articles/copyright-and-the-bible');
     _ethnosDevRecognizer = TapGestureRecognizer()
       ..onTap = () => _launch('https://ethnos.dev');
     _gitHubRecognizer = TapGestureRecognizer()
@@ -269,7 +267,7 @@ class _AboutPageState extends State<AboutPage> {
                     Text('Feedback', style: titleStyle),
                     SizedBox(height: paragraphSpacing),
                     SelectableText(
-                      "If you have any other feature ideas or if you find a bug, "
+                      "If you find a bug, "
                       "please let me know by sending an email to contact@ethnos.dev.",
                       style: contentStyle,
                     ),
