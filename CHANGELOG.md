@@ -1,6 +1,7 @@
 # 2.4.0
 
 - Update About text.
+- Don't add reference when only copying one or two word selection.
 
 # 2.3.0 - 2026.09.22
 

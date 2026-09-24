@@ -591,8 +591,11 @@ class _TextScreenState extends State<TextScreen> {
       packedIntEnd: _activeController!.endId!,
     );
 
+    final wordCount = bodyText.trim().split(RegExp(r'\s+')).length;
     final StringBuffer fullText = StringBuffer();
-    fullText.writeln(reference);
+    if (wordCount > 2) {
+      fullText.writeln(reference);
+    }
     fullText.write(bodyText);
 
     await Clipboard.setData(ClipboardData(text: fullText.toString()));
