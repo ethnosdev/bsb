@@ -9,6 +9,7 @@ class PlanDayTile extends StatelessWidget {
   final UserPlanProgress progress;
   final ReadingPlan plan;
   final bool isHighlighted;
+  final bool isNextUpCard;
 
   const PlanDayTile({
     super.key,
@@ -16,7 +17,17 @@ class PlanDayTile extends StatelessWidget {
     required this.progress,
     required this.plan,
     this.isHighlighted = false,
+    this.isNextUpCard = false,
   });
+
+  PlanReading? get _nextUnreadReading {
+    for (final reading in day.readings) {
+      if (!progress.isReadingCompleted(day.dayNumber, reading)) {
+        return reading;
+      }
+    }
+    return day.readings.firstOrNull;
+  }
 
   void _onReadTapped(BuildContext context, PlanReading reading) {
     final previousChapters = <({int bookId, int chapter})>[];
@@ -61,6 +72,83 @@ class PlanDayTile extends StatelessWidget {
     final isDayDone = progress.isDayCompleted(day);
     final service = getIt<ReadingPlanService>();
 
+    final borderRadius = BorderRadius.circular(12);
+    final Widget content = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Day ${day.dayNumber}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDayDone
+                        ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)
+                        : theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: isDayDone ? 'Mark day as incomplete' : 'Mark day as complete',
+                icon: Icon(
+                  isDayDone ? Icons.check_circle : Icons.check_circle_outline,
+                  color: isDayDone
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline,
+                ),
+                onPressed: () => service.toggleDayComplete(day.dayNumber),
+              ),
+            ],
+          ),
+          Divider(
+            height: 8,
+            color: isHighlighted
+                ? theme.colorScheme.primary.withValues(alpha: 0.25)
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
+          ),
+          ...day.readings.map((reading) {
+            final isReadingDone = progress.isReadingCompleted(day.dayNumber, reading);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: isReadingDone,
+                    onChanged: (_) => service.toggleReadingComplete(day.dayNumber, reading),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Expanded(
+                    child: Text(
+                      reading.referenceDisplay,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        decoration: isReadingDone ? TextDecoration.lineThrough : null,
+                        color: isReadingDone
+                            ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5)
+                            : null,
+                        fontWeight: isReadingDone ? FontWeight.normal : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    icon: const Icon(Icons.auto_stories_outlined, size: 16),
+                    label: const Text('Read'),
+                    onPressed: () => _onReadTapped(context, reading),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+
     return Card(
       elevation: isHighlighted ? 2 : 0,
       color: isHighlighted
@@ -70,94 +158,25 @@ class PlanDayTile extends StatelessWidget {
               : theme.colorScheme.surfaceContainerLow),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: borderRadius,
         side: isHighlighted
             ? BorderSide(color: theme.colorScheme.primary, width: 1.5)
             : BorderSide(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Text(
-                        'Day ${day.dayNumber}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDayDone
-                              ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)
-                              : theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(${day.totalChapters} ${day.totalChapters == 1 ? 'ch' : 'chs'})',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: isDayDone ? 'Mark day as incomplete' : 'Mark day as complete',
-                  icon: Icon(
-                    isDayDone ? Icons.check_circle : Icons.check_circle_outline,
-                    color: isDayDone
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outline,
-                  ),
-                  onPressed: () => service.toggleDayComplete(day.dayNumber),
-                ),
-              ],
-            ),
-            const Divider(height: 8),
-            ...day.readings.map((reading) {
-              final isReadingDone = progress.isReadingCompleted(day.dayNumber, reading);
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: isReadingDone,
-                      onChanged: (_) => service.toggleReadingComplete(day.dayNumber, reading),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    Expanded(
-                      child: Text(
-                        reading.referenceDisplay,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          decoration: isReadingDone ? TextDecoration.lineThrough : null,
-                          color: isReadingDone
-                              ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5)
-                              : null,
-                          fontWeight: isReadingDone ? FontWeight.normal : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      icon: const Icon(Icons.auto_stories_outlined, size: 16),
-                      label: const Text('Read'),
-                      onPressed: () => _onReadTapped(context, reading),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
+      child: isNextUpCard
+          ? InkWell(
+              borderRadius: borderRadius,
+              onTap: () {
+                final unread = _nextUnreadReading;
+                if (unread != null) {
+                  _onReadTapped(context, unread);
+                }
+              },
+              child: content,
+            )
+          : content,
     );
   }
 }

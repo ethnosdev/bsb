@@ -201,6 +201,7 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                     progress: widget.progress,
                     plan: widget.plan,
                     isHighlighted: true,
+                    isNextUpCard: true,
                   ),
                   const SizedBox(height: 12),
                   Padding(

@@ -166,6 +166,71 @@ void main() {
     expect(trackingTabManager.openedVerse, 1);
   });
 
+  testWidgets('Tapping anywhere on Next Up card takes user directly to next unread chapter', (tester) async {
+    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReadingPlansPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Day 1 has Genesis 1, 2, 3, Matthew 1.
+    // Tap on the "Day 1" text in the Next Up card.
+    final day1Text = find.text('Day 1').first;
+    await tester.tap(day1Text);
+    await tester.pumpAndSettle();
+
+    expect(trackingTabManager.openedBookId, 1);
+    expect(trackingTabManager.openedChapter, 1);
+    expect(trackingTabManager.openedVerse, 1);
+  });
+
+  testWidgets('Tapping Next Up card when first reading is done opens second unread chapter', (tester) async {
+    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+
+    final plan = planService.getActivePlan()!;
+    final firstReading = plan.days.first.readings.first; // Genesis 1
+    await planService.toggleReadingComplete(1, firstReading);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReadingPlansPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on the Next Up card header
+    final day1Text = find.text('Day 1').first;
+    await tester.tap(day1Text);
+    await tester.pumpAndSettle();
+
+    // Second reading is Genesis 2 -> bookId: 1, chapter: 2
+    expect(trackingTabManager.openedBookId, 1);
+    expect(trackingTabManager.openedChapter, 2);
+    expect(trackingTabManager.openedVerse, 1);
+  });
+
+  testWidgets('Tapping checkbox on Next Up card toggles completion without navigating', (tester) async {
+    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReadingPlansPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final checkbox = find.byType(Checkbox).first;
+    await tester.tap(checkbox);
+    await tester.pumpAndSettle();
+
+    // Checkbox tap should not open a chapter
+    expect(trackingTabManager.openedBookId, isNull);
+    expect(trackingTabManager.openedChapter, isNull);
+  });
+
   testWidgets('Switching plan switches active view and preserves progress', (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
