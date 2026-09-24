@@ -177,7 +177,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
     });
   }
 
-  bool _resolveAppIsDark() {
+  bool _isEffectiveAppDark() {
     if (getIt.isRegistered<AppState>()) {
       final appState = getIt<AppState>();
       if (appState.themeMode == ThemeMode.dark) return true;
@@ -188,24 +188,29 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
 
   Future<void> _applyAndSave() async {
     final appState = getIt<AppState>();
-    final isAppDark = _resolveAppIsDark();
+    final isAppDark = _isEffectiveAppDark();
+    final isSystemMode = appState.themeMode == ThemeMode.system;
     ThemeMode? targetMode;
 
     if (isAppDark && !_isEditingDark) {
-      // The user is currently in Dark Mode, but designed/viewed a Light Mode background.
+      // The user is currently experiencing Dark Mode (either explicitly or via system),
+      // but designed/viewed a Light Mode background.
+      final message = isSystemMode
+          ? 'The background color you selected is a light mode color, but your app is currently matching your device settings (Dark Mode).\n\n'
+              'Would you like to switch to Light Mode so your chosen background color is applied immediately?'
+          : 'The background color you selected is a light mode color, but your app is currently in Dark Mode.\n\n'
+              'Would you like to switch to Light Mode so your chosen background color is applied immediately?';
+
       final switchMode = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           icon: const Icon(Icons.light_mode_outlined, size: 28),
           title: const Text('Switch to Light Mode?'),
-          content: const Text(
-            'The background color you selected is a light mode color, but your app is currently in Dark Mode.\n\n'
-            'Would you like to switch to Light Mode so your chosen background color is applied immediately?',
-          ),
+          content: Text(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Keep Dark Mode'),
+              child: Text(isSystemMode ? 'Keep Device Settings' : 'Keep Dark Mode'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -220,20 +225,24 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         targetMode = ThemeMode.light;
       }
     } else if (!isAppDark && _isEditingDark) {
-      // The user is currently in Light Mode, but designed/viewed a Dark Mode background.
+      // The user is currently experiencing Light Mode (either explicitly or via system),
+      // but designed/viewed a Dark Mode background.
+      final message = isSystemMode
+          ? 'The background color you selected is a dark mode color, but your app is currently matching your device settings (Light Mode).\n\n'
+              'Would you like to switch to Dark Mode so your chosen background color is applied immediately?'
+          : 'The background color you selected is a dark mode color, but your app is currently in Light Mode.\n\n'
+              'Would you like to switch to Dark Mode so your chosen background color is applied immediately?';
+
       final switchMode = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           icon: const Icon(Icons.dark_mode_outlined, size: 28),
           title: const Text('Switch to Dark Mode?'),
-          content: const Text(
-            'The background color you selected is a dark mode color, but your app is currently in Light Mode.\n\n'
-            'Would you like to switch to Dark Mode so your chosen background color is applied immediately?',
-          ),
+          content: Text(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Keep Light Mode'),
+              child: Text(isSystemMode ? 'Keep Device Settings' : 'Keep Light Mode'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),

@@ -46,12 +46,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 ListTile(
                   title: const Text('Light-Dark Mode'),
                   subtitle: Text(
-                    appState.themeMode == ThemeMode.dark ? 'Dark' : 'Light',
+                    appState.themeMode == ThemeMode.light
+                        ? 'Light'
+                        : appState.themeMode == ThemeMode.dark
+                        ? 'Dark'
+                        : 'Match device settings',
                   ),
                   trailing: Icon(
-                    appState.themeMode == ThemeMode.dark
+                    appState.themeMode == ThemeMode.light
+                        ? Icons.light_mode
+                        : appState.themeMode == ThemeMode.dark
                         ? Icons.dark_mode
-                        : Icons.light_mode,
+                        : Icons.smartphone,
                   ),
                   onTap: () {
                     showDialog(
@@ -66,16 +72,17 @@ class _SettingsPageState extends State<SettingsPage> {
                               label: Text('Light'),
                             ),
                             ButtonSegment<ThemeMode>(
+                              value: ThemeMode.system,
+                              icon: Icon(Icons.smartphone),
+                              label: Text('Device'),
+                            ),
+                            ButtonSegment<ThemeMode>(
                               value: ThemeMode.dark,
                               icon: Icon(Icons.dark_mode),
                               label: Text('Dark'),
                             ),
                           ],
-                          selected: {
-                            appState.themeMode == ThemeMode.dark
-                                ? ThemeMode.dark
-                                : ThemeMode.light,
-                          },
+                          selected: {appState.themeMode},
                           onSelectionChanged: (Set<ThemeMode> selection) {
                             appState.setThemeMode(selection.first);
                             Navigator.of(context).pop();

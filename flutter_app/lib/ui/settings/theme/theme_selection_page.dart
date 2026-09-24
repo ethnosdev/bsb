@@ -27,9 +27,14 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
     super.initState();
     _appState = getIt<AppState>();
     _draftThemeId = _appState.appThemeId;
+    final isSystemDark =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark;
     _draftMode = _appState.themeMode == ThemeMode.dark
         ? ThemeMode.dark
-        : ThemeMode.light;
+        : _appState.themeMode == ThemeMode.light
+            ? ThemeMode.light
+            : (isSystemDark ? ThemeMode.dark : ThemeMode.light);
     _customLight = _appState.customThemeLight;
     _customDark = _appState.customThemeDark;
   }
@@ -56,7 +61,7 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
   Future<void> _applyTheme() async {
     await _appState.applyThemeSelection(
       themeId: _draftThemeId,
-      mode: _draftMode,
+      mode: _appState.themeMode == ThemeMode.system ? null : _draftMode,
       lightConfig: _customLight,
       darkConfig: _customDark,
     );
@@ -89,9 +94,14 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
         _draftThemeId = AppThemePreset.customPresetId;
         _customLight = _appState.customThemeLight;
         _customDark = _appState.customThemeDark;
-        _draftMode = _appState.themeMode == ThemeMode.dark
-            ? ThemeMode.dark
-            : ThemeMode.light;
+        if (_appState.themeMode != ThemeMode.system) {
+          _draftMode = _appState.themeMode;
+        } else {
+          final isDark =
+              WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+                  Brightness.dark;
+          _draftMode = isDark ? ThemeMode.dark : ThemeMode.light;
+        }
       });
     }
   }

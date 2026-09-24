@@ -188,9 +188,9 @@ void main() {
     expect(updatedSwitch.value, isTrue);
   });
 
-  testWidgets('SettingsPage allows changing Light-Dark Mode between Light and Dark', (tester) async {
+  testWidgets('SettingsPage allows changing Light-Dark Mode between Light, Device, and Dark', (tester) async {
     final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.light);
+    expect(appState.themeMode, equals(ThemeMode.system));
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -200,11 +200,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Light-Dark Mode'), findsOneWidget);
-    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Match device settings'), findsOneWidget);
 
     // Tap to open choice dialog
     await tester.tap(find.text('Light-Dark Mode'));
     await tester.pumpAndSettle();
+
+    // Verify all 3 options exist
+    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Device'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
 
     // Tap 'Dark' segment in dialog
     await tester.tap(
@@ -217,6 +222,21 @@ void main() {
 
     expect(appState.themeMode, equals(ThemeMode.dark));
     expect(find.text('Dark'), findsOneWidget);
+
+    // Tap again to switch back to Device
+    await tester.tap(find.text('Light-Dark Mode'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Device'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(appState.themeMode, equals(ThemeMode.system));
+    expect(find.text('Match device settings'), findsOneWidget);
   });
 
   testWidgets('SettingsPage allows navigating to ThemeSelectionPage', (tester) async {

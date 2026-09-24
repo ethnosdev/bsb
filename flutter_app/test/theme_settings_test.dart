@@ -758,5 +758,123 @@ void main() {
     expect(appState.themeMode, equals(ThemeMode.light));
     expect(appState.isCustomTheme, isTrue);
   });
+
+  testWidgets('CustomThemeEditorPage prompts with device settings when in ThemeMode.system and device is dark', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    final appState = getIt<AppState>();
+    await appState.setThemeMode(ThemeMode.system);
+    expect(appState.themeMode, equals(ThemeMode.system));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        themeMode: ThemeMode.system,
+        darkTheme: ThemeData.dark(),
+        home: CustomThemeEditorPage(
+          initialLightConfig: CustomThemeConfig.defaultLight(),
+          initialDarkConfig: CustomThemeConfig.defaultDark(),
+          initialIsDark: false, // Light mode custom theme
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap 'Apply' in AppBar
+    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog with device settings phrasing appears
+    expect(find.text('Switch to Light Mode?'), findsOneWidget);
+    expect(find.text('Keep Device Settings'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Switch to Light Mode'), findsOneWidget);
+    expect(find.textContaining('matching your device settings (Dark Mode)'), findsOneWidget);
+
+    // Tap 'Keep Device Settings'
+    await tester.tap(find.widgetWithText(TextButton, 'Keep Device Settings'));
+    await tester.pumpAndSettle();
+
+    // Verify ThemeMode.system is preserved
+    expect(appState.themeMode, equals(ThemeMode.system));
+    expect(appState.isCustomTheme, isTrue);
+  });
+
+  testWidgets('CustomThemeEditorPage allows switching from ThemeMode.system to explicit mode', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    final appState = getIt<AppState>();
+    await appState.setThemeMode(ThemeMode.system);
+    expect(appState.themeMode, equals(ThemeMode.system));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        themeMode: ThemeMode.system,
+        darkTheme: ThemeData.dark(),
+        home: CustomThemeEditorPage(
+          initialLightConfig: CustomThemeConfig.defaultLight(),
+          initialDarkConfig: CustomThemeConfig.defaultDark(),
+          initialIsDark: false, // Light mode custom theme
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap 'Apply' in AppBar
+    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+    await tester.pumpAndSettle();
+
+    // Tap 'Switch to Light Mode'
+    await tester.tap(find.widgetWithText(FilledButton, 'Switch to Light Mode'));
+    await tester.pumpAndSettle();
+
+    // Verify ThemeMode is now explicit Light
+    expect(appState.themeMode, equals(ThemeMode.light));
+    expect(appState.isCustomTheme, isTrue);
+  });
+
+  testWidgets('CustomThemeEditorPage preserves ThemeMode.system without dialog when matching system brightness', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    final appState = getIt<AppState>();
+    await appState.setThemeMode(ThemeMode.system);
+    expect(appState.themeMode, equals(ThemeMode.system));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        themeMode: ThemeMode.system,
+        theme: ThemeData.light(),
+        home: CustomThemeEditorPage(
+          initialLightConfig: CustomThemeConfig.defaultLight(),
+          initialDarkConfig: CustomThemeConfig.defaultDark(),
+          initialIsDark: false, // Light custom theme matches light system brightness
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap 'Apply' in AppBar
+    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+    await tester.pumpAndSettle();
+
+    // No dialog shown, ThemeMode.system preserved
+    expect(find.text('Switch to Dark Mode?'), findsNothing);
+    expect(find.text('Switch to Light Mode?'), findsNothing);
+    expect(appState.themeMode, equals(ThemeMode.system));
+    expect(appState.isCustomTheme, isTrue);
+  });
 }
 
