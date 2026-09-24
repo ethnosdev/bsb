@@ -2,6 +2,9 @@
 
 import "package:flutter/material.dart";
 
+export 'app_theme_presets.dart';
+export 'custom_theme_config.dart';
+
 class MaterialTheme {
   final TextTheme textTheme;
 
@@ -348,6 +351,39 @@ class MaterialTheme {
         scaffoldBackgroundColor: colorScheme.surface,
         canvasColor: colorScheme.surface,
       );
+
+  static ThemeData buildTheme({
+    required ColorScheme colorScheme,
+    String fontFamily = 'Charis',
+  }) {
+    final baseTextTheme = colorScheme.brightness == Brightness.dark
+        ? ThemeData.dark().textTheme
+        : ThemeData.light().textTheme;
+    final textTheme = baseTextTheme.apply(
+      fontFamily: fontFamily,
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: colorScheme.brightness,
+      colorScheme: colorScheme,
+      textTheme: textTheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      canvasColor: colorScheme.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: colorScheme.surface,
+        selectedItemColor: colorScheme.onSurface,
+        unselectedItemColor: colorScheme.onSurface,
+      ),
+    );
+  }
 
   List<ExtendedColor> get extendedColors => [];
 }

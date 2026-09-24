@@ -2,6 +2,7 @@ import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/annotations/annotation_file_handler.dart';
+import 'package:bsb/ui/settings/theme/theme_selection_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
 
@@ -32,21 +33,25 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, widget) {
             return ListView(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  child: Text(
+                    'Appearance',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
                 ListTile(
-                  title: const Text('Light-Dark Theme'),
+                  title: const Text('Light-Dark Mode'),
                   subtitle: Text(
-                    appState.themeMode == ThemeMode.light
-                        ? 'Light'
-                        : appState.themeMode == ThemeMode.dark
-                        ? 'Dark'
-                        : 'Match device settings',
+                    appState.themeMode == ThemeMode.dark ? 'Dark' : 'Light',
                   ),
                   trailing: Icon(
-                    appState.themeMode == ThemeMode.light
-                        ? Icons.light_mode
-                        : appState.themeMode == ThemeMode.dark
+                    appState.themeMode == ThemeMode.dark
                         ? Icons.dark_mode
-                        : Icons.smartphone,
+                        : Icons.light_mode,
                   ),
                   onTap: () {
                     showDialog(
@@ -58,22 +63,59 @@ class _SettingsPageState extends State<SettingsPage> {
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.light,
                               icon: Icon(Icons.light_mode),
-                            ),
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.system,
-                              icon: Icon(Icons.smartphone),
+                              label: Text('Light'),
                             ),
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.dark,
                               icon: Icon(Icons.dark_mode),
+                              label: Text('Dark'),
                             ),
                           ],
-                          selected: {appState.themeMode},
+                          selected: {
+                            appState.themeMode == ThemeMode.dark
+                                ? ThemeMode.dark
+                                : ThemeMode.light,
+                          },
                           onSelectionChanged: (Set<ThemeMode> selection) {
                             appState.setThemeMode(selection.first);
                             Navigator.of(context).pop();
                           },
                         ),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  title: const Text('Color Theme'),
+                  subtitle: Text(
+                    appState.isCustomTheme
+                        ? 'Custom Theme'
+                        : appState.currentThemePreset.name,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ThemeSelectionPage(),
                       ),
                     );
                   },

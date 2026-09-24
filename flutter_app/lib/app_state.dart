@@ -1,4 +1,5 @@
 import 'package:bsb/core/font_scale.dart';
+import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,9 @@ class AppState extends ChangeNotifier {
   AppState({UserSettings? userSettings})
       : userSettings = userSettings ?? getIt<UserSettings>() {
     themeNotifier.addListener(notifyListeners);
+    appThemeIdNotifier.addListener(notifyListeners);
+    customThemeLightNotifier.addListener(notifyListeners);
+    customThemeDarkNotifier.addListener(notifyListeners);
     textSizeNotifier.addListener(notifyListeners);
     bookChooserStyleNotifier.addListener(notifyListeners);
     chapterChooserStyleNotifier.addListener(notifyListeners);
@@ -18,6 +22,12 @@ class AppState extends ChangeNotifier {
   }
 
   final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
+  final appThemeIdNotifier =
+      ValueNotifier<String>(AppThemePreset.defaultPresetId);
+  final customThemeLightNotifier =
+      ValueNotifier<CustomThemeConfig>(CustomThemeConfig.defaultLight());
+  final customThemeDarkNotifier =
+      ValueNotifier<CustomThemeConfig>(CustomThemeConfig.defaultDark());
   final textSizeNotifier = ValueNotifier<double>(FontScale.defaultBaseSize);
   final bookChooserStyleNotifier =
       ValueNotifier<BookChooserStyle>(BookChooserStyle.grid);
@@ -29,6 +39,26 @@ class AppState extends ChangeNotifier {
   final wordsOfJesusInRedNotifier = ValueNotifier<bool>(false);
 
   ThemeMode get themeMode => themeNotifier.value;
+  String get appThemeId => appThemeIdNotifier.value;
+  bool get isCustomTheme => appThemeId == AppThemePreset.customPresetId;
+  CustomThemeConfig get customThemeLight => customThemeLightNotifier.value;
+  CustomThemeConfig get customThemeDark => customThemeDarkNotifier.value;
+  AppThemePreset get currentThemePreset => AppThemePreset.findById(appThemeId);
+
+  ThemeData get lightThemeData {
+    final colorScheme = isCustomTheme
+        ? customThemeLight.toColorScheme()
+        : currentThemePreset.lightScheme;
+    return MaterialTheme.buildTheme(colorScheme: colorScheme);
+  }
+
+  ThemeData get darkThemeData {
+    final colorScheme = isCustomTheme
+        ? customThemeDark.toColorScheme()
+        : currentThemePreset.darkScheme;
+    return MaterialTheme.buildTheme(colorScheme: colorScheme);
+  }
+
   double get textSize => textSizeNotifier.value;
   BookChooserStyle get bookChooserStyle => bookChooserStyleNotifier.value;
   ChapterChooserStyle get chapterChooserStyle =>
@@ -39,6 +69,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     themeNotifier.value = userSettings.themeMode;
+    appThemeIdNotifier.value = userSettings.appThemeId;
+    customThemeLightNotifier.value = userSettings.customThemeLight;
+    customThemeDarkNotifier.value = userSettings.customThemeDark;
     textSizeNotifier.value = userSettings.textSize;
     bookChooserStyleNotifier.value = userSettings.bookChooserStyle;
     chapterChooserStyleNotifier.value = userSettings.chapterChooserStyle;
@@ -50,6 +83,43 @@ class AppState extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     themeNotifier.value = mode;
     await userSettings.setThemeMode(mode);
+  }
+
+  Future<void> setAppThemeId(String id) async {
+    appThemeIdNotifier.value = id;
+    await userSettings.setAppThemeId(id);
+  }
+
+  Future<void> setCustomThemeLight(CustomThemeConfig config) async {
+    customThemeLightNotifier.value = config;
+    await userSettings.setCustomThemeLight(config);
+  }
+
+  Future<void> setCustomThemeDark(CustomThemeConfig config) async {
+    customThemeDarkNotifier.value = config;
+    await userSettings.setCustomThemeDark(config);
+  }
+
+  Future<void> applyThemeSelection({
+    required String themeId,
+    CustomThemeConfig? lightConfig,
+    CustomThemeConfig? darkConfig,
+    ThemeMode? mode,
+  }) async {
+    if (lightConfig != null) {
+      customThemeLightNotifier.value = lightConfig;
+      await userSettings.setCustomThemeLight(lightConfig);
+    }
+    if (darkConfig != null) {
+      customThemeDarkNotifier.value = darkConfig;
+      await userSettings.setCustomThemeDark(darkConfig);
+    }
+    if (mode != null) {
+      themeNotifier.value = mode;
+      await userSettings.setThemeMode(mode);
+    }
+    appThemeIdNotifier.value = themeId;
+    await userSettings.setAppThemeId(themeId);
   }
 
   void updateTextSizePreview(double size) {
@@ -93,6 +163,9 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     themeNotifier.removeListener(notifyListeners);
+    appThemeIdNotifier.removeListener(notifyListeners);
+    customThemeLightNotifier.removeListener(notifyListeners);
+    customThemeDarkNotifier.removeListener(notifyListeners);
     textSizeNotifier.removeListener(notifyListeners);
     bookChooserStyleNotifier.removeListener(notifyListeners);
     chapterChooserStyleNotifier.removeListener(notifyListeners);
@@ -100,6 +173,9 @@ class AppState extends ChangeNotifier {
     verseChooserStyleNotifier.removeListener(notifyListeners);
     wordsOfJesusInRedNotifier.removeListener(notifyListeners);
     themeNotifier.dispose();
+    appThemeIdNotifier.dispose();
+    customThemeLightNotifier.dispose();
+    customThemeDarkNotifier.dispose();
     textSizeNotifier.dispose();
     bookChooserStyleNotifier.dispose();
     chapterChooserStyleNotifier.dispose();

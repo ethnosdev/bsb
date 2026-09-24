@@ -1,6 +1,5 @@
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/strings.dart';
-import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
@@ -33,19 +32,15 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: manager.themeNotifier,
-      builder: (context, mode, child) {
+    return ListenableBuilder(
+      listenable: manager,
+      builder: (context, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: Strings.appName,
-          theme: MaterialTheme(
-            ThemeData.light().textTheme.apply(fontFamily: 'Charis'),
-          ).light(),
-          darkTheme: MaterialTheme(
-            ThemeData.dark().textTheme.apply(fontFamily: 'Charis'),
-          ).dark(),
-          themeMode: mode,
+          theme: manager.lightThemeData,
+          darkTheme: manager.darkThemeData,
+          themeMode: manager.themeMode,
           home: const HomePage(),
         );
       },

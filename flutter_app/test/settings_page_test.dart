@@ -38,7 +38,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Light-Dark Theme'), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Light-Dark Mode'), findsOneWidget);
+    expect(find.text('Color Theme'), findsOneWidget);
     expect(find.text('Text Size'), findsOneWidget);
     expect(find.text('Words of Jesus in Red'), findsOneWidget);
     expect(find.text('Navigation'), findsOneWidget);
@@ -184,5 +186,51 @@ void main() {
     expect(userSettings.wordsOfJesusInRed, isTrue);
     final updatedSwitch = tester.widget<SwitchListTile>(switchFinder);
     expect(updatedSwitch.value, isTrue);
+  });
+
+  testWidgets('SettingsPage allows changing Light-Dark Mode between Light and Dark', (tester) async {
+    final appState = getIt<AppState>();
+    await appState.setThemeMode(ThemeMode.light);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Light-Dark Mode'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+
+    // Tap to open choice dialog
+    await tester.tap(find.text('Light-Dark Mode'));
+    await tester.pumpAndSettle();
+
+    // Tap 'Dark' segment in dialog
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Dark'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(appState.themeMode, equals(ThemeMode.dark));
+    expect(find.text('Dark'), findsOneWidget);
+  });
+
+  testWidgets('SettingsPage allows navigating to ThemeSelectionPage', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Color Theme'), findsOneWidget);
+    await tester.tap(find.text('Color Theme'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reading Themes'), findsOneWidget);
   });
 }

@@ -1,3 +1,4 @@
+import 'package:bsb/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,6 +32,89 @@ class UserSettings {
     }
     final isDark = mode == ThemeMode.dark;
     await _prefs.setBool(_isDarkModeKey, isDark);
+  }
+
+  static const _appThemeIdKey = 'appThemeId';
+
+  String get appThemeId =>
+      _prefs.getString(_appThemeIdKey) ?? AppThemePreset.defaultPresetId;
+
+  Future<void> setAppThemeId(String id) async {
+    if (id == AppThemePreset.defaultPresetId) {
+      await _prefs.remove(_appThemeIdKey);
+    } else {
+      await _prefs.setString(_appThemeIdKey, id);
+    }
+  }
+
+  static const _customThemeLightKey = 'customThemeLight';
+
+  CustomThemeConfig get customThemeLight {
+    final raw = _prefs.getString(_customThemeLightKey);
+    if (raw == null) return CustomThemeConfig.defaultLight();
+    return CustomThemeConfig.fromJsonString(raw, isDarkFallback: false);
+  }
+
+  Future<void> setCustomThemeLight(CustomThemeConfig config) async {
+    await _prefs.setString(_customThemeLightKey, config.toJsonString());
+  }
+
+  static const _customThemeDarkKey = 'customThemeDark';
+
+  CustomThemeConfig get customThemeDark {
+    final raw = _prefs.getString(_customThemeDarkKey);
+    if (raw == null) return CustomThemeConfig.defaultDark();
+    return CustomThemeConfig.fromJsonString(raw, isDarkFallback: true);
+  }
+
+  Future<void> setCustomThemeDark(CustomThemeConfig config) async {
+    await _prefs.setString(_customThemeDarkKey, config.toJsonString());
+  }
+
+  static const _customColorHistoryKey = 'customColorHistory';
+
+  List<Color> get customColorHistory {
+    final raw = _prefs.getStringList(_customColorHistoryKey);
+    if (raw == null) return [];
+    return raw
+        .map((str) => int.tryParse(str))
+        .whereType<int>()
+        .map((val) => Color(val))
+        .toList();
+  }
+
+  Future<void> addCustomColorToHistory(Color color) async {
+    final valStr = color.toARGB32().toString();
+    final list = _prefs.getStringList(_customColorHistoryKey) ?? [];
+    list.remove(valStr);
+    list.insert(0, valStr);
+    if (list.length > 20) {
+      list.removeRange(20, list.length);
+    }
+    await _prefs.setStringList(_customColorHistoryKey, list);
+    await _prefs.setInt(_lastSelectedCustomColorKey, color.toARGB32());
+  }
+
+  static const _lastSelectedCustomColorKey = 'lastSelectedCustomColor';
+
+  Color? get lastSelectedCustomColor {
+    final val = _prefs.getInt(_lastSelectedCustomColorKey);
+    if (val != null) return Color(val);
+    if (customColorHistory.isNotEmpty) return customColorHistory.first;
+    return null;
+  }
+
+  Future<void> setLastSelectedCustomColor(Color color) async {
+    await _prefs.setInt(_lastSelectedCustomColorKey, color.toARGB32());
+  }
+
+  bool get hasSavedCustomTheme =>
+      _prefs.containsKey(_customThemeLightKey) ||
+      _prefs.containsKey(_customThemeDarkKey);
+
+  Future<void> clearCustomColorHistory() async {
+    await _prefs.remove(_customColorHistoryKey);
+    await _prefs.remove(_lastSelectedCustomColorKey);
   }
 
   static const _showInterlinearEnglishKey = 'showInterlinearEnglish';
