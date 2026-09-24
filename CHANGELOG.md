@@ -7,6 +7,7 @@
 - Tap any empty space in the app bar to go to book chooser.
 - Additional color themes.
 - Tap anywhere on Next Up card to go to next reading plan chapter.
+- Added "Jump to current" in active reading plan dashboard.
 
 # 2.3.0 - 2026.09.22
 

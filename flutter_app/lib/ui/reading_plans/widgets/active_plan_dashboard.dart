@@ -1,6 +1,7 @@
 import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/ui/reading_plans/widgets/plan_day_tile.dart';
 import 'package:flutter/material.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ActivePlanDashboard extends StatefulWidget {
   final ReadingPlan plan;
@@ -19,12 +20,22 @@ class ActivePlanDashboard extends StatefulWidget {
 }
 
 class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
-  final ScrollController _scrollController = ScrollController();
+  final ItemScrollController _itemScrollController = ItemScrollController();
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+  void _jumpToCurrentDay() {
+    final nextDayNum = widget.progress.nextUncompletedDayNumber;
+    if (nextDayNum <= 0 || nextDayNum > widget.plan.days.length) return;
+
+    // index 0: Summary header card, index 1: Next Up card / All Days header
+    final targetIndex = nextDayNum + 1;
+    if (_itemScrollController.isAttached) {
+      _itemScrollController.scrollTo(
+        index: targetIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.0,
+      );
+    }
   }
 
   @override
@@ -43,8 +54,8 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
     );
 
     return Scaffold(
-      body: ListView.builder(
-        controller: _scrollController,
+      body: ScrollablePositionedList.builder(
+        itemScrollController: _itemScrollController,
         padding: const EdgeInsets.only(top: 12, bottom: 32),
         itemCount:
             widget.plan.days.length +
@@ -206,11 +217,26 @@ class _ActivePlanDashboardState extends State<ActivePlanDashboard> {
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      'All Days',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'All Days',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _jumpToCurrentDay,
+                          icon: const Icon(Icons.my_location, size: 16),
+                          label: const Text('Jump to current'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

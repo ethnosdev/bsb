@@ -4,6 +4,7 @@ import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/reading_plans/reading_plans_page.dart';
+import 'package:bsb/ui/reading_plans/widgets/plan_day_tile.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:flutter/material.dart';
@@ -315,4 +316,73 @@ void main() {
     // Now no active plan, returns to catalog view
     expect(find.text('Available Plans'), findsOneWidget);
   });
+
+  testWidgets('Jump to current button jumps to current uncompleted day', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+    // Mark days 1 through 10 complete, so Day 11 is the next uncompleted day
+    for (int day = 1; day <= 10; day++) {
+      await planService.toggleDayComplete(day);
+    }
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReadingPlansPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Jump to current'), findsOneWidget);
+
+    // Before jump, Day 11 in the All Days list is offscreen (not rendered)
+    final day11TileInAllDays = find.byWidgetPredicate(
+      (w) => w is PlanDayTile && w.day.dayNumber == 11 && !w.isNextUpCard,
+    );
+    expect(day11TileInAllDays, findsNothing);
+
+    // Tap Jump to current button
+    await tester.tap(find.text('Jump to current'));
+    await tester.pumpAndSettle();
+
+    expect(day11TileInAllDays, findsOneWidget);
+  });
+
+  testWidgets('Jump to current button jumps to Day 111 in Chronological plan', (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await planService.startOrResumePlan(PlanTrack.chronological, PlanPace.finishInYear);
+    for (int day = 1; day <= 110; day++) {
+      await planService.toggleDayComplete(day);
+    }
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ReadingPlansPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final day111TileInAllDays = find.byWidgetPredicate(
+      (w) => w is PlanDayTile && w.day.dayNumber == 111 && !w.isNextUpCard,
+    );
+    expect(day111TileInAllDays, findsNothing);
+
+    await tester.tap(find.text('Jump to current'));
+    await tester.pumpAndSettle();
+
+    expect(day111TileInAllDays, findsOneWidget);
+  });
 }
+
+
