@@ -4,6 +4,7 @@
 - Don't add reference when only copying one or two word selection.
 - Flick reference chip on the app bar down to close the chapter(s).
 - Pressing the top x on the open chapters list view closes all the chapters.
+- Tap any empty space in the app bar to go to book chooser.
 
 # 2.3.0 - 2026.09.22
 
