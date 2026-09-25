@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_url_resolver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -11,6 +13,10 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
   int? _currentBookId;
   int? _currentChapter;
+  AudioPlayMode playMode = AudioPlayMode.continuous;
+  bool stopAtEndOfChapter = false;
+  VoidCallback? onSleepTimerFired;
+
   StreamSubscription<PlaybackEvent>? _eventSubscription;
   StreamSubscription<PlayerState>? _stateSubscription;
 
@@ -32,13 +38,33 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     // Map playback events to AudioService PlaybackState
     _eventSubscription = _player.playbackEventStream.listen(_broadcastState);
 
-    // Auto-advance to next chapter when current playback completes
+    // Auto-advance or repeat when current playback completes
     _stateSubscription = _player.playerStateStream.listen((state) async {
       if (state.processingState == ProcessingState.completed) {
-        try {
-          await skipToNext();
-        } catch (_) {
-          await stop();
+        if (stopAtEndOfChapter) {
+          stopAtEndOfChapter = false;
+          onSleepTimerFired?.call();
+          await pause();
+          await seek(Duration.zero);
+          return;
+        }
+
+        switch (playMode) {
+          case AudioPlayMode.repeatChapter:
+            await seek(Duration.zero);
+            await play();
+            break;
+          case AudioPlayMode.stopAfterChapter:
+            await pause();
+            await seek(Duration.zero);
+            break;
+          case AudioPlayMode.continuous:
+            try {
+              await skipToNext();
+            } catch (_) {
+              await stop();
+            }
+            break;
         }
       }
     });
@@ -61,7 +87,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       playbackState.value.copyWith(
         controls: [
           MediaControl.skipToPrevious,
+          MediaControl.rewind,
           if (playing) MediaControl.pause else MediaControl.play,
+          MediaControl.fastForward,
           MediaControl.stop,
           MediaControl.skipToNext,
         ],
@@ -69,8 +97,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.seek,
           MediaAction.seekForward,
           MediaAction.seekBackward,
+          MediaAction.setSpeed,
         },
-        androidCompactActionIndices: const [0, 1, 3],
+        androidCompactActionIndices: const [0, 2, 5],
         processingState: const {
           ProcessingState.idle: AudioProcessingState.idle,
           ProcessingState.loading: AudioProcessingState.loading,
@@ -87,7 +116,11 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// Plays the audio for the specified book and chapter.
-  Future<void> playChapter(int bookId, int chapter) async {
+  Future<void> playChapter(
+    int bookId,
+    int chapter, {
+    Duration? initialPosition,
+  }) async {
     _currentBookId = bookId;
     _currentChapter = chapter;
 
@@ -109,6 +142,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       final duration = await _player.setAudioSource(
         AudioSource.uri(Uri.parse(url)),
+        initialPosition: initialPosition,
       );
       if (duration != null) {
         mediaItem.add(item.copyWith(duration: duration));
@@ -134,6 +168,28 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  /// Seeks relative to current playback position (e.g. +10s or -10s).
+  Future<void> seekRelative(Duration offset) async {
+    final current = _player.position;
+    final total = _player.duration ?? Duration.zero;
+    var target = current + offset;
+    if (target < Duration.zero) target = Duration.zero;
+    if (total > Duration.zero && target > total) target = total;
+    await seek(target);
+  }
+
+  @override
+  Future<void> fastForward() => seekRelative(const Duration(seconds: 10));
+
+  @override
+  Future<void> rewind() => seekRelative(const Duration(seconds: -10));
+
+  @override
+  Future<void> setSpeed(double speed) async {
+    await _player.setSpeed(speed);
+    _broadcastState();
+  }
 
   @override
   Future<void> stop() async {

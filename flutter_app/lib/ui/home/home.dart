@@ -2,6 +2,7 @@ import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
+import 'package:bsb/ui/audio/audio_player_modal_sheet.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/home/list_book_chooser.dart';
@@ -48,6 +49,7 @@ class _HomePageState extends State<HomePage> {
       _cachedAudioManager!.isPlayerVisible
           .addListener(_onPlayerVisibilityChanged);
       _cachedAudioManager!.playbackErrorNotifier.addListener(_onAudioError);
+      _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
     }
     _playlistShareHandler = PlaylistShareHandler();
     _playlistShareHandler!.initDeepLinks(context);
@@ -71,6 +73,7 @@ class _HomePageState extends State<HomePage> {
       _cachedAudioManager = getIt<AudioPlaybackManager>();
       _cachedAudioManager!.isPlayerVisible
           .addListener(_onPlayerVisibilityChanged);
+      _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
     }
     return _cachedAudioManager;
   }
@@ -84,9 +87,32 @@ class _HomePageState extends State<HomePage> {
     _cachedAudioManager?.isPlayerVisible
         .removeListener(_onPlayerVisibilityChanged);
     _cachedAudioManager?.playbackErrorNotifier.removeListener(_onAudioError);
+    if (_cachedAudioManager?.onChapterChanged == _onAudioChapterChanged) {
+      _cachedAudioManager?.onChapterChanged = null;
+    }
     _playlistShareHandler?.dispose();
     _chapterChooserNotifier.dispose();
     super.dispose();
+  }
+
+  void _onAudioChapterChanged(int bookId, int chapter) {
+    if (!mounted) return;
+    _tabManager.updateActiveChapter(bookId, chapter);
+  }
+
+  void _openExpandedAudioSheet(AudioPlaybackManager audioManager) {
+    showAudioPlayerModalSheet(
+      context,
+      audioManager,
+      onGoToChapter: () {
+        final currentMedia = audioManager.audioHandler.mediaItem.value;
+        final bookId = currentMedia?.extras?['bookId'] as int?;
+        final chapter = currentMedia?.extras?['chapter'] as int?;
+        if (bookId != null && chapter != null) {
+          _tabManager.updateActiveChapter(bookId, chapter);
+        }
+      },
+    );
   }
 
   void _onAudioError() {
@@ -393,7 +419,11 @@ class _HomePageState extends State<HomePage> {
             bottomNavigationBar: (!_isDistractionFree &&
                     audioManager != null &&
                     audioManager.isPlayerVisible.value)
-                ? AudioPlayerBottomBar(manager: audioManager)
+                ? AudioPlayerBottomBar(
+                    manager: audioManager,
+                    onOpenExpandedSheet: () =>
+                        _openExpandedAudioSheet(audioManager),
+                  )
                 : null,
           ),
         );

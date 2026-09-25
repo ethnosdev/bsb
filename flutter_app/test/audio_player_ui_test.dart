@@ -3,12 +3,14 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
+import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
 import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
+import 'package:bsb/ui/audio/audio_player_modal_sheet.dart';
 import 'package:bsb/ui/home/home.dart';
 import 'package:bsb/ui/search/search_manager.dart';
 import 'package:bsb/ui/search/search_page.dart';
@@ -39,6 +41,22 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
 }
 
+class FakeBsbAudioHandler implements BsbAudioHandler {
+  @override
+  final BehaviorSubject<MediaItem?> mediaItem =
+      BehaviorSubject<MediaItem?>.seeded(
+    const MediaItem(
+      id: 'test_url',
+      album: 'Berean Standard Bible',
+      title: 'Genesis 1',
+      extras: {'bookId': 1, 'chapter': 1},
+    ),
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   final ValueNotifier<bool> isPlayerVisible = ValueNotifier<bool>(false);
@@ -46,6 +64,30 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   final ValueNotifier<String?> playbackErrorNotifier =
       ValueNotifier<String?>(null);
+
+  @override
+  final ValueNotifier<double> speedNotifier = ValueNotifier<double>(1.0);
+
+  @override
+  final ValueNotifier<AudioPlayMode> playModeNotifier =
+      ValueNotifier<AudioPlayMode>(AudioPlayMode.continuous);
+
+  @override
+  final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
+      ValueNotifier<SleepTimerOption>(SleepTimerOption.off);
+
+  @override
+  final ValueNotifier<Duration?> sleepTimerRemainingNotifier =
+      ValueNotifier<Duration?>(null);
+
+  @override
+  final ValueNotifier<bool> syncTextNotifier = ValueNotifier<bool>(true);
+
+  @override
+  void Function(int bookId, int chapter)? onChapterChanged;
+
+  @override
+  final UserSettings? userSettings = null;
 
   final BehaviorSubject<PlaybackState> playbackStateSubject =
       BehaviorSubject<PlaybackState>.seeded(
@@ -80,7 +122,14 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   bool playCalled = false;
   bool pauseCalled = false;
   bool stopCalled = false;
+  bool forward10Called = false;
+  bool backward10Called = false;
   Duration? seekPosition;
+
+  final _fakeHandler = FakeBsbAudioHandler();
+
+  @override
+  BsbAudioHandler get audioHandler => _fakeHandler;
 
   @override
   Stream<PlaybackState> get playbackStateStream => playbackStateSubject.stream;
@@ -136,6 +185,16 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   }
 
   @override
+  Future<void> seekForward10() async {
+    forward10Called = true;
+  }
+
+  @override
+  Future<void> seekBackward10() async {
+    backward10Called = true;
+  }
+
+  @override
   Future<void> skipToNext() async {}
 
   @override
@@ -148,6 +207,36 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   }
 
   @override
+  Future<void> setSpeed(double speed) async {
+    speedNotifier.value = speed;
+  }
+
+  @override
+  void setPlayMode(AudioPlayMode mode) {
+    playModeNotifier.value = mode;
+  }
+
+  @override
+  void cyclePlayMode() {
+    final nextMode = switch (playModeNotifier.value) {
+      AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
+      AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
+      AudioPlayMode.stopAfterChapter => AudioPlayMode.continuous,
+    };
+    setPlayMode(nextMode);
+  }
+
+  @override
+  void setSleepTimer(SleepTimerOption option) {
+    sleepTimerOptionNotifier.value = option;
+  }
+
+  @override
+  void setSyncText(bool sync) {
+    syncTextNotifier.value = sync;
+  }
+
+  @override
   bool hasNextChapter(int? bookId, int? chapter) => true;
 
   @override
@@ -156,13 +245,16 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   void dispose() {
     isPlayerVisible.dispose();
+    playbackErrorNotifier.dispose();
+    speedNotifier.dispose();
+    playModeNotifier.dispose();
+    sleepTimerOptionNotifier.dispose();
+    sleepTimerRemainingNotifier.dispose();
+    syncTextNotifier.dispose();
     playbackStateSubject.close();
     mediaItemSubject.close();
     positionDataSubject.close();
   }
-
-  @override
-  BsbAudioHandler get audioHandler => throw UnimplementedError();
 }
 
 void main() {
@@ -348,5 +440,101 @@ void main() {
 
     // Player bar is restored!
     expect(find.byType(AudioPlayerBottomBar), findsOneWidget);
+  });
+
+  testWidgets('tapping mini player expands AudioPlayerModalSheet with controls', (tester) async {
+    tabManager.openTab(1, 1);
+    audioManager.isPlayerVisible.value = true;
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on the mini player title area to open modal sheet
+    final miniPlayerTitle = find.descendant(
+      of: find.byType(AudioPlayerBottomBar),
+      matching: find.text('Genesis 1'),
+    );
+    await tester.tap(miniPlayerTitle);
+    await tester.pumpAndSettle();
+
+    // Verify AudioPlayerModalSheet is displayed
+    expect(find.byType(AudioPlayerModalSheet), findsOneWidget);
+    expect(find.text('Audio Player'), findsOneWidget);
+    expect(find.text('David Souer'), findsOneWidget);
+
+    // Verify seek -10s and +10s buttons
+    final rewindButton = find.byTooltip('Rewind 10 seconds');
+    final forwardButton = find.byTooltip('Forward 10 seconds');
+    expect(rewindButton, findsOneWidget);
+    expect(forwardButton, findsOneWidget);
+
+    await tester.tap(rewindButton);
+    expect(audioManager.backward10Called, isTrue);
+
+    await tester.tap(forwardButton);
+    expect(audioManager.forward10Called, isTrue);
+
+    // Verify Play Mode button cycles mode
+    expect(find.text('Continuous'), findsOneWidget);
+    await tester.tap(find.text('Continuous'));
+    await tester.pumpAndSettle();
+    expect(audioManager.playModeNotifier.value, AudioPlayMode.repeatChapter);
+
+    // Verify Speed picker
+    expect(find.text('1.0x'), findsOneWidget);
+    await tester.tap(find.text('1.0x'));
+    await tester.pumpAndSettle();
+    expect(find.text('Playback Speed'), findsOneWidget);
+    await tester.tap(find.text('1.5x'));
+    await tester.pumpAndSettle();
+    expect(audioManager.speedNotifier.value, 1.5);
+
+    // Verify Sleep timer picker
+    expect(find.text('Sleep'), findsOneWidget);
+    await tester.tap(find.text('Sleep'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sleep Timer'), findsOneWidget);
+    await tester.tap(find.text('15 minutes'));
+    await tester.pumpAndSettle();
+    expect(audioManager.sleepTimerOptionNotifier.value, SleepTimerOption.fifteenMinutes);
+
+    // Verify sync text toggle
+    expect(audioManager.syncTextNotifier.value, isTrue);
+    final syncButton = find.byTooltip('Sync text with audio (Enabled)');
+    expect(syncButton, findsOneWidget);
+    await tester.tap(syncButton);
+    await tester.pumpAndSettle();
+    expect(audioManager.syncTextNotifier.value, isFalse);
+
+    // Collapse sheet
+    await tester.tap(find.byTooltip('Collapse'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AudioPlayerModalSheet), findsNothing);
+  });
+
+  testWidgets('audioManager onChapterChanged updates active tab in HomePage', (tester) async {
+    tabManager.openTab(1, 1); // Gen 1
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tabManager.activeTab?.bookId, 1);
+    expect(tabManager.activeTab?.chapter, 1);
+
+    // Trigger onChapterChanged callback (simulating chapter advance in audio)
+    audioManager.onChapterChanged?.call(1, 2);
+    await tester.pumpAndSettle();
+
+    // Verify active tab updated to Gen 2
+    expect(tabManager.activeTab?.bookId, 1);
+    expect(tabManager.activeTab?.chapter, 2);
   });
 }

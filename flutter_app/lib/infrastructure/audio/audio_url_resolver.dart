@@ -71,7 +71,7 @@ const Map<int, String> bookIdToSouerPrefix = {
 };
 
 class AudioUrlResolver {
-  static const String defaultBaseUrl = 'https://openbible.com/audio/souer/';
+  static const String defaultBaseUrl = 'https://bsb.ethnos.dev/audio/souer/';
 
   final String baseUrl;
 

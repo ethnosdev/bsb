@@ -265,6 +265,32 @@ class UserSettings {
       await _prefs.setBool(_keepScreenAwakeKey, false);
     }
   }
+
+  static const _audioSpeedKey = 'audioSpeed';
+  static const _audioPlayModeKey = 'audioPlayMode';
+  static const _audioSyncTextKey = 'audioSyncText';
+  static const _lastAudioBookIdKey = 'lastAudioBookId';
+  static const _lastAudioChapterKey = 'lastAudioChapter';
+  static const _lastAudioPositionMsKey = 'lastAudioPositionMs';
+
+  double get audioSpeed => _prefs.getDouble(_audioSpeedKey) ?? 1.0;
+  Future<void> setAudioSpeed(double speed) => _prefs.setDouble(_audioSpeedKey, speed);
+
+  String get audioPlayMode => _prefs.getString(_audioPlayModeKey) ?? 'continuous';
+  Future<void> setAudioPlayMode(String mode) => _prefs.setString(_audioPlayModeKey, mode);
+
+  bool get audioSyncText => _prefs.getBool(_audioSyncTextKey) ?? true;
+  Future<void> setAudioSyncText(bool value) => _prefs.setBool(_audioSyncTextKey, value);
+
+  int? get lastAudioBookId => _prefs.getInt(_lastAudioBookIdKey);
+  int? get lastAudioChapter => _prefs.getInt(_lastAudioChapterKey);
+  int? get lastAudioPositionMs => _prefs.getInt(_lastAudioPositionMsKey);
+
+  Future<void> saveLastAudioState(int bookId, int chapter, int positionMs) async {
+    await _prefs.setInt(_lastAudioBookIdKey, bookId);
+    await _prefs.setInt(_lastAudioChapterKey, chapter);
+    await _prefs.setInt(_lastAudioPositionMsKey, positionMs);
+  }
 }
 
 enum BookChooserStyle {

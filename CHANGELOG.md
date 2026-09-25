@@ -9,6 +9,8 @@
 - Tap anywhere on Next Up card to go to next reading plan chapter.
 - Added "Jump to current" in active reading plan dashboard.
 - Keep screen awake while reading.
+- Self-host audio files.
+- Improve the audio player.
 
 # 2.3.0 - 2026.09.22
 

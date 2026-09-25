@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 
 class AudioPlayerBottomBar extends StatelessWidget {
   final AudioPlaybackManager manager;
+  final VoidCallback? onOpenExpandedSheet;
 
   const AudioPlayerBottomBar({
     super.key,
     required this.manager,
+    this.onOpenExpandedSheet,
   });
 
   @override
@@ -17,23 +19,58 @@ class AudioPlayerBottomBar extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Material(
-      elevation: 8,
-      color: colorScheme.surfaceContainer,
+      elevation: 6,
+      color: colorScheme.surfaceContainerHigh,
       shape: Border(
         top: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
           width: 1,
         ),
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top Row: Title, Previous, Play/Pause, Next, Close
-              StreamBuilder<MediaItem?>(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Slim progress bar along the top edge of the mini player
+            StreamBuilder<PositionData>(
+              stream: manager.positionDataStream,
+              builder: (context, snapshot) {
+                final data = snapshot.data ??
+                    const PositionData(
+                      Duration.zero,
+                      Duration.zero,
+                      Duration.zero,
+                    );
+
+                return SizedBox(
+                  height: 3,
+                  child: ProgressBar(
+                    progress: data.position,
+                    buffered: data.bufferedPosition,
+                    total: data.duration,
+                    onSeek: (position) => manager.seek(position),
+                    timeLabelLocation: TimeLabelLocation.none,
+                    barHeight: 3.0,
+                    thumbRadius: 0.0,
+                    progressBarColor: colorScheme.primary,
+                    baseBarColor: colorScheme.onSurface.withValues(alpha: 0.1),
+                    bufferedBarColor:
+                        colorScheme.onSurface.withValues(alpha: 0.2),
+                  ),
+                );
+              },
+            ),
+
+            // Mini Player Body
+            Padding(
+              padding: const EdgeInsets.only(
+                left: 14.0,
+                right: 6.0,
+                top: 4.0,
+                bottom: 4.0,
+              ),
+              child: StreamBuilder<MediaItem?>(
                 stream: manager.mediaItemStream,
                 builder: (context, mediaSnapshot) {
                   final mediaItem = mediaSnapshot.data;
@@ -46,15 +83,37 @@ class AudioPlayerBottomBar extends StatelessWidget {
 
                   return Row(
                     children: [
-                      // Chapter Title
+                      // Tappable title and subtitle that opens the expanded sheet
                       Expanded(
-                        child: Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        child: InkWell(
+                          onTap: onOpenExpandedSheet,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 6.0,
+                              horizontal: 2.0,
+                            ),
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    title,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.keyboard_arrow_up,
+                                  size: 16,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ],
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
 
@@ -62,30 +121,35 @@ class AudioPlayerBottomBar extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.skip_previous),
                         tooltip: 'Previous Chapter',
-                        iconSize: 24,
+                        iconSize: 22,
                         visualDensity: VisualDensity.compact,
                         onPressed: hasPrev ? manager.skipToPrevious : null,
                       ),
 
-                      // Play/Pause/Buffering
+                      // Play / Pause / Buffering
                       StreamBuilder<PlaybackState>(
                         stream: manager.playbackStateStream,
                         builder: (context, stateSnapshot) {
                           final state = stateSnapshot.data;
                           final playing = state?.playing ?? false;
                           final processingState =
-                              state?.processingState ?? AudioProcessingState.idle;
+                              state?.processingState ??
+                              AudioProcessingState.idle;
 
-                          if (processingState == AudioProcessingState.loading ||
-                              processingState == AudioProcessingState.buffering) {
+                          if (processingState ==
+                                  AudioProcessingState.loading ||
+                              processingState ==
+                                  AudioProcessingState.buffering) {
                             return const SizedBox(
-                              width: 40,
-                              height: 40,
+                              width: 36,
+                              height: 36,
                               child: Center(
                                 child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
                             );
@@ -96,7 +160,7 @@ class AudioPlayerBottomBar extends StatelessWidget {
                               playing ? Icons.pause : Icons.play_arrow,
                             ),
                             tooltip: playing ? 'Pause' : 'Play',
-                            iconSize: 28,
+                            iconSize: 26,
                             visualDensity: VisualDensity.compact,
                             onPressed: playing ? manager.pause : manager.play,
                           );
@@ -107,7 +171,7 @@ class AudioPlayerBottomBar extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.skip_next),
                         tooltip: 'Next Chapter',
-                        iconSize: 24,
+                        iconSize: 22,
                         visualDensity: VisualDensity.compact,
                         onPressed: hasNext ? manager.skipToNext : null,
                       ),
@@ -124,35 +188,8 @@ class AudioPlayerBottomBar extends StatelessWidget {
                   );
                 },
               ),
-
-              const SizedBox(height: 4),
-
-              // Progress Bar
-              StreamBuilder<PositionData>(
-                stream: manager.positionDataStream,
-                builder: (context, snapshot) {
-                  final positionData = snapshot.data ??
-                      const PositionData(Duration.zero, Duration.zero, Duration.zero);
-
-                  return ProgressBar(
-                    progress: positionData.position,
-                    buffered: positionData.bufferedPosition,
-                    total: positionData.duration,
-                    onSeek: (position) => manager.seek(position),
-                    timeLabelLocation: TimeLabelLocation.sides,
-                    barHeight: 3.5,
-                    thumbRadius: 6.0,
-                    progressBarColor: colorScheme.primary,
-                    thumbColor: colorScheme.primary,
-                    baseBarColor: colorScheme.onSurface.withValues(alpha: 0.15),
-                    bufferedBarColor:
-                        colorScheme.onSurface.withValues(alpha: 0.25),
-                    timeLabelTextStyle: theme.textTheme.labelSmall,
-                  );
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

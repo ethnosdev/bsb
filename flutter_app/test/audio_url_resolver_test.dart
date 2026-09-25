@@ -8,23 +8,23 @@ void main() {
     test('generates expected OpenBible Souer stream URLs', () {
       expect(
         resolver.getChapterUrl(1, 1),
-        'https://openbible.com/audio/souer/BSB_01_Gen_001.mp3',
+        'https://bsb.ethnos.dev/audio/souer/BSB_01_Gen_001.mp3',
       );
       expect(
         resolver.getChapterUrl(1, 50),
-        'https://openbible.com/audio/souer/BSB_01_Gen_050.mp3',
+        'https://bsb.ethnos.dev/audio/souer/BSB_01_Gen_050.mp3',
       );
       expect(
         resolver.getChapterUrl(19, 119),
-        'https://openbible.com/audio/souer/BSB_19_Psa_119.mp3',
+        'https://bsb.ethnos.dev/audio/souer/BSB_19_Psa_119.mp3',
       );
       expect(
         resolver.getChapterUrl(56, 1),
-        'https://openbible.com/audio/souer/BSB_56_Tts_001.mp3',
+        'https://bsb.ethnos.dev/audio/souer/BSB_56_Tts_001.mp3',
       );
       expect(
         resolver.getChapterUrl(66, 22),
-        'https://openbible.com/audio/souer/BSB_66_Rev_022.mp3',
+        'https://bsb.ethnos.dev/audio/souer/BSB_66_Rev_022.mp3',
       );
     });
 
