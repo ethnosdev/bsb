@@ -25,11 +25,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   int? get currentChapter => _currentChapter;
   AudioPlayer get player => _player;
 
-  BsbAudioHandler({
-    AudioPlayer? player,
-    AudioUrlResolver? urlResolver,
-  })  : _player = player ?? AudioPlayer(),
-        _urlResolver = urlResolver ?? const AudioUrlResolver() {
+  BsbAudioHandler({AudioPlayer? player, AudioUrlResolver? urlResolver})
+    : _player = player ?? AudioPlayer(),
+      _urlResolver = urlResolver ?? const AudioUrlResolver() {
     _init();
   }
 
@@ -38,8 +36,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
     // Map playback events to AudioService PlaybackState
     _eventSubscription = _player.playbackEventStream.listen(_broadcastState);
-    _playerStateSubscription =
-        _player.playerStateStream.listen((_) => _broadcastState());
+    _playerStateSubscription = _player.playerStateStream.listen(
+      (_) => _broadcastState(),
+    );
 
     // Auto-advance or repeat when current playback completes
     _stateSubscription = _player.playerStateStream.listen((state) async {
@@ -133,12 +132,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       id: url,
       album: 'Berean Standard Bible',
       title: title,
-      artist: 'David Souer',
-      artUri: Uri.parse('asset:///assets/images/logo.png'),
-      extras: {
-        'bookId': bookId,
-        'chapter': chapter,
-      },
+      extras: {'bookId': bookId, 'chapter': chapter},
     );
     mediaItem.add(item);
 
@@ -228,7 +222,10 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       await seek(Duration.zero);
       return;
     }
-    final prev = _urlResolver.getPreviousChapter(_currentBookId!, _currentChapter!);
+    final prev = _urlResolver.getPreviousChapter(
+      _currentBookId!,
+      _currentChapter!,
+    );
     if (prev != null) {
       await playChapter(prev.$1, prev.$2);
     } else {

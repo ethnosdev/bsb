@@ -282,7 +282,7 @@ class AudioPlayerModalSheet extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'David Souer',
+                            'Bob Souer',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -463,7 +463,8 @@ class AudioPlayerModalSheet extends StatelessWidget {
                                       : (option == SleepTimerOption.endOfChapter
                                             ? 'End of Ch'
                                             : 'Sleep');
-                                  final isActive = option != SleepTimerOption.off;
+                                  final isActive =
+                                      option != SleepTimerOption.off;
 
                                   return OutlinedButton.icon(
                                     style: OutlinedButton.styleFrom(
