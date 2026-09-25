@@ -537,4 +537,47 @@ void main() {
     expect(tabManager.activeTab?.bookId, 1);
     expect(tabManager.activeTab?.chapter, 2);
   });
+
+  testWidgets('Playback speed picker renders list options like sleep timer and fits narrow screens', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    tabManager.openTab(1, 1);
+    audioManager.isPlayerVisible.value = true;
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HomePage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on the mini player title area to open modal sheet
+    final miniPlayerTitle = find.descendant(
+      of: find.byType(AudioPlayerBottomBar),
+      matching: find.text('Genesis 1'),
+    );
+    await tester.tap(miniPlayerTitle);
+    await tester.pumpAndSettle();
+
+    // Open speed picker
+    await tester.tap(find.text('1.0x'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Playback Speed'), findsOneWidget);
+    expect(find.text('1.0x (Normal)'), findsOneWidget);
+    expect(find.text('0.75x'), findsOneWidget);
+    expect(find.text('2.0x'), findsOneWidget);
+
+    // Verify radio icon is checked for 1.0
+    expect(find.byIcon(Icons.radio_button_checked), findsOneWidget);
+
+    // Select 2.0x
+    await tester.tap(find.text('2.0x'));
+    await tester.pumpAndSettle();
+
+    expect(audioManager.speedNotifier.value, 2.0);
+  });
 }

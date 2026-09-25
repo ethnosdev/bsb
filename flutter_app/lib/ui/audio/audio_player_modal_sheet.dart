@@ -14,10 +14,8 @@ Future<void> showAudioPlayerModalSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => AudioPlayerModalSheet(
-      manager: manager,
-      onGoToChapter: onGoToChapter,
-    ),
+    builder: (context) =>
+        AudioPlayerModalSheet(manager: manager, onGoToChapter: onGoToChapter),
   );
 }
 
@@ -56,9 +54,7 @@ class AudioPlayerModalSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
+                    color: Theme.of(context).colorScheme.onSurfaceVariant
                         .withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
@@ -67,30 +63,30 @@ class AudioPlayerModalSheet extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
                     'Playback Speed',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: kAudioSpeedOptions.map((speed) {
-                    final isSelected = (speed - currentSpeed).abs() < 0.01;
-                    return ChoiceChip(
-                      label: Text('${speed}x'),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          manager.setSpeed(speed);
-                          Navigator.pop(context);
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
+                ...kAudioSpeedOptions.map((speed) {
+                  final isSelected = (speed - currentSpeed).abs() < 0.01;
+                  return ListTile(
+                    title: Text('${speed}x${speed == 1.0 ? ' (Normal)' : ''}'),
+                    leading: Icon(
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    selected: isSelected,
+                    onTap: () {
+                      manager.setSpeed(speed);
+                      Navigator.pop(context);
+                    },
+                  );
+                }),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -118,9 +114,7 @@ class AudioPlayerModalSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
+                    color: Theme.of(context).colorScheme.onSurfaceVariant
                         .withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
@@ -129,9 +123,8 @@ class AudioPlayerModalSheet extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
                     'Sleep Timer',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 ...SleepTimerOption.values.map((option) {
@@ -176,7 +169,10 @@ class AudioPlayerModalSheet extends StatelessWidget {
         top: false,
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 8.0,
+            ),
             child: StreamBuilder<MediaItem?>(
               stream: manager.mediaItemStream,
               builder: (context, mediaSnapshot) {
@@ -191,275 +187,252 @@ class AudioPlayerModalSheet extends StatelessWidget {
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                  // Drag Handle
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 4, bottom: 8),
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
-                  // Header Row: Collapse button, Title, Sync Text Toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down),
-                        tooltip: 'Collapse',
-                        iconSize: 28,
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Text(
-                        'Audio Player',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    // Drag Handle
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 4, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.35,
                         ),
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: manager.syncTextNotifier,
-                        builder: (context, sync, _) {
-                          return IconButton(
-                            icon: Icon(
-                              sync ? Icons.sync : Icons.sync_disabled,
-                              color: sync
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
-                            ),
-                            tooltip: sync
-                                ? 'Sync text with audio (Enabled)'
-                                : 'Sync text with audio (Disabled)',
-                            onPressed: () => manager.setSyncText(!sync),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Scripture Artwork Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 24.0,
-                      horizontal: 16.0,
                     ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
+
+                    // Header Row: Collapse button, Title, Sync Text Toggle
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          Icons.headphones_rounded,
-                          size: 40,
-                          color: colorScheme.primary,
+                        IconButton(
+                          icon: const Icon(Icons.keyboard_arrow_down),
+                          tooltip: 'Collapse',
+                          iconSize: 28,
+                          onPressed: () => Navigator.pop(context),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          title,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.5,
+                        Flexible(
+                          child: Text(
+                            'Audio Player',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'David Souer',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
+                        ValueListenableBuilder<bool>(
+                          valueListenable: manager.syncTextNotifier,
+                          builder: (context, sync, _) {
+                            return IconButton(
+                              icon: Icon(
+                                sync ? Icons.sync : Icons.sync_disabled,
+                                color: sync
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              tooltip: sync
+                                  ? 'Sync text with audio (Enabled)'
+                                  : 'Sync text with audio (Disabled)',
+                              onPressed: () => manager.setSyncText(!sync),
+                            );
+                          },
                         ),
                       ],
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                  // Progress Scrubber
-                  StreamBuilder<PositionData>(
-                    stream: manager.positionDataStream,
-                    builder: (context, snapshot) {
-                      final data = snapshot.data ??
-                          const PositionData(
-                            Duration.zero,
-                            Duration.zero,
-                            Duration.zero,
-                          );
-
-                      return ProgressBar(
-                        progress: data.position,
-                        buffered: data.bufferedPosition,
-                        total: data.duration,
-                        onSeek: (position) => manager.seek(position),
-                        timeLabelLocation: TimeLabelLocation.sides,
-                        timeLabelType: TimeLabelType.totalTime,
-                        barHeight: 4.5,
-                        thumbRadius: 7.0,
-                        thumbGlowRadius: 18.0,
-                        progressBarColor: colorScheme.primary,
-                        thumbColor: colorScheme.primary,
-                        baseBarColor:
-                            colorScheme.onSurface.withValues(alpha: 0.12),
-                        bufferedBarColor:
-                            colorScheme.onSurface.withValues(alpha: 0.22),
-                        timeLabelTextStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                    // Scripture Artwork Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 24.0,
+                        horizontal: 16.0,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Primary Control Cluster: Prev, -10s, Play/Pause, +10s, Next
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Skip Previous Chapter
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous),
-                        tooltip: 'Previous Chapter',
-                        iconSize: 32,
-                        onPressed: hasPrev ? manager.skipToPrevious : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-
-                      // Seek -10s
-                      IconButton(
-                        icon: const Icon(Icons.replay_10),
-                        tooltip: 'Rewind 10 seconds',
-                        iconSize: 32,
-                        onPressed: manager.seekBackward10,
-                      ),
-
-                      // Large Circular Play / Pause
-                      StreamBuilder<PlaybackState>(
-                        stream: manager.playbackStateStream,
-                        builder: (context, stateSnapshot) {
-                          final state = stateSnapshot.data;
-                          final playing = state?.playing ?? false;
-                          final processingState =
-                              state?.processingState ??
-                              AudioProcessingState.idle;
-
-                          final isLoading =
-                              processingState ==
-                                  AudioProcessingState.loading ||
-                              processingState ==
-                                  AudioProcessingState.buffering;
-
-                          return Material(
-                            elevation: 4,
-                            shape: const CircleBorder(),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.headphones_rounded,
+                            size: 40,
                             color: colorScheme.primary,
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: isLoading
-                                  ? null
-                                  : (playing ? manager.pause : manager.play),
-                              child: Container(
-                                width: 64,
-                                height: 64,
-                                alignment: Alignment.center,
-                                child: isLoading
-                                    ? SizedBox(
-                                        width: 28,
-                                        height: 28,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 3,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            title,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'David Souer',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Progress Scrubber
+                    StreamBuilder<PositionData>(
+                      stream: manager.positionDataStream,
+                      builder: (context, snapshot) {
+                        final data =
+                            snapshot.data ??
+                            const PositionData(
+                              Duration.zero,
+                              Duration.zero,
+                              Duration.zero,
+                            );
+
+                        return ProgressBar(
+                          progress: data.position,
+                          buffered: data.bufferedPosition,
+                          total: data.duration,
+                          onSeek: (position) => manager.seek(position),
+                          timeLabelLocation: TimeLabelLocation.sides,
+                          timeLabelType: TimeLabelType.totalTime,
+                          barHeight: 4.5,
+                          thumbRadius: 7.0,
+                          thumbGlowRadius: 18.0,
+                          progressBarColor: colorScheme.primary,
+                          thumbColor: colorScheme.primary,
+                          baseBarColor: colorScheme.onSurface.withValues(
+                            alpha: 0.12,
+                          ),
+                          bufferedBarColor: colorScheme.onSurface.withValues(
+                            alpha: 0.22,
+                          ),
+                          timeLabelTextStyle: theme.textTheme.labelSmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Primary Control Cluster: Prev, -10s, Play/Pause, +10s, Next
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Skip Previous Chapter
+                        IconButton(
+                          icon: const Icon(Icons.skip_previous),
+                          tooltip: 'Previous Chapter',
+                          iconSize: 32,
+                          onPressed: hasPrev ? manager.skipToPrevious : null,
+                        ),
+
+                        // Seek -10s
+                        IconButton(
+                          icon: const Icon(Icons.replay_10),
+                          tooltip: 'Rewind 10 seconds',
+                          iconSize: 32,
+                          onPressed: manager.seekBackward10,
+                        ),
+
+                        // Large Circular Play / Pause
+                        StreamBuilder<PlaybackState>(
+                          stream: manager.playbackStateStream,
+                          builder: (context, stateSnapshot) {
+                            final state = stateSnapshot.data;
+                            final playing = state?.playing ?? false;
+                            final processingState =
+                                state?.processingState ??
+                                AudioProcessingState.idle;
+
+                            final isLoading =
+                                processingState ==
+                                    AudioProcessingState.loading ||
+                                processingState ==
+                                    AudioProcessingState.buffering;
+
+                            return Material(
+                              elevation: 4,
+                              shape: const CircleBorder(),
+                              color: colorScheme.primary,
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: isLoading
+                                    ? null
+                                    : (playing ? manager.pause : manager.play),
+                                child: Container(
+                                  width: 64,
+                                  height: 64,
+                                  alignment: Alignment.center,
+                                  child: isLoading
+                                      ? SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 3,
+                                            color: colorScheme.onPrimary,
+                                          ),
+                                        )
+                                      : Icon(
+                                          playing
+                                              ? Icons.pause
+                                              : Icons.play_arrow,
+                                          size: 38,
                                           color: colorScheme.onPrimary,
                                         ),
-                                      )
-                                    : Icon(
-                                        playing
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        size: 38,
-                                        color: colorScheme.onPrimary,
-                                      ),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
 
-                      // Seek +10s
-                      IconButton(
-                        icon: const Icon(Icons.forward_10),
-                        tooltip: 'Forward 10 seconds',
-                        iconSize: 32,
-                        onPressed: manager.seekForward10,
-                      ),
+                        // Seek +10s
+                        IconButton(
+                          icon: const Icon(Icons.forward_10),
+                          tooltip: 'Forward 10 seconds',
+                          iconSize: 32,
+                          onPressed: manager.seekForward10,
+                        ),
 
-                      // Skip Next Chapter
-                      IconButton(
-                        icon: const Icon(Icons.skip_next),
-                        tooltip: 'Next Chapter',
-                        iconSize: 32,
-                        onPressed: hasNext ? manager.skipToNext : null,
-                      ),
-                    ],
-                  ),
+                        // Skip Next Chapter
+                        IconButton(
+                          icon: const Icon(Icons.skip_next),
+                          tooltip: 'Next Chapter',
+                          iconSize: 32,
+                          onPressed: hasNext ? manager.skipToNext : null,
+                        ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Quick Action Chips: Speed, Sleep Timer, Play Mode
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Playback Speed
-                      ValueListenableBuilder<double>(
-                        valueListenable: manager.speedNotifier,
-                        builder: (context, speed, _) {
-                          return OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            icon: const Icon(Icons.speed, size: 16),
-                            label: Text('${speed}x'),
-                            onPressed: () => _showSpeedPicker(context),
-                          );
-                        },
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Sleep Timer
-                      ValueListenableBuilder<SleepTimerOption>(
-                        valueListenable: manager.sleepTimerOptionNotifier,
-                        builder: (context, option, _) {
-                          return ValueListenableBuilder<Duration?>(
-                            valueListenable:
-                                manager.sleepTimerRemainingNotifier,
-                            builder: (context, remaining, _) {
-                              final label = remaining != null
-                                  ? _formatTimerDuration(remaining)
-                                  : (option == SleepTimerOption.endOfChapter
-                                      ? 'End of Ch'
-                                      : 'Sleep');
-                              final isActive =
-                                  option != SleepTimerOption.off;
-
+                    // Quick Action Chips: Speed, Sleep Timer, Play Mode
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Playback Speed
+                          ValueListenableBuilder<double>(
+                            valueListenable: manager.speedNotifier,
+                            builder: (context, speed, _) {
                               return OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
@@ -467,69 +440,102 @@ class AudioPlayerModalSheet extends StatelessWidget {
                                     vertical: 6,
                                   ),
                                   visualDensity: VisualDensity.compact,
-                                  foregroundColor: isActive
-                                      ? colorScheme.primary
-                                      : null,
                                 ),
-                                icon: Icon(
-                                  isActive
-                                      ? Icons.timer
-                                      : Icons.timer_outlined,
-                                  size: 16,
-                                ),
-                                label: Text(label),
-                                onPressed: () =>
-                                    _showSleepTimerPicker(context),
+                                icon: const Icon(Icons.speed, size: 16),
+                                label: Text('${speed}x'),
+                                onPressed: () => _showSpeedPicker(context),
                               );
                             },
-                          );
-                        },
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Sleep Timer
+                          ValueListenableBuilder<SleepTimerOption>(
+                            valueListenable: manager.sleepTimerOptionNotifier,
+                            builder: (context, option, _) {
+                              return ValueListenableBuilder<Duration?>(
+                                valueListenable:
+                                    manager.sleepTimerRemainingNotifier,
+                                builder: (context, remaining, _) {
+                                  final label = remaining != null
+                                      ? _formatTimerDuration(remaining)
+                                      : (option == SleepTimerOption.endOfChapter
+                                            ? 'End of Ch'
+                                            : 'Sleep');
+                                  final isActive = option != SleepTimerOption.off;
+
+                                  return OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      foregroundColor: isActive
+                                          ? colorScheme.primary
+                                          : null,
+                                    ),
+                                    icon: Icon(
+                                      isActive
+                                          ? Icons.timer
+                                          : Icons.timer_outlined,
+                                      size: 16,
+                                    ),
+                                    label: Text(label),
+                                    onPressed: () =>
+                                        _showSleepTimerPicker(context),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Play Mode
+                          ValueListenableBuilder<AudioPlayMode>(
+                            valueListenable: manager.playModeNotifier,
+                            builder: (context, mode, _) {
+                              return OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                icon: Icon(mode.icon, size: 16),
+                                label: Text(mode.label),
+                                onPressed: manager.cyclePlayMode,
+                              );
+                            },
+                          ),
+                        ],
                       ),
-
-                      const SizedBox(width: 8),
-
-                      // Play Mode
-                      ValueListenableBuilder<AudioPlayMode>(
-                        valueListenable: manager.playModeNotifier,
-                        builder: (context, mode, _) {
-                          return OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            icon: Icon(mode.icon, size: 16),
-                            label: Text(mode.label),
-                            onPressed: manager.cyclePlayMode,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // "Read Chapter" Button
-                  if (onGoToChapter != null)
-                    TextButton.icon(
-                      icon: const Icon(Icons.menu_book, size: 18),
-                      label: const Text('Go to Chapter in Bible'),
-                      onPressed: () {
-                        onGoToChapter?.call();
-                        Navigator.pop(context);
-                      },
                     ),
 
-                  const SizedBox(height: 4),
-                ],
-              );
-            },
+                    const SizedBox(height: 8),
+
+                    // "Read Chapter" Button
+                    if (onGoToChapter != null)
+                      TextButton.icon(
+                        icon: const Icon(Icons.menu_book, size: 18),
+                        label: const Text('Go to Chapter'),
+                        onPressed: () {
+                          onGoToChapter?.call();
+                          Navigator.pop(context);
+                        },
+                      ),
+
+                    const SizedBox(height: 4),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

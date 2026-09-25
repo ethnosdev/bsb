@@ -63,23 +63,64 @@ class _SettingsPageState extends State<SettingsPage> {
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
+                        insetPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 24,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 16,
+                        ),
                         content: SegmentedButton<ThemeMode>(
+                          style: SegmentedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 8,
+                            ),
+                          ),
                           showSelectedIcon: false,
                           segments: const [
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.light,
-                              icon: Icon(Icons.light_mode),
-                              label: Text('Light'),
+                              label: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.light_mode),
+                                    SizedBox(height: 4),
+                                    Text('Light'),
+                                  ],
+                                ),
+                              ),
                             ),
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.system,
-                              icon: Icon(Icons.smartphone),
-                              label: Text('Device'),
+                              label: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.smartphone),
+                                    SizedBox(height: 4),
+                                    Text('Device'),
+                                  ],
+                                ),
+                              ),
                             ),
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.dark,
-                              icon: Icon(Icons.dark_mode),
-                              label: Text('Dark'),
+                              label: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.dark_mode),
+                                    SizedBox(height: 4),
+                                    Text('Dark'),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                           selected: {appState.themeMode},
@@ -234,10 +275,11 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           ],
                           selected: {appState.bookChooserStyle},
-                          onSelectionChanged: (Set<BookChooserStyle> selection) {
-                            appState.setBookChooserStyle(selection.first);
-                            Navigator.of(context).pop();
-                          },
+                          onSelectionChanged:
+                              (Set<BookChooserStyle> selection) {
+                                appState.setBookChooserStyle(selection.first);
+                                Navigator.of(context).pop();
+                              },
                         ),
                       ),
                     );
@@ -277,9 +319,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           selected: {appState.chapterChooserStyle},
                           onSelectionChanged:
                               (Set<ChapterChooserStyle> selection) {
-                            appState.setChapterChooserStyle(selection.first);
-                            Navigator.of(context).pop();
-                          },
+                                appState.setChapterChooserStyle(
+                                  selection.first,
+                                );
+                                Navigator.of(context).pop();
+                              },
                         ),
                       ),
                     );
@@ -319,9 +363,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           selected: {appState.verseChooserStyle},
                           onSelectionChanged:
                               (Set<VerseChooserStyle> selection) {
-                            appState.setVerseChooserStyle(selection.first);
-                            Navigator.of(context).pop();
-                          },
+                                appState.setVerseChooserStyle(selection.first);
+                                Navigator.of(context).pop();
+                              },
                         ),
                       ),
                     );
@@ -331,7 +375,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(
-                    'Backup & Annotations',
+                    'Backup',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -341,7 +385,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 ListTile(
                   leading: const Icon(Icons.backup_outlined),
                   title: const Text('Export Backup'),
-                  subtitle: const Text('Backup highlights, notes, and playlists to a file'),
+                  subtitle: const Text(
+                    'Backup highlights, notes, and playlists to a file',
+                  ),
                   onTap: () {
                     _showExportChoiceDialog(context);
                   },
