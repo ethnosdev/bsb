@@ -19,6 +19,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
   StreamSubscription<PlaybackEvent>? _eventSubscription;
   StreamSubscription<PlayerState>? _stateSubscription;
+  StreamSubscription<PlayerState>? _playerStateSubscription;
 
   int? get currentBookId => _currentBookId;
   int? get currentChapter => _currentChapter;
@@ -37,6 +38,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
     // Map playback events to AudioService PlaybackState
     _eventSubscription = _player.playbackEventStream.listen(_broadcastState);
+    _playerStateSubscription =
+        _player.playerStateStream.listen((_) => _broadcastState());
 
     // Auto-advance or repeat when current playback completes
     _stateSubscription = _player.playerStateStream.listen((state) async {
@@ -90,7 +93,6 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaControl.rewind,
           if (playing) MediaControl.pause else MediaControl.play,
           MediaControl.fastForward,
-          MediaControl.stop,
           MediaControl.skipToNext,
         ],
         systemActions: const {
@@ -99,7 +101,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.seekBackward,
           MediaAction.setSpeed,
         },
-        androidCompactActionIndices: const [0, 2, 5],
+        androidCompactActionIndices: const [0, 2, 4],
         processingState: const {
           ProcessingState.idle: AudioProcessingState.idle,
           ProcessingState.loading: AudioProcessingState.loading,
@@ -132,6 +134,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       album: 'Berean Standard Bible',
       title: title,
       artist: 'David Souer',
+      artUri: Uri.parse('asset:///assets/images/logo.png'),
       extras: {
         'bookId': bookId,
         'chapter': chapter,
@@ -161,13 +164,22 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    await _player.play();
+    _broadcastState();
+  }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    await _player.pause();
+    _broadcastState();
+  }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) async {
+    await _player.seek(position);
+    _broadcastState();
+  }
 
   /// Seeks relative to current playback position (e.g. +10s or -10s).
   Future<void> seekRelative(Duration offset) async {
@@ -231,6 +243,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> dispose() async {
     await _eventSubscription?.cancel();
+    await _playerStateSubscription?.cancel();
     await _stateSubscription?.cancel();
     await _player.dispose();
   }

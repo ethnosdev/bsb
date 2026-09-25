@@ -1,4 +1,5 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
@@ -54,8 +55,8 @@ Future<void> initAudioService() async {
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'dev.ethnos.bsb.audio',
         androidNotificationChannelName: 'BSB Audio Playback',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
+        androidNotificationIcon: 'mipmap/ic_launcher',
+        androidStopForegroundOnPause: false,
       ),
     );
 
@@ -64,7 +65,8 @@ Future<void> initAudioService() async {
     getIt.registerSingleton<AudioPlaybackManager>(
       AudioPlaybackManager(audioHandler: audioHandler),
     );
-  } catch (_) {
+  } catch (e, stack) {
+    debugPrint('AudioService.init failed: $e\n$stack');
     final fallbackHandler = BsbAudioHandler();
     getIt.registerSingleton<AudioHandler>(fallbackHandler);
     getIt.registerSingleton<BsbAudioHandler>(fallbackHandler);
