@@ -134,6 +134,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Verse Chooser'), 100);
     expect(find.text('Verse Chooser'), findsOneWidget);
     expect(find.text('Sidebar'), findsOneWidget);
 
@@ -186,6 +187,48 @@ void main() {
     expect(userSettings.wordsOfJesusInRed, isTrue);
     final updatedSwitch = tester.widget<SwitchListTile>(switchFinder);
     expect(updatedSwitch.value, isTrue);
+  });
+
+  testWidgets('SettingsPage allows toggling Keep Screen Awake', (tester) async {
+    final userSettings = getIt<UserSettings>();
+    final appState = getIt<AppState>();
+    expect(userSettings.keepScreenAwake, isTrue);
+    expect(appState.keepScreenAwake, isTrue);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SettingsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keep Screen Awake'), findsOneWidget);
+    expect(
+      find.text('Prevent screen from turning off while reading'),
+      findsOneWidget,
+    );
+    final switchFinder =
+        find.widgetWithText(SwitchListTile, 'Keep Screen Awake');
+    expect(switchFinder, findsOneWidget);
+
+    final switchWidget = tester.widget<SwitchListTile>(switchFinder);
+    expect(switchWidget.value, isTrue);
+
+    // Tap to turn off
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    expect(userSettings.keepScreenAwake, isFalse);
+    expect(appState.keepScreenAwake, isFalse);
+    final updatedSwitch = tester.widget<SwitchListTile>(switchFinder);
+    expect(updatedSwitch.value, isFalse);
+
+    // Tap to turn back on
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    expect(userSettings.keepScreenAwake, isTrue);
+    expect(appState.keepScreenAwake, isTrue);
   });
 
   testWidgets('SettingsPage allows changing Light-Dark Mode between Light, Device, and Dark', (tester) async {

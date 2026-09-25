@@ -20,6 +20,9 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -37,6 +40,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, _) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          navigatorObservers: [routeObserver],
           title: Strings.appName,
           theme: manager.lightThemeData,
           darkTheme: manager.darkThemeData,

@@ -181,6 +181,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     appState.setWordsOfJesusInRed(value);
                   },
                 ),
+                SwitchListTile(
+                  title: const Text('Keep Screen Awake'),
+                  subtitle: const Text(
+                    'Prevent screen from turning off while reading',
+                  ),
+                  value: appState.keepScreenAwake,
+                  onChanged: (bool value) {
+                    appState.setKeepScreenAwake(value);
+                  },
+                ),
                 const Divider(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),

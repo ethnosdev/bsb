@@ -7,6 +7,7 @@ import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/reading_plan_service.dart';
+import 'package:bsb/infrastructure/screen_wake_service.dart';
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
 import 'package:bsb/ui/search/search_manager.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -41,6 +42,7 @@ void setupServiceLocator() {
   getIt.registerLazySingleton<UserSettings>(() => UserSettings());
   getIt.registerLazySingleton<TabManager>(() => TabManager());
   getIt.registerLazySingleton<AppState>(() => AppState());
+  getIt.registerLazySingleton<ScreenWakeService>(() => ScreenWakeService());
 }
 
 Future<void> initAudioService() async {

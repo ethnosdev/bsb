@@ -13,7 +13,9 @@ import 'package:flutter/services.dart';
 import 'package:scripture/scripture.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
+import 'package:bsb/infrastructure/screen_wake_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/main.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/highlight_palette_sheet.dart';
@@ -49,7 +51,8 @@ class TextScreen extends StatefulWidget {
   State<TextScreen> createState() => _TextScreenState();
 }
 
-class _TextScreenState extends State<TextScreen> {
+class _TextScreenState extends State<TextScreen>
+    with RouteAware, WidgetsBindingObserver {
   final _screenManager = TextScreenManager();
   static const _initialPageOffset = 10000;
   late final PageController _pageController;
@@ -78,6 +81,13 @@ class _TextScreenState extends State<TextScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (getIt.isRegistered<AppState>()) {
+      getIt<AppState>()
+          .keepScreenAwakeNotifier
+          .addListener(_onKeepScreenAwakeSettingChanged);
+    }
+    _updateWakelock(true);
     _pendingSectionHeading = widget.initialSectionHeading;
     if (widget.initialSectionHeading != null) {
       _targetSectionBookId = widget.bookId;
@@ -154,7 +164,63 @@ class _TextScreenState extends State<TextScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute != null) {
+      routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
+  void didPushNext() {
+    // Another route was pushed over TextScreen (e.g. Settings, Search, Reading Plans)
+    _updateWakelock(false);
+  }
+
+  @override
+  void didPopNext() {
+    // Returned to TextScreen
+    _updateWakelock(true);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+      _updateWakelock(isCurrent);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _updateWakelock(false);
+    }
+  }
+
+  void _onKeepScreenAwakeSettingChanged() {
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    _updateWakelock(isCurrent);
+  }
+
+  void _updateWakelock(bool isVisible) {
+    if (!getIt.isRegistered<ScreenWakeService>()) return;
+    final keepAwakeSetting = getIt.isRegistered<AppState>()
+        ? getIt<AppState>().keepScreenAwake
+        : (getIt.isRegistered<UserSettings>()
+            ? getIt<UserSettings>().keepScreenAwake
+            : true);
+    final shouldKeepAwake = isVisible && keepAwakeSetting;
+    getIt<ScreenWakeService>().setAwake(shouldKeepAwake);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    routeObserver.unsubscribe(this);
+    if (getIt.isRegistered<AppState>()) {
+      getIt<AppState>()
+          .keepScreenAwakeNotifier
+          .removeListener(_onKeepScreenAwakeSettingChanged);
+    }
+    _updateWakelock(false);
     if (widget.chapterChooserNotifier != null) {
       widget.chapterChooserNotifier!.value = null;
     }

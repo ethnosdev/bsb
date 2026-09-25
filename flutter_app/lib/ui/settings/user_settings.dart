@@ -251,6 +251,20 @@ class UserSettings {
       await _prefs.setBool(_wordsOfJesusInRedKey, true);
     }
   }
+
+  static const _keepScreenAwakeKey = 'keepScreenAwake';
+
+  /// Whether to prevent the screen from turning off while reading chapter text.
+  /// Defaults to `true`.
+  bool get keepScreenAwake => _prefs.getBool(_keepScreenAwakeKey) ?? true;
+
+  Future<void> setKeepScreenAwake(bool value) async {
+    if (value) {
+      await _prefs.remove(_keepScreenAwakeKey);
+    } else {
+      await _prefs.setBool(_keepScreenAwakeKey, false);
+    }
+  }
 }
 
 enum BookChooserStyle {

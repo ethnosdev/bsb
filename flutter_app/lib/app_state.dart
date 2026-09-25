@@ -19,6 +19,7 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.addListener(notifyListeners);
     verseChooserStyleNotifier.addListener(notifyListeners);
     wordsOfJesusInRedNotifier.addListener(notifyListeners);
+    keepScreenAwakeNotifier.addListener(notifyListeners);
   }
 
   final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
@@ -37,6 +38,7 @@ class AppState extends ChangeNotifier {
   final verseChooserStyleNotifier =
       ValueNotifier<VerseChooserStyle>(VerseChooserStyle.sidebar);
   final wordsOfJesusInRedNotifier = ValueNotifier<bool>(false);
+  final keepScreenAwakeNotifier = ValueNotifier<bool>(true);
 
   ThemeMode get themeMode => themeNotifier.value;
   String get appThemeId => appThemeIdNotifier.value;
@@ -66,6 +68,7 @@ class AppState extends ChangeNotifier {
   bool get showVerseGrid => showVerseGridNotifier.value;
   VerseChooserStyle get verseChooserStyle => verseChooserStyleNotifier.value;
   bool get wordsOfJesusInRed => wordsOfJesusInRedNotifier.value;
+  bool get keepScreenAwake => keepScreenAwakeNotifier.value;
 
   Future<void> init() async {
     themeNotifier.value = userSettings.themeMode;
@@ -78,6 +81,7 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.value = userSettings.showVerseGrid;
     verseChooserStyleNotifier.value = userSettings.verseChooserStyle;
     wordsOfJesusInRedNotifier.value = userSettings.wordsOfJesusInRed;
+    keepScreenAwakeNotifier.value = userSettings.keepScreenAwake;
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -160,6 +164,11 @@ class AppState extends ChangeNotifier {
     await userSettings.setWordsOfJesusInRed(value);
   }
 
+  Future<void> setKeepScreenAwake(bool value) async {
+    keepScreenAwakeNotifier.value = value;
+    await userSettings.setKeepScreenAwake(value);
+  }
+
   @override
   void dispose() {
     themeNotifier.removeListener(notifyListeners);
@@ -172,6 +181,7 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.removeListener(notifyListeners);
     verseChooserStyleNotifier.removeListener(notifyListeners);
     wordsOfJesusInRedNotifier.removeListener(notifyListeners);
+    keepScreenAwakeNotifier.removeListener(notifyListeners);
     themeNotifier.dispose();
     appThemeIdNotifier.dispose();
     customThemeLightNotifier.dispose();
@@ -182,6 +192,7 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.dispose();
     verseChooserStyleNotifier.dispose();
     wordsOfJesusInRedNotifier.dispose();
+    keepScreenAwakeNotifier.dispose();
     super.dispose();
   }
 }
