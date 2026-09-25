@@ -1,4 +1,4 @@
-# 2.4.0 - 2026.09-24
+# 2.4.0 - 2026.09.24
 
 - Update About text.
 - Don't add reference when only copying one or two word selection.
