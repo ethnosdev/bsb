@@ -108,55 +108,81 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final previewScheme = _resolvePreviewScheme(context);
+    return ListenableBuilder(
+      listenable: _appState,
+      builder: (context, _) {
+        final previewScheme = _resolvePreviewScheme(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Color Theme'),
-        actions: [
-          if (_hasChanges)
-            TextButton.icon(
-              onPressed: _applyTheme,
-              icon: const Icon(Icons.check),
-              label: const Text('Apply'),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: [
-            // Mode Selector: Light / Dark only
-            SegmentedButton<ThemeMode>(
-              showSelectedIcon: false,
-              segments: const [
-                ButtonSegment<ThemeMode>(
-                  value: ThemeMode.light,
-                  icon: Icon(Icons.light_mode_outlined),
-                  label: Text('Light'),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Color Theme'),
+            actions: [
+              if (_hasChanges)
+                TextButton.icon(
+                  onPressed: _applyTheme,
+                  icon: const Icon(Icons.check),
+                  label: const Text('Apply'),
                 ),
-                ButtonSegment<ThemeMode>(
-                  value: ThemeMode.dark,
-                  icon: Icon(Icons.dark_mode_outlined),
-                  label: Text('Dark'),
+            ],
+          ),
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                // Mode Selector: Light / Dark only
+                SegmentedButton<ThemeMode>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment<ThemeMode>(
+                      value: ThemeMode.light,
+                      icon: Icon(Icons.light_mode_outlined),
+                      label: Text('Light'),
+                    ),
+                    ButtonSegment<ThemeMode>(
+                      value: ThemeMode.dark,
+                      icon: Icon(Icons.dark_mode_outlined),
+                      label: Text('Dark'),
+                    ),
+                  ],
+                  selected: {_draftMode},
+                  onSelectionChanged: (set) {
+                    setState(() {
+                      _draftMode = set.first;
+                    });
+                  },
                 ),
-              ],
-              selected: {_draftMode},
-              onSelectionChanged: (set) {
-                setState(() {
-                  _draftMode = set.first;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-            // Live Scripture Preview
-            ScriptureThemePreviewCard(
-              colorScheme: previewScheme,
-              wordsOfJesusInRed: _appState.wordsOfJesusInRed,
-              textSize: _appState.textSize,
-            ),
-            const SizedBox(height: 20),
+                // Live Scripture Preview
+                ScriptureThemePreviewCard(
+                  colorScheme: previewScheme,
+                  wordsOfJesusInRed: _appState.wordsOfJesusInRed,
+                  wordsOfJesusColor: _draftThemeId == AppThemePreset.customPresetId
+                      ? (_resolveIsDark
+                          ? (_customDark.wordsOfJesusColor ??
+                              (_customLight.wordsOfJesusColor != null
+                                  ? Color.lerp(
+                                      _customLight.wordsOfJesusColor,
+                                      Colors.white,
+                                      0.3,
+                                    )
+                                  : null) ??
+                              _customDark.effectiveWordsOfJesusColor)
+                          : (_customLight.wordsOfJesusColor ??
+                              (_customDark.wordsOfJesusColor != null
+                                  ? Color.lerp(
+                                      _customDark.wordsOfJesusColor,
+                                      Colors.black,
+                                      0.3,
+                                    )
+                                  : null) ??
+                              _customLight.effectiveWordsOfJesusColor))
+                      : (_resolveIsDark
+                          ? const Color(0xFFFF8A80)
+                          : const Color(0xFFB71C1C)),
+                  textSize: _appState.textSize,
+                ),
+                const SizedBox(height: 20),
 
             // Section: Preset Themes
             Padding(
@@ -310,6 +336,8 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 

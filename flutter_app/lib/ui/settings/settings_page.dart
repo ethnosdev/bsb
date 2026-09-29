@@ -216,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
                 SwitchListTile(
-                  title: const Text('Words of Jesus in Red'),
+                  title: const Text('Words of Jesus in Color'),
                   value: appState.wordsOfJesusInRed,
                   onChanged: (bool value) {
                     appState.setWordsOfJesusInRed(value);

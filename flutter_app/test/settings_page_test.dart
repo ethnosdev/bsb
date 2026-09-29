@@ -39,7 +39,7 @@ void main() {
     expect(find.text('Light-Dark Mode'), findsOneWidget);
     expect(find.text('Color Theme'), findsOneWidget);
     expect(find.text('Text Size'), findsOneWidget);
-    expect(find.text('Words of Jesus in Red'), findsOneWidget);
+    expect(find.text('Words of Jesus in Color'), findsOneWidget);
     expect(find.text('Navigation'), findsOneWidget);
     expect(find.text('Book Chooser'), findsOneWidget);
 
@@ -162,7 +162,7 @@ void main() {
     },
   );
 
-  testWidgets('SettingsPage allows toggling Words of Jesus in Red', (
+  testWidgets('SettingsPage allows toggling Words of Jesus in Color', (
     tester,
   ) async {
     final userSettings = getIt<UserSettings>();
@@ -171,10 +171,10 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SettingsPage()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Words of Jesus in Red'), findsOneWidget);
+    expect(find.text('Words of Jesus in Color'), findsOneWidget);
     final switchFinder = find.widgetWithText(
       SwitchListTile,
-      'Words of Jesus in Red',
+      'Words of Jesus in Color',
     );
     expect(switchFinder, findsOneWidget);
 

@@ -12,6 +12,7 @@ class CustomThemeConfig {
   final Color? surfaceContainerColor;
   final Color? secondaryTextColor;
   final Color? outlineColor;
+  final Color? wordsOfJesusColor;
   final bool isBackgroundAutoDerived;
 
   const CustomThemeConfig({
@@ -21,6 +22,7 @@ class CustomThemeConfig {
     this.surfaceContainerColor,
     this.secondaryTextColor,
     this.outlineColor,
+    this.wordsOfJesusColor,
     this.isBackgroundAutoDerived = false,
   });
 
@@ -141,6 +143,12 @@ class CustomThemeConfig {
         : Color.lerp(backgroundColor, Colors.black, 0.15)!;
   }
 
+  /// Effective color for words of Jesus, derived if not explicitly customized.
+  Color get effectiveWordsOfJesusColor {
+    if (wordsOfJesusColor != null) return wordsOfJesusColor!;
+    return isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
+  }
+
   /// Contrast ratio between effective text and background using W3C WCAG formula.
   double get contrastRatio =>
       calculateContrastRatio(effectiveTextColor, backgroundColor);
@@ -234,6 +242,8 @@ class CustomThemeConfig {
     bool clearSecondaryTextColor = false,
     Color? outlineColor,
     bool clearOutlineColor = false,
+    Color? wordsOfJesusColor,
+    bool clearWordsOfJesusColor = false,
     bool? isBackgroundAutoDerived,
   }) {
     return CustomThemeConfig(
@@ -249,6 +259,9 @@ class CustomThemeConfig {
           : (secondaryTextColor ?? this.secondaryTextColor),
       outlineColor:
           clearOutlineColor ? null : (outlineColor ?? this.outlineColor),
+      wordsOfJesusColor: clearWordsOfJesusColor
+          ? null
+          : (wordsOfJesusColor ?? this.wordsOfJesusColor),
       isBackgroundAutoDerived:
           isBackgroundAutoDerived ?? this.isBackgroundAutoDerived,
     );
@@ -264,6 +277,8 @@ class CustomThemeConfig {
       if (secondaryTextColor != null)
         'secondaryTextColor': secondaryTextColor!.toARGB32(),
       if (outlineColor != null) 'outlineColor': outlineColor!.toARGB32(),
+      if (wordsOfJesusColor != null)
+        'wordsOfJesusColor': wordsOfJesusColor!.toARGB32(),
       if (isBackgroundAutoDerived) 'isBackgroundAutoDerived': true,
     };
   }
@@ -286,6 +301,9 @@ class CustomThemeConfig {
           : null,
       outlineColor: map['outlineColor'] != null
           ? Color(map['outlineColor'] as int)
+          : null,
+      wordsOfJesusColor: map['wordsOfJesusColor'] != null
+          ? Color(map['wordsOfJesusColor'] as int)
           : null,
       isBackgroundAutoDerived: map['isBackgroundAutoDerived'] as bool? ?? false,
     );
@@ -318,6 +336,8 @@ class CustomThemeConfig {
           secondaryTextColor?.toARGB32() ==
               other.secondaryTextColor?.toARGB32() &&
           outlineColor?.toARGB32() == other.outlineColor?.toARGB32() &&
+          wordsOfJesusColor?.toARGB32() ==
+              other.wordsOfJesusColor?.toARGB32() &&
           isBackgroundAutoDerived == other.isBackgroundAutoDerived;
 
   @override
@@ -328,6 +348,7 @@ class CustomThemeConfig {
         surfaceContainerColor?.toARGB32(),
         secondaryTextColor?.toARGB32(),
         outlineColor?.toARGB32(),
+        wordsOfJesusColor?.toARGB32(),
         isBackgroundAutoDerived,
       );
 }

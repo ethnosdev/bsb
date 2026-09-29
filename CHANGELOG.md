@@ -1,3 +1,9 @@
+# 2.4.1
+
+- Allow words of Jesus color to be set.
+- Make the color theme preview more realistic.
+- 
+
 # 2.4.0 - 2026.09.24
 
 - Update About text.

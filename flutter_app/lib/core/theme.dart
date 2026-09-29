@@ -348,6 +348,13 @@ class MaterialTheme {
           bodyColor: colorScheme.onSurface,
           displayColor: colorScheme.onSurface,
         ),
+        extensions: [
+          ScriptureTheme(
+            wordsOfJesusColor: colorScheme.brightness == Brightness.dark
+                ? const Color(0xFFFF8A80)
+                : const Color(0xFFB71C1C),
+          ),
+        ],
         scaffoldBackgroundColor: colorScheme.surface,
         canvasColor: colorScheme.surface,
       );
@@ -355,7 +362,13 @@ class MaterialTheme {
   static ThemeData buildTheme({
     required ColorScheme colorScheme,
     String fontFamily = 'Charis',
+    Color? wordsOfJesusColor,
   }) {
+    final effectiveWordsOfJesusColor = wordsOfJesusColor ??
+        (colorScheme.brightness == Brightness.dark
+            ? const Color(0xFFFF8A80)
+            : const Color(0xFFB71C1C));
+
     final baseTextTheme = colorScheme.brightness == Brightness.dark
         ? ThemeData.dark().textTheme
         : ThemeData.light().textTheme;
@@ -370,6 +383,9 @@ class MaterialTheme {
       brightness: colorScheme.brightness,
       colorScheme: colorScheme,
       textTheme: textTheme,
+      extensions: [
+        ScriptureTheme(wordsOfJesusColor: effectiveWordsOfJesusColor),
+      ],
       scaffoldBackgroundColor: colorScheme.surface,
       canvasColor: colorScheme.surface,
       appBarTheme: AppBarTheme(
@@ -421,4 +437,41 @@ class ColorFamily {
   final Color onColor;
   final Color colorContainer;
   final Color onColorContainer;
+}
+
+/// Theme extension for scripture-specific custom styling, such as Words of Jesus color.
+@immutable
+class ScriptureTheme extends ThemeExtension<ScriptureTheme> {
+  final Color wordsOfJesusColor;
+
+  const ScriptureTheme({
+    required this.wordsOfJesusColor,
+  });
+
+  @override
+  ScriptureTheme copyWith({Color? wordsOfJesusColor}) {
+    return ScriptureTheme(
+      wordsOfJesusColor: wordsOfJesusColor ?? this.wordsOfJesusColor,
+    );
+  }
+
+  @override
+  ScriptureTheme lerp(ThemeExtension<ScriptureTheme>? other, double t) {
+    if (other is! ScriptureTheme) return this;
+    return ScriptureTheme(
+      wordsOfJesusColor:
+          Color.lerp(wordsOfJesusColor, other.wordsOfJesusColor, t) ??
+              wordsOfJesusColor,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ScriptureTheme &&
+          runtimeType == other.runtimeType &&
+          wordsOfJesusColor == other.wordsOfJesusColor;
+
+  @override
+  int get hashCode => wordsOfJesusColor.hashCode;
 }

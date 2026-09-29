@@ -51,14 +51,55 @@ class AppState extends ChangeNotifier {
     final colorScheme = isCustomTheme
         ? customThemeLight.toColorScheme()
         : currentThemePreset.lightScheme;
-    return MaterialTheme.buildTheme(colorScheme: colorScheme);
+    final wordsColor = getWordsOfJesusColor(Brightness.light);
+    return MaterialTheme.buildTheme(
+      colorScheme: colorScheme,
+      wordsOfJesusColor: wordsColor,
+    );
   }
 
   ThemeData get darkThemeData {
     final colorScheme = isCustomTheme
         ? customThemeDark.toColorScheme()
         : currentThemePreset.darkScheme;
-    return MaterialTheme.buildTheme(colorScheme: colorScheme);
+    final wordsColor = getWordsOfJesusColor(Brightness.dark);
+    return MaterialTheme.buildTheme(
+      colorScheme: colorScheme,
+      wordsOfJesusColor: wordsColor,
+    );
+  }
+
+  /// Returns the effective color for the Words of Jesus based on the current theme and brightness.
+  /// For all preset themes, the words of Jesus are always shown in standard red;
+  /// only for custom themes can the color be changed.
+  Color getWordsOfJesusColor(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    if (!isCustomTheme) {
+      return isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
+    }
+    final customColor = isDark
+        ? (customThemeDark.wordsOfJesusColor ??
+            (customThemeLight.wordsOfJesusColor != null
+                ? Color.lerp(
+                    customThemeLight.wordsOfJesusColor,
+                    Colors.white,
+                    0.3,
+                  )
+                : null))
+        : (customThemeLight.wordsOfJesusColor ??
+            (customThemeDark.wordsOfJesusColor != null
+                ? Color.lerp(
+                    customThemeDark.wordsOfJesusColor,
+                    Colors.black,
+                    0.3,
+                  )
+                : null));
+
+    if (customColor != null) {
+      return customColor;
+    }
+
+    return isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
   }
 
   double get textSize => textSizeNotifier.value;

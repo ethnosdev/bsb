@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
+import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/reference.dart';
@@ -141,12 +142,14 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = _appState;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final redColor = isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
+    final defaultRed =
+        isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
+    final redColor = theme.extension<ScriptureTheme>()?.wordsOfJesusColor ??
+        (appState?.getWordsOfJesusColor(theme.brightness) ?? defaultRed);
     final topPadding = _maxTopInset + kToolbarHeight + 16.0;
-
-    final appState = _appState;
     final double baseTextSize =
         appState?.textSizeNotifier.value ?? FontScale.defaultBaseSize;
     final bool defaultIsRed =

@@ -101,6 +101,7 @@ void main() {
         surfaceContainerColor: Color(0xFFFCE4EC),
         secondaryTextColor: Color(0xFF6A1B9A),
         outlineColor: Color(0xFFBDBDBD),
+        wordsOfJesusColor: Color(0xFFE91E63),
       );
 
       final jsonStr = config.toJsonString();
@@ -116,24 +117,46 @@ void main() {
       expect(restored.surfaceContainerColor, equals(config.surfaceContainerColor));
       expect(restored.secondaryTextColor, equals(config.secondaryTextColor));
       expect(restored.outlineColor, equals(config.outlineColor));
+      expect(restored.wordsOfJesusColor, equals(config.wordsOfJesusColor));
+      expect(restored.effectiveWordsOfJesusColor, equals(const Color(0xFFE91E63)));
+    });
+
+    test('effectiveWordsOfJesusColor falls back to defaults for light and dark modes', () {
+      const lightConfig = CustomThemeConfig(
+        backgroundColor: Color(0xFFFFFFFF),
+      );
+      expect(lightConfig.isDark, isFalse);
+      expect(lightConfig.wordsOfJesusColor, isNull);
+      expect(lightConfig.effectiveWordsOfJesusColor, equals(const Color(0xFFB71C1C)));
+
+      const darkConfig = CustomThemeConfig(
+        backgroundColor: Color(0xFF000000),
+      );
+      expect(darkConfig.isDark, isTrue);
+      expect(darkConfig.wordsOfJesusColor, isNull);
+      expect(darkConfig.effectiveWordsOfJesusColor, equals(const Color(0xFFFF8A80)));
     });
 
     test('copyWith allows overriding and clearing individual color slots', () {
       final base = const CustomThemeConfig(
         backgroundColor: Color(0xFFFFFFFF),
         textColor: Color(0xFF000000),
+        wordsOfJesusColor: Color(0xFFE91E63),
       );
 
       final updated = base.copyWith(
         backgroundColor: const Color(0xFF000000),
         clearTextColor: true,
+        clearWordsOfJesusColor: true,
       );
 
       expect(updated.backgroundColor, equals(const Color(0xFF000000)));
       expect(updated.textColor, isNull);
+      expect(updated.wordsOfJesusColor, isNull);
       expect(updated.isDark, isTrue);
       // Effective text color should automatically flip to light
       expect(updated.effectiveTextColor.computeLuminance(), greaterThan(0.6));
+      expect(updated.effectiveWordsOfJesusColor, equals(const Color(0xFFFF8A80)));
     });
   });
 }

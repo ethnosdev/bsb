@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
+import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reading_plan_models.dart';
@@ -983,9 +984,20 @@ class _ChapterTextState extends State<ChapterText>
                                                   final isDark =
                                                       brightness ==
                                                       Brightness.dark;
-                                                  final redColor = isDark
+                                                  final defaultRed = isDark
                                                       ? const Color(0xFFFF8A80)
                                                       : const Color(0xFFB71C1C);
+                                                  final redColor =
+                                                      Theme.of(context)
+                                                              .extension<
+                                                                  ScriptureTheme>()
+                                                              ?.wordsOfJesusColor ??
+                                                          (getIt.isRegistered<
+                                                                  AppState>()
+                                                              ? getIt<AppState>()
+                                                                  .getWordsOfJesusColor(
+                                                                      brightness)
+                                                              : defaultRed);
                                                   return base.copyWith(
                                                     wordsOfJesusStyle: base
                                                         .textStyle
@@ -1237,11 +1249,18 @@ class _ChapterTextState extends State<ChapterText>
                             ? getIt<AppState>().wordsOfJesusInRedNotifier.value
                             : false;
                         if (isRed) {
-                          final isDark =
-                              Theme.of(context).brightness == Brightness.dark;
-                          final redColor = isDark
+                          final brightness = Theme.of(context).brightness;
+                          final isDark = brightness == Brightness.dark;
+                          final defaultRed = isDark
                               ? const Color(0xFFFF8A80)
                               : const Color(0xFFB71C1C);
+                          final redColor = Theme.of(context)
+                                  .extension<ScriptureTheme>()
+                                  ?.wordsOfJesusColor ??
+                              (getIt.isRegistered<AppState>()
+                                  ? getIt<AppState>()
+                                      .getWordsOfJesusColor(brightness)
+                                  : defaultRed);
                           return base.copyWith(
                             wordsOfJesusStyle: base.textStyle.copyWith(
                               color: redColor,

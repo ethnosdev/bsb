@@ -42,8 +42,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('John 1:1–3'), findsOneWidget);
-    expect(find.text('The Word Became Flesh'), findsOneWidget);
+    expect(find.text('MAT 8'), findsOneWidget);
+    expect(find.text('The Leper’s Prayer'), findsOneWidget);
+    expect(find.text('immediately'), findsOneWidget);
+
+    // Verify IgnorePointer wraps the preview card so it is not interactable
+    expect(
+      find.byWidgetPredicate((w) => w is IgnorePointer && w.ignoring),
+      findsOneWidget,
+    );
+
+    // Verify header has the same color as the text (onSurface)
+    final headerWidget = tester.widget<Text>(find.text('The Leper’s Prayer'));
+    expect(headerWidget.style?.color, equals(scheme.onSurface));
   });
 
   testWidgets('ThemeSelectionPage renders all presets and custom theme card', (tester) async {
@@ -429,17 +440,17 @@ void main() {
     // In Light Mode:
     // ONLY Background Color should say 'Custom color'
     expect(find.text('Custom color'), findsOneWidget);
-    // 5 other colors (Accent, Scripture Text, Verse Numbers, Cards, Outlines) should say 'Auto-derived'
-    expect(find.text('Auto-derived'), findsNWidgets(5));
+    // 6 other colors (Accent, Scripture Text, Words of Jesus, Verse Numbers, Cards, Outlines) should say 'Auto-derived'
+    expect(find.text('Auto-derived'), findsNWidgets(6));
 
     // Switch to Dark Mode
     await tester.tap(find.text('Dark Mode'));
     await tester.pumpAndSettle();
 
     // In Dark Mode:
-    // ALL 6 colors (including Background Color and Accent Color) should say 'Auto-derived'
+    // ALL 7 colors (including Background Color and Accent Color) should say 'Auto-derived'
     expect(find.text('Custom color'), findsNothing);
-    expect(find.text('Auto-derived'), findsNWidgets(6));
+    expect(find.text('Auto-derived'), findsNWidgets(7));
 
     // Now customize Accent Color in Dark Mode
     await tester.tap(find.text('Accent Color'));
@@ -450,7 +461,7 @@ void main() {
 
     // Accent Color should now say 'Custom color'
     expect(find.text('Custom color'), findsOneWidget);
-    expect(find.text('Auto-derived'), findsNWidgets(5));
+    expect(find.text('Auto-derived'), findsNWidgets(6));
 
     // Reset Accent Color via the reset icon button
     final resetAccentFinder = find.byTooltip('Reset to auto-derived');
@@ -460,7 +471,7 @@ void main() {
 
     // Accent Color reverts to 'Auto-derived'
     expect(find.text('Custom color'), findsNothing);
-    expect(find.text('Auto-derived'), findsNWidgets(6));
+    expect(find.text('Auto-derived'), findsNWidgets(7));
   });
 
   testWidgets('choosing a dark background marks only dark background as custom and all other colors as auto-derived', (tester) async {
@@ -502,16 +513,16 @@ void main() {
     // Because darkNavy is dark, the editor switched to Dark Mode:
     // ONLY Background Color should say 'Custom color'
     expect(find.text('Custom color'), findsOneWidget);
-    expect(find.text('Auto-derived'), findsNWidgets(5));
+    expect(find.text('Auto-derived'), findsNWidgets(6));
 
     // Switch to Light Mode
     await tester.tap(find.text('Light Mode'));
     await tester.pumpAndSettle();
 
     // In Light Mode:
-    // ALL 6 colors (including Background Color) should say 'Auto-derived'
+    // ALL 7 colors (including Background Color) should say 'Auto-derived'
     expect(find.text('Custom color'), findsNothing);
-    expect(find.text('Auto-derived'), findsNWidgets(6));
+    expect(find.text('Auto-derived'), findsNWidgets(7));
   });
 
   testWidgets('CustomThemeEditorPage defaults background to current theme background color when not chosen', (tester) async {
@@ -875,6 +886,60 @@ void main() {
     expect(find.text('Switch to Light Mode?'), findsNothing);
     expect(appState.themeMode, equals(ThemeMode.system));
     expect(appState.isCustomTheme, isTrue);
+  });
+
+  testWidgets('CustomThemeEditorPage allows customizing and resetting Words of Jesus color', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CustomThemeEditorPage(
+          initialLightConfig: CustomThemeConfig.defaultLight(),
+          initialDarkConfig: CustomThemeConfig.defaultDark(),
+          initialIsDark: false,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Expand Customize All Colors
+    await tester.tap(find.text('Customize All Colors'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Words of Jesus Color'), findsOneWidget);
+
+    // Tap Words of Jesus Color tile
+    await tester.tap(find.text('Words of Jesus Color'));
+    await tester.pumpAndSettle();
+
+    // AppColorPicker opens
+    expect(find.text('Words of Jesus Color'), findsWidgets);
+    expect(find.text('Select'), findsOneWidget);
+
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+
+    // Now Words of Jesus Color tile shows Custom color badge (Background + Words of Jesus)
+    expect(find.text('Custom color'), findsNWidgets(2));
+
+    // Tap reset button for Words of Jesus Color
+    final wordsTile = find.ancestor(
+      of: find.text('Words of Jesus Color'),
+      matching: find.byType(ListTile),
+    );
+    final resetFinder = find.descendant(
+      of: wordsTile,
+      matching: find.byTooltip('Reset to auto-derived'),
+    );
+    expect(resetFinder, findsOneWidget);
+    await tester.tap(resetFinder);
+    await tester.pumpAndSettle();
+
+    // Reverts to 1 Custom color (Background only)
+    expect(find.text('Custom color'), findsOneWidget);
   });
 }
 

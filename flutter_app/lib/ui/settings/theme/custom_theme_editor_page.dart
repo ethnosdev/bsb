@@ -139,6 +139,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
           primaryColor: _lightConfig.primaryColor != null
               ? Color.lerp(_lightConfig.primaryColor, Colors.white, 0.3)
               : null,
+          wordsOfJesusColor: _lightConfig.wordsOfJesusColor != null
+              ? Color.lerp(_lightConfig.wordsOfJesusColor, Colors.white, 0.3)
+              : null,
         ),
       );
     } else {
@@ -151,6 +154,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
           isBackgroundAutoDerived: true,
           primaryColor: _darkConfig.primaryColor != null
               ? Color.lerp(_darkConfig.primaryColor, Colors.black, 0.3)
+              : null,
+          wordsOfJesusColor: _darkConfig.wordsOfJesusColor != null
+              ? Color.lerp(_darkConfig.wordsOfJesusColor, Colors.black, 0.3)
               : null,
         ),
       );
@@ -294,6 +300,23 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
             ScriptureThemePreviewCard(
               colorScheme: activeScheme,
               wordsOfJesusInRed: appState.wordsOfJesusInRed,
+              wordsOfJesusColor: _activeConfig.wordsOfJesusColor ??
+                  (_isEditingDark
+                      ? (_lightConfig.wordsOfJesusColor != null
+                          ? Color.lerp(
+                              _lightConfig.wordsOfJesusColor,
+                              Colors.white,
+                              0.3,
+                            )
+                          : null)
+                      : (_darkConfig.wordsOfJesusColor != null
+                          ? Color.lerp(
+                              _darkConfig.wordsOfJesusColor,
+                              Colors.black,
+                              0.3,
+                            )
+                          : null)) ??
+                  _activeConfig.effectiveWordsOfJesusColor,
               textSize: appState.textSize,
             ),
             const SizedBox(height: 16),
@@ -471,6 +494,30 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                       onReset: () {
                         _updateActiveConfig(
                           _activeConfig.copyWith(clearTextColor: true),
+                        );
+                      },
+                    ),
+
+                    // Words of Jesus Color
+                    _buildFineTuneTile(
+                      title: 'Words of Jesus Color',
+                      isCustomized: _activeConfig.wordsOfJesusColor != null,
+                      color: _activeConfig.effectiveWordsOfJesusColor,
+                      onTap: () {
+                        _pickColor(
+                          title: 'Words of Jesus Color',
+                          currentColor:
+                              _activeConfig.effectiveWordsOfJesusColor,
+                          onSelected: (c) {
+                            _updateActiveConfig(
+                              _activeConfig.copyWith(wordsOfJesusColor: c),
+                            );
+                          },
+                        );
+                      },
+                      onReset: () {
+                        _updateActiveConfig(
+                          _activeConfig.copyWith(clearWordsOfJesusColor: true),
                         );
                       },
                     ),
