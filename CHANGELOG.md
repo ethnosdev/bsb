@@ -2,7 +2,7 @@
 
 - Allow words of Jesus color to be set.
 - Make the color theme preview more realistic.
-- 
+- Fix bottom system bar hiding the brightness level in the custom color chooser.
 
 # 2.4.0 - 2026.09.24
 

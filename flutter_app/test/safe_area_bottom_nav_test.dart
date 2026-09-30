@@ -12,6 +12,7 @@ import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/help.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
+import 'package:bsb/ui/settings/theme/app_color_picker.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
@@ -278,5 +279,61 @@ void main() {
       expect(safeArea.top, isFalse);
       expect(safeArea.bottom, isTrue);
     });
+
+    testWidgets('AppColorPicker.show respects bottom safe area insets and protects brightness slider', (tester) async {
+      const bottomInset = 48.0;
+      const screenHeight = 600.0;
+      const screenWidth = 400.0;
+
+      await tester.binding.setSurfaceSize(const Size(screenWidth, screenHeight));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(screenWidth, screenHeight),
+            viewPadding: EdgeInsets.only(bottom: bottomInset),
+            padding: EdgeInsets.only(bottom: bottomInset),
+          ),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      AppColorPicker.show(
+                        context: context,
+                        initialColor: const Color(0xFF865328),
+                      );
+                    },
+                    child: const Text('Open Color Chooser'),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Color Chooser'));
+      await tester.pumpAndSettle();
+
+      final safeAreaFinder = find.descendant(
+        of: find.byType(StatefulBuilder),
+        matching: find.byType(SafeArea),
+      );
+      expect(safeAreaFinder, findsOneWidget);
+      final safeArea = tester.widget<SafeArea>(safeAreaFinder);
+      expect(safeArea.top, isFalse);
+      expect(safeArea.bottom, isTrue);
+
+      final brightnessFinder = find.text('Brightness');
+      expect(brightnessFinder, findsOneWidget);
+
+      final brightnessBottom = tester.getBottomRight(brightnessFinder).dy;
+      expect(brightnessBottom, lessThanOrEqualTo(screenHeight - bottomInset));
+    });
   });
 }
+

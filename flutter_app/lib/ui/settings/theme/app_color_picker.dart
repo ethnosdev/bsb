@@ -48,11 +48,13 @@ class AppColorPicker extends StatefulWidget {
             List<Color>.from(effectiveRecentColors);
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: ConstrainedBox(
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.sizeOf(context).height * 0.85,
                 ),
@@ -69,11 +71,15 @@ class AppColorPicker extends StatefulWidget {
                             onPressed: () => Navigator.of(sheetContext).pop(),
                             child: const Text('Cancel'),
                           ),
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            child: Text(
+                              title,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                           FilledButton(
@@ -122,9 +128,10 @@ class AppColorPicker extends StatefulWidget {
                   ],
                 ),
               ),
-            );
-          },
-        );
+            ),
+          );
+        },
+      );
       },
     );
   }
