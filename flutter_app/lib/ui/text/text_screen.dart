@@ -21,6 +21,7 @@ import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/playlists/widgets/add_to_playlist_sheet.dart';
 import 'package:bsb/ui/text/highlight_palette_sheet.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
+
 import 'screen_manager.dart';
 
 class TextScreen extends StatefulWidget {
@@ -45,7 +46,8 @@ class TextScreen extends StatefulWidget {
     int chapter, [
     String? sectionHeading,
     int? targetVerse,
-  ])? onChapterChanged;
+  ])?
+  onChapterChanged;
   final VoidCallback? onToggleDistractionFree;
 
   @override
@@ -84,9 +86,9 @@ class _TextScreenState extends State<TextScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     if (getIt.isRegistered<AppState>()) {
-      getIt<AppState>()
-          .keepScreenAwakeNotifier
-          .addListener(_onKeepScreenAwakeSettingChanged);
+      getIt<AppState>().keepScreenAwakeNotifier.addListener(
+        _onKeepScreenAwakeSettingChanged,
+      );
     }
     _updateWakelock(true);
     _pendingSectionHeading = widget.initialSectionHeading;
@@ -117,9 +119,7 @@ class _TextScreenState extends State<TextScreen>
       if (currentIndex != _pageIndex) {
         _pageIndex = currentIndex;
         _activePageIndexNotifier.value = currentIndex;
-        _screenManager.updateTitle(
-          index: _pageIndex,
-        );
+        _screenManager.updateTitle(index: _pageIndex);
         _pendingSectionHeading = null;
         _targetSectionBookId = null;
         _targetSectionChapter = null;
@@ -130,8 +130,9 @@ class _TextScreenState extends State<TextScreen>
         if (_showBottomBarNotifier.value) {
           _showBottomBarNotifier.value = false;
         }
-        final (bookId, chapter) =
-            _screenManager.bookAndChapterForPageIndex(_pageIndex);
+        final (bookId, chapter) = _screenManager.bookAndChapterForPageIndex(
+          _pageIndex,
+        );
         widget.onChapterChanged?.call(bookId, chapter);
       }
     });
@@ -140,11 +141,14 @@ class _TextScreenState extends State<TextScreen>
   @override
   void didUpdateWidget(covariant TextScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final bookOrChapterChanged = widget.bookId != oldWidget.bookId ||
+    final bookOrChapterChanged =
+        widget.bookId != oldWidget.bookId ||
         widget.chapter != oldWidget.chapter;
-    final newSectionHeading = widget.initialSectionHeading != null &&
+    final newSectionHeading =
+        widget.initialSectionHeading != null &&
         widget.initialSectionHeading != oldWidget.initialSectionHeading;
-    final newTargetVerse = widget.initialTargetVerse != null &&
+    final newTargetVerse =
+        widget.initialTargetVerse != null &&
         widget.initialTargetVerse != oldWidget.initialTargetVerse;
 
     if (bookOrChapterChanged || newSectionHeading || newTargetVerse) {
@@ -206,8 +210,8 @@ class _TextScreenState extends State<TextScreen>
     final keepAwakeSetting = getIt.isRegistered<AppState>()
         ? getIt<AppState>().keepScreenAwake
         : (getIt.isRegistered<UserSettings>()
-            ? getIt<UserSettings>().keepScreenAwake
-            : true);
+              ? getIt<UserSettings>().keepScreenAwake
+              : true);
     final shouldKeepAwake = isVisible && keepAwakeSetting;
     getIt<ScreenWakeService>().setAwake(shouldKeepAwake);
   }
@@ -217,9 +221,9 @@ class _TextScreenState extends State<TextScreen>
     WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     if (getIt.isRegistered<AppState>()) {
-      getIt<AppState>()
-          .keepScreenAwakeNotifier
-          .removeListener(_onKeepScreenAwakeSettingChanged);
+      getIt<AppState>().keepScreenAwakeNotifier.removeListener(
+        _onKeepScreenAwakeSettingChanged,
+      );
     }
     _updateWakelock(false);
     if (widget.chapterChooserNotifier != null) {
@@ -263,8 +267,9 @@ class _TextScreenState extends State<TextScreen>
     if (appState != null) {
       return appState.showVerseGridNotifier.value;
     }
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     return userSettings?.showVerseGrid ?? false;
   }
 
@@ -292,7 +297,8 @@ class _TextScreenState extends State<TextScreen>
             }
           } else if (notification is ScrollEndNotification) {
             if (_hasHorizontalUserDrag) {
-              final settledBack = _pageIndex == _horizontalDragStartPage &&
+              final settledBack =
+                  _pageIndex == _horizontalDragStartPage &&
                   (notification.metrics.pixels - _horizontalDragStartPixels)
                           .abs() <
                       50.0;
@@ -313,8 +319,9 @@ class _TextScreenState extends State<TextScreen>
         physics: const SnappyScrollPhysics(),
         itemBuilder: (context, index) {
           final pageIndex = index - _initialPageOffset;
-          final (bookId, chapter) =
-              _screenManager.bookAndChapterForPageIndex(pageIndex);
+          final (bookId, chapter) = _screenManager.bookAndChapterForPageIndex(
+            pageIndex,
+          );
           return ChapterText(
             key: ValueKey('chapter_${bookId}_$chapter'),
             bookId: bookId,
@@ -325,71 +332,71 @@ class _TextScreenState extends State<TextScreen>
             pageIndex: pageIndex,
             onToggleDistractionFree: widget.onToggleDistractionFree,
             targetSection: _isTargetSection(bookId, chapter)
-              ? _pendingSectionHeading
-              : null,
-          targetVerse: _isTargetVerse(bookId, chapter)
-              ? _pendingTargetVerse
-              : null,
-          onTargetSectionScrolled: () {
-            if (mounted) {
-              setState(() {
+                ? _pendingSectionHeading
+                : null,
+            targetVerse: _isTargetVerse(bookId, chapter)
+                ? _pendingTargetVerse
+                : null,
+            onTargetSectionScrolled: () {
+              if (mounted) {
+                setState(() {
+                  _pendingSectionHeading = null;
+                  _targetSectionBookId = null;
+                  _targetSectionChapter = null;
+                });
+              } else {
                 _pendingSectionHeading = null;
                 _targetSectionBookId = null;
                 _targetSectionChapter = null;
-              });
-            } else {
-              _pendingSectionHeading = null;
-              _targetSectionBookId = null;
-              _targetSectionChapter = null;
-            }
-            if (getIt.isRegistered<TabManager>()) {
-              final activeTab = getIt<TabManager>().activeTab;
-              if (activeTab != null) {
-                activeTab.sectionHeading = null;
               }
-            }
-          },
-          onTargetVerseScrolled: () {
-            if (mounted) {
-              setState(() {
+              if (getIt.isRegistered<TabManager>()) {
+                final activeTab = getIt<TabManager>().activeTab;
+                if (activeTab != null) {
+                  activeTab.sectionHeading = null;
+                }
+              }
+            },
+            onTargetVerseScrolled: () {
+              if (mounted) {
+                setState(() {
+                  _pendingTargetVerse = null;
+                  _targetVerseBookId = null;
+                  _targetVerseChapter = null;
+                });
+              } else {
                 _pendingTargetVerse = null;
                 _targetVerseBookId = null;
                 _targetVerseChapter = null;
-              });
-            } else {
-              _pendingTargetVerse = null;
-              _targetVerseBookId = null;
-              _targetVerseChapter = null;
-            }
-            if (getIt.isRegistered<TabManager>()) {
-              final activeTab = getIt<TabManager>().activeTab;
-              if (activeTab != null) {
-                activeTab.targetVerse = null;
               }
-            }
-          },
-          onSelectionChanged: (controller) {
-            _activeController = controller;
-            final hasSelection = controller.hasSelection;
-            if (hasSelection && controller.startId != null) {
-              final startId = controller.startId!;
-              final reference = Reference.fromWordId(packedInt: startId);
-              setState(() {
-                _currentLanguage = languageForVerse(
-                  bookId: reference.bookId,
-                  chapter: reference.chapter,
-                  verse: reference.verse ?? 1,
-                );
-              });
-            }
-            if (_showBottomBarNotifier.value != hasSelection) {
-              _showBottomBarNotifier.value = hasSelection;
-            }
-          },
-        );
-      },
-    ),
-  );
+              if (getIt.isRegistered<TabManager>()) {
+                final activeTab = getIt<TabManager>().activeTab;
+                if (activeTab != null) {
+                  activeTab.targetVerse = null;
+                }
+              }
+            },
+            onSelectionChanged: (controller) {
+              _activeController = controller;
+              final hasSelection = controller.hasSelection;
+              if (hasSelection && controller.startId != null) {
+                final startId = controller.startId!;
+                final reference = Reference.fromWordId(packedInt: startId);
+                setState(() {
+                  _currentLanguage = languageForVerse(
+                    bookId: reference.bookId,
+                    chapter: reference.chapter,
+                    verse: reference.verse ?? 1,
+                  );
+                });
+              }
+              if (_showBottomBarNotifier.value != hasSelection) {
+                _showBottomBarNotifier.value = hasSelection;
+              }
+            },
+          );
+        },
+      ),
+    );
 
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     if (appState == null) return pageView;
@@ -480,59 +487,61 @@ class _TextScreenState extends State<TextScreen>
 
   Widget _buildBottomMenuBar() {
     return ValueListenableBuilder(
-        valueListenable: _showBottomBarNotifier,
-        builder: (context, showBar, child) {
-          final language = _currentLanguage;
-          final theme = Theme.of(context);
-          final navBarBgColor = theme.bottomNavigationBarTheme.backgroundColor ??
-              theme.colorScheme.surface;
+      valueListenable: _showBottomBarNotifier,
+      builder: (context, showBar, child) {
+        final language = _currentLanguage;
+        final theme = Theme.of(context);
+        final navBarBgColor =
+            theme.bottomNavigationBarTheme.backgroundColor ??
+            theme.colorScheme.surface;
 
-          return Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedSlide(
-              offset: showBar ? Offset.zero : const Offset(0, 1),
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              child: Material(
-                color: navBarBgColor,
-                elevation: 8,
-                child: SafeArea(
-                  top: false,
-                  child: BottomNavigationBar(
-                    type: BottomNavigationBarType.fixed,
-                    selectedItemColor: theme.colorScheme.onSurface,
-                    unselectedItemColor: theme.colorScheme.onSurface,
-                    selectedFontSize: 12.0,
-                    unselectedFontSize: 12.0,
-                    items: [
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.border_color),
-                        label: 'Highlight',
-                      ),
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.edit_note),
-                        label: 'Note',
-                      ),
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.content_copy),
-                        label: 'Copy',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: _getLanguageIcon(language),
-                        label: _getLanguageLabel(language),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.more_horiz, key: _moreKey),
-                        label: 'More',
-                      ),
-                    ],
-                    onTap: (index) => _handleBottomBarTap(index, language),
-                  ),
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: AnimatedSlide(
+            offset: showBar ? Offset.zero : const Offset(0, 1),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: Material(
+              color: navBarBgColor,
+              elevation: 8,
+              child: SafeArea(
+                top: false,
+                child: BottomNavigationBar(
+                  type: BottomNavigationBarType.fixed,
+                  selectedItemColor: theme.colorScheme.onSurface,
+                  unselectedItemColor: theme.colorScheme.onSurface,
+                  selectedFontSize: 12.0,
+                  unselectedFontSize: 12.0,
+                  items: [
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.border_color),
+                      label: 'Highlight',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.edit_note),
+                      label: 'Note',
+                    ),
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.content_copy),
+                      label: 'Copy',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: _getLanguageIcon(language),
+                      label: _getLanguageLabel(language),
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.more_horiz, key: _moreKey),
+                      label: 'More',
+                    ),
+                  ],
+                  onTap: (index) => _handleBottomBarTap(index, language),
                 ),
               ),
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 
   String _getLanguageLabel(Language language) {
@@ -589,7 +598,8 @@ class _TextScreenState extends State<TextScreen>
   }
 
   Future<bool> _handleHighlight(Reference reference) async {
-    if (_activeController == null || !_activeController!.hasSelection) return false;
+    if (_activeController == null || !_activeController!.hasSelection)
+      return false;
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
     final selectedText = _activeController!.getSelectedText();
@@ -623,7 +633,8 @@ class _TextScreenState extends State<TextScreen>
   }
 
   Future<bool> _handleNote(Reference reference) async {
-    if (_activeController == null || !_activeController!.hasSelection) return false;
+    if (_activeController == null || !_activeController!.hasSelection)
+      return false;
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
     final bodyText = _activeController!.getSelectedText();
@@ -728,7 +739,7 @@ class _TextScreenState extends State<TextScreen>
       items: const [
         PopupMenuItem<String>(
           value: 'compare',
-          child: Text('Compare'),
+          child: Text('Compare Translations'),
         ),
         PopupMenuItem<String>(
           value: 'cross_reference',

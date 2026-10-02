@@ -6,6 +6,9 @@
 - Fix "vvv" text errors in Genesis 35:18, Luke 9:33, and Acts 4:36.
 - Remove quotation validation artifacts at the end of verses (e.g. Job 16:22).
 - Scroll when trying to select off screen.
+- Add to playlist option for highlighted text.
+- Edit playlist button in presentation mode.
+- Change "Compare" to "Compare Translations" in menu.
 
 # 2.4.0 - 2026.09.24
 
