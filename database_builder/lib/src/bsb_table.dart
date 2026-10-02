@@ -334,6 +334,19 @@ bool _shouldInsertBreak(String oldMarker, String currentMarker) {
 }
 
 String _normalizeUsfmLine(String line) {
+  // Strip [’’] quote validation artifacts from Paratext/USFM
+  if (line.contains('[’’]')) {
+    line = line.replaceAll('[’’]', '');
+  }
+
+  // Strip accidental 'vvv' interlinear tags that leaked into the text
+  if (line.contains('vvv')) {
+    line = line
+        .replaceAll(RegExp(r'\(\s*vvv\s*'), '(')
+        .replaceAll(RegExp(r'\bvvv\s+'), '')
+        .replaceAll('vvv', '');
+  }
+
   if (!line.contains(r'\wj')) return line;
 
   // 1. Shift trailing quotes/punctuation before \wj* so word boundaries remain intact

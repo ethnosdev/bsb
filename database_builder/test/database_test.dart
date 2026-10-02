@@ -397,6 +397,48 @@ void main() {
       expect(text, startsWith('Hallelujah!'));
       expect(text, contains(r'\fqa Hallelu YAH\ft'));
     });
+
+    test('zero rows in bible table containing "vvv"', () {
+      final rows = db.select('''
+        SELECT count(*) as c FROM ${Schema.bibleTextTable}
+        WHERE ${Schema.colText} LIKE '%vvv%';
+      ''');
+      expect(rows.first['c'] as int, equals(0));
+    });
+
+    test('zero rows in bible table containing bracketed quote markers like [’’]', () {
+      final rows = db.select('''
+        SELECT count(*) as c FROM ${Schema.bibleTextTable}
+        WHERE ${Schema.colText} LIKE '%[’’]%';
+      ''');
+      expect(rows.first['c'] as int, equals(0));
+    });
+
+    test('repaired verses (Gen 35:18, Luke 9:33, Acts 4:36, Job 16:22) have clean text', () {
+      final gen3518 = db.select(
+        'SELECT ${Schema.colText} as text FROM ${Schema.bibleTextTable} WHERE ${Schema.colReference} = 1035018;',
+      ).map((r) => r['text'] as String).join(' ');
+      expect(gen3518, contains('she named him Ben-oni.'));
+      expect(gen3518, isNot(contains('vvv')));
+
+      final luk933 = db.select(
+        'SELECT ${Schema.colText} as text FROM ${Schema.bibleTextTable} WHERE ${Schema.colReference} = 42009033;',
+      ).map((r) => r['text'] as String).join(' ');
+      expect(luk933, contains('(He did not know what he was saying.)'));
+      expect(luk933, isNot(contains('vvv')));
+
+      final act436 = db.select(
+        'SELECT ${Schema.colText} as text FROM ${Schema.bibleTextTable} WHERE ${Schema.colReference} = 44004036;',
+      ).map((r) => r['text'] as String).join(' ');
+      expect(act436, contains('(meaning Son of Encouragement)'));
+      expect(act436, isNot(contains('vvv')));
+
+      final job1622 = db.select(
+        'SELECT ${Schema.colText} as text FROM ${Schema.bibleTextTable} WHERE ${Schema.colReference} = 18016022;',
+      ).map((r) => r['text'] as String).join(' ');
+      expect(job1622, contains('I will go the way of no return.'));
+      expect(job1622, isNot(contains('[’’]')));
+    });
   });
 
   group('Paragraph Format Invariants', () {

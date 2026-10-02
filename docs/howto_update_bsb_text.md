@@ -36,8 +36,11 @@ It is highly preferable that the source files be edited by the BSB team at the s
 
 Known errors:
 
+- Genesis 35:18 (remove "vvv " before "him")
 - Judges 1:6 (move \p marker to the beginning of verse 6)
 - Habakkuk 3:19 (change \mr marker to \d and add \b on line above)
+- Luke 9:33 (change "( vvv " to "(")
+- Acts 4:36 (change "(vvv " to "(")
 
 ## Create and verify the database
 
