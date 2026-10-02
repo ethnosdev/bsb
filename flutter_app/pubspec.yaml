@@ -19,9 +19,9 @@ dependencies:
   shared_preferences_android: ^2.4.28
   url_launcher: ^6.3.2
   package_info_plus: ^10.2.1
-  scripture: ^0.14.2
-  # scripture:
-  #   path: ../../scripture
+  # scripture: ^0.14.2
+  scripture:
+    path: ../../scripture
   uuid: ^4.6.0
   flutter_markdown: ^0.7.6+1
   file_picker: ^12.2.0
@@ -41,6 +41,10 @@ dev_dependencies:
   flutter_test: 
     sdk: flutter
   flutter_lints: ^6.0.0
+
+dependency_overrides:
+  scripture:
+    path: ../../scripture
 
 flutter:
   uses-material-design: true

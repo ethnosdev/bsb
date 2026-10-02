@@ -944,6 +944,11 @@ class _ChapterTextState extends State<ChapterText>
                                               verseLines: verseLines,
                                               selectionController:
                                                   _selectionController,
+                                              autoScrollEdgeInsets:
+                                                  EdgeInsets.only(
+                                                top: _topPadding,
+                                                bottom: 80.0,
+                                              ),
                                               highlights: highlights,
                                               noteMarkers: noteMarkers,
                                               onFootnoteTapped:
