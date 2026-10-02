@@ -40,6 +40,9 @@ class Reference {
       if (endChapter == chapter) {
         endChapter = null;
       }
+      if (endChapter == null && endVerse == verse) {
+        endVerse = null;
+      }
     }
     return Reference(
       bookId: bookId,
@@ -65,6 +68,9 @@ class Reference {
       endVerse = (packedIntEnd % chapterMultiplier) ~/ verseMultiplier;
       if (endChapter == chapter) {
         endChapter = null;
+      }
+      if (endChapter == null && endVerse == verse) {
+        endVerse = null;
       }
     }
     return Reference(

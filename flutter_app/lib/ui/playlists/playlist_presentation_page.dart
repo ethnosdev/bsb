@@ -5,8 +5,10 @@ import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
+import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
 import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
@@ -59,6 +61,7 @@ class PlaylistPresentationPage extends StatefulWidget {
 class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   final _dbHelper = getIt<DatabaseHelper>();
   late final AppState? _appState;
+  late Playlist _playlist;
   bool _isDistractionFree = false;
 
   final Map<String, List<UsfmLine>> _passageCache = {};
@@ -68,9 +71,21 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   @override
   void initState() {
     super.initState();
+    _playlist = widget.playlist;
     _appState = widget.appState ??
         (getIt.isRegistered<AppState>() ? getIt<AppState>() : null);
     _loadPassages();
+  }
+
+  @override
+  void didUpdateWidget(covariant PlaylistPresentationPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.playlist != oldWidget.playlist) {
+      _playlist = widget.playlist;
+      _passageCache.clear();
+      _isLoading = true;
+      _loadPassages();
+    }
   }
 
   double _maxTopInset = 0.0;
@@ -94,7 +109,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   }
 
   Future<void> _loadPassages() async {
-    for (final item in widget.playlist.items) {
+    for (final item in _playlist.items) {
       if (item.isReference && item.reference != null) {
         try {
           final lines = await _dbHelper.getRange(item.reference!);
@@ -107,6 +122,27 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     }
     if (mounted) {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _openEditor() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlaylistEditorPage(playlist: _playlist),
+      ),
+    );
+    if (!mounted) return;
+    if (getIt.isRegistered<PlaylistService>()) {
+      final updated = await getIt<PlaylistService>().getPlaylist(_playlist.id);
+      if (updated != null && mounted) {
+        setState(() {
+          _playlist = updated;
+          _passageCache.clear();
+          _isLoading = true;
+        });
+        await _loadPassages();
+      }
     }
   }
 
@@ -158,7 +194,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     Widget buildContent(double currentTextSize, bool isRed) {
       return _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : widget.playlist.items.isEmpty
+          : _playlist.items.isEmpty
               ? Center(
                   child: Text(
                     'No passages or notes in this playlist yet.',
@@ -172,11 +208,11 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
                     top: topPadding,
                     bottom: 40,
                   ),
-                  itemCount: widget.playlist.items.length,
+                  itemCount: _playlist.items.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 32),
                   itemBuilder: (context, index) {
-                    final item = widget.playlist.items[index];
+                    final item = _playlist.items[index];
                     if (item.isReference) {
                       return _buildPassageView(
                         context: context,
@@ -238,12 +274,12 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
               child: IgnorePointer(
                 ignoring: _isDistractionFree,
                 child: AppBar(
-                  title: Text(widget.playlist.title),
+                  title: Text(_playlist.title),
                   actions: [
                     IconButton(
-                      icon: const Icon(Icons.fullscreen),
-                      tooltip: 'Fullscreen mode',
-                      onPressed: _toggleDistractionFree,
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: 'Edit playlist',
+                      onPressed: _openEditor,
                     ),
                   ],
                 ),

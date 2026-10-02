@@ -1,7 +1,10 @@
+import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
+import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
+import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +12,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class FakePlaylistDbHelper implements AnnotationDatabaseHelper {
+  final List<Playlist> _playlists = [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Future<List<Playlist>> getAllPlaylists() async {
+    final list = List<Playlist>.from(_playlists);
+    list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return list;
+  }
+
+  @override
+  Future<Playlist?> getPlaylistById(String id) async {
+    try {
+      return _playlists.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> savePlaylist(Playlist playlist) async {
+    _playlists.removeWhere((p) => p.id == playlist.id);
+    _playlists.add(playlist);
+  }
+
+  @override
+  Future<void> updatePlaylistMetadata(Playlist playlist) async {
+    final index = _playlists.indexWhere((p) => p.id == playlist.id);
+    if (index != -1) {
+      _playlists[index] = _playlists[index].copyWith(
+        title: playlist.title,
+        updatedAt: playlist.updatedAt,
+      );
+    } else {
+      _playlists.add(playlist);
+    }
+  }
+
+  @override
+  Future<void> deletePlaylist(String id) async {
+    _playlists.removeWhere((p) => p.id == id);
+  }
+
+  @override
+  Future<void> batchInsertPlaylists(List<Playlist> playlists) async {
+    for (final p in playlists) {
+      await savePlaylist(p);
+    }
+  }
+
+  @override
+  Future<void> clearAllPlaylists() async {
+    _playlists.clear();
+  }
+}
 
 class FakeDatabaseHelper implements DatabaseHelper {
   @override
@@ -25,6 +87,9 @@ class FakeDatabaseHelper implements DatabaseHelper {
 }
 
 void main() {
+  late FakePlaylistDbHelper fakePlaylistDb;
+  late PlaylistService playlistService;
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await getIt.reset();
@@ -32,6 +97,9 @@ void main() {
     await userSettings.init();
     getIt.registerSingleton<UserSettings>(userSettings);
     getIt.registerSingleton<DatabaseHelper>(FakeDatabaseHelper());
+    fakePlaylistDb = FakePlaylistDbHelper();
+    playlistService = PlaylistService(dbHelper: fakePlaylistDb);
+    getIt.registerSingleton<PlaylistService>(playlistService);
   });
 
   tearDown(() async {
@@ -83,9 +151,12 @@ void main() {
     // Record initial top position of the passage title on screen
     final initialTop = tester.getTopLeft(find.text('John 3:16')).dy;
 
-    // Test fullscreen toggle via action button
-    expect(find.byIcon(Icons.fullscreen), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.fullscreen));
+    // Test that fullscreen action button is replaced with edit button
+    expect(find.byIcon(Icons.fullscreen), findsNothing);
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+
+    // Test fullscreen toggle via tapping text
+    await tester.tap(find.byType(UsfmWidget));
     await tester.pumpAndSettle();
 
     bool isDistractionFree() {
@@ -130,6 +201,52 @@ void main() {
     await tester.pumpAndSettle();
     expect(isDistractionFree(), isFalse);
     expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
+  });
+
+  testWidgets('Tapping edit button navigates to PlaylistEditorPage and updates presentation on return', (tester) async {
+    final playlist = Playlist(
+      id: 'p-edit-test',
+      title: 'Original Title',
+      items: [
+        PlaylistItem.reference(
+          id: 'item-1',
+          reference: Reference(bookId: 43, chapter: 3, verse: 16),
+          orderIndex: 0,
+        ),
+      ],
+    );
+    await fakePlaylistDb.savePlaylist(playlist);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PlaylistPresentationPage(playlist: playlist),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Original Title'), findsOneWidget);
+    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+
+    // Tap the edit button
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+
+    // Verify PlaylistEditorPage is open
+    expect(find.byType(PlaylistEditorPage), findsOneWidget);
+    expect(find.text('Edit Playlist'), findsOneWidget);
+
+    // Edit the title
+    await tester.enterText(find.byType(TextField), 'Updated Title');
+    await tester.pumpAndSettle();
+
+    // Tap back button to return to PlaylistPresentationPage
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    // Verify we are back on PlaylistPresentationPage and title has updated
+    expect(find.byType(PlaylistEditorPage), findsNothing);
+    expect(find.byType(PlaylistPresentationPage), findsOneWidget);
+    expect(find.text('Updated Title'), findsOneWidget);
   });
 
   test('stripFootnotesFromLines removes inline footnote markers and paragraph format r lines', () {

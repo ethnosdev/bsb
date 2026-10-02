@@ -18,6 +18,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/main.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
+import 'package:bsb/ui/playlists/widgets/add_to_playlist_sheet.dart';
 import 'package:bsb/ui/text/highlight_palette_sheet.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
 import 'screen_manager.dart';
@@ -559,9 +560,13 @@ class _TextScreenState extends State<TextScreen>
     if (_activeController == null || !_activeController!.hasSelection) return;
 
     final startId = _activeController!.startId!;
+    final endId = _activeController!.endId!;
 
     // Extract context using the Extension
-    final reference = Reference.fromWordId(packedInt: startId);
+    final reference = Reference.fromWordId(
+      packedInt: startId,
+      packedIntEnd: endId,
+    );
 
     bool shouldClear = true;
     switch (index) {
@@ -729,6 +734,10 @@ class _TextScreenState extends State<TextScreen>
           value: 'cross_reference',
           child: Text('Cross Reference'),
         ),
+        PopupMenuItem<String>(
+          value: 'add_to_playlist',
+          child: Text('Add to Playlist'),
+        ),
       ],
     );
 
@@ -738,8 +747,24 @@ class _TextScreenState extends State<TextScreen>
     } else if (selected == 'cross_reference') {
       _handleCrossReference(reference);
       return true;
+    } else if (selected == 'add_to_playlist') {
+      return await _handleAddToPlaylist(reference);
     }
     return false;
+  }
+
+  Future<bool> _handleAddToPlaylist(Reference reference) async {
+    final startId = _activeController?.startId;
+    final endId = _activeController?.endId;
+    final selectedText = _activeController?.getSelectedText();
+    final result = await AddToPlaylistSheet.show(
+      context: context,
+      reference: reference,
+      startWordId: startId,
+      endWordId: endId,
+      selectedText: selectedText,
+    );
+    return result == true;
   }
 
   void _handleCompare(Reference reference) {
