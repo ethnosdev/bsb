@@ -1,4 +1,4 @@
-# 2.4.1
+# 2.5.0
 
 - Allow words of Jesus color to be set.
 - Make the color theme preview more realistic.
@@ -9,6 +9,7 @@
 - Add to playlist option for highlighted text.
 - Edit playlist button in presentation mode.
 - Change "Compare" to "Compare Translations" in menu.
+- Add "Memorize" to the context menu.
 
 # 2.4.0 - 2026.09.24
 

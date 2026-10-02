@@ -135,10 +135,11 @@ void main() {
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
-    // Verify popup menu shows Compare, Cross Reference, and Add to Playlist
-    expect(find.text('Compare'), findsOneWidget);
+    // Verify popup menu shows Compare Translations, Cross Reference, Add to Playlist, and Memorize
+    expect(find.text('Compare Translations'), findsOneWidget);
     expect(find.text('Cross Reference'), findsOneWidget);
     expect(find.text('Add to Playlist'), findsOneWidget);
+    expect(find.text('Memorize'), findsOneWidget);
 
     // Tap outside (barrier) to dismiss menu
     await tester.tapAt(const Offset(10, 10));
@@ -176,8 +177,43 @@ void main() {
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
-    // Tap Compare
-    await tester.tap(find.text('Compare'));
+    // Tap Compare Translations
+    await tester.tap(find.text('Compare Translations'));
+    await tester.pumpAndSettle();
+
+    // Controller should now have selection cleared
+    expect(controller.hasSelection, isFalse);
+  });
+
+  testWidgets('Selecting Memorize clears the selection', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: TextScreen(
+            bookId: 19, // Psalm
+            chapter: 23,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final chapterTextFinder = find.byType(ChapterText).first;
+    final chapterText = tester.widget<ChapterText>(chapterTextFinder);
+
+    const packedWordId = 19023004001;
+    final controller = ScriptureSelectionController();
+    controller.selectWord(packedWordId);
+
+    chapterText.onSelectionChanged!(controller);
+    await tester.pumpAndSettle();
+
+    // Tap More in bottom bar
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+
+    // Tap Memorize
+    await tester.tap(find.text('Memorize'));
     await tester.pumpAndSettle();
 
     // Controller should now have selection cleared

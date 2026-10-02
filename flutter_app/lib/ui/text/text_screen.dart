@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:scripture/scripture.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
+import 'package:bsb/infrastructure/memorize_scripture_launcher.dart';
 import 'package:bsb/infrastructure/screen_wake_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/main.dart';
@@ -749,6 +750,10 @@ class _TextScreenState extends State<TextScreen>
           value: 'add_to_playlist',
           child: Text('Add to Playlist'),
         ),
+        PopupMenuItem<String>(
+          value: 'memorize',
+          child: Text('Memorize'),
+        ),
       ],
     );
 
@@ -760,8 +765,26 @@ class _TextScreenState extends State<TextScreen>
       return true;
     } else if (selected == 'add_to_playlist') {
       return await _handleAddToPlaylist(reference);
+    } else if (selected == 'memorize') {
+      _handleMemorize(reference);
+      return true;
     }
     return false;
+  }
+
+  void _handleMemorize(Reference reference) {
+    final startId = _activeController?.startId;
+    final endId = _activeController?.endId;
+    final selectedText = _activeController?.getSelectedText() ?? '';
+    final fullRef = (startId != null && endId != null)
+        ? Reference.fromWordId(packedInt: startId, packedIntEnd: endId)
+        : reference;
+
+    MemorizeScriptureLauncher.launchMemorize(
+      prompt: fullRef.toString(),
+      text: selectedText,
+      version: 'BSB',
+    );
   }
 
   Future<bool> _handleAddToPlaylist(Reference reference) async {

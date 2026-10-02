@@ -27,6 +27,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>
+		<string>memorizescripture</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
