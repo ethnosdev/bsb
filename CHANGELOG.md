@@ -10,6 +10,7 @@
 - Edit playlist button in presentation mode.
 - Change "Compare" to "Compare Translations" in menu.
 - Add "Memorize" to the context menu.
+- Fix splash screen icon size on iOS.
 
 # 2.4.0 - 2026.09.24
 
