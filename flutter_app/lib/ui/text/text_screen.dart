@@ -508,6 +508,8 @@ class _TextScreenState extends State<TextScreen>
               child: SafeArea(
                 top: false,
                 child: BottomNavigationBar(
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
                   type: BottomNavigationBarType.fixed,
                   selectedItemColor: theme.colorScheme.onSurface,
                   unselectedItemColor: theme.colorScheme.onSurface,

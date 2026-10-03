@@ -194,6 +194,10 @@ void main() {
       final navBarFinder = find.byType(BottomNavigationBar);
       expect(navBarFinder, findsOneWidget);
 
+      final navBar = tester.widget<BottomNavigationBar>(navBarFinder);
+      expect(navBar.elevation, 0);
+      expect(navBar.backgroundColor, Colors.transparent);
+
       final safeAreaFinder = find.ancestor(
         of: navBarFinder,
         matching: find.byType(SafeArea),
