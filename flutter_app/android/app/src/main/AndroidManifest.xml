@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <queries>
+        <package android:name="dev.ethnos.memorize_scripture" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
@@ -14,6 +15,10 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="memorizescripture" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="memorizescripture" android:host="add" />
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />

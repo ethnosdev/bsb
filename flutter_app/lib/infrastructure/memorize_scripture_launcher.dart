@@ -77,20 +77,41 @@ class MemorizeScriptureLauncher {
       version: version,
     );
 
-    if (await canLaunchFn(deepLinkUri)) {
-      return await launchFn(deepLinkUri, mode: LaunchMode.externalApplication);
+    // 1. Try launching deep link if canLaunch returns true
+    try {
+      if (await canLaunchFn(deepLinkUri)) {
+        if (await launchFn(deepLinkUri, mode: LaunchMode.externalApplication)) {
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    // 2. If canLaunch returned false, Android 11+ package visibility checks
+    // can return false negatives. Try launching directly when running in app.
+    if (canLaunch == null && launch == null) {
+      try {
+        if (await launchFn(deepLinkUri, mode: LaunchMode.externalApplication)) {
+          return true;
+        }
+      } catch (_) {}
     }
 
-    // App is not installed -> redirect to app store
+    // 3. App is not installed -> redirect to app store
     final storeUri = getStoreUri(platform: platform);
-    if (await canLaunchFn(storeUri)) {
-      return await launchFn(storeUri, mode: LaunchMode.externalApplication);
-    }
+    try {
+      if (await canLaunchFn(storeUri)) {
+        if (await launchFn(storeUri, mode: LaunchMode.externalApplication)) {
+          return true;
+        }
+      }
+    } catch (_) {}
 
     final webStoreUri = getWebStoreUri(platform: platform);
-    if (await canLaunchFn(webStoreUri)) {
-      return await launchFn(webStoreUri, mode: LaunchMode.externalApplication);
-    }
+    try {
+      if (await canLaunchFn(webStoreUri)) {
+        return await launchFn(webStoreUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
 
     return false;
   }
