@@ -5,21 +5,72 @@ import 'chapter_tabs_sheet.dart';
 import 'composite_chip.dart';
 import 'tab_manager.dart';
 
-class ChapterTabsBar extends StatelessWidget {
+class ChapterTabsBar extends StatefulWidget {
   const ChapterTabsBar({
     super.key,
     required this.tabManager,
     required this.onActiveTabTapped,
     this.onTabsSheetOpened,
     this.onEmptySpaceTapped,
+    this.onCloseAll,
   });
 
   final TabManager tabManager;
   final void Function(BibleTab activeTab) onActiveTabTapped;
   final VoidCallback? onTabsSheetOpened;
   final VoidCallback? onEmptySpaceTapped;
+  final VoidCallback? onCloseAll;
 
   static const double deadZoneWidth = 8.0;
+
+  @override
+  State<ChapterTabsBar> createState() => _ChapterTabsBarState();
+}
+
+class _ChapterTabsBarState extends State<ChapterTabsBar>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
+
+  static const double _flingVelocityThreshold = 300.0;
+  double _verticalDragDistance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, 3),
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeIn));
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _handleCloseAll() {
+    if (widget.onCloseAll != null) {
+      widget.onCloseAll!();
+    } else {
+      widget.tabManager.closeAllTabs();
+    }
+  }
+
+  void _handleFlingCloseAll() {
+    if (_slideController.isAnimating) return;
+    _slideController.forward().then((_) {
+      _handleCloseAll();
+      if (mounted) {
+        _slideController.reset();
+      }
+    });
+  }
 
   double _estimateChipWidth(BuildContext context, BibleTab tab, bool isActive) {
     final textPainter = TextPainter(
@@ -74,16 +125,43 @@ class ChapterTabsBar extends StatelessWidget {
     return textPainter.width + countPainter.width + 68.4;
   }
 
+  Widget _buildEmptySpaceDetector({required double left}) {
+    return Positioned(
+      left: left,
+      top: 0,
+      bottom: 0,
+      right: 0,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onEmptySpaceTapped,
+        onVerticalDragStart: (_) {
+          _verticalDragDistance = 0.0;
+        },
+        onVerticalDragUpdate: (details) {
+          _verticalDragDistance += details.primaryDelta ?? 0.0;
+        },
+        onVerticalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0.0;
+          if (velocity > _flingVelocityThreshold ||
+              _verticalDragDistance > 25.0) {
+            _handleFlingCloseAll();
+          }
+        },
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tabs = tabManager.tabs;
-    final activeTab = tabManager.activeTab;
+    final tabs = widget.tabManager.tabs;
+    final activeTab = widget.tabManager.activeTab;
 
     if (tabs.isEmpty || activeTab == null) {
-      if (onEmptySpaceTapped != null) {
+      if (widget.onEmptySpaceTapped != null) {
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: onEmptySpaceTapped,
+          onTap: widget.onEmptySpaceTapped,
           child: const SizedBox.expand(),
         );
       }
@@ -106,53 +184,56 @@ class ChapterTabsBar extends StatelessWidget {
         if (totalWidth <= constraints.maxWidth) {
           final chipsWidget = Align(
             alignment: Alignment.centerLeft,
-            child: SizedBox(
-              height: 36,
-              child: ReorderableListView.builder(
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                buildDefaultDragHandles: false,
-                padding: EdgeInsets.zero,
-                proxyDecorator: (child, index, animation) {
-                  return Material(
-                    color: Colors.transparent,
-                    elevation: 6.0,
-                    shadowColor: Colors.black26,
-                    child: child,
-                  );
-                },
-                itemCount: tabs.length,
-                onReorderItem: (oldIndex, newIndex) =>
-                    tabManager.reorderItem(oldIndex, newIndex),
-                itemBuilder: (context, index) {
-                  final tab = tabs[index];
-                  return ReorderableDelayedDragStartListener(
-                    key: ValueKey(tab.id),
-                    index: index,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3.0),
-                      child: ChapterChip(
-                        tab: tab,
-                        isActive: tab.id == activeTab.id,
-                        onTap: () {
-                          if (tab.id == activeTab.id) {
-                            onActiveTabTapped(activeTab);
-                          } else {
-                            tabManager.selectTab(tab.id);
-                          }
-                        },
-                        onClose: () => tabManager.closeTab(tab.id),
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: SizedBox(
+                height: 36,
+                child: ReorderableListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  shrinkWrap: true,
+                  buildDefaultDragHandles: false,
+                  padding: EdgeInsets.zero,
+                  proxyDecorator: (child, index, animation) {
+                    return Material(
+                      color: Colors.transparent,
+                      elevation: 6.0,
+                      shadowColor: Colors.black26,
+                      child: child,
+                    );
+                  },
+                  itemCount: tabs.length,
+                  onReorderItem: (oldIndex, newIndex) =>
+                      widget.tabManager.reorderItem(oldIndex, newIndex),
+                  itemBuilder: (context, index) {
+                    final tab = tabs[index];
+                    return ReorderableDelayedDragStartListener(
+                      key: ValueKey(tab.id),
+                      index: index,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                        child: ChapterChip(
+                          tab: tab,
+                          isActive: tab.id == activeTab.id,
+                          onTap: () {
+                            if (tab.id == activeTab.id) {
+                              widget.onActiveTabTapped(activeTab);
+                            } else {
+                              widget.tabManager.selectTab(tab.id);
+                            }
+                          },
+                          onClose: () => widget.tabManager.closeTab(tab.id),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           );
 
           final spaceAfterTabs = constraints.maxWidth - totalWidth;
-          final hasTappableSpace = onEmptySpaceTapped != null &&
-              spaceAfterTabs > deadZoneWidth;
+          final hasTappableSpace = widget.onEmptySpaceTapped != null &&
+              spaceAfterTabs > ChapterTabsBar.deadZoneWidth;
 
           if (!hasTappableSpace) {
             return chipsWidget;
@@ -162,16 +243,8 @@ class ChapterTabsBar extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               chipsWidget,
-              Positioned(
-                left: totalWidth + deadZoneWidth,
-                top: 0,
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onEmptySpaceTapped,
-                  child: const SizedBox.expand(),
-                ),
+              _buildEmptySpaceDetector(
+                left: totalWidth + ChapterTabsBar.deadZoneWidth,
               ),
             ],
           );
@@ -185,27 +258,30 @@ class ChapterTabsBar extends StatelessWidget {
         );
         final compositeWidget = Align(
           alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3.0),
-            child: CompositeChapterChip(
-              activeTab: activeTab,
-              otherTabsCount: tabs.length - 1,
-              onTap: () {
-                onTabsSheetOpened?.call();
-                ChapterTabsSheet.show(
-                  context,
-                  tabManager,
-                  onActiveTabTapped: onActiveTabTapped,
-                );
-              },
-              onCloseAll: () => tabManager.closeAllTabs(),
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3.0),
+              child: CompositeChapterChip(
+                activeTab: activeTab,
+                otherTabsCount: tabs.length - 1,
+                onTap: () {
+                  widget.onTabsSheetOpened?.call();
+                  ChapterTabsSheet.show(
+                    context,
+                    widget.tabManager,
+                    onActiveTabTapped: widget.onActiveTabTapped,
+                  );
+                },
+                onCloseAll: _handleCloseAll,
+              ),
             ),
           ),
         );
 
         final spaceAfterComposite = constraints.maxWidth - compositeWidth;
-        final hasTappableSpace = onEmptySpaceTapped != null &&
-            spaceAfterComposite > deadZoneWidth;
+        final hasTappableSpace = widget.onEmptySpaceTapped != null &&
+            spaceAfterComposite > ChapterTabsBar.deadZoneWidth;
 
         if (!hasTappableSpace) {
           return compositeWidget;
@@ -215,16 +291,8 @@ class ChapterTabsBar extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             compositeWidget,
-            Positioned(
-              left: compositeWidth + deadZoneWidth,
-              top: 0,
-              bottom: 0,
-              right: 0,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: onEmptySpaceTapped,
-                child: const SizedBox.expand(),
-              ),
+            _buildEmptySpaceDetector(
+              left: compositeWidth + ChapterTabsBar.deadZoneWidth,
             ),
           ],
         );

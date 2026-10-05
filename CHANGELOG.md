@@ -1,6 +1,7 @@
 # 2.5.1
 
 - Make the invisible tap area on the app bar to open the book chooser smaller.
+- Swipe down on empty area of app bar to close all open tabs. 
 
 # 2.5.0 - 2026.10.03
 

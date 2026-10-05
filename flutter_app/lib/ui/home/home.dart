@@ -285,6 +285,10 @@ class _HomePageState extends State<HomePage> {
                                   _chapterChooserNotifier.value = null;
                                   _tabManager.startAddingTab();
                                 },
+                                onCloseAll: () {
+                                  _chapterChooserNotifier.value = null;
+                                  _tabManager.closeAllTabs();
+                                },
                               ),
                             ),
                             actions: [

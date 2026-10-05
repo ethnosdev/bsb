@@ -404,6 +404,137 @@ void main() {
       await tester.tapAt(Offset(barRect.right - 4.0, barRect.center.dy));
       expect(emptyTapped, isTrue);
     });
+
+    testWidgets('swiping down on invisible button area animates and closes all tabs', (tester) async {
+      await tabManager.init();
+      tabManager.openTab(1, 1); // GEN 1
+      tabManager.openTab(45, 8); // ROM 8
+
+      bool closedAll = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(
+              titleSpacing: 0,
+              title: SizedBox(
+                width: 400,
+                height: 56,
+                child: ChapterTabsBar(
+                  tabManager: tabManager,
+                  onActiveTabTapped: (_) {},
+                  onEmptySpaceTapped: () {},
+                  onCloseAll: () => closedAll = true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final barRect = tester.getRect(find.byType(ChapterTabsBar));
+      final tapX = barRect.right - 20.0;
+
+      // Swipe down in the empty space
+      await tester.timedDragFrom(
+        Offset(tapX, 10),
+        const Offset(0, 100),
+        const Duration(milliseconds: 100),
+      );
+
+      // Verify the slide animation is progressing
+      await tester.pump(const Duration(milliseconds: 50));
+      // Animation in progress
+      expect(closedAll, isFalse);
+
+      // Settle the animation
+      await tester.pumpAndSettle();
+      expect(closedAll, isTrue);
+    });
+
+    testWidgets('swiping down on invisible button when composite chip is active closes all tabs', (tester) async {
+      await tabManager.init();
+      tabManager.openTab(1, 1);
+      tabManager.openTab(45, 8);
+      tabManager.openTab(19, 23);
+      tabManager.openTab(43, 3);
+
+      bool closedAll = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(
+              titleSpacing: 0,
+              title: SizedBox(
+                width: 250,
+                height: 56,
+                child: ChapterTabsBar(
+                  tabManager: tabManager,
+                  onActiveTabTapped: (_) {},
+                  onEmptySpaceTapped: () {},
+                  onCloseAll: () => closedAll = true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CompositeChapterChip), findsOneWidget);
+
+      final barRect = tester.getRect(find.byType(ChapterTabsBar));
+      final tapX = barRect.right - 20.0;
+
+      await tester.timedDragFrom(
+        Offset(tapX, 10),
+        const Offset(0, 100),
+        const Duration(milliseconds: 100),
+      );
+
+      await tester.pumpAndSettle();
+      expect(closedAll, isTrue);
+    });
+
+    testWidgets('swiping up on invisible button does not close tabs', (tester) async {
+      await tabManager.init();
+      tabManager.openTab(1, 1);
+
+      bool closedAll = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(
+              titleSpacing: 0,
+              title: SizedBox(
+                width: 400,
+                height: 56,
+                child: ChapterTabsBar(
+                  tabManager: tabManager,
+                  onActiveTabTapped: (_) {},
+                  onEmptySpaceTapped: () {},
+                  onCloseAll: () => closedAll = true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final barRect = tester.getRect(find.byType(ChapterTabsBar));
+      final tapX = barRect.right - 20.0;
+
+      // Swipe up
+      await tester.timedDragFrom(
+        Offset(tapX, 40),
+        const Offset(0, -100),
+        const Duration(milliseconds: 100),
+      );
+
+      await tester.pumpAndSettle();
+      expect(closedAll, isFalse);
+    });
   });
 
   group('ChapterTabsSheet', () {
