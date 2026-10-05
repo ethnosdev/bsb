@@ -1,3 +1,7 @@
+# 2.5.1
+
+- Make the invisible tap area on the app bar to open the book chooser smaller.
+
 # 2.5.0 - 2026.10.03
 
 - Allow words of Jesus color to be set.

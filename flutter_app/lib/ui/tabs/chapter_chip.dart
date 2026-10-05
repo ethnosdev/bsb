@@ -97,7 +97,7 @@ class _ChapterChipState extends State<ChapterChip>
               child: Padding(
                 padding: EdgeInsets.only(
                   left: 10.0,
-                  right: widget.isActive && widget.onClose != null ? 4.0 : 10.0,
+                  right: widget.isActive && widget.onClose != null ? 0.0 : 10.0,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -114,16 +114,23 @@ class _ChapterChipState extends State<ChapterChip>
                       ),
                     ),
                     if (widget.isActive && widget.onClose != null) ...[
-                      const SizedBox(width: 4),
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: widget.onClose,
-                        child: Padding(
-                          padding: const EdgeInsets.all(2.0),
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: foregroundColor,
+                        child: SizedBox(
+                          height: 36.0,
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 6.0,
+                              right: 8.0,
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: foregroundColor,
+                              ),
+                            ),
                           ),
                         ),
                       ),

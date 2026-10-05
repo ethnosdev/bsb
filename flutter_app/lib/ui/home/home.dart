@@ -258,42 +258,33 @@ class _HomePageState extends State<HomePage> {
                           ignoring: _isDistractionFree,
                           child: AppBar(
                             titleSpacing: 0,
-                            title: GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              onTap: () {
-                                _chapterChooserNotifier.value = null;
-                                _tabManager.startAddingTab();
-                              },
-                              child: SizedBox(
-                                height: kToolbarHeight,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: ChapterTabsBar(
-                                    tabManager: _tabManager,
-                                    onTabsSheetOpened: () {
-                                      _chapterChooserNotifier.value = null;
-                                    },
-                                    onActiveTabTapped: (tab) {
-                                      if (_chapterChooserNotifier.value !=
-                                          null) {
-                                        _chapterChooserNotifier.value = null;
-                                        return;
-                                      }
-                                      final chapterCount =
-                                          bookIdToChapterCountMap[tab.bookId] ??
-                                              1;
-                                      final initialChapter =
-                                          _resolveShowVerseGrid()
-                                              ? tab.chapter
-                                              : null;
-                                      _chapterChooserNotifier.value = (
-                                        tab.bookId,
-                                        chapterCount,
-                                        initialChapter,
-                                      );
-                                    },
-                                  ),
-                                ),
+                            title: SizedBox(
+                              height: kToolbarHeight,
+                              child: ChapterTabsBar(
+                                tabManager: _tabManager,
+                                onTabsSheetOpened: () {
+                                  _chapterChooserNotifier.value = null;
+                                },
+                                onActiveTabTapped: (tab) {
+                                  if (_chapterChooserNotifier.value != null) {
+                                    _chapterChooserNotifier.value = null;
+                                    return;
+                                  }
+                                  final chapterCount =
+                                      bookIdToChapterCountMap[tab.bookId] ?? 1;
+                                  final initialChapter = _resolveShowVerseGrid()
+                                      ? tab.chapter
+                                      : null;
+                                  _chapterChooserNotifier.value = (
+                                    tab.bookId,
+                                    chapterCount,
+                                    initialChapter,
+                                  );
+                                },
+                                onEmptySpaceTapped: () {
+                                  _chapterChooserNotifier.value = null;
+                                  _tabManager.startAddingTab();
+                                },
                               ),
                             ),
                             actions: [
