@@ -1,6 +1,8 @@
 # 2.6.1 - 2026.10.06
 
 - Remove the vertical swipe feature to activate the verse chooser. (It was interfering with text scrolling.)
+- Wait 5 seconds instead of 3 seconds before the verse scrubber auto disappears.
+- Hide the verse scrubber immediately when a verse is selected.
 
 # 2.6.0 - 2026.10.05
 

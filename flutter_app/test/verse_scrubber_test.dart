@@ -538,15 +538,15 @@ void main() {
       final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
       expect(scrubberWidget.isVisible, isTrue);
 
-      // Advance clock by 3 seconds
-      await tester.pump(const Duration(seconds: 3));
+      // Advance clock by 5 seconds
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
       final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
       expect(hiddenScrubber.isVisible, isFalse);
     });
 
-    testWidgets('shows scrubber on initial load for chapter with >= 10 verses and auto-hides after 3s', (tester) async {
+    testWidgets('shows scrubber on initial load for chapter with >= 10 verses and auto-hides after 5s', (tester) async {
       getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
 
       await tester.pumpWidget(
@@ -567,12 +567,43 @@ void main() {
       final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
       expect(scrubberWidget.isVisible, isTrue);
 
-      // Advance clock by 3 seconds
-      await tester.pump(const Duration(seconds: 3));
+      // Still visible after 4 seconds
+      await tester.pump(const Duration(seconds: 4));
+      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+
+      // Auto-hides after 5 seconds total
+      await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
       final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
       expect(hiddenScrubber.isVisible, isFalse);
+    });
+
+    testWidgets('selecting a verse with scrubber immediately hides the scrubber', (tester) async {
+      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ChapterText(
+              bookId: 1,
+              chapter: 1,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrubberFinder = find.byType(VerseScrubber);
+      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+
+      // Tap on the scrubber bar to select a verse
+      final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
+      await tester.tapAt(tester.getCenter(bar));
+      await tester.pump();
+
+      // Immediately hidden without waiting for 5 second timeout
+      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
     });
 
     testWidgets('verse scrubber does not show when showVerseGrid is true in settings', (tester) async {
@@ -623,8 +654,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Wait 3s so it hides
-      await tester.pump(const Duration(seconds: 3));
+      // Wait 5s so it hides
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
       final scrubberFinder = find.byType(VerseScrubber);
@@ -637,8 +668,8 @@ void main() {
       // It becomes visible again
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
 
-      // Auto-hides again after 3 seconds
-      await tester.pump(const Duration(seconds: 3));
+      // Auto-hides again after 5 seconds
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
     });
@@ -860,8 +891,8 @@ void main() {
 
       expect(getActiveScrubber().isVisible, isTrue);
 
-      // Auto-hides after 3 seconds
-      await tester.pump(const Duration(seconds: 3));
+      // Auto-hides after 5 seconds
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
       expect(getActiveScrubber().isVisible, isFalse);
 
@@ -877,8 +908,8 @@ void main() {
       // Scrubber should be visible again after sliding back into place
       expect(getActiveScrubber().isVisible, isTrue);
 
-      // And auto-hides after 3s
-      await tester.pump(const Duration(seconds: 3));
+      // And auto-hides after 5s
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
       expect(getActiveScrubber().isVisible, isFalse);
     });
@@ -904,8 +935,8 @@ void main() {
             .firstWhere((s) => s.isActive);
       }
 
-      // Auto-hides after 3 seconds
-      await tester.pump(const Duration(seconds: 3));
+      // Auto-hides after 5 seconds
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
       expect(getActiveScrubber().isVisible, isFalse);
 
@@ -1077,8 +1108,8 @@ void main() {
         final scrubberFinder = find.byType(VerseScrubber);
         expect(scrubberFinder, findsOneWidget);
 
-        // Auto-hides after 3 seconds
-        await tester.pump(const Duration(seconds: 3));
+        // Auto-hides after 5 seconds
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
@@ -1122,7 +1153,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrubberFinder = find.byType(VerseScrubber);
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
@@ -1165,8 +1196,8 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrubberFinder = find.byType(VerseScrubber);
-        // Auto-hides after 3 seconds
-        await tester.pump(const Duration(seconds: 3));
+        // Auto-hides after 5 seconds
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
@@ -1201,7 +1232,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrubberFinder = find.byType(VerseScrubber);
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
@@ -1240,8 +1271,8 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrubberFinder = find.byType(VerseScrubber);
-        // Auto-hides after 3 seconds
-        await tester.pump(const Duration(seconds: 3));
+        // Auto-hides after 5 seconds
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
@@ -1283,7 +1314,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrubberFinder = find.byType(VerseScrubber);
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 
@@ -1327,7 +1358,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final scrubberFinder = find.byType(VerseScrubber);
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
 

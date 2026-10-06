@@ -261,8 +261,8 @@ void main() {
       expect(scrubbedOffset, equals(0.0));
       expect(scrubbedOffset, isNot(equals(initialScrollOffset)));
 
-      // Auto-hide timeout for verse scrubber is 3 seconds
-      await tester.pump(const Duration(seconds: 4));
+      // Auto-hide timeout for verse scrubber is 5 seconds (though selecting verse already hid it immediately)
+      await tester.pump(const Duration(seconds: 6));
       await tester.pumpAndSettle();
 
       // targetScrolledCount must not have incremented

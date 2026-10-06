@@ -184,7 +184,7 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _showVerseScrubberWithTimeout({
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(seconds: 5),
   }) {
     if (!_isVerseSidebarEnabled || !_doesContentOverflow) return;
     _verseScrubberTimer?.cancel();
@@ -1076,7 +1076,7 @@ class _ChapterTextState extends State<ChapterText>
             isDistractionFree: widget.isDistractionFree,
             onVerseSelected: (verse) {
               _scrollFromScrubber(verse);
-              _showVerseScrubberWithTimeout();
+              _hideVerseScrubber();
             },
             onDismiss: () {
               _hideVerseScrubber();
@@ -1087,7 +1087,9 @@ class _ChapterTextState extends State<ChapterText>
             },
             onInteractionEnd: () {
               _isScrubbing = false;
-              _showVerseScrubberWithTimeout();
+              if (_isVerseScrubberVisible) {
+                _showVerseScrubberWithTimeout();
+              }
             },
           );
         },
@@ -1100,7 +1102,7 @@ class _ChapterTextState extends State<ChapterText>
         isDistractionFree: widget.isDistractionFree,
         onVerseSelected: (verse) {
           _scrollFromScrubber(verse);
-          _showVerseScrubberWithTimeout();
+          _hideVerseScrubber();
         },
         onDismiss: () {
           _hideVerseScrubber();
@@ -1111,7 +1113,9 @@ class _ChapterTextState extends State<ChapterText>
         },
         onInteractionEnd: () {
           _isScrubbing = false;
-          _showVerseScrubberWithTimeout();
+          if (_isVerseScrubberVisible) {
+            _showVerseScrubberWithTimeout();
+          }
         },
       );
     }
