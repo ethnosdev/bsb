@@ -1,6 +1,4 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 class VerseScrubber extends StatefulWidget {
   const VerseScrubber({
@@ -9,7 +7,6 @@ class VerseScrubber extends StatefulWidget {
     required this.isVisible,
     this.isActive = true,
     this.canScroll = true,
-    this.hasSelection = false,
     this.isDistractionFree = false,
     required this.onVerseSelected,
     this.onDismiss,
@@ -28,9 +25,6 @@ class VerseScrubber extends StatefulWidget {
 
   /// Whether the chapter content overflows the viewport and requires scrolling.
   final bool canScroll;
-
-  /// Whether scripture text is currently selected (disables edge drag activation).
-  final bool hasSelection;
 
   /// Whether the app is currently in full-screen (distraction-free) mode where the app bar is hidden.
   final bool isDistractionFree;
@@ -102,7 +96,6 @@ class _VerseScrubberState extends State<VerseScrubber> {
   bool _isDragging = false;
   int _currentScrubbedVerse = 1;
   double _touchY = 0.0;
-  double? _lastDragGlobalX;
 
   @override
   void initState() {
@@ -172,8 +165,7 @@ class _VerseScrubberState extends State<VerseScrubber> {
     }
 
     final theme = Theme.of(context);
-    final isActuallyVisible =
-        (widget.isVisible || _isDragging) && widget.isActive;
+    final isActuallyVisible = widget.isVisible && widget.isActive;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -239,93 +231,6 @@ class _VerseScrubberState extends State<VerseScrubber> {
         return Stack(
           clipBehavior: Clip.hardEdge,
           children: [
-            // Right-edge vertical drag detector: active only when isActive and not hasSelection.
-            // Translucent with hit-test pass-through so taps/long-presses/selection handles
-            // reach the underlying scripture text when not dragging.
-            Positioned(
-              key: const ValueKey('verse_scrubber_edge_drag_detector_positioned'),
-              right: 0,
-              top: topBound,
-              bottom: 0,
-              width: 48,
-              child: IgnorePointer(
-                ignoring: !widget.isActive || widget.hasSelection,
-                child: _PassThroughHitTargetWidget(
-                  child: RawGestureDetector(
-                    key: const ValueKey('verse_scrubber_edge_drag_detector'),
-                    behavior: HitTestBehavior.translucent,
-                    gestures: {
-                      _ScrubberDragGestureRecognizer:
-                          GestureRecognizerFactoryWithHandlers<
-                            _ScrubberDragGestureRecognizer
-                          >(
-                            () => _ScrubberDragGestureRecognizer(),
-                            (instance) {
-                              instance
-                                ..onStart = (details) {
-                                  final scrubberBox =
-                                      context.findRenderObject() as RenderBox?;
-                                  if (scrubberBox != null && scrubberBox.hasSize) {
-                                    final localPos = scrubberBox.globalToLocal(
-                                      details.globalPosition,
-                                    );
-                                    _lastDragGlobalX = details.globalPosition.dx;
-                                    setState(() {
-                                      _isDragging = true;
-                                    });
-                                    widget.onInteractionStart?.call();
-                                    _updateScrub(
-                                      localYInScrubber: localPos.dy,
-                                      barTop: barTop,
-                                      barHeight: calculatedBarHeight,
-                                    );
-                                  }
-                                }
-                                ..onUpdate = (details) {
-                                  if (_isDragging) {
-                                    final dxDelta = _lastDragGlobalX != null
-                                        ? (details.globalPosition.dx - _lastDragGlobalX!)
-                                        : 0.0;
-                                    if (dxDelta > 12.0 &&
-                                        dxDelta > details.delta.dy.abs() * 1.5 &&
-                                        widget.onDismiss != null) {
-                                      widget.onDismiss!();
-                                      _cancelScrub();
-                                      return;
-                                    }
-                                    _lastDragGlobalX = details.globalPosition.dx;
-                                    final scrubberBox =
-                                        context.findRenderObject() as RenderBox?;
-                                    if (scrubberBox != null &&
-                                        scrubberBox.hasSize) {
-                                      final localPos = scrubberBox.globalToLocal(
-                                        details.globalPosition,
-                                      );
-                                      _updateScrub(
-                                        localYInScrubber: localPos.dy,
-                                        barTop: barTop,
-                                        barHeight: calculatedBarHeight,
-                                      );
-                                    }
-                                  }
-                                }
-                                ..onEnd = (_) {
-                                  _lastDragGlobalX = null;
-                                  _finishScrub();
-                                }
-                                ..onCancel = () {
-                                  _lastDragGlobalX = null;
-                                  _cancelScrub();
-                                };
-                            },
-                          ),
-                    },
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              ),
-            ),
-
             // Vertical Scrubber Bar with stable key: always animates smoothly between onscreen and offscreen
             Positioned(
               key: const ValueKey('verse_scrubber_bar_positioned'),
@@ -466,90 +371,3 @@ class _VerseScrubberState extends State<VerseScrubber> {
   }
 }
 
-class _PassThroughHitTargetWidget extends SingleChildRenderObjectWidget {
-  const _PassThroughHitTargetWidget({required super.child});
-
-  @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderPassThroughHitTarget();
-}
-
-class _RenderPassThroughHitTarget extends RenderProxyBox {
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (size.contains(position)) {
-      hitTestChildren(result, position: position);
-      return false;
-    }
-    return false;
-  }
-}
-
-class _ScrubberDragGestureRecognizer extends VerticalDragGestureRecognizer {
-  _ScrubberDragGestureRecognizer() {
-    onlyAcceptDragOnThreshold = true;
-  }
-
-  final Map<int, Offset> _startPositions = <int, Offset>{};
-
-  @override
-  void addAllowedPointer(PointerDownEvent event) {
-    _startPositions[event.pointer] = event.position;
-    super.addAllowedPointer(event);
-  }
-
-  @override
-  bool hasSufficientGlobalDistanceToAccept(
-    PointerDeviceKind pointerDeviceKind,
-    double? deviceTouchSlop,
-  ) {
-    // Use an 8.0dp threshold for touch (2.0dp for mouse) instead of the framework default 18.0dp.
-    // This allows the scrubber recognizer to decisively win the gesture arena over the
-    // underlying Scrollable's VerticalDragGestureRecognizer (which waits for 18.0dp)
-    // even during slow drags, while still ignoring stationary taps and long presses.
-    final threshold =
-        pointerDeviceKind == PointerDeviceKind.mouse ? 2.0 : 8.0;
-    return globalDistanceMoved.abs() > threshold;
-  }
-
-  @override
-  void handleEvent(PointerEvent event) {
-    if (event is PointerMoveEvent &&
-        _startPositions.containsKey(event.pointer)) {
-      final totalDelta = event.position - _startPositions[event.pointer]!;
-      final threshold =
-          event.kind == PointerDeviceKind.mouse ? 2.0 : 8.0;
-      // If horizontal movement clearly dominates and has met the threshold
-      // before the vertical drag threshold is met, reject this gesture so PageView
-      // (horizontal paging) can win immediately.
-      if (totalDelta.dx.abs() > threshold &&
-          totalDelta.dx.abs() > totalDelta.dy.abs() * 1.5) {
-        resolve(GestureDisposition.rejected);
-        _startPositions.remove(event.pointer);
-        return;
-      }
-    }
-    if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _startPositions.remove(event.pointer);
-    }
-    super.handleEvent(event);
-  }
-
-  @override
-  void rejectGesture(int pointer) {
-    _startPositions.remove(pointer);
-    super.rejectGesture(pointer);
-  }
-
-  @override
-  void didStopTrackingLastPointer(int pointer) {
-    _startPositions.remove(pointer);
-    super.didStopTrackingLastPointer(pointer);
-  }
-
-  @override
-  void dispose() {
-    _startPositions.clear();
-    super.dispose();
-  }
-}

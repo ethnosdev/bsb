@@ -1,3 +1,7 @@
+# 2.6.1 - 2026.10.06
+
+- Remove the vertical swipe feature to activate the verse chooser. (It was interfering with text scrolling.)
+
 # 2.6.0 - 2026.10.05
 
 - Make the invisible tap area on the app bar to open the book chooser smaller.
