@@ -45,6 +45,23 @@ class FakeSearchDatabaseHelper implements DatabaseHelper {
         ),
       ];
     }
+    if (query.contains('shepherd')) {
+      return [
+        SearchResult(
+          reference: Reference(bookId: 19, chapter: 23, verse: 1),
+          text: 'The LORD is my shepherd; I shall not want.',
+        ),
+      ];
+    }
+    if (query.contains('manybooks')) {
+      return List.generate(
+        15,
+        (i) => SearchResult(
+          reference: Reference(bookId: i + 1, chapter: 1, verse: 1),
+          text: 'Verse text for book ${i + 1}',
+        ),
+      );
+    }
     return searchResultsToReturn;
   }
 
@@ -111,13 +128,13 @@ void main() {
     await getIt.reset();
   });
 
-  Widget buildTestableWidget([int? currentBookId]) {
-    return MaterialApp(
-      home: SearchPage(currentBookId: currentBookId),
+  Widget buildTestableWidget() {
+    return const MaterialApp(
+      home: SearchPage(),
     );
   }
 
-  Widget buildTestableApp([int? currentBookId]) {
+  Widget buildTestableApp() {
     return MaterialApp(
       home: Builder(
         builder: (context) => Scaffold(
@@ -127,8 +144,7 @@ void main() {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        SearchPage(currentBookId: currentBookId),
+                    builder: (context) => const SearchPage(),
                   ),
                 );
               },
@@ -212,25 +228,59 @@ void main() {
     expect(find.text('Recent Searches'), findsOneWidget);
   });
 
-  testWidgets('scope filter chips toggle correctly', (tester) async {
-    await tester.pumpWidget(buildTestableWidget(45)); // Romans active
+  testWidgets('displays All and matching book chips with counts, and filters on tap', (tester) async {
+    await tester.pumpWidget(buildTestableWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('OT'), findsOneWidget);
-    expect(find.text('NT'), findsOneWidget);
-    expect(find.text('Romans'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'All'), findsOneWidget);
+    expect(find.text('OT'), findsNothing);
+    expect(find.text('NT'), findsNothing);
 
-    await tester.tap(find.text('NT'));
+    // Search for 'faith'
+    await tester.enterText(find.byType(TextField), 'faith');
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
+
+    expect(find.text('Romans (1)'), findsOneWidget);
+    expect(find.text('Hebrews (1)'), findsOneWidget);
+    expect(find.text('2 verses found'), findsOneWidget);
+
+    // Tap Romans chip
+    await tester.tap(find.text('Romans (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 verse found'), findsOneWidget);
+    expect(find.text('Romans 1:17'), findsOneWidget);
+    expect(find.text('Hebrews 11:1'), findsNothing);
+
+    // Tap All chip to reset
+    await tester.tap(find.widgetWithText(ChoiceChip, 'All'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 verses found'), findsOneWidget);
+    expect(find.text('Romans 1:17'), findsOneWidget);
+    expect(find.text('Hebrews 11:1'), findsOneWidget);
+
+    // Tap Romans chip and then tap it again to deselect back to All
+    await tester.tap(find.text('Romans (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 verse found'), findsOneWidget);
+
+    await tester.tap(find.text('Romans (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 verses found'), findsOneWidget);
   });
 
-  testWidgets('scope filter chip for Psalms displays "Psalms" and not "Psalm"', (tester) async {
-    await tester.pumpWidget(buildTestableWidget(19)); // Psalms active
+  testWidgets('scope filter chip for Psalms displays "Psalms (1)" and not "Psalm (1)"', (tester) async {
+    await tester.pumpWidget(buildTestableWidget());
     await tester.pumpAndSettle();
 
-    expect(find.text('Psalms'), findsOneWidget);
-    expect(find.text('Psalm'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'shepherd');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Psalms (1)'), findsOneWidget);
+    expect(find.text('Psalm (1)'), findsNothing);
   });
 
   testWidgets('retains search query, results, and scroll position when re-opened (Approach A)', (tester) async {
@@ -279,6 +329,46 @@ void main() {
     expect(find.text('Recent Searches'), findsOneWidget);
   });
 
+  testWidgets('maintains scroll position of filtered books and results when returning after clicking a search result', (tester) async {
+    final searchManager = getIt<SearchManager>();
+
+    // Open host app and navigate into SearchPage
+    await tester.pumpWidget(buildTestableApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Search'));
+    await tester.pumpAndSettle();
+
+    // Type 'manybooks'
+    await tester.enterText(find.byType(TextField), 'manybooks');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Genesis (1)'), findsOneWidget);
+
+    // Scroll the horizontal filtered books row
+    final horizontalScrollable = find.byType(SingleChildScrollView);
+    expect(horizontalScrollable, findsOneWidget);
+    await tester.drag(horizontalScrollable, const Offset(-200, 0));
+    await tester.pumpAndSettle();
+
+    expect(searchManager.bookFilterScrollOffset, greaterThan(0.0));
+    final savedBookScrollOffset = searchManager.bookFilterScrollOffset;
+
+    // Click on first search result
+    await tester.tap(find.text('Genesis 1:1'));
+    await tester.pumpAndSettle();
+
+    // Re-open SearchPage
+    await tester.tap(find.text('Open Search'));
+    await tester.pumpAndSettle();
+
+    // The scroll position of the filtered books should be maintained
+    expect(searchManager.bookFilterScrollOffset, equals(savedBookScrollOffset));
+    final bookScrollable = tester.widget<SingleChildScrollView>(find.byType(SingleChildScrollView));
+    expect(bookScrollable.controller?.offset, equals(savedBookScrollOffset));
+  });
+
   testWidgets('search result verse text matches UserSettings.textSize', (tester) async {
     await userSettings.setTextSize(22.0);
     await tester.pumpWidget(buildTestableWidget());
@@ -300,7 +390,6 @@ void main() {
 
     final exactChip = find.widgetWithText(FilterChip, 'Exact');
     expect(exactChip, findsOneWidget);
-    expect(find.byIcon(Icons.format_quote), findsOneWidget);
 
     // Enter query 'faith'
     await tester.enterText(find.byType(TextField), 'faith');

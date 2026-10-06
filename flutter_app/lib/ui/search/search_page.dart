@@ -8,12 +8,7 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/material.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({
-    super.key,
-    this.currentBookId,
-  });
-
-  final int? currentBookId;
+  const SearchPage({super.key});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -23,6 +18,7 @@ class _SearchPageState extends State<SearchPage> {
   late final SearchManager _manager;
   late final TextEditingController _textController;
   late final ScrollController _scrollController;
+  late final ScrollController _bookScrollController;
   final _tabManager = getIt<TabManager>();
   final _hasTextNotifier = ValueNotifier<bool>(false);
 
@@ -30,7 +26,6 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
     _manager = getIt<SearchManager>();
-    _manager.currentBookId = widget.currentBookId;
     _manager.init();
 
     _textController = TextEditingController(text: _manager.currentQuery);
@@ -45,11 +40,21 @@ class _SearchPageState extends State<SearchPage> {
       initialScrollOffset: _manager.scrollOffset,
     );
     _scrollController.addListener(_onScroll);
+
+    _bookScrollController = ScrollController(
+      initialScrollOffset: _manager.bookFilterScrollOffset,
+    );
+    _bookScrollController.addListener(_onBookScroll);
+
     _textController.addListener(_onTextChanged);
   }
 
   void _onScroll() {
     _manager.scrollOffset = _scrollController.offset;
+  }
+
+  void _onBookScroll() {
+    _manager.bookFilterScrollOffset = _bookScrollController.offset;
   }
 
   void _onTextChanged() {
@@ -60,12 +65,23 @@ class _SearchPageState extends State<SearchPage> {
     if (_scrollController.hasClients && _scrollController.offset > 0) {
       _scrollController.jumpTo(0.0);
     }
+    if (_bookScrollController.hasClients && _bookScrollController.offset > 0) {
+      _bookScrollController.jumpTo(0.0);
+    }
   }
 
   @override
   void dispose() {
+    if (_scrollController.hasClients) {
+      _manager.scrollOffset = _scrollController.offset;
+    }
+    if (_bookScrollController.hasClients) {
+      _manager.bookFilterScrollOffset = _bookScrollController.offset;
+    }
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _bookScrollController.removeListener(_onBookScroll);
+    _bookScrollController.dispose();
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _hasTextNotifier.dispose();
@@ -77,6 +93,9 @@ class _SearchPageState extends State<SearchPage> {
   void _navigateToVerse(int bookId, int chapter, int? verse) {
     if (_scrollController.hasClients) {
       _manager.scrollOffset = _scrollController.offset;
+    }
+    if (_bookScrollController.hasClients) {
+      _manager.bookFilterScrollOffset = _bookScrollController.offset;
     }
     _manager.recordSearch(_textController.text);
     _tabManager.openTab(bookId, chapter, null, verse);
@@ -98,6 +117,9 @@ class _SearchPageState extends State<SearchPage> {
             if (_scrollController.hasClients) {
               _manager.scrollOffset = _scrollController.offset;
             }
+            if (_bookScrollController.hasClients) {
+              _manager.bookFilterScrollOffset = _bookScrollController.offset;
+            }
             Navigator.of(context).pop();
           },
         ),
@@ -115,6 +137,7 @@ class _SearchPageState extends State<SearchPage> {
           onSubmitted: (query) => _manager.recordSearch(query),
         ),
         actions: [
+          _buildExactPill(colorScheme),
           ValueListenableBuilder<bool>(
             valueListenable: _hasTextNotifier,
             builder: (context, hasText, child) {
@@ -125,6 +148,9 @@ class _SearchPageState extends State<SearchPage> {
                 onPressed: () {
                   _textController.clear();
                   _manager.clearSearch();
+                  if (_bookScrollController.hasClients && _bookScrollController.offset > 0) {
+                    _bookScrollController.jumpTo(0.0);
+                  }
                 },
               );
             },
@@ -169,109 +195,91 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildScopeFilterBar(ColorScheme colorScheme) {
-    return ValueListenableBuilder<SearchScope>(
-      valueListenable: _manager.scopeNotifier,
-      builder: (context, currentScope, child) {
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-          child: Row(
-            children: [
-              _buildFilterChip('All', SearchScope.all, currentScope),
-              const SizedBox(width: 8),
-              _buildFilterChip(
-                'OT',
-                SearchScope.ot,
-                currentScope,
-                tooltip: 'Old Testament',
-              ),
-              const SizedBox(width: 8),
-              _buildFilterChip(
-                'NT',
-                SearchScope.nt,
-                currentScope,
-                tooltip: 'New Testament',
-              ),
-              if (widget.currentBookId != null) ...[
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  bookIdToBookNameMap[widget.currentBookId] ?? 'Current Book',
-                  SearchScope.book,
-                  currentScope,
-                ),
-              ],
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: SizedBox(
-                  height: 20,
-                  child: VerticalDivider(
-                    width: 1,
-                    thickness: 1,
-                    color: colorScheme.outlineVariant,
-                  ),
-                ),
-              ),
-              _buildExactChip(colorScheme),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildExactChip(ColorScheme colorScheme) {
+  Widget _buildExactPill(ColorScheme colorScheme) {
     return ValueListenableBuilder<bool>(
       valueListenable: _manager.isExactNotifier,
       builder: (context, isExact, child) {
-        return FilterChip(
-          selected: isExact,
-          onSelected: (val) {
-            _manager.setExactMatch(val);
-            if (_scrollController.hasClients) {
-              _scrollController.jumpTo(0.0);
-            }
-          },
-          avatar: Icon(
-            Icons.format_quote,
-            size: 16,
-            color: isExact
-                ? colorScheme.onSecondaryContainer
-                : colorScheme.onSurfaceVariant,
-          ),
-          label: const Text('Exact'),
-          tooltip: 'Match exact word or phrase',
-          showCheckmark: false,
-          labelStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: isExact ? FontWeight.bold : FontWeight.normal,
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: FilterChip(
+            selected: isExact,
+            showCheckmark: false,
+            label: const Text('Exact'),
+            tooltip: 'Match exact phrase or word',
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+            padding: EdgeInsets.zero,
+            labelStyle: TextStyle(
+              fontSize: 12,
+              fontWeight: isExact ? FontWeight.bold : FontWeight.w500,
+            ),
+            onSelected: (val) {
+              _manager.setExactMatch(val);
+              if (_scrollController.hasClients) {
+                _scrollController.jumpTo(0.0);
+              }
+            },
           ),
         );
       },
     );
   }
 
-  Widget _buildFilterChip(
-    String label,
-    SearchScope scope,
-    SearchScope activeScope, {
-    String? tooltip,
-  }) {
-    final isSelected = scope == activeScope;
-    return ChoiceChip(
-      tooltip: tooltip,
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) {
-        _manager.setScope(scope);
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(0.0);
-        }
+  Widget _buildScopeFilterBar(ColorScheme colorScheme) {
+    return ValueListenableBuilder<List<BookMatch>>(
+      valueListenable: _manager.matchingBooksNotifier,
+      builder: (context, matchingBooks, child) {
+        return ValueListenableBuilder<int?>(
+          valueListenable: _manager.selectedBookIdNotifier,
+          builder: (context, selectedBookId, child) {
+            return SingleChildScrollView(
+              controller: _bookScrollController,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: const Text('All'),
+                    selected: selectedBookId == null,
+                    onSelected: (_) {
+                      _manager.selectBook(null);
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(0.0);
+                      }
+                    },
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: selectedBookId == null
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                  for (final match in matchingBooks) ...[
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: Text('${match.bookName} (${match.count})'),
+                      selected: selectedBookId == match.bookId,
+                      onSelected: (selected) {
+                        _manager.selectBook(selected ? match.bookId : null);
+                        if (_scrollController.hasClients) {
+                          _scrollController.jumpTo(0.0);
+                        }
+                      },
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selectedBookId == match.bookId
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
       },
-      labelStyle: TextStyle(
-        fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
     );
   }
 

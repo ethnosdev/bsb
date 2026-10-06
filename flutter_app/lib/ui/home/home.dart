@@ -309,9 +309,7 @@ class _HomePageState extends State<HomePage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => SearchPage(
-                                          currentBookId: activeTab.bookId,
-                                        ),
+                                        builder: (context) => const SearchPage(),
                                       ),
                                     );
                                   } else if (value == 'play') {
@@ -376,9 +374,7 @@ class _HomePageState extends State<HomePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => SearchPage(
-                                  currentBookId: activeTab?.bookId,
-                                ),
+                                builder: (context) => const SearchPage(),
                               ),
                             );
                           },
