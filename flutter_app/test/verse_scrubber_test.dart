@@ -1428,6 +1428,175 @@ void main() {
         expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
       },
     );
+
+    testWidgets(
+      'in ChapterText: swiping up on right edge with natural thumb arc (diagonal drift) summons scrubber',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: ChapterText(
+                  bookId: 1,
+                  chapter: 1,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrubberFinder = find.byType(VerseScrubber);
+        // Auto-hides after 3 seconds
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
+
+        // Natural thumb swipe up from bottom right: moves inward/left as it moves up
+        final gesture = await tester.startGesture(const Offset(380, 500));
+        // First small movement with horizontal drift (e.g. dx = -10, dy = -12)
+        await gesture.moveBy(const Offset(-10, -12));
+        await tester.pump();
+        // Continuing upward swipe
+        await gesture.moveBy(const Offset(-5, -30));
+        await tester.pump();
+
+        // Scrubber should be active and bubble should appear
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsOneWidget);
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'in ChapterText: swiping up starting near the very bottom of the screen summons scrubber',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: ChapterText(
+                  bookId: 1,
+                  chapter: 1,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrubberFinder = find.byType(VerseScrubber);
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
+
+        // Start near bottom edge (y = 560 out of 600 default test viewport) within right 48px (x = 380)
+        final gesture = await tester.startGesture(const Offset(380, 560));
+        await gesture.moveBy(const Offset(0, -60));
+        await tester.pump();
+
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsOneWidget);
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+      },
+    );
+
+    testWidgets(
+      'in ChapterText: dragging vertically 40px from right edge (x = 360) summons scrubber',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: ChapterText(
+                  bookId: 1,
+                  chapter: 1,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrubberFinder = find.byType(VerseScrubber);
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
+
+        // Start at x = 360 (40px from right edge), which fits inside the 48px touch zone
+        final gesture = await tester.startGesture(const Offset(360, 400));
+        await gesture.moveBy(const Offset(0, -40));
+        await tester.pump();
+
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsOneWidget);
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+      },
+    );
+
+    testWidgets(
+      'in ChapterText: slow vertical drag (many small movements) on right edge summons scrubber',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                height: 800,
+                child: ChapterText(
+                  bookId: 1,
+                  chapter: 1,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final scrubberFinder = find.byType(VerseScrubber);
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
+
+        final gesture = await tester.startGesture(const Offset(380, 400));
+        for (int i = 0; i < 20; i++) {
+          await gesture.moveBy(const Offset(0, -2));
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsOneWidget);
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+      },
+    );
   });
 }
 

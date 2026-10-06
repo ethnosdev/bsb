@@ -246,8 +246,8 @@ class _VerseScrubberState extends State<VerseScrubber> {
               key: const ValueKey('verse_scrubber_edge_drag_detector_positioned'),
               right: 0,
               top: topBound,
-              bottom: bottomBound,
-              width: 34,
+              bottom: 0,
+              width: 48,
               child: IgnorePointer(
                 ignoring: !widget.isActive || widget.hasSelection,
                 child: _PassThroughHitTargetWidget(
@@ -283,10 +283,11 @@ class _VerseScrubberState extends State<VerseScrubber> {
                                 }
                                 ..onUpdate = (details) {
                                   if (_isDragging) {
-                                    if (_lastDragGlobalX != null &&
-                                        (details.globalPosition.dx -
-                                                _lastDragGlobalX!) >
-                                            8.0 &&
+                                    final dxDelta = _lastDragGlobalX != null
+                                        ? (details.globalPosition.dx - _lastDragGlobalX!)
+                                        : 0.0;
+                                    if (dxDelta > 12.0 &&
+                                        dxDelta > details.delta.dy.abs() * 1.5 &&
                                         widget.onDismiss != null) {
                                       widget.onDismiss!();
                                       _cancelScrub();
@@ -360,7 +361,9 @@ class _VerseScrubberState extends State<VerseScrubber> {
                     onPointerMove: (event) {
                       if (_isDragging) {
                         // Swipe right on the bar dismisses it
-                        if (event.delta.dx > 4.0 && widget.onDismiss != null) {
+                        if (event.delta.dx > 6.0 &&
+                            event.delta.dx > event.delta.dy.abs() * 1.5 &&
+                            widget.onDismiss != null) {
                           widget.onDismiss!();
                           _cancelScrub();
                           return;
@@ -487,36 +490,66 @@ class _ScrubberDragGestureRecognizer extends VerticalDragGestureRecognizer {
     onlyAcceptDragOnThreshold = true;
   }
 
-  Offset? _startGlobalPosition;
+  final Map<int, Offset> _startPositions = <int, Offset>{};
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    _startGlobalPosition = event.position;
+    _startPositions[event.pointer] = event.position;
     super.addAllowedPointer(event);
   }
 
   @override
+  bool hasSufficientGlobalDistanceToAccept(
+    PointerDeviceKind pointerDeviceKind,
+    double? deviceTouchSlop,
+  ) {
+    // Use an 8.0dp threshold for touch (2.0dp for mouse) instead of the framework default 18.0dp.
+    // This allows the scrubber recognizer to decisively win the gesture arena over the
+    // underlying Scrollable's VerticalDragGestureRecognizer (which waits for 18.0dp)
+    // even during slow drags, while still ignoring stationary taps and long presses.
+    final threshold =
+        pointerDeviceKind == PointerDeviceKind.mouse ? 2.0 : 8.0;
+    return globalDistanceMoved.abs() > threshold;
+  }
+
+  @override
   void handleEvent(PointerEvent event) {
-    if (event is PointerMoveEvent && _startGlobalPosition != null) {
-      final totalDelta = event.position - _startGlobalPosition!;
-      // If horizontal movement clearly dominates before vertical drag threshold is met,
-      // reject this gesture so PageView (horizontal paging) can win immediately.
-      if (totalDelta.dx.abs() > totalDelta.dy.abs() &&
-          totalDelta.dx.abs() > 10.0) {
+    if (event is PointerMoveEvent &&
+        _startPositions.containsKey(event.pointer)) {
+      final totalDelta = event.position - _startPositions[event.pointer]!;
+      final threshold =
+          event.kind == PointerDeviceKind.mouse ? 2.0 : 8.0;
+      // If horizontal movement clearly dominates and has met the threshold
+      // before the vertical drag threshold is met, reject this gesture so PageView
+      // (horizontal paging) can win immediately.
+      if (totalDelta.dx.abs() > threshold &&
+          totalDelta.dx.abs() > totalDelta.dy.abs() * 1.5) {
         resolve(GestureDisposition.rejected);
-        _startGlobalPosition = null;
+        _startPositions.remove(event.pointer);
         return;
       }
     }
     if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _startGlobalPosition = null;
+      _startPositions.remove(event.pointer);
     }
     super.handleEvent(event);
   }
 
   @override
   void rejectGesture(int pointer) {
-    _startGlobalPosition = null;
+    _startPositions.remove(pointer);
     super.rejectGesture(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {
+    _startPositions.remove(pointer);
+    super.didStopTrackingLastPointer(pointer);
+  }
+
+  @override
+  void dispose() {
+    _startPositions.clear();
+    super.dispose();
   }
 }
