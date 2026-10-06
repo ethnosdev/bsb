@@ -35,6 +35,7 @@ class TextScreen extends StatefulWidget {
     this.chapterChooserNotifier,
     this.onChapterChanged,
     this.onToggleDistractionFree,
+    this.isDistractionFree = false,
   });
 
   final int bookId;
@@ -50,6 +51,7 @@ class TextScreen extends StatefulWidget {
   ])?
   onChapterChanged;
   final VoidCallback? onToggleDistractionFree;
+  final bool isDistractionFree;
 
   @override
   State<TextScreen> createState() => _TextScreenState();
@@ -332,6 +334,7 @@ class _TextScreenState extends State<TextScreen>
             zoomStartNotifier: _zoomStartNotifier,
             pageIndex: pageIndex,
             onToggleDistractionFree: widget.onToggleDistractionFree,
+            isDistractionFree: widget.isDistractionFree,
             targetSection: _isTargetSection(bookId, chapter)
                 ? _pendingSectionHeading
                 : null,

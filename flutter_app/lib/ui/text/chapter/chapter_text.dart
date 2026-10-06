@@ -38,6 +38,7 @@ class ChapterText extends StatefulWidget {
     this.onTargetSectionScrolled,
     this.onTargetVerseScrolled,
     this.onToggleDistractionFree,
+    this.isDistractionFree = false,
   });
 
   final int bookId;
@@ -53,6 +54,7 @@ class ChapterText extends StatefulWidget {
   final VoidCallback? onTargetSectionScrolled;
   final VoidCallback? onTargetVerseScrolled;
   final VoidCallback? onToggleDistractionFree;
+  final bool isDistractionFree;
 
   @override
   State<ChapterText> createState() => _ChapterTextState();
@@ -330,6 +332,9 @@ class _ChapterTextState extends State<ChapterText>
   void _handleSelectionChange() {
     if (_selectionController.hasSelection) {
       _hideVerseScrubber();
+    }
+    if (mounted) {
+      setState(() {});
     }
     if (mounted && widget.onSelectionChanged != null) {
       widget.onSelectionChanged!(_selectionController);
@@ -1071,6 +1076,8 @@ class _ChapterTextState extends State<ChapterText>
             isActive: isCurrentActivePage,
             isVisible: _isVerseScrubberVisible,
             canScroll: _doesContentOverflow,
+            hasSelection: _selectionController.hasSelection,
+            isDistractionFree: widget.isDistractionFree,
             onVerseSelected: (verse) {
               _scrollFromScrubber(verse);
               _showVerseScrubberWithTimeout();
@@ -1081,6 +1088,11 @@ class _ChapterTextState extends State<ChapterText>
             onInteractionStart: () {
               _isScrubbing = true;
               _verseScrubberTimer?.cancel();
+              if (!_isVerseScrubberVisible) {
+                setState(() {
+                  _isVerseScrubberVisible = true;
+                });
+              }
             },
             onInteractionEnd: () {
               _isScrubbing = false;
@@ -1094,6 +1106,8 @@ class _ChapterTextState extends State<ChapterText>
         verses: sortedVerses,
         isVisible: _isVerseScrubberVisible,
         canScroll: _doesContentOverflow,
+        hasSelection: _selectionController.hasSelection,
+        isDistractionFree: widget.isDistractionFree,
         onVerseSelected: (verse) {
           _scrollFromScrubber(verse);
           _showVerseScrubberWithTimeout();
@@ -1104,6 +1118,11 @@ class _ChapterTextState extends State<ChapterText>
         onInteractionStart: () {
           _isScrubbing = true;
           _verseScrubberTimer?.cancel();
+          if (!_isVerseScrubberVisible) {
+            setState(() {
+              _isVerseScrubberVisible = true;
+            });
+          }
         },
         onInteractionEnd: () {
           _isScrubbing = false;

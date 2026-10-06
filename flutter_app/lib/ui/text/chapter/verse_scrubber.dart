@@ -1,17 +1,6 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-
-sealed class ScrubberItem {
-  const ScrubberItem();
-}
-
-class VerseLabelItem extends ScrubberItem {
-  const VerseLabelItem(this.verse);
-  final int verse;
-}
-
-class VerseDotItem extends ScrubberItem {
-  const VerseDotItem();
-}
+import 'package:flutter/rendering.dart';
 
 class VerseScrubber extends StatefulWidget {
   const VerseScrubber({
@@ -20,6 +9,8 @@ class VerseScrubber extends StatefulWidget {
     required this.isVisible,
     this.isActive = true,
     this.canScroll = true,
+    this.hasSelection = false,
+    this.isDistractionFree = false,
     required this.onVerseSelected,
     this.onDismiss,
     this.onInteractionStart,
@@ -38,6 +29,12 @@ class VerseScrubber extends StatefulWidget {
   /// Whether the chapter content overflows the viewport and requires scrolling.
   final bool canScroll;
 
+  /// Whether scripture text is currently selected (disables edge drag activation).
+  final bool hasSelection;
+
+  /// Whether the app is currently in full-screen (distraction-free) mode where the app bar is hidden.
+  final bool isDistractionFree;
+
   /// Callback when a verse is selected (on tap or drag release).
   final ValueChanged<int> onVerseSelected;
 
@@ -50,6 +47,53 @@ class VerseScrubber extends StatefulWidget {
   /// Called when the user finishes touching/scrubbing the bar (to resume auto-dismiss timers).
   final VoidCallback? onInteractionEnd;
 
+  /// Computes the list of verse numbers to display along the scrubber bar
+  /// given the maximum number of labels that can comfortably fit vertically.
+  static List<int> computeDisplayVerses(List<int> verses, int maxLabels) {
+    if (verses.length <= maxLabels) {
+      return verses;
+    }
+
+    const steps = [2, 5, 10, 20, 25, 50];
+    for (final step in steps) {
+      final candidate = _buildVersesWithStep(verses, step);
+      if (candidate.length <= maxLabels) {
+        return candidate;
+      }
+    }
+
+    return _buildVersesWithStep(verses, steps.last);
+  }
+
+  static List<int> _buildVersesWithStep(List<int> verses, int step) {
+    if (verses.isEmpty) return const [];
+    final result = <int>[];
+    final first = verses.first;
+    final last = verses.last;
+
+    for (final v in verses) {
+      if (v == first) {
+        result.add(v);
+      } else if (step == 2) {
+        if ((v - first) % 2 == 0) {
+          result.add(v);
+        }
+      } else if (v % step == 0) {
+        result.add(v);
+      }
+    }
+
+    if (result.isEmpty || result.last != last) {
+      if (result.length > 1 && (last - result.last) <= (step * 0.5)) {
+        result[result.length - 1] = last;
+      } else {
+        result.add(last);
+      }
+    }
+
+    return result;
+  }
+
   @override
   State<VerseScrubber> createState() => _VerseScrubberState();
 }
@@ -58,6 +102,7 @@ class _VerseScrubberState extends State<VerseScrubber> {
   bool _isDragging = false;
   int _currentScrubbedVerse = 1;
   double _touchY = 0.0;
+  double? _lastDragGlobalX;
 
   @override
   void initState() {
@@ -77,43 +122,6 @@ class _VerseScrubberState extends State<VerseScrubber> {
     if (!widget.isActive && _isDragging) {
       _cancelScrub();
     }
-  }
-
-  List<ScrubberItem> _buildItems(List<int> verses) {
-    final total = verses.length;
-    if (total <= 30) {
-      return verses.map((v) => VerseLabelItem(v)).toList();
-    }
-
-    final items = <ScrubberItem>[];
-    if (total <= 60) {
-      // Show every 5th verse + first and last
-      for (var i = 0; i < total; i++) {
-        final v = verses[i];
-        if (i == 0 || i == total - 1 || v % 5 == 0) {
-          items.add(VerseLabelItem(v));
-        } else if (v % 5 == 2 || (i > 0 && items.last is VerseLabelItem)) {
-          if (items.isEmpty || items.last is! VerseDotItem) {
-            items.add(const VerseDotItem());
-          }
-        }
-      }
-      return items;
-    }
-
-    // Greater than 60 verses (e.g. Psalm 119 with 176 verses)
-    final interval = total > 90 ? 20 : 10;
-    for (var i = 0; i < total; i++) {
-      final v = verses[i];
-      if (i == 0 || i == total - 1 || v % interval == 0) {
-        items.add(VerseLabelItem(v));
-      } else if (v % (interval ~/ 2) == 0) {
-        if (items.isEmpty || items.last is! VerseDotItem) {
-          items.add(const VerseDotItem());
-        }
-      }
-    }
-    return items;
   }
 
   void _updateScrub({
@@ -164,25 +172,159 @@ class _VerseScrubberState extends State<VerseScrubber> {
     }
 
     final theme = Theme.of(context);
-    final items = _buildItems(widget.verses);
-    final isActuallyVisible = widget.isVisible && widget.isActive;
+    final isActuallyVisible =
+        (widget.isVisible || _isDragging) && widget.isActive;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final stackHeight = constraints.maxHeight;
-        final itemHeight = widget.verses.length <= 30 ? 22.0 : 18.0;
-        final calculatedBarHeight =
-            (items.length * itemHeight).clamp(160.0, stackHeight - 48.0);
-        final barTop = (stackHeight - calculatedBarHeight) / 2;
+        final totalVerses = widget.verses.length;
+
+        final mediaQuery = MediaQuery.paddingOf(context);
+        final topSafeArea = mediaQuery.top;
+        final bottomSafeArea = mediaQuery.bottom;
+        final hasScaffoldAppBar = Scaffold.maybeOf(context)?.hasAppBar ?? false;
+        final isAppBarShowing = hasScaffoldAppBar && !widget.isDistractionFree;
+
+        final double topBound;
+        if (hasScaffoldAppBar) {
+          if (isAppBarShowing) {
+            // In Scaffold with extendBodyBehindAppBar, topSafeArea already includes the app bar height
+            topBound = topSafeArea + 12.0;
+          } else {
+            // Distraction-free: subtract the app bar height that Scaffold added to find actual status bar
+            final rawTopSafeArea =
+                (topSafeArea - kToolbarHeight).clamp(0.0, double.infinity);
+            topBound = rawTopSafeArea > 0 ? (rawTopSafeArea + 8.0) : 16.0;
+          }
+        } else {
+          topBound = topSafeArea > 0 ? (topSafeArea + 8.0) : 16.0;
+        }
+
+        final double bottomBound =
+            bottomSafeArea > 0 ? (bottomSafeArea + 8.0) : 16.0;
+
+        // For chapters with many verses, expand up to the full usable height of the screen
+        // (strictly below the app bar and above the bottom safe area).
+        // For shorter chapters, calculate proportional height centered within the usable area.
+        final double usableHeight =
+            (stackHeight - topBound - bottomBound).clamp(160.0, double.infinity);
+        final double idealItemHeight = totalVerses <= 30 ? 20.0 : 16.0;
+        final double calculatedBarHeight =
+            (totalVerses * idealItemHeight).clamp(160.0, usableHeight);
+        final double barTop =
+            topBound + (usableHeight - calculatedBarHeight) / 2;
+
+        const verticalPadding = 8.0;
+        final availableHeight =
+            (calculatedBarHeight - (verticalPadding * 2)).clamp(1.0, double.infinity);
+
+        // A minimum height of 13.0dp per label guarantees crisp readability and breathing room.
+        final maxLabels =
+            (availableHeight / 13.0).floor().clamp(2, totalVerses);
+        final displayVerses =
+            VerseScrubber.computeDisplayVerses(widget.verses, maxLabels);
+
+        final slotHeight = availableHeight / displayVerses.length;
+        final fontSize = (slotHeight * 0.75).clamp(8.0, 10.5);
+        const fontWeight = FontWeight.w600;
 
         const double bubbleHeight = 44.0;
         // Clamp the bubble strictly inside the visible stack bounds
-        final clampedBubbleTop =
-            (_touchY - (bubbleHeight / 2)).clamp(12.0, stackHeight - bubbleHeight - 12.0);
+        final clampedBubbleTop = (_touchY - (bubbleHeight / 2)).clamp(
+          topBound,
+          (stackHeight - bottomBound - bubbleHeight).clamp(topBound, double.infinity),
+        );
 
         return Stack(
           clipBehavior: Clip.hardEdge,
           children: [
+            // Right-edge vertical drag detector: active only when isActive and not hasSelection.
+            // Translucent with hit-test pass-through so taps/long-presses/selection handles
+            // reach the underlying scripture text when not dragging.
+            Positioned(
+              key: const ValueKey('verse_scrubber_edge_drag_detector_positioned'),
+              right: 0,
+              top: topBound,
+              bottom: bottomBound,
+              width: 34,
+              child: IgnorePointer(
+                ignoring: !widget.isActive || widget.hasSelection,
+                child: _PassThroughHitTargetWidget(
+                  child: RawGestureDetector(
+                    key: const ValueKey('verse_scrubber_edge_drag_detector'),
+                    behavior: HitTestBehavior.translucent,
+                    gestures: {
+                      _ScrubberDragGestureRecognizer:
+                          GestureRecognizerFactoryWithHandlers<
+                            _ScrubberDragGestureRecognizer
+                          >(
+                            () => _ScrubberDragGestureRecognizer(),
+                            (instance) {
+                              instance
+                                ..onStart = (details) {
+                                  final scrubberBox =
+                                      context.findRenderObject() as RenderBox?;
+                                  if (scrubberBox != null && scrubberBox.hasSize) {
+                                    final localPos = scrubberBox.globalToLocal(
+                                      details.globalPosition,
+                                    );
+                                    _lastDragGlobalX = details.globalPosition.dx;
+                                    setState(() {
+                                      _isDragging = true;
+                                    });
+                                    widget.onInteractionStart?.call();
+                                    _updateScrub(
+                                      localYInScrubber: localPos.dy,
+                                      barTop: barTop,
+                                      barHeight: calculatedBarHeight,
+                                    );
+                                  }
+                                }
+                                ..onUpdate = (details) {
+                                  if (_isDragging) {
+                                    if (_lastDragGlobalX != null &&
+                                        (details.globalPosition.dx -
+                                                _lastDragGlobalX!) >
+                                            8.0 &&
+                                        widget.onDismiss != null) {
+                                      widget.onDismiss!();
+                                      _cancelScrub();
+                                      return;
+                                    }
+                                    _lastDragGlobalX = details.globalPosition.dx;
+                                    final scrubberBox =
+                                        context.findRenderObject() as RenderBox?;
+                                    if (scrubberBox != null &&
+                                        scrubberBox.hasSize) {
+                                      final localPos = scrubberBox.globalToLocal(
+                                        details.globalPosition,
+                                      );
+                                      _updateScrub(
+                                        localYInScrubber: localPos.dy,
+                                        barTop: barTop,
+                                        barHeight: calculatedBarHeight,
+                                      );
+                                    }
+                                  }
+                                }
+                                ..onEnd = (_) {
+                                  _lastDragGlobalX = null;
+                                  _finishScrub();
+                                }
+                                ..onCancel = () {
+                                  _lastDragGlobalX = null;
+                                  _cancelScrub();
+                                };
+                            },
+                          ),
+                    },
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
+            ),
+
             // Vertical Scrubber Bar with stable key: always animates smoothly between onscreen and offscreen
             Positioned(
               key: const ValueKey('verse_scrubber_bar_positioned'),
@@ -241,7 +383,7 @@ class _VerseScrubberState extends State<VerseScrubber> {
                     child: Container(
                       width: 34,
                       height: calculatedBarHeight,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHigh
                             .withValues(alpha: 0.88),
@@ -262,29 +404,23 @@ class _VerseScrubberState extends State<VerseScrubber> {
                         ],
                       ),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: items.map((item) {
-                          switch (item) {
-                            case VerseLabelItem(:final verse):
-                              return Text(
-                                '$verse',
-                                style: TextStyle(
-                                  fontSize: items.length > 25 ? 9.5 : 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  height: 1.0,
+                        children: displayVerses.map((verse) {
+                          return Expanded(
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '$verse',
+                                  style: TextStyle(
+                                    fontSize: fontSize,
+                                    fontWeight: fontWeight,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    height: 1.0,
+                                  ),
                                 ),
-                              );
-                            case VerseDotItem():
-                              return Container(
-                                width: 3.5,
-                                height: 3.5,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: theme.colorScheme.outlineVariant,
-                                ),
-                              );
-                          }
+                              ),
+                            ),
+                          );
                         }).toList(),
                       ),
                     ),
@@ -324,5 +460,63 @@ class _VerseScrubberState extends State<VerseScrubber> {
         );
       },
     );
+  }
+}
+
+class _PassThroughHitTargetWidget extends SingleChildRenderObjectWidget {
+  const _PassThroughHitTargetWidget({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderPassThroughHitTarget();
+}
+
+class _RenderPassThroughHitTarget extends RenderProxyBox {
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (size.contains(position)) {
+      hitTestChildren(result, position: position);
+      return false;
+    }
+    return false;
+  }
+}
+
+class _ScrubberDragGestureRecognizer extends VerticalDragGestureRecognizer {
+  _ScrubberDragGestureRecognizer() {
+    onlyAcceptDragOnThreshold = true;
+  }
+
+  Offset? _startGlobalPosition;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    _startGlobalPosition = event.position;
+    super.addAllowedPointer(event);
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event is PointerMoveEvent && _startGlobalPosition != null) {
+      final totalDelta = event.position - _startGlobalPosition!;
+      // If horizontal movement clearly dominates before vertical drag threshold is met,
+      // reject this gesture so PageView (horizontal paging) can win immediately.
+      if (totalDelta.dx.abs() > totalDelta.dy.abs() &&
+          totalDelta.dx.abs() > 10.0) {
+        resolve(GestureDisposition.rejected);
+        _startGlobalPosition = null;
+        return;
+      }
+    }
+    if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _startGlobalPosition = null;
+    }
+    super.handleEvent(event);
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    _startGlobalPosition = null;
+    super.rejectGesture(pointer);
   }
 }

@@ -400,6 +400,7 @@ class _HomePageState extends State<HomePage> {
                       initialTargetVerse: activeTab.targetVerse,
                       chapterChooserNotifier: _chapterChooserNotifier,
                       onToggleDistractionFree: _toggleDistractionFree,
+                      isDistractionFree: _isDistractionFree,
                       onChapterChanged:
                           (bookId, chapter, [sectionHeading, targetVerse]) {
                         _tabManager.updateActiveChapter(

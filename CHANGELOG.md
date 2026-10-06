@@ -2,6 +2,8 @@
 
 - Make the invisible tap area on the app bar to open the book chooser smaller.
 - Swipe down on empty area of app bar to close all open tabs. 
+- Swipe vertically on the right side of the text screen to show the verse chooser.
+- Show more of the verses in a chapter in the verse scrubber (in right bar mode).
 
 # 2.5.0 - 2026.10.03
 
