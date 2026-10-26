@@ -2,9 +2,8 @@ import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/playlist_editor_page.dart';
-import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/playlists/playlist_share_handler.dart';
-import 'package:bsb/ui/playlists/widgets/playlist_qr_dialog.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:flutter/material.dart';
 
 class PlaylistsPage extends StatefulWidget {
@@ -121,16 +120,11 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
 
   Future<void> _present(Playlist playlist) async {
     final touched = await _playlistService.touchPlaylist(playlist);
+    if (getIt.isRegistered<TabManager>()) {
+      getIt<TabManager>().openPlaylistTab(touched.id, touched.title);
+    }
     if (mounted) {
-      _isEditorOrPresentationOpen = true;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PlaylistPresentationPage(playlist: touched),
-        ),
-      );
-      _isEditorOrPresentationOpen = false;
-      if (mounted) _loadPlaylists();
+      Navigator.of(context).pop();
     }
   }
 
@@ -155,6 +149,9 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
 
     if (confirmed == true) {
       await _playlistService.deletePlaylist(playlist.id);
+      if (getIt.isRegistered<TabManager>()) {
+        getIt<TabManager>().closePlaylistTab(playlist.id);
+      }
     }
   }
 
@@ -269,10 +266,8 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                               _playlistService.duplicatePlaylist(playlist);
                             } else if (val == 'share_file') {
                               _shareHandler.exportPlaylistFile(context, playlist);
-                            } else if (val == 'share_link') {
-                              _shareHandler.copyShareLink(context, playlist);
-                            } else if (val == 'qr') {
-                              PlaylistQrDialog.show(context, playlist);
+                            } else if (val == 'share_code') {
+                              _shareHandler.copyShareCode(context, playlist);
                             } else if (val == 'delete') {
                               _deletePlaylist(playlist);
                             }
@@ -311,18 +306,10 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                               ),
                             ),
                             const PopupMenuItem(
-                              value: 'share_link',
+                              value: 'share_code',
                               child: ListTile(
-                                leading: Icon(Icons.link_outlined),
-                                title: Text('Copy Share Link'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'qr',
-                              child: ListTile(
-                                leading: Icon(Icons.qr_code_outlined),
-                                title: Text('Share by QR Code'),
+                                leading: Icon(Icons.copy_outlined),
+                                title: Text('Copy Share Code'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),

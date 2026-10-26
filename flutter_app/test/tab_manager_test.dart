@@ -172,5 +172,52 @@ void main() {
       tabManager.reorderItem(2, 0);
       expect(tabManager.tabs.map((t) => t.label).toList(), ['GEN 1', 'EXO 1', 'LEV 1']);
     });
+
+    test('openPlaylistTab adds playlist tab, focuses existing on duplicate, and updates title', () async {
+      await tabManager.init();
+      tabManager.openPlaylistTab('p1', 'My Study');
+
+      expect(tabManager.tabs.length, 1);
+      expect(tabManager.activeTab?.isPlaylist, isTrue);
+      expect(tabManager.activeTab?.playlistId, 'p1');
+      expect(tabManager.activeTab?.label, 'My Study');
+
+      // Open a second playlist tab
+      tabManager.openPlaylistTab('p2', 'Grace');
+      expect(tabManager.tabs.length, 2);
+      expect(tabManager.activeTab?.playlistId, 'p2');
+
+      // Re-opening p1 focuses p1 and updates title if changed
+      tabManager.openPlaylistTab('p1', 'My Study (Updated)');
+      expect(tabManager.tabs.length, 2);
+      expect(tabManager.activeTab?.playlistId, 'p1');
+      expect(tabManager.activeTab?.label, 'My Study (Updated)');
+
+      // Updating playlist title directly
+      tabManager.updatePlaylistTitle('p2', 'Grace & Peace');
+      expect(tabManager.tabs.firstWhere((t) => t.playlistId == 'p2').label, 'Grace & Peace');
+
+      // Closing playlist tab
+      tabManager.closePlaylistTab('p1');
+      expect(tabManager.tabs.length, 1);
+      expect(tabManager.activeTab?.playlistId, 'p2');
+    });
+
+    test('playlist tabs are preserved across init persistence', () async {
+      await tabManager.init();
+      tabManager.openTab(1, 1);
+      tabManager.openPlaylistTab('p10', 'Faith');
+      await Future<void>.delayed(Duration.zero);
+
+      // Reinitialize new tab manager
+      final newManager = TabManager();
+      await newManager.init();
+
+      expect(newManager.tabs.length, 2);
+      expect(newManager.tabs[0].label, 'GEN 1');
+      expect(newManager.tabs[1].isPlaylist, isTrue);
+      expect(newManager.tabs[1].label, 'Faith');
+      expect(newManager.activeTab?.playlistId, 'p10');
+    });
   });
 }

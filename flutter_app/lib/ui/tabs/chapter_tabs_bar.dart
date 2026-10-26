@@ -85,7 +85,7 @@ class _ChapterTabsBarState extends State<ChapterTabsBar>
       maxLines: 1,
     )..layout();
 
-    final textWidth = textPainter.width;
+    final textWidth = textPainter.width.clamp(0.0, 160.0);
     if (isActive) {
       return textWidth + 42.0; // Padding + spacing + close icon + borders
     } else {

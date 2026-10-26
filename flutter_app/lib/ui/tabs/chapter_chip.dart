@@ -103,14 +103,18 @@ class _ChapterChipState extends State<ChapterChip>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      widget.tab.label,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: foregroundColor,
-                        fontWeight: widget.isActive
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        letterSpacing: 0.5,
+                    Flexible(
+                      child: Text(
+                        widget.tab.label,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: foregroundColor,
+                          fontWeight: widget.isActive
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                     if (widget.isActive && widget.onClose != null) ...[

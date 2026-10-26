@@ -69,37 +69,23 @@ void main() {
       expect(PlaylistShareHandler.decodePlaylistFromUrl('bsb://playlist?data=invalid'), isNull);
     });
 
-    test('canFitInQr correctly identifies valid vs oversized playlists', () {
-      final normalPlaylist = Playlist(
-        id: 'p-normal',
-        title: 'Morning Prayer',
+    test('decodes playlist from instructional text message', () {
+      final original = Playlist(
+        id: 'p-inst-1',
+        title: 'Faith and Works',
         items: [
-          PlaylistItem.reference(
-            reference: Reference(bookId: 19, chapter: 23, verse: 1, endVerse: 6),
-            orderIndex: 0,
-          ),
-          PlaylistItem.note(text: 'The Lord is my shepherd', orderIndex: 1),
+          PlaylistItem.note(id: 'n1', text: 'James 2 reflection', orderIndex: 0),
         ],
       );
-      expect(PlaylistShareHandler.canFitInQr(normalPlaylist), isTrue);
+      final code = PlaylistShareHandler.encodePlaylistToUrl(original);
+      final message = 'BSB Playlist: ${original.title}\n'
+          'To import in the BSB app, copy this message and select "Import from Clipboard" in the Playlists menu:\n'
+          '$code';
 
-      final oversizedPlaylist = Playlist(
-        id: 'p-huge',
-        title: 'Very Large Study',
-        items: [
-          PlaylistItem.note(
-            title: 'Point 1',
-            text: List.generate(400, (i) => 'Sermon reflection line $i describing detailed theological discourse').join('\n'),
-            orderIndex: 0,
-          ),
-          PlaylistItem.note(
-            title: 'Point 2',
-            text: List.generate(400, (i) => 'Additional practical application paragraph $i for personal ministry').join('\n'),
-            orderIndex: 1,
-          ),
-        ],
-      );
-      expect(PlaylistShareHandler.canFitInQr(oversizedPlaylist), isFalse);
+      final decoded = PlaylistShareHandler.decodePlaylistFromUrl(message);
+      expect(decoded, isNotNull);
+      expect(decoded!.title, 'Faith and Works');
+      expect(decoded.items.first.noteText, 'James 2 reflection');
     });
   });
 }

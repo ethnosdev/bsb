@@ -4,12 +4,10 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/playlists/playlist_share_handler.dart';
 import 'package:bsb/ui/playlists/widgets/passage_range_picker_dialog.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
 import 'package:bsb/ui/playlists/widgets/playlist_note_editor_dialog.dart';
-import 'package:bsb/ui/playlists/widgets/playlist_qr_dialog.dart';
 import 'package:flutter/material.dart';
 
 class PlaylistEditorPage extends StatefulWidget {
@@ -212,16 +210,6 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
     _savePlaylist();
   }
 
-  void _present() {
-    _saveTitle();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PlaylistPresentationPage(playlist: _buildPlaylist()),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -238,22 +226,14 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
         appBar: AppBar(
         title: const Text('Edit Playlist'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.play_circle_fill_rounded),
-            tooltip: 'Present',
-            color: theme.colorScheme.primary,
-            onPressed: _present,
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (val) {
               final playlist = _buildPlaylist();
               if (val == 'share') {
                 _shareHandler.exportPlaylistFile(context, playlist);
-              } else if (val == 'link') {
-                _shareHandler.copyShareLink(context, playlist);
-              } else if (val == 'qr') {
-                PlaylistQrDialog.show(context, playlist);
+              } else if (val == 'code') {
+                _shareHandler.copyShareCode(context, playlist);
               }
             },
             itemBuilder: (context) => [
@@ -266,18 +246,10 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
                 ),
               ),
               const PopupMenuItem(
-                value: 'link',
+                value: 'code',
                 child: ListTile(
-                  leading: Icon(Icons.link),
-                  title: Text('Copy Share Link'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'qr',
-                child: ListTile(
-                  leading: Icon(Icons.qr_code),
-                  title: Text('Share by QR Code'),
+                  leading: Icon(Icons.copy_outlined),
+                  title: Text('Copy Share Code'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),

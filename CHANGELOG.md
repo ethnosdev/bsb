@@ -1,3 +1,14 @@
+# 2.7.0 - 2026.10.26
+
+- Open saved playlists as tabs in the app bar alongside chapters.
+- Tap active playlist tab to open the playlist editor.
+- Add "Edit Playlist" to the app bar overflow menu when a playlist tab is active.
+- Display note title and text in primary color to distinguish notes from scripture verses.
+- Do not display a title for notes that do not have one.
+- Scale down playlist passage and note titles to match the scripture section heading font size.
+- Replace link sharing with "Copy Share Code", including instructions to import from clipboard.
+- Remove playlist QR code sharing.
+
 # 2.6.1 - 2026.10.06
 
 - Remove the vertical swipe feature to activate the verse chooser. (It was interfering with text scrolling.)

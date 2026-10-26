@@ -174,16 +174,24 @@ class ChapterTabsSheet extends StatelessWidget {
                                     backgroundColor: isActive
                                         ? colorScheme.primary
                                         : colorScheme.surfaceContainerHighest,
-                                    child: Text(
-                                      tab.label.split(' ').first,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: isActive
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
+                                    child: tab.isPlaylist
+                                        ? Icon(
+                                            Icons.playlist_play_rounded,
+                                            size: 18,
+                                            color: isActive
+                                                ? colorScheme.onPrimary
+                                                : colorScheme.onSurfaceVariant,
+                                          )
+                                        : Text(
+                                            tab.label.split(' ').first,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: isActive
+                                                  ? colorScheme.onPrimary
+                                                  : colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
                                   ),
                                   title: Text(
                                     tab.fullTitle,

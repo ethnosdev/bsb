@@ -10,7 +10,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 class PlaylistShareHandler {
@@ -49,13 +48,22 @@ class PlaylistShareHandler {
   static Playlist? decodePlaylistFromUrl(String urlOrData) {
     try {
       String data = urlOrData.trim();
-      if (data.startsWith('bsb://playlist')) {
+      final regex = RegExp(r'bsb://playlist\?data=([A-Za-z0-9_\-]+)');
+      final match = regex.firstMatch(data);
+      if (match != null) {
+        data = match.group(1)!;
+      } else if (data.startsWith('bsb://playlist')) {
         final uri = Uri.parse(data);
         data = uri.queryParameters['data'] ?? '';
       } else if (data.contains('data=')) {
-        final uri = Uri.tryParse(data);
-        if (uri != null && uri.queryParameters.containsKey('data')) {
-          data = uri.queryParameters['data']!;
+        final dataMatch = RegExp(r'data=([A-Za-z0-9_\-]+)').firstMatch(data);
+        if (dataMatch != null) {
+          data = dataMatch.group(1)!;
+        } else {
+          final uri = Uri.tryParse(data);
+          if (uri != null && uri.queryParameters.containsKey('data')) {
+            data = uri.queryParameters['data']!;
+          }
         }
       }
 
@@ -80,27 +88,6 @@ class PlaylistShareHandler {
       }
     }
   }
-
-  /// Generates and validates a [QrCode] for [playlist]. Returns `null` if the data
-  /// exceeds the maximum QR capacity or fails validation.
-  /// Standard QR (Version 40) at lowest error correction (Level L) can store at most ~2,953 bytes.
-  static QrCode? tryGenerateQrCode(Playlist playlist) {
-    try {
-      final shareUrl = encodePlaylistToUrl(playlist);
-      final qrCode = QrCode.fromData(
-        data: shareUrl,
-        errorCorrectLevel: QrErrorCorrectLevel.L,
-      );
-      // Accessing QrImage forces dataCache evaluation to catch InputTooLongException
-      QrImage(qrCode);
-      return qrCode;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Determines whether the playlist's encoded share data can fit into a single QR code.
-  static bool canFitInQr(Playlist playlist) => tryGenerateQrCode(playlist) != null;
 
   // --- Export File ---
 
@@ -141,20 +128,27 @@ class PlaylistShareHandler {
     }
   }
 
-  // --- Copy Share Link / Code ---
+  // --- Copy Share Code ---
 
-  Future<void> copyShareLink(BuildContext context, Playlist playlist) async {
-    final link = encodePlaylistToUrl(playlist);
-    await Clipboard.setData(ClipboardData(text: link));
+  Future<void> copyShareCode(BuildContext context, Playlist playlist) async {
+    final code = encodePlaylistToUrl(playlist);
+    final text = 'BSB Playlist: ${playlist.title}\n'
+        'To import in the BSB app, copy this message and select "Import from Clipboard" in the Playlists menu:\n'
+        '$code';
+    await Clipboard.setData(ClipboardData(text: text));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Playlist share link copied to clipboard!'),
+          content: Text('Playlist share code copied to clipboard!'),
           duration: Duration(seconds: 2),
         ),
       );
     }
   }
+
+  @Deprecated('Use copyShareCode instead')
+  Future<void> copyShareLink(BuildContext context, Playlist playlist) =>
+      copyShareCode(context, playlist);
 
   // --- Import File ---
 

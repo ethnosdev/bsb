@@ -1,11 +1,14 @@
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
+import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
 import 'package:bsb/ui/audio/audio_player_modal_sheet.dart';
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/home/list_book_chooser.dart';
+import 'package:bsb/ui/playlists/playlist_editor_page.dart';
+import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/playlists/playlist_share_handler.dart';
 import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
@@ -265,9 +268,23 @@ class _HomePageState extends State<HomePage> {
                                 onTabsSheetOpened: () {
                                   _chapterChooserNotifier.value = null;
                                 },
-                                onActiveTabTapped: (tab) {
+                                onActiveTabTapped: (tab) async {
                                   if (_chapterChooserNotifier.value != null) {
                                     _chapterChooserNotifier.value = null;
+                                    return;
+                                  }
+                                  if (tab.isPlaylist) {
+                                    if (getIt.isRegistered<PlaylistService>()) {
+                                      final playlist = await getIt<PlaylistService>().getPlaylist(tab.playlistId!);
+                                      if (playlist != null && context.mounted) {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => PlaylistEditorPage(playlist: playlist),
+                                          ),
+                                        );
+                                      }
+                                    }
                                     return;
                                   }
                                   final chapterCount =
@@ -276,7 +293,7 @@ class _HomePageState extends State<HomePage> {
                                       ? tab.chapter
                                       : null;
                                   _chapterChooserNotifier.value = (
-                                    tab.bookId,
+                                    tab.bookId!,
                                     chapterCount,
                                     initialChapter,
                                   );
@@ -303,7 +320,7 @@ class _HomePageState extends State<HomePage> {
                               PopupMenuButton<String>(
                                 icon: const Icon(Icons.more_vert),
                                 tooltip: 'More options',
-                                onSelected: (value) {
+                                onSelected: (value) async {
                                   _chapterChooserNotifier.value = null;
                                   if (value == 'search') {
                                     Navigator.push(
@@ -312,35 +329,72 @@ class _HomePageState extends State<HomePage> {
                                         builder: (context) => const SearchPage(),
                                       ),
                                     );
+                                  } else if (value == 'edit_playlist') {
+                                    if (getIt.isRegistered<PlaylistService>()) {
+                                      final playlist = await getIt<PlaylistService>().getPlaylist(activeTab.playlistId!);
+                                      if (playlist != null && context.mounted) {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => PlaylistEditorPage(playlist: playlist),
+                                          ),
+                                        );
+                                      }
+                                    }
                                   } else if (value == 'play') {
-                                    audioManager?.playOrToggleChapter(
-                                      activeTab.bookId,
-                                      activeTab.chapter,
-                                    );
+                                    if (activeTab.bookId != null && activeTab.chapter != null) {
+                                      audioManager?.playOrToggleChapter(
+                                        activeTab.bookId!,
+                                        activeTab.chapter!,
+                                      );
+                                    }
                                   }
                                 },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'search',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.search),
-                                        SizedBox(width: 12),
-                                        Expanded(child: Text('Search')),
+                                itemBuilder: (context) => activeTab.isPlaylist
+                                    ? [
+                                        const PopupMenuItem(
+                                          value: 'edit_playlist',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.edit_outlined),
+                                              SizedBox(width: 12),
+                                              Expanded(child: Text('Edit Playlist')),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'search',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.search),
+                                              SizedBox(width: 12),
+                                              Expanded(child: Text('Search')),
+                                            ],
+                                          ),
+                                        ),
+                                      ]
+                                    : [
+                                        const PopupMenuItem(
+                                          value: 'search',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.search),
+                                              SizedBox(width: 12),
+                                              Expanded(child: Text('Search')),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'play',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.play_arrow),
+                                              SizedBox(width: 12),
+                                              Expanded(child: Text('Play Audio')),
+                                            ],
+                                          ),
+                                        ),
                                       ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'play',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.play_arrow),
-                                        SizedBox(width: 12),
-                                        Expanded(child: Text('Play Audio')),
-                                      ],
-                                    ),
-                                  ),
-                                ],
                               ),
                             ],
                           ),
@@ -385,29 +439,41 @@ class _HomePageState extends State<HomePage> {
                 ? SafeArea(
                     child: _buildBookChooser(),
                   )
-                : SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: TextScreen(
-                      key: const ValueKey('text_reader_screen'),
-                      bookId: activeTab.bookId,
-                      chapter: activeTab.chapter,
-                      initialSectionHeading: activeTab.sectionHeading,
-                      initialTargetVerse: activeTab.targetVerse,
-                      chapterChooserNotifier: _chapterChooserNotifier,
-                      onToggleDistractionFree: _toggleDistractionFree,
-                      isDistractionFree: _isDistractionFree,
-                      onChapterChanged:
-                          (bookId, chapter, [sectionHeading, targetVerse]) {
-                        _tabManager.updateActiveChapter(
-                          bookId,
-                          chapter,
-                          sectionHeading,
-                          targetVerse,
-                        );
-                      },
-                    ),
-                  ),
+                : activeTab.isPlaylist
+                    ? SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: PlaylistPresentationPage(
+                          key: ValueKey('playlist_${activeTab.playlistId}'),
+                          playlistId: activeTab.playlistId,
+                          embedded: true,
+                          isDistractionFree: _isDistractionFree,
+                          onToggleDistractionFree: _toggleDistractionFree,
+                        ),
+                      )
+                    : SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: TextScreen(
+                          key: const ValueKey('text_reader_screen'),
+                          bookId: activeTab.bookId!,
+                          chapter: activeTab.chapter!,
+                          initialSectionHeading: activeTab.sectionHeading,
+                          initialTargetVerse: activeTab.targetVerse,
+                          chapterChooserNotifier: _chapterChooserNotifier,
+                          onToggleDistractionFree: _toggleDistractionFree,
+                          isDistractionFree: _isDistractionFree,
+                          onChapterChanged:
+                              (bookId, chapter, [sectionHeading, targetVerse]) {
+                            _tabManager.updateActiveChapter(
+                              bookId,
+                              chapter,
+                              sectionHeading,
+                              targetVerse,
+                            );
+                          },
+                        ),
+                      ),
             bottomNavigationBar: (!_isDistractionFree &&
                     audioManager != null &&
                     audioManager.isPlayerVisible.value)

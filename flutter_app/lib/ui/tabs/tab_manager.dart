@@ -41,7 +41,9 @@ class TabManager extends ChangeNotifier {
         try {
           final map = jsonDecode(jsonStr) as Map<String, dynamic>;
           final tab = BibleTab.fromJson(map);
-          final key = '${tab.bookId}_${tab.chapter}';
+          final key = tab.isPlaylist
+              ? 'playlist_${tab.playlistId}'
+              : '${tab.bookId}_${tab.chapter}';
           if (seen.add(key)) {
             _tabs.add(tab);
           }
@@ -217,6 +219,60 @@ class TabManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  void openPlaylistTab(String playlistId, String playlistTitle) {
+    _isAddingTab = false;
+
+    // Check if playlist tab is already open
+    final existingIndex = _tabs.indexWhere(
+      (t) => t.isPlaylist && t.playlistId == playlistId,
+    );
+
+    if (existingIndex != -1) {
+      final existingTab = _tabs[existingIndex];
+      existingTab.playlistTitle = playlistTitle;
+      _activeTabId = existingTab.id;
+      _recordHistory(_activeTabId!);
+      _saveToPrefs();
+      notifyListeners();
+      return;
+    }
+
+    final newTab = BibleTab(
+      playlistId: playlistId,
+      playlistTitle: playlistTitle,
+    );
+    _tabs.add(newTab);
+    _activeTabId = newTab.id;
+    _recordHistory(newTab.id);
+    _saveToPrefs();
+    notifyListeners();
+  }
+
+  void updatePlaylistTitle(String playlistId, String title) {
+    bool changed = false;
+    for (final tab in _tabs) {
+      if (tab.isPlaylist && tab.playlistId == playlistId) {
+        if (tab.playlistTitle != title) {
+          tab.playlistTitle = title;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      _saveToPrefs();
+      notifyListeners();
+    }
+  }
+
+  void closePlaylistTab(String playlistId) {
+    final index = _tabs.indexWhere(
+      (t) => t.isPlaylist && t.playlistId == playlistId,
+    );
+    if (index != -1) {
+      closeTab(_tabs[index].id);
+    }
+  }
+
   void updateActiveChapter(
     int bookId,
     int chapter, [
@@ -224,7 +280,7 @@ class TabManager extends ChangeNotifier {
     int? targetVerse,
   ]) {
     final current = activeTab;
-    if (current == null) return;
+    if (current == null || current.isPlaylist) return;
     if (current.bookId == bookId &&
         current.chapter == chapter &&
         current.sectionHeading == sectionHeading &&
@@ -274,7 +330,9 @@ class TabManager extends ChangeNotifier {
     final uniqueTabsJson = <String>[];
 
     for (final tab in _tabs) {
-      final key = '${tab.bookId}_${tab.chapter}';
+      final key = tab.isPlaylist
+          ? 'playlist_${tab.playlistId}'
+          : '${tab.bookId}_${tab.chapter}';
       if (seen.add(key)) {
         uniqueTabsJson.add(jsonEncode(tab.toJson()));
       }

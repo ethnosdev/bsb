@@ -6,10 +6,11 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/playlists/playlist_editor_page.dart';
-import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/playlists/playlists_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -94,6 +95,7 @@ class FakeDatabaseHelper implements DatabaseHelper {
 void main() {
   late FakePlaylistDbHelper fakeDb;
   late PlaylistService playlistService;
+  late TabManager tabManager;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -106,6 +108,9 @@ void main() {
     getIt.registerSingleton<AnnotationDatabaseHelper>(fakeDb);
     getIt.registerSingleton<PlaylistService>(playlistService);
     getIt.registerSingleton<DatabaseHelper>(FakeDatabaseHelper());
+    tabManager = TabManager();
+    await tabManager.init();
+    getIt.registerSingleton<TabManager>(tabManager);
   });
 
   tearDown(() async {
@@ -124,7 +129,7 @@ void main() {
     expect(find.text('Create Playlist'), findsOneWidget);
   });
 
-  testWidgets('PlaylistsPage displays saved playlists in simplified cards and navigates on tap', (tester) async {
+  testWidgets('PlaylistsPage displays saved playlists in simplified cards and opens as tab on tap', (tester) async {
     final playlist = Playlist(
       id: 'p1',
       title: 'Romans Road Study',
@@ -157,11 +162,65 @@ void main() {
     expect(find.byIcon(Icons.menu_book), findsNothing);
     expect(find.byIcon(Icons.edit_note), findsNothing);
 
-    // Tapping the card enters presentation mode
+    // Tapping the card opens it as a tab in TabManager and pops PlaylistsPage
     await tester.tap(find.text('Romans Road Study'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(PlaylistPresentationPage), findsOneWidget);
+    expect(tabManager.tabs.length, 1);
+    expect(tabManager.activeTab?.playlistId, 'p1');
+    expect(tabManager.activeTab?.label, 'Romans Road Study');
+    expect(tabManager.activeTab?.isPlaylist, isTrue);
+  });
+
+  testWidgets('Copy Share Code copies code and instructional text to clipboard', (tester) async {
+    final playlist = Playlist(
+      id: 'p1',
+      title: 'Romans Road Study',
+      items: [
+        PlaylistItem.reference(
+          reference: Reference(bookId: 45, chapter: 3, verse: 23),
+          orderIndex: 0,
+        ),
+      ],
+    );
+    await playlistService.savePlaylist(playlist);
+
+    String clipboardText = '';
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          if (methodCall.method == 'Clipboard.setData') {
+            clipboardText = (methodCall.arguments as Map)['text'] as String;
+            return null;
+          } else if (methodCall.method == 'Clipboard.getData') {
+            return {'text': clipboardText};
+          }
+          return null;
+        });
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PlaylistsPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open card 3-dot menu
+    await tester.tap(find.descendant(of: find.byType(Card), matching: find.byIcon(Icons.more_vert)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copy Share Code'), findsOneWidget);
+    expect(find.text('Share by QR Code'), findsNothing);
+
+    await tester.tap(find.text('Copy Share Code'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Playlist share code copied to clipboard!'), findsOneWidget);
+    expect(clipboardText, contains('BSB Playlist: Romans Road Study'));
+    expect(clipboardText, contains('Import from Clipboard'));
+    expect(clipboardText, contains('bsb://playlist?data='));
   });
 
   testWidgets('PlaylistsPage orders playlists with most recently updated on top and updates updatedAt when opened', (tester) async {
@@ -190,22 +249,16 @@ void main() {
     expect(tester.widget<Text>(find.descendant(of: listTiles.at(0), matching: find.byType(Text)).first).data, 'Newer Playlist');
     expect(tester.widget<Text>(find.descendant(of: listTiles.at(1), matching: find.byType(Text)).first).data, 'Older Playlist');
 
-    // Tap on Older Playlist to open it (present)
+    // Tap on Older Playlist to open it (as tab)
     await tester.tap(find.text('Older Playlist'));
     await tester.pumpAndSettle();
 
-    // Verify presentation mode opened
-    expect(find.byType(PlaylistPresentationPage), findsOneWidget);
+    // Verify Older Playlist tab was opened
+    expect(tabManager.activeTab?.playlistId, 'p1');
 
-    // Close presentation mode to return to PlaylistsPage
-    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
-    navigator.pop();
-    await tester.pumpAndSettle();
-
-    // Verify Older Playlist is now at the top because it was opened/touched!
-    listTiles = find.byType(ListTile);
-    expect(tester.widget<Text>(find.descendant(of: listTiles.at(0), matching: find.byType(Text)).first).data, 'Older Playlist');
-    expect(tester.widget<Text>(find.descendant(of: listTiles.at(1), matching: find.byType(Text)).first).data, 'Newer Playlist');
+    // Verify Older Playlist was touched in playlistService (updatedAt is updated)
+    final touched = await playlistService.getPlaylist('p1');
+    expect(touched?.updatedAt.isAfter(DateTime(2026, 1, 1)), isTrue);
   });
 
   testWidgets('AppDrawer contains Playlists tile', (tester) async {

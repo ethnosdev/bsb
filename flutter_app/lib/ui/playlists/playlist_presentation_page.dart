@@ -45,14 +45,22 @@ List<UsfmLine> stripFootnotesFromLines(List<UsfmLine> lines) {
 }
 
 class PlaylistPresentationPage extends StatefulWidget {
-  final Playlist playlist;
+  final Playlist? playlist;
+  final String? playlistId;
   final AppState? appState;
+  final bool embedded;
+  final bool isDistractionFree;
+  final VoidCallback? onToggleDistractionFree;
 
   const PlaylistPresentationPage({
     super.key,
-    required this.playlist,
+    this.playlist,
+    this.playlistId,
     this.appState,
-  });
+    this.embedded = false,
+    this.isDistractionFree = false,
+    this.onToggleDistractionFree,
+  }) : assert(playlist != null || playlistId != null);
 
   @override
   State<PlaylistPresentationPage> createState() => _PlaylistPresentationPageState();
@@ -61,7 +69,7 @@ class PlaylistPresentationPage extends StatefulWidget {
 class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   final _dbHelper = getIt<DatabaseHelper>();
   late final AppState? _appState;
-  late Playlist _playlist;
+  Playlist? _playlist;
   bool _isDistractionFree = false;
 
   final Map<String, List<UsfmLine>> _passageCache = {};
@@ -74,17 +82,54 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     _playlist = widget.playlist;
     _appState = widget.appState ??
         (getIt.isRegistered<AppState>() ? getIt<AppState>() : null);
-    _loadPassages();
+    if (getIt.isRegistered<PlaylistService>()) {
+      getIt<PlaylistService>().changeNotifier.addListener(_onPlaylistServiceChanged);
+    }
+    _initPlaylist();
+  }
+
+  Future<void> _initPlaylist() async {
+    if (widget.playlist != null) {
+      _playlist = widget.playlist;
+      await _loadPassages();
+    } else if (widget.playlistId != null && getIt.isRegistered<PlaylistService>()) {
+      final p = await getIt<PlaylistService>().getPlaylist(widget.playlistId!);
+      if (mounted) {
+        setState(() {
+          _playlist = p;
+        });
+        if (p != null) {
+          await _loadPassages();
+        } else {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _onPlaylistServiceChanged() async {
+    final id = _playlist?.id ?? widget.playlistId ?? widget.playlist?.id;
+    if (id != null && getIt.isRegistered<PlaylistService>()) {
+      final updated = await getIt<PlaylistService>().getPlaylist(id);
+      if (updated != null && mounted) {
+        setState(() {
+          _playlist = updated;
+          _passageCache.clear();
+          _isLoading = true;
+        });
+        await _loadPassages();
+      }
+    }
   }
 
   @override
   void didUpdateWidget(covariant PlaylistPresentationPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.playlist != oldWidget.playlist) {
-      _playlist = widget.playlist;
+    if (widget.playlist != oldWidget.playlist ||
+        widget.playlistId != oldWidget.playlistId) {
       _passageCache.clear();
       _isLoading = true;
-      _loadPassages();
+      _initPlaylist();
     }
   }
 
@@ -101,15 +146,23 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
 
   @override
   void dispose() {
+    if (getIt.isRegistered<PlaylistService>()) {
+      getIt<PlaylistService>().changeNotifier.removeListener(_onPlaylistServiceChanged);
+    }
     _selectionController.dispose();
-    if (_isDistractionFree) {
+    if (!widget.embedded && _isDistractionFree) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
     super.dispose();
   }
 
   Future<void> _loadPassages() async {
-    for (final item in _playlist.items) {
+    final currentPlaylist = _playlist;
+    if (currentPlaylist == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+    for (final item in currentPlaylist.items) {
       if (item.isReference && item.reference != null) {
         try {
           final lines = await _dbHelper.getRange(item.reference!);
@@ -126,15 +179,16 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   }
 
   Future<void> _openEditor() async {
+    if (_playlist == null) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PlaylistEditorPage(playlist: _playlist),
+        builder: (context) => PlaylistEditorPage(playlist: _playlist!),
       ),
     );
     if (!mounted) return;
     if (getIt.isRegistered<PlaylistService>()) {
-      final updated = await getIt<PlaylistService>().getPlaylist(_playlist.id);
+      final updated = await getIt<PlaylistService>().getPlaylist(_playlist!.id);
       if (updated != null && mounted) {
         setState(() {
           _playlist = updated;
@@ -172,7 +226,9 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
         null,
         ref.verse,
       );
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      if (!widget.embedded) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     }
   }
 
@@ -192,40 +248,42 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
         appState?.wordsOfJesusInRedNotifier.value ?? false;
 
     Widget buildContent(double currentTextSize, bool isRed) {
-      return _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _playlist.items.isEmpty
-              ? Center(
-                  child: Text(
-                    'No passages or notes in this playlist yet.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                )
-              : ListView.separated(
-                  padding: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: topPadding,
-                    bottom: 40,
-                  ),
-                  itemCount: _playlist.items.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 32),
-                  itemBuilder: (context, index) {
-                    final item = _playlist.items[index];
-                    if (item.isReference) {
-                      return _buildPassageView(
-                        context: context,
-                        item: item,
-                        textSize: currentTextSize,
-                        isRed: isRed,
-                        redColor: redColor,
-                      );
-                    } else {
-                      return _buildNoteView(context, item, currentTextSize);
-                    }
-                  },
-                );
+      if (_isLoading || _playlist == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final items = _playlist!.items;
+      return items.isEmpty
+          ? Center(
+              child: Text(
+                'No passages or notes in this playlist yet.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            )
+          : ListView.separated(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: topPadding,
+                bottom: 40,
+              ),
+              itemCount: items.length,
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: 32),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                if (item.isReference) {
+                  return _buildPassageView(
+                    context: context,
+                    item: item,
+                    textSize: currentTextSize,
+                    isRed: isRed,
+                    redColor: redColor,
+                  );
+                } else {
+                  return _buildNoteView(context, item, currentTextSize);
+                }
+              },
+            );
     }
 
     Widget contentBody;
@@ -253,6 +311,22 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
       contentBody = buildContent(baseTextSize, defaultIsRed);
     }
 
+    final bodyContent = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.embedded
+          ? widget.onToggleDistractionFree
+          : _toggleDistractionFree,
+      child: SafeArea(
+        top: false,
+        bottom: true,
+        child: contentBody,
+      ),
+    );
+
+    if (widget.embedded) {
+      return bodyContent;
+    }
+
     return PopScope(
       canPop: !_isDistractionFree,
       onPopInvokedWithResult: (didPop, result) {
@@ -274,7 +348,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
               child: IgnorePointer(
                 ignoring: _isDistractionFree,
                 child: AppBar(
-                  title: Text(_playlist.title),
+                  title: Text(_playlist?.title ?? ''),
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.edit_outlined),
@@ -287,15 +361,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
             ),
           ),
         ),
-        body: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _toggleDistractionFree,
-          child: SafeArea(
-            top: false,
-            bottom: true,
-            child: contentBody,
-          ),
-        ),
+        body: bodyContent,
       ),
     );
   }
@@ -310,19 +376,23 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     final theme = Theme.of(context);
     final ref = item.reference!;
     final lines = _passageCache[item.id] ?? [];
-    final titleStyle = theme.textTheme.headlineSmall?.copyWith(
-      fontSize: (textSize * 1.25).clamp(22.0, 36.0),
+    final titleStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontSize: textSize,
       fontWeight: FontWeight.bold,
       color: theme.colorScheme.onSurface,
     );
 
+    final VoidCallback? toggleDistraction = widget.embedded
+        ? widget.onToggleDistractionFree
+        : _toggleDistractionFree;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: _toggleDistractionFree,
+      onTap: toggleDistraction,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Passage Title (Left aligned, Large text)
+          // Passage Title (Left aligned)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -359,8 +429,8 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
               showSelectionHandles: false,
               showHeadings: false,
               showVerseNumbers: true,
-              onTapWhitespace: _toggleDistractionFree,
-              onWordTapped: (_) => _toggleDistractionFree(),
+              onTapWhitespace: toggleDistraction,
+              onWordTapped: (_) => toggleDistraction?.call(),
               styleBuilder: (format) {
                 final base = UsfmParagraphStyle.usfmDefaults(
                   format: format == ParagraphFormat.p ? ParagraphFormat.m : format,
@@ -384,34 +454,57 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
 
   Widget _buildNoteView(BuildContext context, PlaylistItem item, double textSize) {
     final theme = Theme.of(context);
-    final noteTitle = (item.noteTitle != null && item.noteTitle!.trim().isNotEmpty)
-        ? item.noteTitle!.trim()
-        : 'Note';
-    final titleStyle = theme.textTheme.headlineSmall?.copyWith(
-      fontSize: (textSize * 1.25).clamp(22.0, 36.0),
+    final hasTitle = item.noteTitle != null && item.noteTitle!.trim().isNotEmpty;
+    final noteTitle = hasTitle ? item.noteTitle!.trim() : null;
+    final noteColor = theme.colorScheme.primary;
+    final titleStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontSize: textSize,
       fontWeight: FontWeight.bold,
-      color: theme.colorScheme.onSurface,
+      color: noteColor,
     );
+
+    final VoidCallback? toggleDistraction = widget.embedded
+        ? widget.onToggleDistractionFree
+        : _toggleDistractionFree;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: _toggleDistractionFree,
+      onTap: toggleDistraction,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Note Title (Left aligned, Large text)
-          Text(
-            noteTitle,
-            textAlign: TextAlign.left,
-            style: titleStyle,
-          ),
-          const SizedBox(height: 8),
+          // Note Title (Left aligned)
+          if (noteTitle != null) ...[
+            Text(
+              noteTitle,
+              textAlign: TextAlign.left,
+              style: titleStyle,
+            ),
+            const SizedBox(height: 8),
+          ],
           MarkdownBody(
             data: item.noteText ?? '',
             styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
               p: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: textSize * 0.95,
                 height: 1.5,
+                color: noteColor,
+              ),
+              pPadding: EdgeInsets.zero,
+              h1: theme.textTheme.headlineLarge?.copyWith(color: noteColor),
+              h2: theme.textTheme.headlineMedium?.copyWith(color: noteColor),
+              h3: theme.textTheme.headlineSmall?.copyWith(color: noteColor),
+              h4: theme.textTheme.titleLarge?.copyWith(color: noteColor),
+              h5: theme.textTheme.titleMedium?.copyWith(color: noteColor),
+              h6: theme.textTheme.titleSmall?.copyWith(color: noteColor),
+              em: TextStyle(color: noteColor, fontStyle: FontStyle.italic),
+              strong: TextStyle(color: noteColor, fontWeight: FontWeight.bold),
+              blockquote: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: textSize * 0.95,
+                color: noteColor,
+              ),
+              listBullet: theme.textTheme.bodyMedium?.copyWith(
+                color: noteColor,
               ),
             ),
           ),

@@ -8,6 +8,7 @@ import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -121,6 +122,12 @@ void main() {
           text: 'What does everlasting life mean here?',
           orderIndex: 1,
         ),
+        PlaylistItem.note(
+          id: 'item-3',
+          noteTitle: 'Study Question',
+          text: 'How should we apply this verse?',
+          orderIndex: 2,
+        ),
       ],
     );
 
@@ -134,19 +141,28 @@ void main() {
     expect(find.text('Romans & John Study'), findsOneWidget);
     expect(find.text('John 3:16'), findsOneWidget);
     expect(find.text('What does everlasting life mean here?'), findsOneWidget);
+    expect(find.text('Study Question'), findsOneWidget);
     expect(find.byType(UsfmWidget), findsOneWidget);
 
-    // Verify Passage title is Large text (fontSize >= 22) and left aligned
+    // Verify Passage title is bold and matches scripture section heading style
     final passageTitleText = tester.widget<Text>(find.text('John 3:16'));
     expect(passageTitleText.textAlign, equals(TextAlign.left));
-    expect(passageTitleText.style?.fontSize, greaterThanOrEqualTo(22.0));
+    expect(passageTitleText.style?.fontSize, equals(20.0));
     expect(passageTitleText.style?.fontWeight, equals(FontWeight.bold));
 
-    // Verify Note title is Large text (fontSize >= 22) and left aligned
-    final noteTitleText = tester.widget<Text>(find.text('Note'));
+    // Note without a title does not display any title
+    expect(find.text('Note'), findsNothing);
+
+    // Note with title is rendered with bold and matches scripture section heading size and uses primary color
+    final noteTitleText = tester.widget<Text>(find.text('Study Question'));
     expect(noteTitleText.textAlign, equals(TextAlign.left));
-    expect(noteTitleText.style?.fontSize, greaterThanOrEqualTo(22.0));
+    expect(noteTitleText.style?.fontSize, equals(20.0));
     expect(noteTitleText.style?.fontWeight, equals(FontWeight.bold));
+    expect(noteTitleText.style?.color, equals(Theme.of(tester.element(find.byType(PlaylistPresentationPage))).colorScheme.primary));
+
+    // Note body text uses primary color
+    final markdown = tester.widget<MarkdownBody>(find.byType(MarkdownBody).first);
+    expect(markdown.styleSheet?.p?.color, equals(Theme.of(tester.element(find.byType(PlaylistPresentationPage))).colorScheme.primary));
 
     // Record initial top position of the passage title on screen
     final initialTop = tester.getTopLeft(find.text('John 3:16')).dy;
