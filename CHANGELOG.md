@@ -1,5 +1,6 @@
 # 2.7.0 - 2026.10.26
 
+- Support deep linking to open chapters and verses from external apps via `bsb://bible/<bookId>/<chapter>[/<verse>]`.
 - Open saved playlists as tabs in the app bar alongside chapters.
 - Tap active playlist tab to open the playlist editor.
 - Add "Edit Playlist" to the app bar overflow menu when a playlist tab is active.

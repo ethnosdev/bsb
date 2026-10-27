@@ -242,22 +242,31 @@ class PlaylistShareHandler {
   }
 
   void _handleIncomingUri(BuildContext context, Uri uri) async {
-    Playlist? playlist;
     if (uri.scheme == 'bsb' && uri.host == 'playlist') {
-      playlist = decodePlaylistFromUrl(uri.toString());
+      await handlePlaylistUri(context, uri);
     } else if (uri.isScheme('file') || uri.isScheme('content')) {
-      try {
-        final file = File(uri.toFilePath());
-        if (await file.exists()) {
-          final content = await file.readAsString();
-          playlist = Playlist.fromJson(content);
-        }
-      } catch (_) {}
+      await handleFileUri(context, uri);
     }
+  }
 
+  Future<void> handlePlaylistUri(BuildContext context, Uri uri) async {
+    final playlist = decodePlaylistFromUrl(uri.toString());
     if (playlist != null && context.mounted) {
       await _showImportConfirmationDialog(context, playlist);
     }
+  }
+
+  Future<void> handleFileUri(BuildContext context, Uri uri) async {
+    try {
+      final file = File(uri.toFilePath());
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final playlist = Playlist.fromJson(content);
+        if (context.mounted) {
+          await _showImportConfirmationDialog(context, playlist);
+        }
+      }
+    } catch (_) {}
   }
 
   // --- Dialogs ---

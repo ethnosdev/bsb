@@ -714,8 +714,9 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   Widget _buildReadingPlanButton() {
-    if (!getIt.isRegistered<ReadingPlanService>())
+    if (!getIt.isRegistered<ReadingPlanService>()) {
       return const SizedBox.shrink();
+    }
     final service = getIt<ReadingPlanService>();
     return ValueListenableBuilder<UserPlanProgress?>(
       valueListenable: service.activeProgressNotifier,
@@ -802,7 +803,7 @@ class _ChapterTextState extends State<ChapterText>
                         );
                       }
                     } else {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Day $nextDayNum completed!'),

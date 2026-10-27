@@ -9,6 +9,7 @@ A mobile bible reader app for the [Berean Standard Bible](https://berean.bible/)
 
 - [Getting started: Running the app from the source code](docs/getting_started.md)
 - [How to update the BSB text](docs/howto_update_bsb_text.md)
+- [Deep linking: Opening chapters and verses from external apps](docs/deep_linking.md)
 
 ## License
 

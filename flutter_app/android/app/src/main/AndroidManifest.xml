@@ -58,6 +58,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="bsb" android:host="playlist" />
             </intent-filter>
+            <!-- Intent filter for custom URL scheme bsb://bible -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="bsb" android:host="bible" />
+            </intent-filter>
             <!-- Intent filter for opening .bsbplaylist files -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

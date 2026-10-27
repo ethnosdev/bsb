@@ -604,8 +604,9 @@ class _TextScreenState extends State<TextScreen>
   }
 
   Future<bool> _handleHighlight(Reference reference) async {
-    if (_activeController == null || !_activeController!.hasSelection)
+    if (_activeController == null || !_activeController!.hasSelection) {
       return false;
+    }
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
     final selectedText = _activeController!.getSelectedText();
@@ -639,8 +640,9 @@ class _TextScreenState extends State<TextScreen>
   }
 
   Future<bool> _handleNote(Reference reference) async {
-    if (_activeController == null || !_activeController!.hasSelection)
+    if (_activeController == null || !_activeController!.hasSelection) {
       return false;
+    }
     final startId = _activeController!.startId!;
     final endId = _activeController!.endId!;
     final bodyText = _activeController!.getSelectedText();

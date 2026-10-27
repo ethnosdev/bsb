@@ -12,8 +12,6 @@ import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bsb/core/app_theme_presets.dart';
-import 'package:bsb/core/custom_theme_config.dart';
 import 'package:bsb/ui/settings/theme/scripture_theme_preview_card.dart';
 import 'package:bsb/ui/settings/theme/theme_selection_page.dart';
 import 'package:scripture/scripture.dart';

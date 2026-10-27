@@ -1,5 +1,6 @@
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
+import 'package:bsb/infrastructure/deep_link_handler.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
@@ -31,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   final _chapterChooserNotifier = ValueNotifier<(int, int, int?)?>(null);
   AudioPlaybackManager? _cachedAudioManager;
   PlaylistShareHandler? _playlistShareHandler;
+  DeepLinkHandler? _deepLinkHandler;
   bool _isDistractionFree = false;
 
   bool _resolveShowVerseGrid() {
@@ -55,7 +57,11 @@ class _HomePageState extends State<HomePage> {
       _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
     }
     _playlistShareHandler = PlaylistShareHandler();
-    _playlistShareHandler!.initDeepLinks(context);
+    _deepLinkHandler = DeepLinkHandler(
+      playlistShareHandler: _playlistShareHandler,
+      tabManager: _tabManager,
+    );
+    _deepLinkHandler!.init(context);
   }
 
   void _onTabManagerChanged() {
@@ -93,6 +99,7 @@ class _HomePageState extends State<HomePage> {
     if (_cachedAudioManager?.onChapterChanged == _onAudioChapterChanged) {
       _cachedAudioManager?.onChapterChanged = null;
     }
+    _deepLinkHandler?.dispose();
     _playlistShareHandler?.dispose();
     _chapterChooserNotifier.dispose();
     super.dispose();
