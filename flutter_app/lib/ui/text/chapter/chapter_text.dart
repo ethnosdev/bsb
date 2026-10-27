@@ -808,6 +808,7 @@ class _ChapterTextState extends State<ChapterText>
                           SnackBar(
                             content: Text('Day $nextDayNum completed!'),
                             behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       }
@@ -949,9 +950,9 @@ class _ChapterTextState extends State<ChapterText>
                                                   _selectionController,
                                               autoScrollEdgeInsets:
                                                   EdgeInsets.only(
-                                                top: _topPadding,
-                                                bottom: 80.0,
-                                              ),
+                                                    top: _topPadding,
+                                                    bottom: 80.0,
+                                                  ),
                                               highlights: highlights,
                                               noteMarkers: noteMarkers,
                                               onFootnoteTapped:
@@ -997,15 +998,19 @@ class _ChapterTextState extends State<ChapterText>
                                                       : const Color(0xFFB71C1C);
                                                   final redColor =
                                                       Theme.of(context)
-                                                              .extension<
-                                                                  ScriptureTheme>()
-                                                              ?.wordsOfJesusColor ??
-                                                          (getIt.isRegistered<
-                                                                  AppState>()
-                                                              ? getIt<AppState>()
-                                                                  .getWordsOfJesusColor(
-                                                                      brightness)
-                                                              : defaultRed);
+                                                          .extension<
+                                                            ScriptureTheme
+                                                          >()
+                                                          ?.wordsOfJesusColor ??
+                                                      (getIt
+                                                              .isRegistered<
+                                                                AppState
+                                                              >()
+                                                          ? getIt<AppState>()
+                                                                .getWordsOfJesusColor(
+                                                                  brightness,
+                                                                )
+                                                          : defaultRed);
                                                   return base.copyWith(
                                                     wordsOfJesusStyle: base
                                                         .textStyle
@@ -1268,12 +1273,14 @@ class _ChapterTextState extends State<ChapterText>
                           final defaultRed = isDark
                               ? const Color(0xFFFF8A80)
                               : const Color(0xFFB71C1C);
-                          final redColor = Theme.of(context)
+                          final redColor =
+                              Theme.of(context)
                                   .extension<ScriptureTheme>()
                                   ?.wordsOfJesusColor ??
                               (getIt.isRegistered<AppState>()
-                                  ? getIt<AppState>()
-                                      .getWordsOfJesusColor(brightness)
+                                  ? getIt<AppState>().getWordsOfJesusColor(
+                                      brightness,
+                                    )
                                   : defaultRed);
                           return base.copyWith(
                             wordsOfJesusStyle: base.textStyle.copyWith(

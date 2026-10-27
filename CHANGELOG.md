@@ -2,13 +2,11 @@
 
 - Support deep linking to open chapters and verses from external apps via `bsb://bible/<bookId>/<chapter>[/<verse>]`.
 - Open saved playlists as tabs in the app bar alongside chapters.
-- Tap active playlist tab to open the playlist editor.
-- Add "Edit Playlist" to the app bar overflow menu when a playlist tab is active.
 - Display note title and text in primary color to distinguish notes from scripture verses.
 - Do not display a title for notes that do not have one.
-- Scale down playlist passage and note titles to match the scripture section heading font size.
 - Replace link sharing with "Copy Share Code", including instructions to import from clipboard.
 - Remove playlist QR code sharing.
+- Make the reading plan finished notification show for less time.
 
 # 2.6.1 - 2026.10.06
 
