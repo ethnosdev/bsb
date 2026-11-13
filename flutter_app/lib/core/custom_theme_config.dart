@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 
 /// Configuration for a custom user-defined theme.
 ///
@@ -48,7 +49,7 @@ class CustomThemeConfig {
   /// Harmonizes both Light and Dark custom theme configurations from a chosen background color.
   /// Selects a tasteful, high-contrast accent color matching the background temperature.
   static (CustomThemeConfig light, CustomThemeConfig dark)
-      harmonizeFromBackground(Color bg) {
+  harmonizeFromBackground(Color bg) {
     final isDark = bg.computeLuminance() <= 0.45;
 
     if (isDark) {
@@ -81,28 +82,46 @@ class CustomThemeConfig {
   static (Color light, Color dark) _deriveAccentPair(HSVColor hsv) {
     // If neutral / low saturation (grayscale / pure paper tone)
     if (hsv.saturation < 0.05) {
-      return (const Color(0xFF1A5A96), const Color(0xFFE5B869)); // Navy & Candle Gold
+      return (
+        const Color(0xFF1A5A96),
+        const Color(0xFFE5B869),
+      ); // Navy & Candle Gold
     }
 
     final hue = hsv.hue;
     // Warm / Sepia / Orange / Yellow (15° to 70°)
     if (hue >= 15 && hue < 70) {
-      return (const Color(0xFF865328), const Color(0xFFFFB68C)); // Terracotta & Peach Gold
+      return (
+        const Color(0xFF865328),
+        const Color(0xFFFFB68C),
+      ); // Terracotta & Peach Gold
     }
     // Green / Sage (70° to 165°)
     if (hue >= 70 && hue < 165) {
-      return (const Color(0xFF386646), const Color(0xFF9FD0AA)); // Forest & Mint Sage
+      return (
+        const Color(0xFF386646),
+        const Color(0xFF9FD0AA),
+      ); // Forest & Mint Sage
     }
     // Blue / Cyan / Teal (165° to 255°)
     if (hue >= 165 && hue < 255) {
-      return (const Color(0xFF1A5A96), const Color(0xFF88C9FA)); // Navy & Sky Cyan
+      return (
+        const Color(0xFF1A5A96),
+        const Color(0xFF88C9FA),
+      ); // Navy & Sky Cyan
     }
     // Purple / Violet (255° to 330°)
     if (hue >= 255 && hue < 330) {
-      return (const Color(0xFF6B5778), const Color(0xFFD6BEE4)); // Royal Plum & Lavender
+      return (
+        const Color(0xFF6B5778),
+        const Color(0xFFD6BEE4),
+      ); // Royal Plum & Lavender
     }
     // Red / Crimson (330° to 360° or 0° to 15°)
-    return (const Color(0xFF8D3C3C), const Color(0xFFFF9E9E)); // Burgundy & Coral Rose
+    return (
+      const Color(0xFF8D3C3C),
+      const Color(0xFFFF9E9E),
+    ); // Burgundy & Coral Rose
   }
 
   /// Effective text color, derived if not explicitly customized.
@@ -116,8 +135,9 @@ class CustomThemeConfig {
   /// Effective primary accent color, derived if not explicitly customized.
   Color get effectivePrimaryColor {
     if (primaryColor != null) return primaryColor!;
-    final (lightAccent, darkAccent) =
-        _deriveAccentPair(HSVColor.fromColor(backgroundColor));
+    final (lightAccent, darkAccent) = _deriveAccentPair(
+      HSVColor.fromColor(backgroundColor),
+    );
     return isDark ? darkAccent : lightAccent;
   }
 
@@ -166,8 +186,9 @@ class CustomThemeConfig {
   ColorScheme toColorScheme() {
     final brightness = isDark ? Brightness.dark : Brightness.light;
     final primary = effectivePrimaryColor;
-    final onPrimary =
-        primary.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    final onPrimary = primary.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
     final surface = backgroundColor;
     final onSurface = effectiveTextColor;
     final onSurfaceVariant = effectiveSecondaryTextColor;
@@ -182,8 +203,9 @@ class CustomThemeConfig {
       primaryContainer: isDark
           ? Color.lerp(surface, primary, 0.35)!
           : Color.lerp(surface, primary, 0.15)!,
-      onPrimaryContainer:
-          isDark ? const Color(0xFFFFF0E6) : const Color(0xFF2E1500),
+      onPrimaryContainer: isDark
+          ? const Color(0xFFFFF0E6)
+          : const Color(0xFF2E1500),
       secondary: primary,
       onSecondary: onPrimary,
       secondaryContainer: surfaceContainer,
@@ -194,10 +216,12 @@ class CustomThemeConfig {
       onTertiaryContainer: onSurface,
       error: isDark ? const Color(0xFFFFB4AB) : const Color(0xFFBA1A1A),
       onError: isDark ? const Color(0xFF690005) : Colors.white,
-      errorContainer:
-          isDark ? const Color(0xFF93000A) : const Color(0xFFFFDAD6),
-      onErrorContainer:
-          isDark ? const Color(0xFFFFDAD6) : const Color(0xFF410002),
+      errorContainer: isDark
+          ? const Color(0xFF93000A)
+          : const Color(0xFFFFDAD6),
+      onErrorContainer: isDark
+          ? const Color(0xFFFFDAD6)
+          : const Color(0xFF410002),
       surface: surface,
       onSurface: onSurface,
       onSurfaceVariant: onSurfaceVariant,
@@ -206,8 +230,9 @@ class CustomThemeConfig {
       shadow: Colors.black,
       scrim: Colors.black,
       inverseSurface: onSurface,
-      inversePrimary:
-          isDark ? const Color(0xFF88521C) : const Color(0xFFFFB67A),
+      inversePrimary: isDark
+          ? const Color(0xFF88521C)
+          : const Color(0xFFFFB67A),
       surfaceDim: isDark
           ? Color.lerp(surface, Colors.black, 0.1)!
           : Color.lerp(surface, Colors.black, 0.03)!,
@@ -249,16 +274,18 @@ class CustomThemeConfig {
     return CustomThemeConfig(
       backgroundColor: backgroundColor ?? this.backgroundColor,
       textColor: clearTextColor ? null : (textColor ?? this.textColor),
-      primaryColor:
-          clearPrimaryColor ? null : (primaryColor ?? this.primaryColor),
+      primaryColor: clearPrimaryColor
+          ? null
+          : (primaryColor ?? this.primaryColor),
       surfaceContainerColor: clearSurfaceContainerColor
           ? null
           : (surfaceContainerColor ?? this.surfaceContainerColor),
       secondaryTextColor: clearSecondaryTextColor
           ? null
           : (secondaryTextColor ?? this.secondaryTextColor),
-      outlineColor:
-          clearOutlineColor ? null : (outlineColor ?? this.outlineColor),
+      outlineColor: clearOutlineColor
+          ? null
+          : (outlineColor ?? this.outlineColor),
       wordsOfJesusColor: clearWordsOfJesusColor
           ? null
           : (wordsOfJesusColor ?? this.wordsOfJesusColor),
@@ -288,8 +315,9 @@ class CustomThemeConfig {
   factory CustomThemeConfig.fromMap(Map<String, dynamic> map) {
     return CustomThemeConfig(
       backgroundColor: Color(map['backgroundColor'] as int),
-      textColor:
-          map['textColor'] != null ? Color(map['textColor'] as int) : null,
+      textColor: map['textColor'] != null
+          ? Color(map['textColor'] as int)
+          : null,
       primaryColor: map['primaryColor'] != null
           ? Color(map['primaryColor'] as int)
           : null,
@@ -342,13 +370,13 @@ class CustomThemeConfig {
 
   @override
   int get hashCode => Object.hash(
-        backgroundColor.toARGB32(),
-        textColor?.toARGB32(),
-        primaryColor?.toARGB32(),
-        surfaceContainerColor?.toARGB32(),
-        secondaryTextColor?.toARGB32(),
-        outlineColor?.toARGB32(),
-        wordsOfJesusColor?.toARGB32(),
-        isBackgroundAutoDerived,
-      );
+    backgroundColor.toARGB32(),
+    textColor?.toARGB32(),
+    primaryColor?.toARGB32(),
+    surfaceContainerColor?.toARGB32(),
+    secondaryTextColor?.toARGB32(),
+    outlineColor?.toARGB32(),
+    wordsOfJesusColor?.toARGB32(),
+    isBackgroundAutoDerived,
+  );
 }

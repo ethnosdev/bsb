@@ -17,7 +17,7 @@ import 'package:bsb/ui/tabs/chapter_tabs_bar.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/text_screen.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 class HomePage extends StatefulWidget {
@@ -40,8 +40,9 @@ class _HomePageState extends State<HomePage> {
     if (appState != null) {
       return appState.showVerseGridNotifier.value;
     }
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     return userSettings?.showVerseGrid ?? false;
   }
 
@@ -51,8 +52,9 @@ class _HomePageState extends State<HomePage> {
     _tabManager.addListener(_onTabManagerChanged);
     if (getIt.isRegistered<AudioPlaybackManager>()) {
       _cachedAudioManager = getIt<AudioPlaybackManager>();
-      _cachedAudioManager!.isPlayerVisible
-          .addListener(_onPlayerVisibilityChanged);
+      _cachedAudioManager!.isPlayerVisible.addListener(
+        _onPlayerVisibilityChanged,
+      );
       _cachedAudioManager!.playbackErrorNotifier.addListener(_onAudioError);
       _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
     }
@@ -80,8 +82,9 @@ class _HomePageState extends State<HomePage> {
     if (_cachedAudioManager == null &&
         getIt.isRegistered<AudioPlaybackManager>()) {
       _cachedAudioManager = getIt<AudioPlaybackManager>();
-      _cachedAudioManager!.isPlayerVisible
-          .addListener(_onPlayerVisibilityChanged);
+      _cachedAudioManager!.isPlayerVisible.addListener(
+        _onPlayerVisibilityChanged,
+      );
       _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
     }
     return _cachedAudioManager;
@@ -93,8 +96,9 @@ class _HomePageState extends State<HomePage> {
     if (_isDistractionFree) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
-    _cachedAudioManager?.isPlayerVisible
-        .removeListener(_onPlayerVisibilityChanged);
+    _cachedAudioManager?.isPlayerVisible.removeListener(
+      _onPlayerVisibilityChanged,
+    );
     _cachedAudioManager?.playbackErrorNotifier.removeListener(_onAudioError);
     if (_cachedAudioManager?.onChapterChanged == _onAudioChapterChanged) {
       _cachedAudioManager?.onChapterChanged = null;
@@ -129,10 +133,7 @@ class _HomePageState extends State<HomePage> {
     final err = _cachedAudioManager?.playbackErrorNotifier.value;
     if (err != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(err),
-          duration: const Duration(seconds: 4),
-        ),
+        SnackBar(content: Text(err), duration: const Duration(seconds: 4)),
       );
     }
   }
@@ -189,8 +190,9 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     final style = userSettings?.bookChooserStyle ?? BookChooserStyle.grid;
     if (style == BookChooserStyle.list) {
       return ListBookChooser(
@@ -228,7 +230,8 @@ class _HomePageState extends State<HomePage> {
           valueListenable: _chapterChooserNotifier,
           builder: (context, chapterChooserValue, _) {
             return PopScope(
-              canPop: !isAdding &&
+              canPop:
+                  !isAdding &&
                   !_isDistractionFree &&
                   chapterChooserValue == null,
               onPopInvokedWithResult: (didPop, result) {
@@ -242,211 +245,241 @@ class _HomePageState extends State<HomePage> {
                   }
                 }
               },
-          child: Scaffold(
-            drawer: _isDistractionFree ? null : const AppDrawer(),
-            onDrawerChanged: (isOpen) {
-              if (isOpen) {
-                _chapterChooserNotifier.value = null;
-              }
-            },
-            drawerEnableOpenDragGesture: !_isDistractionFree,
-            extendBodyBehindAppBar: hasTabs && !isAdding,
-            appBar: (hasTabs && !isAdding)
-                ? PreferredSize(
-                    preferredSize: const Size.fromHeight(kToolbarHeight),
-                    child: AnimatedSlide(
-                      key: const Key('app_bar_animated_slide'),
-                      offset: _isDistractionFree
-                          ? const Offset(0, -1)
-                          : Offset.zero,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      child: AnimatedOpacity(
-                        opacity: _isDistractionFree ? 0.0 : 1.0,
-                        duration: const Duration(milliseconds: 250),
-                        child: IgnorePointer(
-                          ignoring: _isDistractionFree,
-                          child: AppBar(
-                            titleSpacing: 0,
-                            title: SizedBox(
-                              height: kToolbarHeight,
-                              child: ChapterTabsBar(
-                                tabManager: _tabManager,
-                                onTabsSheetOpened: () {
-                                  _chapterChooserNotifier.value = null;
-                                },
-                                onActiveTabTapped: (tab) async {
-                                  if (_chapterChooserNotifier.value != null) {
-                                    _chapterChooserNotifier.value = null;
-                                    return;
-                                  }
-                                  if (tab.isPlaylist) {
-                                    if (getIt.isRegistered<PlaylistService>()) {
-                                      final playlist = await getIt<PlaylistService>().getPlaylist(tab.playlistId!);
-                                      if (playlist != null && context.mounted) {
-                                        await Navigator.push(
+              child: Scaffold(
+                drawer: _isDistractionFree ? null : const AppDrawer(),
+                onDrawerChanged: (isOpen) {
+                  if (isOpen) {
+                    _chapterChooserNotifier.value = null;
+                  }
+                },
+                drawerEnableOpenDragGesture: !_isDistractionFree,
+                extendBodyBehindAppBar: hasTabs && !isAdding,
+                appBar: (hasTabs && !isAdding)
+                    ? PreferredSize(
+                        preferredSize: const Size.fromHeight(kToolbarHeight),
+                        child: AnimatedSlide(
+                          key: const Key('app_bar_animated_slide'),
+                          offset: _isDistractionFree
+                              ? const Offset(0, -1)
+                              : Offset.zero,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: AnimatedOpacity(
+                            opacity: _isDistractionFree ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 250),
+                            child: IgnorePointer(
+                              ignoring: _isDistractionFree,
+                              child: AppBar(
+                                titleSpacing: 0,
+                                title: SizedBox(
+                                  height: kToolbarHeight,
+                                  child: ChapterTabsBar(
+                                    tabManager: _tabManager,
+                                    onTabsSheetOpened: () {
+                                      _chapterChooserNotifier.value = null;
+                                    },
+                                    onActiveTabTapped: (tab) async {
+                                      if (_chapterChooserNotifier.value !=
+                                          null) {
+                                        _chapterChooserNotifier.value = null;
+                                        return;
+                                      }
+                                      if (tab.isPlaylist) {
+                                        if (getIt
+                                            .isRegistered<PlaylistService>()) {
+                                          final playlist =
+                                              await getIt<PlaylistService>()
+                                                  .getPlaylist(tab.playlistId!);
+                                          if (playlist != null &&
+                                              context.mounted) {
+                                            await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    PlaylistEditorPage(
+                                                      playlist: playlist,
+                                                    ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                        return;
+                                      }
+                                      final chapterCount =
+                                          bookIdToChapterCountMap[tab.bookId] ??
+                                          1;
+                                      final initialChapter =
+                                          _resolveShowVerseGrid()
+                                          ? tab.chapter
+                                          : null;
+                                      _chapterChooserNotifier.value = (
+                                        tab.bookId!,
+                                        chapterCount,
+                                        initialChapter,
+                                      );
+                                    },
+                                    onEmptySpaceTapped: () {
+                                      _chapterChooserNotifier.value = null;
+                                      _tabManager.startAddingTab();
+                                    },
+                                    onCloseAll: () {
+                                      _chapterChooserNotifier.value = null;
+                                      _tabManager.closeAllTabs();
+                                    },
+                                  ),
+                                ),
+                                actions: [
+                                  IconButton(
+                                    icon: const Icon(Icons.add),
+                                    tooltip: 'Open Chapter',
+                                    onPressed: () {
+                                      _chapterChooserNotifier.value = null;
+                                      _tabManager.startAddingTab();
+                                    },
+                                  ),
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert),
+                                    tooltip: 'More options',
+                                    onSelected: (value) async {
+                                      _chapterChooserNotifier.value = null;
+                                      if (value == 'search') {
+                                        Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => PlaylistEditorPage(playlist: playlist),
+                                            builder: (context) =>
+                                                const SearchPage(),
                                           ),
                                         );
+                                      } else if (value == 'edit_playlist') {
+                                        if (getIt
+                                            .isRegistered<PlaylistService>()) {
+                                          final playlist =
+                                              await getIt<PlaylistService>()
+                                                  .getPlaylist(
+                                                    activeTab.playlistId!,
+                                                  );
+                                          if (playlist != null &&
+                                              context.mounted) {
+                                            await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    PlaylistEditorPage(
+                                                      playlist: playlist,
+                                                    ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      } else if (value == 'play') {
+                                        if (activeTab.bookId != null &&
+                                            activeTab.chapter != null) {
+                                          audioManager?.playOrToggleChapter(
+                                            activeTab.bookId!,
+                                            activeTab.chapter!,
+                                          );
+                                        }
                                       }
-                                    }
-                                    return;
-                                  }
-                                  final chapterCount =
-                                      bookIdToChapterCountMap[tab.bookId] ?? 1;
-                                  final initialChapter = _resolveShowVerseGrid()
-                                      ? tab.chapter
-                                      : null;
-                                  _chapterChooserNotifier.value = (
-                                    tab.bookId!,
-                                    chapterCount,
-                                    initialChapter,
-                                  );
-                                },
-                                onEmptySpaceTapped: () {
-                                  _chapterChooserNotifier.value = null;
-                                  _tabManager.startAddingTab();
-                                },
-                                onCloseAll: () {
-                                  _chapterChooserNotifier.value = null;
-                                  _tabManager.closeAllTabs();
-                                },
+                                    },
+                                    itemBuilder: (context) =>
+                                        activeTab.isPlaylist
+                                        ? [
+                                            const PopupMenuItem(
+                                              value: 'edit_playlist',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.edit_outlined),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      'Edit Playlist',
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'search',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.search),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text('Search'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ]
+                                        : [
+                                            const PopupMenuItem(
+                                              value: 'search',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.search),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text('Search'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'play',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.play_arrow),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text('Play Audio'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                  ),
+                                ],
                               ),
                             ),
-                            actions: [
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                tooltip: 'Open Chapter',
-                                onPressed: () {
-                                  _chapterChooserNotifier.value = null;
-                                  _tabManager.startAddingTab();
-                                },
-                              ),
-                              PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert),
-                                tooltip: 'More options',
-                                onSelected: (value) async {
-                                  _chapterChooserNotifier.value = null;
-                                  if (value == 'search') {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const SearchPage(),
-                                      ),
-                                    );
-                                  } else if (value == 'edit_playlist') {
-                                    if (getIt.isRegistered<PlaylistService>()) {
-                                      final playlist = await getIt<PlaylistService>().getPlaylist(activeTab.playlistId!);
-                                      if (playlist != null && context.mounted) {
-                                        await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => PlaylistEditorPage(playlist: playlist),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  } else if (value == 'play') {
-                                    if (activeTab.bookId != null && activeTab.chapter != null) {
-                                      audioManager?.playOrToggleChapter(
-                                        activeTab.bookId!,
-                                        activeTab.chapter!,
-                                      );
-                                    }
-                                  }
-                                },
-                                itemBuilder: (context) => activeTab.isPlaylist
-                                    ? [
-                                        const PopupMenuItem(
-                                          value: 'edit_playlist',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.edit_outlined),
-                                              SizedBox(width: 12),
-                                              Expanded(child: Text('Edit Playlist')),
-                                            ],
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'search',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.search),
-                                              SizedBox(width: 12),
-                                              Expanded(child: Text('Search')),
-                                            ],
-                                          ),
-                                        ),
-                                      ]
-                                    : [
-                                        const PopupMenuItem(
-                                          value: 'search',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.search),
-                                              SizedBox(width: 12),
-                                              Expanded(child: Text('Search')),
-                                            ],
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'play',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.play_arrow),
-                                              SizedBox(width: 12),
-                                              Expanded(child: Text('Play Audio')),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                              ),
-                            ],
                           ),
                         ),
+                      )
+                    : AppBar(
+                        titleSpacing: 0,
+                        title: const Text('Berean Standard Bible'),
+                        leading: isAdding
+                            ? IconButton(
+                                icon: const Icon(Icons.arrow_back),
+                                tooltip: 'Cancel',
+                                onPressed: _tabManager.cancelAddingTab,
+                              )
+                            : null,
+                        actions: [
+                          if (isAdding)
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              tooltip: 'Cancel',
+                              onPressed: _tabManager.cancelAddingTab,
+                            )
+                          else
+                            IconButton(
+                              icon: const Icon(Icons.search),
+                              tooltip: 'Search',
+                              onPressed: () {
+                                _chapterChooserNotifier.value = null;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SearchPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
                       ),
-                    ),
-                  )
-                : AppBar(
-                    titleSpacing: 0,
-                    title: const Text('Berean Standard Bible'),
-                    leading: isAdding
-                        ? IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            tooltip: 'Cancel',
-                            onPressed: _tabManager.cancelAddingTab,
-                          )
-                        : null,
-                    actions: [
-                      if (isAdding)
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: 'Cancel',
-                          onPressed: _tabManager.cancelAddingTab,
-                        )
-                      else
-                        IconButton(
-                          icon: const Icon(Icons.search),
-                          tooltip: 'Search',
-                          onPressed: () {
-                            _chapterChooserNotifier.value = null;
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SearchPage(),
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-            body: (!hasTabs || isAdding)
-                ? SafeArea(
-                    child: _buildBookChooser(),
-                  )
-                : activeTab.isPlaylist
+                body: (!hasTabs || isAdding)
+                    ? SafeArea(child: _buildBookChooser())
+                    : activeTab.isPlaylist
                     ? SafeArea(
                         top: false,
                         bottom: false,
@@ -472,29 +505,30 @@ class _HomePageState extends State<HomePage> {
                           isDistractionFree: _isDistractionFree,
                           onChapterChanged:
                               (bookId, chapter, [sectionHeading, targetVerse]) {
-                            _tabManager.updateActiveChapter(
-                              bookId,
-                              chapter,
-                              sectionHeading,
-                              targetVerse,
-                            );
-                          },
+                                _tabManager.updateActiveChapter(
+                                  bookId,
+                                  chapter,
+                                  sectionHeading,
+                                  targetVerse,
+                                );
+                              },
                         ),
                       ),
-            bottomNavigationBar: (!_isDistractionFree &&
-                    audioManager != null &&
-                    audioManager.isPlayerVisible.value)
-                ? AudioPlayerBottomBar(
-                    manager: audioManager,
-                    onOpenExpandedSheet: () =>
-                        _openExpandedAudioSheet(audioManager),
-                  )
-                : null,
-          ),
+                bottomNavigationBar:
+                    (!_isDistractionFree &&
+                        audioManager != null &&
+                        audioManager.isPlayerVisible.value)
+                    ? AudioPlayerBottomBar(
+                        manager: audioManager,
+                        onOpenExpandedSheet: () =>
+                            _openExpandedAudioSheet(audioManager),
+                      )
+                    : null,
+              ),
+            );
+          },
         );
       },
     );
-  },
-);
   }
 }

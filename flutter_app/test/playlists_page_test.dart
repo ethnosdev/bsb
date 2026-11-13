@@ -9,7 +9,7 @@ import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/playlists_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
@@ -84,12 +84,12 @@ class FakeDatabaseHelper implements DatabaseHelper {
 
   @override
   Future<List<UsfmLine>> getRange(Reference reference) async => [
-        UsfmLine(
-          bookChapterVerse: reference.packedVerse,
-          text: 'Scripture verse text',
-          format: ParagraphFormat.p,
-        ),
-      ];
+    UsfmLine(
+      bookChapterVerse: reference.packedVerse,
+      text: 'Scripture verse text',
+      format: ParagraphFormat.p,
+    ),
+  ];
 }
 
 void main() {
@@ -117,210 +117,238 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('PlaylistsPage displays empty state when no playlists exist', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PlaylistsPage(),
-      ),
-    );
+  testWidgets('PlaylistsPage displays empty state when no playlists exist', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: PlaylistsPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('No Playlists Yet'), findsOneWidget);
     expect(find.text('Create Playlist'), findsOneWidget);
   });
 
-  testWidgets('PlaylistsPage displays saved playlists in simplified cards and opens as tab on tap', (tester) async {
-    final playlist = Playlist(
-      id: 'p1',
-      title: 'Romans Road Study',
-      updatedAt: DateTime(2026, 9, 19),
-      items: [
-        PlaylistItem.reference(
-          reference: Reference(bookId: 45, chapter: 3, verse: 23),
-          orderIndex: 0,
+  testWidgets(
+    'PlaylistsPage displays saved playlists in simplified cards and opens as tab on tap',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'p1',
+        title: 'Romans Road Study',
+        updatedAt: DateTime(2026, 9, 19),
+        items: [
+          PlaylistItem.reference(
+            reference: Reference(bookId: 45, chapter: 3, verse: 23),
+            orderIndex: 0,
+          ),
+        ],
+      );
+      await playlistService.savePlaylist(playlist);
+
+      await tester.pumpWidget(const MaterialApp(home: PlaylistsPage()));
+      await tester.pumpAndSettle();
+
+      // Card should have title, date as subtitle, and 3-dot menu
+      expect(find.text('Romans Road Study'), findsOneWidget);
+      expect(find.text('Sep 19, 2026'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(Card),
+          matching: find.byIcon(Icons.more_vert),
         ),
-      ],
-    );
-    await playlistService.savePlaylist(playlist);
+        findsOneWidget,
+      );
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PlaylistsPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      // No reference/note count chips or explicit present button on the card
+      expect(find.byIcon(Icons.menu_book), findsNothing);
+      expect(find.byIcon(Icons.edit_note), findsNothing);
 
-    // Card should have title, date as subtitle, and 3-dot menu
-    expect(find.text('Romans Road Study'), findsOneWidget);
-    expect(find.text('Sep 19, 2026'), findsOneWidget);
-    expect(
-      find.descendant(of: find.byType(Card), matching: find.byIcon(Icons.more_vert)),
-      findsOneWidget,
-    );
+      // Tapping the card opens it as a tab in TabManager and pops PlaylistsPage
+      await tester.tap(find.text('Romans Road Study'));
+      await tester.pumpAndSettle();
 
-    // No reference/note count chips or explicit present button on the card
-    expect(find.byIcon(Icons.menu_book), findsNothing);
-    expect(find.byIcon(Icons.edit_note), findsNothing);
+      expect(tabManager.tabs.length, 1);
+      expect(tabManager.activeTab?.playlistId, 'p1');
+      expect(tabManager.activeTab?.label, 'Romans Road Study');
+      expect(tabManager.activeTab?.isPlaylist, isTrue);
+    },
+  );
 
-    // Tapping the card opens it as a tab in TabManager and pops PlaylistsPage
-    await tester.tap(find.text('Romans Road Study'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'Copy Share Code copies code and instructional text to clipboard',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'p1',
+        title: 'Romans Road Study',
+        items: [
+          PlaylistItem.reference(
+            reference: Reference(bookId: 45, chapter: 3, verse: 23),
+            orderIndex: 0,
+          ),
+        ],
+      );
+      await playlistService.savePlaylist(playlist);
 
-    expect(tabManager.tabs.length, 1);
-    expect(tabManager.activeTab?.playlistId, 'p1');
-    expect(tabManager.activeTab?.label, 'Romans Road Study');
-    expect(tabManager.activeTab?.isPlaylist, isTrue);
-  });
-
-  testWidgets('Copy Share Code copies code and instructional text to clipboard', (tester) async {
-    final playlist = Playlist(
-      id: 'p1',
-      title: 'Romans Road Study',
-      items: [
-        PlaylistItem.reference(
-          reference: Reference(bookId: 45, chapter: 3, verse: 23),
-          orderIndex: 0,
-        ),
-      ],
-    );
-    await playlistService.savePlaylist(playlist);
-
-    String clipboardText = '';
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, (
-          MethodCall methodCall,
-        ) async {
-          if (methodCall.method == 'Clipboard.setData') {
-            clipboardText = (methodCall.arguments as Map)['text'] as String;
+      String clipboardText = '';
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall methodCall,
+          ) async {
+            if (methodCall.method == 'Clipboard.setData') {
+              clipboardText = (methodCall.arguments as Map)['text'] as String;
+              return null;
+            } else if (methodCall.method == 'Clipboard.getData') {
+              return {'text': clipboardText};
+            }
             return null;
-          } else if (methodCall.method == 'Clipboard.getData') {
-            return {'text': clipboardText};
-          }
-          return null;
-        });
+          });
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PlaylistsPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: PlaylistsPage()));
+      await tester.pumpAndSettle();
 
-    // Open card 3-dot menu
-    await tester.tap(find.descendant(of: find.byType(Card), matching: find.byIcon(Icons.more_vert)));
-    await tester.pumpAndSettle();
+      // Open card 3-dot menu
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Card),
+          matching: find.byIcon(Icons.more_vert),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Copy Share Code'), findsOneWidget);
-    expect(find.text('Share by QR Code'), findsNothing);
+      expect(find.text('Copy Share Code'), findsOneWidget);
+      expect(find.text('Share by QR Code'), findsNothing);
 
-    await tester.tap(find.text('Copy Share Code'));
-    await tester.pump();
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Copy Share Code'));
+      await tester.pump();
+      await tester.pumpAndSettle();
 
-    expect(find.text('Playlist share code copied to clipboard!'), findsOneWidget);
-    expect(clipboardText, contains('BSB Playlist: Romans Road Study'));
-    expect(clipboardText, contains('Import from Clipboard'));
-    expect(clipboardText, contains('bsb://playlist?data='));
-  });
+      expect(
+        find.text('Playlist share code copied to clipboard!'),
+        findsOneWidget,
+      );
+      expect(clipboardText, contains('BSB Playlist: Romans Road Study'));
+      expect(clipboardText, contains('Import from Clipboard'));
+      expect(clipboardText, contains('bsb://playlist?data='));
+    },
+  );
 
-  testWidgets('PlaylistsPage orders playlists with most recently updated on top and updates updatedAt when opened', (tester) async {
-    final playlistOld = Playlist(
-      id: 'p1',
-      title: 'Older Playlist',
-      updatedAt: DateTime(2026, 1, 1),
-    );
-    final playlistNew = Playlist(
-      id: 'p2',
-      title: 'Newer Playlist',
-      updatedAt: DateTime(2026, 6, 1),
-    );
-    await playlistService.savePlaylist(playlistOld);
-    await playlistService.savePlaylist(playlistNew);
+  testWidgets(
+    'PlaylistsPage orders playlists with most recently updated on top and updates updatedAt when opened',
+    (tester) async {
+      final playlistOld = Playlist(
+        id: 'p1',
+        title: 'Older Playlist',
+        updatedAt: DateTime(2026, 1, 1),
+      );
+      final playlistNew = Playlist(
+        id: 'p2',
+        title: 'Newer Playlist',
+        updatedAt: DateTime(2026, 6, 1),
+      );
+      await playlistService.savePlaylist(playlistOld);
+      await playlistService.savePlaylist(playlistNew);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PlaylistsPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: PlaylistsPage()));
+      await tester.pumpAndSettle();
 
-    // Verify Newer Playlist is displayed first
-    var listTiles = find.byType(ListTile);
-    expect(tester.widget<Text>(find.descendant(of: listTiles.at(0), matching: find.byType(Text)).first).data, 'Newer Playlist');
-    expect(tester.widget<Text>(find.descendant(of: listTiles.at(1), matching: find.byType(Text)).first).data, 'Older Playlist');
+      // Verify Newer Playlist is displayed first
+      var listTiles = find.byType(ListTile);
+      expect(
+        tester
+            .widget<Text>(
+              find
+                  .descendant(of: listTiles.at(0), matching: find.byType(Text))
+                  .first,
+            )
+            .data,
+        'Newer Playlist',
+      );
+      expect(
+        tester
+            .widget<Text>(
+              find
+                  .descendant(of: listTiles.at(1), matching: find.byType(Text))
+                  .first,
+            )
+            .data,
+        'Older Playlist',
+      );
 
-    // Tap on Older Playlist to open it (as tab)
-    await tester.tap(find.text('Older Playlist'));
-    await tester.pumpAndSettle();
+      // Tap on Older Playlist to open it (as tab)
+      await tester.tap(find.text('Older Playlist'));
+      await tester.pumpAndSettle();
 
-    // Verify Older Playlist tab was opened
-    expect(tabManager.activeTab?.playlistId, 'p1');
+      // Verify Older Playlist tab was opened
+      expect(tabManager.activeTab?.playlistId, 'p1');
 
-    // Verify Older Playlist was touched in playlistService (updatedAt is updated)
-    final touched = await playlistService.getPlaylist('p1');
-    expect(touched?.updatedAt.isAfter(DateTime(2026, 1, 1)), isTrue);
-  });
+      // Verify Older Playlist was touched in playlistService (updatedAt is updated)
+      final touched = await playlistService.getPlaylist('p1');
+      expect(touched?.updatedAt.isAfter(DateTime(2026, 1, 1)), isTrue);
+    },
+  );
 
   testWidgets('AppDrawer contains Playlists tile', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          drawer: AppDrawer(),
-        ),
-      ),
+      const MaterialApp(home: Scaffold(drawer: AppDrawer())),
     );
 
     // Open drawer
-    final scaffoldState = tester.firstState<ScaffoldState>(find.byType(Scaffold));
+    final scaffoldState = tester.firstState<ScaffoldState>(
+      find.byType(Scaffold),
+    );
     scaffoldState.openDrawer();
     await tester.pumpAndSettle();
 
     expect(find.text('Playlists'), findsOneWidget);
   });
 
-  testWidgets('PlaylistsPage suppresses background reloads while editor page is active', (tester) async {
-    final playlist = Playlist(
-      id: 'p1',
-      title: 'Study 1',
-      updatedAt: DateTime(2026, 1, 1),
-    );
-    await playlistService.savePlaylist(playlist);
+  testWidgets(
+    'PlaylistsPage suppresses background reloads while editor page is active',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'p1',
+        title: 'Study 1',
+        updatedAt: DateTime(2026, 1, 1),
+      );
+      await playlistService.savePlaylist(playlist);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PlaylistsPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: PlaylistsPage()));
+      await tester.pumpAndSettle();
 
-    final initialCount = fakeDb.getAllPlaylistsCallCount;
-    expect(initialCount, greaterThan(0));
+      final initialCount = fakeDb.getAllPlaylistsCallCount;
+      expect(initialCount, greaterThan(0));
 
-    // Open 3-dot menu on playlist card and select edit
-    await tester.tap(find.descendant(of: find.byType(Card), matching: find.byIcon(Icons.more_vert)));
-    await tester.pumpAndSettle();
+      // Open 3-dot menu on playlist card and select edit
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Card),
+          matching: find.byIcon(Icons.more_vert),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Edit'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
 
-    // Verify PlaylistEditorPage is open
-    expect(find.byType(PlaylistEditorPage), findsOneWidget);
+      // Verify PlaylistEditorPage is open
+      expect(find.byType(PlaylistEditorPage), findsOneWidget);
 
-    final countAfterOpen = fakeDb.getAllPlaylistsCallCount;
+      final countAfterOpen = fakeDb.getAllPlaylistsCallCount;
 
-    // Simulate saving while editor is open (e.g., typing or reordering)
-    await playlistService.updatePlaylistMetadata(playlist.copyWith(title: 'Study 1 Modified'));
-    await tester.pumpAndSettle();
+      // Simulate saving while editor is open (e.g., typing or reordering)
+      await playlistService.updatePlaylistMetadata(
+        playlist.copyWith(title: 'Study 1 Modified'),
+      );
+      await tester.pumpAndSettle();
 
-    // getAllPlaylists should NOT have been called in PlaylistsPage because editor is open
-    expect(fakeDb.getAllPlaylistsCallCount, countAfterOpen);
+      // getAllPlaylists should NOT have been called in PlaylistsPage because editor is open
+      expect(fakeDb.getAllPlaylistsCallCount, countAfterOpen);
 
-    // Pop the editor to return to PlaylistsPage
-    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
-    navigator.pop();
-    await tester.pumpAndSettle();
+      // Pop the editor to return to PlaylistsPage
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.pop();
+      await tester.pumpAndSettle();
 
-    // Now returning to PlaylistsPage triggers a single reload
-    expect(fakeDb.getAllPlaylistsCallCount, countAfterOpen + 1);
-  });
+      // Now returning to PlaylistsPage triggers a single reload
+      expect(fakeDb.getAllPlaylistsCallCount, countAfterOpen + 1);
+    },
+  );
 }

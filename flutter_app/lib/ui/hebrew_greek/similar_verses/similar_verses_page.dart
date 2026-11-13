@@ -7,7 +7,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'similar_verse_manager.dart';
@@ -70,12 +70,7 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.word.word,
-          style: TextStyle(
-            fontFamily: fontFamily,
-          ),
-        ),
+        title: Text(widget.word.word, style: TextStyle(fontFamily: fontFamily)),
         actions: [
           if (widget.word.strongsNumber > 0)
             IconButton(
@@ -96,156 +91,164 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
         top: false,
         child: Column(
           children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: ValueListenableBuilder<({int exact, int strongs})>(
-              valueListenable: manager.countsNotifier,
-              builder: (context, counts, child) {
-                return ValueListenableBuilder<WordSearchMode>(
-                  valueListenable: manager.searchModeNotifier,
-                  builder: (context, mode, child) {
-                    return SegmentedButton<WordSearchMode>(
-                      expandedInsets: EdgeInsets.zero,
-                      segments: [
-                        ButtonSegment<WordSearchMode>(
-                          value: WordSearchMode.exactForm,
-                          label: Text('Exact Form (${counts.exact})'),
-                          icon: const Icon(
-                            Icons.check,
-                            color: Colors.transparent,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: ValueListenableBuilder<({int exact, int strongs})>(
+                valueListenable: manager.countsNotifier,
+                builder: (context, counts, child) {
+                  return ValueListenableBuilder<WordSearchMode>(
+                    valueListenable: manager.searchModeNotifier,
+                    builder: (context, mode, child) {
+                      return SegmentedButton<WordSearchMode>(
+                        expandedInsets: EdgeInsets.zero,
+                        segments: [
+                          ButtonSegment<WordSearchMode>(
+                            value: WordSearchMode.exactForm,
+                            label: Text('Exact Form (${counts.exact})'),
+                            icon: const Icon(
+                              Icons.check,
+                              color: Colors.transparent,
+                            ),
                           ),
-                        ),
-                        ButtonSegment<WordSearchMode>(
-                          value: WordSearchMode.strongs,
-                          label: Text('Lexical Form (${counts.strongs})'),
-                          icon: const Icon(
-                            Icons.check,
-                            color: Colors.transparent,
+                          ButtonSegment<WordSearchMode>(
+                            value: WordSearchMode.strongs,
+                            label: Text('Lexical Form (${counts.strongs})'),
+                            icon: const Icon(
+                              Icons.check,
+                              color: Colors.transparent,
+                            ),
                           ),
-                        ),
-                      ],
-                      selected: {mode},
-                      onSelectionChanged: (Set<WordSearchMode> newSelection) {
-                        manager.switchMode(newSelection.first);
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: ValueListenableBuilder<bool>(
-              valueListenable: manager.isLoadingNotifier,
-              builder: (context, isLoading, child) {
-                if (isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return ValueListenableBuilder<List<Reference>>(
-                  valueListenable: manager.similarVersesNotifier,
-                  builder: (context, verseList, child) {
-                    if (verseList.isEmpty) {
-                      return const Center(
-                        child: Text('No occurrences found.'),
+                        ],
+                        selected: {mode},
+                        onSelectionChanged: (Set<WordSearchMode> newSelection) {
+                          manager.switchMode(newSelection.first);
+                        },
                       );
-                    }
-
-                    return ListView.builder(
-                      itemCount: verseList.length,
-                      itemBuilder: (context, index) {
-                        final reference = verseList[index];
-                        final formattedReference =
-                            manager.formatReference(reference);
-
-                        return FutureBuilder<VerseDisplayContent>(
-                          key: ValueKey(
-                            '${reference.packedVerse}_${manager.searchModeNotifier.value.name}',
-                          ),
-                          future: manager.getVerseContent(
-                            reference,
-                            theme.colorScheme.primary,
-                          ),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                    ConnectionState.done &&
-                                snapshot.hasData) {
-                              final content = snapshot.data!;
-                              return ListTile(
-                                title: Text(
-                                  formattedReference,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text.rich(
-                                        content.english,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                          fontSize: FontScale.similarEnglish(
-                                            baseTextSize,
-                                          ),
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text.rich(
-                                        content.original,
-                                        textDirection:
-                                            widget.word.language.isLTR
-                                                ? TextDirection.ltr
-                                                : TextDirection.rtl,
-                                        style: TextStyle(
-                                          fontFamily: fontFamily,
-                                          fontSize: FontScale.similarOriginal(
-                                            baseTextSize,
-                                            widget.word.language,
-                                          ),
-                                          height: 1.4,
-                                          color: theme
-                                              .colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                onTap: () {
-                                  final isExact =
-                                      manager.searchModeNotifier.value ==
-                                          WordSearchMode.exactForm;
-                                  showVerseReferenceModal(
-                                    context: context,
-                                    reference: reference,
-                                    initialStrongs: widget.word.strongsNumber,
-                                    initialOriginalId:
-                                        isExact ? widget.word.originalId : null,
-                                    initialExactWord:
-                                        isExact ? widget.word.word : null,
-                                    dbHelper: widget.dbHelper,
-                                  );
-                                },
-                              );
-                            } else {
-                              return const SizedBox(height: 80);
-                            }
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              },
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: ValueListenableBuilder<bool>(
+                valueListenable: manager.isLoadingNotifier,
+                builder: (context, isLoading, child) {
+                  if (isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return ValueListenableBuilder<List<Reference>>(
+                    valueListenable: manager.similarVersesNotifier,
+                    builder: (context, verseList, child) {
+                      if (verseList.isEmpty) {
+                        return const Center(
+                          child: Text('No occurrences found.'),
+                        );
+                      }
+
+                      return ListView.builder(
+                        itemCount: verseList.length,
+                        itemBuilder: (context, index) {
+                          final reference = verseList[index];
+                          final formattedReference = manager.formatReference(
+                            reference,
+                          );
+
+                          return FutureBuilder<VerseDisplayContent>(
+                            key: ValueKey(
+                              '${reference.packedVerse}_${manager.searchModeNotifier.value.name}',
+                            ),
+                            future: manager.getVerseContent(
+                              reference,
+                              theme.colorScheme.primary,
+                            ),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                      ConnectionState.done &&
+                                  snapshot.hasData) {
+                                final content = snapshot.data!;
+                                return ListTile(
+                                  title: Text(
+                                    formattedReference,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text.rich(
+                                          content.english,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                fontSize:
+                                                    FontScale.similarEnglish(
+                                                      baseTextSize,
+                                                    ),
+                                                height: 1.4,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text.rich(
+                                          content.original,
+                                          textDirection:
+                                              widget.word.language.isLTR
+                                              ? TextDirection.ltr
+                                              : TextDirection.rtl,
+                                          style: TextStyle(
+                                            fontFamily: fontFamily,
+                                            fontSize: FontScale.similarOriginal(
+                                              baseTextSize,
+                                              widget.word.language,
+                                            ),
+                                            height: 1.4,
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    final isExact =
+                                        manager.searchModeNotifier.value ==
+                                        WordSearchMode.exactForm;
+                                    showVerseReferenceModal(
+                                      context: context,
+                                      reference: reference,
+                                      initialStrongs: widget.word.strongsNumber,
+                                      initialOriginalId: isExact
+                                          ? widget.word.originalId
+                                          : null,
+                                      initialExactWord: isExact
+                                          ? widget.word.word
+                                          : null,
+                                      dbHelper: widget.dbHelper,
+                                    );
+                                  },
+                                );
+                              } else {
+                                return const SizedBox(height: 80);
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 import 'annotation_models.dart';
 import 'playlist_models.dart';
 import 'reading_plan_models.dart';
@@ -78,15 +80,21 @@ class AnnotationDatabaseHelper {
     }
     if (oldVersion < 3) {
       try {
-        await db.execute('ALTER TABLE playlist_items ADD COLUMN note_title TEXT');
+        await db.execute(
+          'ALTER TABLE playlist_items ADD COLUMN note_title TEXT',
+        );
       } catch (_) {}
     }
     if (oldVersion < 4) {
       try {
-        await db.execute('ALTER TABLE playlist_items ADD COLUMN start_word_id INTEGER');
+        await db.execute(
+          'ALTER TABLE playlist_items ADD COLUMN start_word_id INTEGER',
+        );
       } catch (_) {}
       try {
-        await db.execute('ALTER TABLE playlist_items ADD COLUMN end_word_id INTEGER');
+        await db.execute(
+          'ALTER TABLE playlist_items ADD COLUMN end_word_id INTEGER',
+        );
       } catch (_) {}
     }
     if (oldVersion < 5) {
@@ -130,7 +138,10 @@ class AnnotationDatabaseHelper {
   }
 
   // Highlights CRUD
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async {
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async {
     final db = await database;
     final maps = await db.query(
       'highlights',
@@ -141,12 +152,11 @@ class AnnotationDatabaseHelper {
     return maps.map((m) => Highlight.fromMap(m)).toList();
   }
 
-  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) async {
+  Future<List<Highlight>> getAllHighlights({
+    String orderBy = 'updated_at DESC',
+  }) async {
     final db = await database;
-    final maps = await db.query(
-      'highlights',
-      orderBy: orderBy,
-    );
+    final maps = await db.query('highlights', orderBy: orderBy);
     return maps.map((m) => Highlight.fromMap(m)).toList();
   }
 
@@ -181,11 +191,7 @@ class AnnotationDatabaseHelper {
 
   Future<void> deleteHighlight(String id) async {
     final db = await database;
-    await db.delete(
-      'highlights',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('highlights', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<Highlight?> getHighlightById(String id) async {
@@ -233,10 +239,7 @@ class AnnotationDatabaseHelper {
 
   Future<List<Note>> getAllNotes({String orderBy = 'updated_at DESC'}) async {
     final db = await database;
-    final maps = await db.query(
-      'notes',
-      orderBy: orderBy,
-    );
+    final maps = await db.query('notes', orderBy: orderBy);
     return maps.map((m) => Note.fromMap(m)).toList();
   }
 
@@ -283,11 +286,7 @@ class AnnotationDatabaseHelper {
 
   Future<void> deleteNote(String id) async {
     final db = await database;
-    await db.delete(
-      'notes',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('notes', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> clearAllNotes() async {
@@ -411,11 +410,7 @@ class AnnotationDatabaseHelper {
         where: 'playlist_id = ?',
         whereArgs: [id],
       );
-      await txn.delete(
-        'playlists',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+      await txn.delete('playlists', where: 'id = ?', whereArgs: [id]);
     });
   }
 
@@ -489,10 +484,7 @@ class AnnotationDatabaseHelper {
   Future<void> setActivePlan(String planId) async {
     final db = await database;
     await db.transaction((txn) async {
-      await txn.update(
-        'reading_plan_progress',
-        {'is_active': 0},
-      );
+      await txn.update('reading_plan_progress', {'is_active': 0});
       await txn.update(
         'reading_plan_progress',
         {'is_active': 1},

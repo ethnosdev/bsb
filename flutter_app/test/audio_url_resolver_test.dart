@@ -57,16 +57,25 @@ void main() {
       expect(resolver.getNextChapter(66, 22), isNull);
     });
 
-    test('calculates previous chapter correctly within book and across books', () {
-      // Start of Bible
-      expect(resolver.getPreviousChapter(1, 1), isNull);
+    test(
+      'calculates previous chapter correctly within book and across books',
+      () {
+        // Start of Bible
+        expect(resolver.getPreviousChapter(1, 1), isNull);
 
-      // Within same book
-      expect(resolver.getPreviousChapter(1, 2), (1, 1));
+        // Within same book
+        expect(resolver.getPreviousChapter(1, 2), (1, 1));
 
-      // Across book boundary
-      expect(resolver.getPreviousChapter(2, 1), (1, 50)); // Exodus 1 -> Genesis 50
-      expect(resolver.getPreviousChapter(40, 1), (39, 4)); // Matthew 1 -> Malachi 4
-    });
+        // Across book boundary
+        expect(resolver.getPreviousChapter(2, 1), (
+          1,
+          50,
+        )); // Exodus 1 -> Genesis 50
+        expect(resolver.getPreviousChapter(40, 1), (
+          39,
+          4,
+        )); // Matthew 1 -> Malachi 4
+      },
+    );
   });
 }

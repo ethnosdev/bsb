@@ -7,7 +7,7 @@ import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,10 +18,11 @@ class PlaylistShareHandler {
   StreamSubscription<Uri>? _sub;
 
   PlaylistShareHandler({PlaylistService? playlistService})
-      : _playlistService = playlistService ??
-            (getIt.isRegistered<PlaylistService>()
-                ? getIt<PlaylistService>()
-                : null);
+    : _playlistService =
+          playlistService ??
+          (getIt.isRegistered<PlaylistService>()
+              ? getIt<PlaylistService>()
+              : null);
 
   static Rect? _getSharePositionOrigin(BuildContext context) {
     final box = context.findRenderObject() as RenderBox?;
@@ -91,12 +92,16 @@ class PlaylistShareHandler {
 
   // --- Export File ---
 
-  Future<void> exportPlaylistFile(BuildContext context, Playlist playlist) async {
+  Future<void> exportPlaylistFile(
+    BuildContext context,
+    Playlist playlist,
+  ) async {
     final safeTitle = sanitizeFileName(playlist.title);
     final fileName = '$safeTitle.bsbplaylist';
     final jsonContent = playlist.toJson(pretty: true);
 
-    final isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+    final isDesktop =
+        Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
     if (isDesktop) {
       final savedUri = await FilePicker.saveFile(
@@ -108,9 +113,9 @@ class PlaylistShareHandler {
       );
 
       if (savedUri != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved playlist to $fileName')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Saved playlist to $fileName')));
       }
     } else {
       final origin = _getSharePositionOrigin(context);
@@ -132,7 +137,8 @@ class PlaylistShareHandler {
 
   Future<void> copyShareCode(BuildContext context, Playlist playlist) async {
     final code = encodePlaylistToUrl(playlist);
-    final text = 'BSB Playlist: ${playlist.title}\n'
+    final text =
+        'BSB Playlist: ${playlist.title}\n'
         'To import in the BSB app, copy this message and select "Import from Clipboard" in the Playlists menu:\n'
         '$code';
     await Clipboard.setData(ClipboardData(text: text));
@@ -193,9 +199,8 @@ class PlaylistShareHandler {
 
     if (text.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Clipboard is empty.')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Clipboard is empty.')));
       }
       return;
     }
@@ -285,9 +290,8 @@ class PlaylistShareHandler {
           children: [
             Text(
               playlist.title,
-              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(ctx).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -295,7 +299,9 @@ class PlaylistShareHandler {
               style: Theme.of(ctx).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            const Text('Would you like to import this playlist into your collection?'),
+            const Text(
+              'Would you like to import this playlist into your collection?',
+            ),
           ],
         ),
         actions: [
@@ -315,9 +321,7 @@ class PlaylistShareHandler {
       await _playlistService.savePlaylist(playlist);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Imported "${playlist.title}" successfully!'),
-          ),
+          SnackBar(content: Text('Imported "${playlist.title}" successfully!')),
         );
       }
     }

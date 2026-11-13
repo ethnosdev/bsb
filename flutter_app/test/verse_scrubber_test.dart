@@ -10,7 +10,7 @@ import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
 import 'package:bsb/ui/text/text_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -110,7 +110,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -120,7 +123,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VerseScrubber Widget Tests', () {
-    testWidgets('does not render when verses length < 4 (3 or fewer)', (tester) async {
+    testWidgets('does not render when verses length < 4 (3 or fewer)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -134,7 +139,10 @@ void main() {
       );
 
       expect(find.byType(VerseScrubber), findsOneWidget);
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+        findsNothing,
+      );
       expect(find.text('1'), findsNothing);
     });
 
@@ -153,33 +161,44 @@ void main() {
       );
 
       expect(find.byType(VerseScrubber), findsOneWidget);
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+        findsNothing,
+      );
       expect(find.text('1'), findsNothing);
     });
 
-    testWidgets('renders all numbers when verses length is between 4 and 30 and canScroll is true', (tester) async {
-      final verses = List.generate(6, (i) => i + 1);
+    testWidgets(
+      'renders all numbers when verses length is between 4 and 30 and canScroll is true',
+      (tester) async {
+        final verses = List.generate(6, (i) => i + 1);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VerseScrubber(
-              verses: verses,
-              isVisible: true,
-              canScroll: true,
-              onVerseSelected: (_) {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VerseScrubber(
+                verses: verses,
+                isVisible: true,
+                canScroll: true,
+                onVerseSelected: (_) {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsOneWidget);
-      for (var i = 1; i <= 6; i++) {
-        expect(find.text('$i'), findsOneWidget);
-      }
-    });
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+          findsOneWidget,
+        );
+        for (var i = 1; i <= 6; i++) {
+          expect(find.text('$i'), findsOneWidget);
+        }
+      },
+    );
 
-    testWidgets('renders all numbers for 40 verses without overflow', (tester) async {
+    testWidgets('renders all numbers for 40 verses without overflow', (
+      tester,
+    ) async {
       final verses = List.generate(40, (i) => i + 1);
 
       await tester.pumpWidget(
@@ -194,7 +213,10 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+        findsOneWidget,
+      );
       expect(find.text('1'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(find.text('5'), findsOneWidget);
@@ -203,7 +225,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders Psalm 119 (176 verses) without overflow', (tester) async {
+    testWidgets('renders Psalm 119 (176 verses) without overflow', (
+      tester,
+    ) async {
       final verses = List.generate(176, (i) => i + 1);
 
       await tester.pumpWidget(
@@ -218,7 +242,10 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+        findsOneWidget,
+      );
       expect(find.text('1'), findsOneWidget);
       expect(find.text('20'), findsOneWidget);
       expect(find.text('50'), findsOneWidget);
@@ -231,96 +258,116 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('when app bar is showing, Psalm 119 scrubber bar is placed strictly below app bar and above bottom safe area', (tester) async {
-      final verses = List.generate(176, (i) => i + 1);
+    testWidgets(
+      'when app bar is showing, Psalm 119 scrubber bar is placed strictly below app bar and above bottom safe area',
+      (tester) async {
+        final verses = List.generate(176, (i) => i + 1);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(400, 800),
-              padding: EdgeInsets.only(top: 40, bottom: 34),
-            ),
-            child: Scaffold(
-              extendBodyBehindAppBar: true,
-              appBar: PreferredSize(
-                preferredSize: const Size.fromHeight(kToolbarHeight),
-                child: AppBar(title: const Text('App Bar')),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(400, 800),
+                padding: EdgeInsets.only(top: 40, bottom: 34),
               ),
+              child: Scaffold(
+                extendBodyBehindAppBar: true,
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(kToolbarHeight),
+                  child: AppBar(title: const Text('App Bar')),
+                ),
+                body: VerseScrubber(
+                  verses: verses,
+                  isVisible: true,
+                  isDistractionFree: false,
+                  onVerseSelected: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
+        final barRect = tester.getRect(bar);
+
+        // App bar ends at top: 40 + kToolbarHeight (56) = 96.0
+        // Scrubber top must be strictly below the app bar (> 96.0)
+        expect(barRect.top, greaterThanOrEqualTo(96.0 + 12.0));
+        // Scrubber bottom must be strictly above bottom safe area (800 - 34 = 766.0)
+        expect(barRect.bottom, lessThanOrEqualTo(800.0 - 34.0 - 8.0));
+      },
+    );
+
+    testWidgets(
+      'when in full screen mode (isDistractionFree: true), scrubber bar expands towards top',
+      (tester) async {
+        final verses = List.generate(176, (i) => i + 1);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(400, 800),
+                padding: EdgeInsets.only(top: 40, bottom: 34),
+              ),
+              child: Scaffold(
+                extendBodyBehindAppBar: true,
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(kToolbarHeight),
+                  child: AppBar(title: const Text('App Bar')),
+                ),
+                body: VerseScrubber(
+                  verses: verses,
+                  isVisible: true,
+                  isDistractionFree: true,
+                  onVerseSelected: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
+        final barRect = tester.getRect(bar);
+
+        // In distraction-free mode, scrubber top expands up above kToolbarHeight boundary
+        expect(barRect.top, lessThan(96.0));
+      },
+    );
+
+    testWidgets(
+      'edge detector does not exist and scrubber animates out when isVisible is false',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
               body: VerseScrubber(
-                verses: verses,
-                isVisible: true,
-                isDistractionFree: false,
+                verses: List.generate(15, (i) => i + 1),
+                isVisible: false,
                 onVerseSelected: (_) {},
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
-      final barRect = tester.getRect(bar);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_edge_detector')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_edge_drag_detector')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_animated_slide')),
+          findsOneWidget,
+        );
+      },
+    );
 
-      // App bar ends at top: 40 + kToolbarHeight (56) = 96.0
-      // Scrubber top must be strictly below the app bar (> 96.0)
-      expect(barRect.top, greaterThanOrEqualTo(96.0 + 12.0));
-      // Scrubber bottom must be strictly above bottom safe area (800 - 34 = 766.0)
-      expect(barRect.bottom, lessThanOrEqualTo(800.0 - 34.0 - 8.0));
-    });
-
-    testWidgets('when in full screen mode (isDistractionFree: true), scrubber bar expands towards top', (tester) async {
-      final verses = List.generate(176, (i) => i + 1);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(400, 800),
-              padding: EdgeInsets.only(top: 40, bottom: 34),
-            ),
-            child: Scaffold(
-              extendBodyBehindAppBar: true,
-              appBar: PreferredSize(
-                preferredSize: const Size.fromHeight(kToolbarHeight),
-                child: AppBar(title: const Text('App Bar')),
-              ),
-              body: VerseScrubber(
-                verses: verses,
-                isVisible: true,
-                isDistractionFree: true,
-                onVerseSelected: (_) {},
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
-      final barRect = tester.getRect(bar);
-
-      // In distraction-free mode, scrubber top expands up above kToolbarHeight boundary
-      expect(barRect.top, lessThan(96.0));
-    });
-
-    testWidgets('edge detector does not exist and scrubber animates out when isVisible is false', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VerseScrubber(
-              verses: List.generate(15, (i) => i + 1),
-              isVisible: false,
-              onVerseSelected: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byKey(const ValueKey('verse_scrubber_edge_detector')), findsNothing);
-      expect(find.byKey(const ValueKey('verse_scrubber_edge_drag_detector')), findsNothing);
-      expect(find.byKey(const ValueKey('verse_scrubber_animated_slide')), findsOneWidget);
-    });
-
-    testWidgets('swiping right on the scrubber bar triggers onDismiss', (tester) async {
+    testWidgets('swiping right on the scrubber bar triggers onDismiss', (
+      tester,
+    ) async {
       bool dismissed = false;
 
       await tester.pumpWidget(
@@ -370,59 +417,74 @@ void main() {
       expect(selectedVerse, equals(1));
     });
 
-    testWidgets('dragging shows overlay bubble and only selects verse on release', (tester) async {
-      int? selectedVerse;
+    testWidgets(
+      'dragging shows overlay bubble and only selects verse on release',
+      (tester) async {
+        int? selectedVerse;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VerseScrubber(
-              verses: List.generate(20, (i) => i + 1),
-              isVisible: true,
-              onVerseSelected: (v) {
-                selectedVerse = v;
-              },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VerseScrubber(
+                verses: List.generate(20, (i) => i + 1),
+                isVisible: true,
+                onVerseSelected: (v) {
+                  selectedVerse = v;
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
-      final startPos = tester.getTopLeft(bar) + const Offset(10, 10);
+        final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
+        final startPos = tester.getTopLeft(bar) + const Offset(10, 10);
 
-      final gesture = await tester.startGesture(startPos);
-      await tester.pump();
+        final gesture = await tester.startGesture(startPos);
+        await tester.pump();
 
-      // Bubble should appear while dragging
-      expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsOneWidget);
-      // Not yet selected during drag
-      expect(selectedVerse, isNull);
+        // Bubble should appear while dragging
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsOneWidget,
+        );
+        // Not yet selected during drag
+        expect(selectedVerse, isNull);
 
-      // Move down halfway
-      final barHeight = tester.getSize(bar).height;
-      await gesture.moveTo(startPos + Offset(0, barHeight * 0.5));
-      await tester.pump();
+        // Move down halfway
+        final barHeight = tester.getSize(bar).height;
+        await gesture.moveTo(startPos + Offset(0, barHeight * 0.5));
+        await tester.pump();
 
-      // Still dragging: bubble visible, no selection callback yet
-      expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsOneWidget);
-      expect(selectedVerse, isNull);
+        // Still dragging: bubble visible, no selection callback yet
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsOneWidget,
+        );
+        expect(selectedVerse, isNull);
 
-      // Release
-      await gesture.up();
-      await tester.pump();
+        // Release
+        await gesture.up();
+        await tester.pump();
 
-      // After release, selection callback is called with the verse
-      expect(selectedVerse, isNotNull);
-      expect(selectedVerse, inInclusiveRange(9, 12));
-      // Bubble disappears after drag ends
-      expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
-    });
+        // After release, selection callback is called with the verse
+        expect(selectedVerse, isNotNull);
+        expect(selectedVerse, inInclusiveRange(9, 12));
+        // Bubble disappears after drag ends
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
+      },
+    );
 
-    test('computeDisplayVerses returns all verses when they fit within maxLabels', () {
-      final verses = List.generate(30, (i) => i + 1);
-      final result = VerseScrubber.computeDisplayVerses(verses, 35);
-      expect(result, equals(verses));
-    });
+    test(
+      'computeDisplayVerses returns all verses when they fit within maxLabels',
+      () {
+        final verses = List.generate(30, (i) => i + 1);
+        final result = VerseScrubber.computeDisplayVerses(verses, 35);
+        expect(result, equals(verses));
+      },
+    );
 
     test('computeDisplayVerses selects step 5 for Psalm 119 (176 verses) when maxLabels is 40', () {
       final verses = List.generate(176, (i) => i + 1);
@@ -437,26 +499,32 @@ void main() {
       expect(result.length, inInclusiveRange(30, 40));
     });
 
-    test('computeDisplayVerses selects step 10 for Psalm 119 when maxLabels is 25', () {
-      final verses = List.generate(176, (i) => i + 1);
-      final result = VerseScrubber.computeDisplayVerses(verses, 25);
-      expect(result.first, equals(1));
-      expect(result.last, equals(176));
-      expect(result.contains(10), isTrue);
-      expect(result.contains(20), isTrue);
-      expect(result.contains(5), isFalse);
-      expect(result.length, inInclusiveRange(15, 25));
-    });
+    test(
+      'computeDisplayVerses selects step 10 for Psalm 119 when maxLabels is 25',
+      () {
+        final verses = List.generate(176, (i) => i + 1);
+        final result = VerseScrubber.computeDisplayVerses(verses, 25);
+        expect(result.first, equals(1));
+        expect(result.last, equals(176));
+        expect(result.contains(10), isTrue);
+        expect(result.contains(20), isTrue);
+        expect(result.contains(5), isFalse);
+        expect(result.length, inInclusiveRange(15, 25));
+      },
+    );
 
-    test('computeDisplayVerses selects step 2 for 80 verses when maxLabels is 45', () {
-      final verses = List.generate(80, (i) => i + 1);
-      final result = VerseScrubber.computeDisplayVerses(verses, 45);
-      expect(result.first, equals(1));
-      expect(result.last, equals(80));
-      expect(result.contains(3), isTrue);
-      expect(result.contains(5), isTrue);
-      expect(result.length, inInclusiveRange(40, 45));
-    });
+    test(
+      'computeDisplayVerses selects step 2 for 80 verses when maxLabels is 45',
+      () {
+        final verses = List.generate(80, (i) => i + 1);
+        final result = VerseScrubber.computeDisplayVerses(verses, 45);
+        expect(result.first, equals(1));
+        expect(result.last, equals(80));
+        expect(result.contains(3), isTrue);
+        expect(result.contains(5), isTrue);
+        expect(result.length, inInclusiveRange(40, 45));
+      },
+    );
   });
 
   group('ChapterText VerseScrubber Integration Tests', () {
@@ -481,163 +549,159 @@ void main() {
       getIt.reset();
     });
 
-    testWidgets('does not show scrubber for chapter with < 4 verses even if overflowing', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeThreeVerseDbHelper());
+    testWidgets(
+      'does not show scrubber for chapter with < 4 verses even if overflowing',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeThreeVerseDbHelper());
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
-    });
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+          findsNothing,
+        );
+      },
+    );
 
-    testWidgets('does not show scrubber for chapter with >= 4 verses if content fits entirely on screen', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeFiveVerseShortDbHelper());
+    testWidgets(
+      'does not show scrubber for chapter with >= 4 verses if content fits entirely on screen',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeFiveVerseShortDbHelper());
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('verse_scrubber_gesture_area')), findsNothing);
-    });
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_gesture_area')),
+          findsNothing,
+        );
+      },
+    );
 
-    testWidgets('shows scrubber for chapter with 5 verses (< 10) when content overflows screen and auto-hides', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeFiveVerseLongDbHelper());
+    testWidgets(
+      'shows scrubber for chapter with 5 verses (< 10) when content overflows screen and auto-hides',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeFiveVerseLongDbHelper());
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final scrubberFinder = find.byType(VerseScrubber);
-      expect(scrubberFinder, findsOneWidget);
+        final scrubberFinder = find.byType(VerseScrubber);
+        expect(scrubberFinder, findsOneWidget);
 
-      final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
-      expect(scrubberWidget.isVisible, isTrue);
+        final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
+        expect(scrubberWidget.isVisible, isTrue);
 
-      // Advance clock by 5 seconds
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
+        // Advance clock by 5 seconds
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
 
-      final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
-      expect(hiddenScrubber.isVisible, isFalse);
-    });
+        final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
+        expect(hiddenScrubber.isVisible, isFalse);
+      },
+    );
 
-    testWidgets('shows scrubber on initial load for chapter with >= 10 verses and auto-hides after 5s', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+    testWidgets(
+      'shows scrubber on initial load for chapter with >= 10 verses and auto-hides after 5s',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final scrubberFinder = find.byType(VerseScrubber);
-      expect(scrubberFinder, findsOneWidget);
+        final scrubberFinder = find.byType(VerseScrubber);
+        expect(scrubberFinder, findsOneWidget);
 
-      final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
-      expect(scrubberWidget.isVisible, isTrue);
+        final scrubberWidget = tester.widget<VerseScrubber>(scrubberFinder);
+        expect(scrubberWidget.isVisible, isTrue);
 
-      // Still visible after 4 seconds
-      await tester.pump(const Duration(seconds: 4));
-      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        // Still visible after 4 seconds
+        await tester.pump(const Duration(seconds: 4));
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
 
-      // Auto-hides after 5 seconds total
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pumpAndSettle();
+        // Auto-hides after 5 seconds total
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
 
-      final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
-      expect(hiddenScrubber.isVisible, isFalse);
-    });
+        final hiddenScrubber = tester.widget<VerseScrubber>(scrubberFinder);
+        expect(hiddenScrubber.isVisible, isFalse);
+      },
+    );
 
-    testWidgets('selecting a verse with scrubber immediately hides the scrubber', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+    testWidgets(
+      'selecting a verse with scrubber immediately hides the scrubber',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final scrubberFinder = find.byType(VerseScrubber);
-      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
+        final scrubberFinder = find.byType(VerseScrubber);
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
 
-      // Tap on the scrubber bar to select a verse
-      final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
-      await tester.tapAt(tester.getCenter(bar));
-      await tester.pump();
+        // Tap on the scrubber bar to select a verse
+        final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
+        await tester.tapAt(tester.getCenter(bar));
+        await tester.pump();
 
-      // Immediately hidden without waiting for 5 second timeout
-      expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
-    });
+        // Immediately hidden without waiting for 5 second timeout
+        expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
+      },
+    );
 
-    testWidgets('verse scrubber does not show when showVerseGrid is true in settings', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
-      final userSettings = getIt<UserSettings>();
-      await userSettings.setShowVerseGrid(true);
+    testWidgets(
+      'verse scrubber does not show when showVerseGrid is true in settings',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+        final userSettings = getIt<UserSettings>();
+        await userSettings.setShowVerseGrid(true);
 
-      final appState = AppState();
-      await appState.init();
-      getIt.registerSingleton<AppState>(appState);
+        final appState = AppState();
+        await appState.init();
+        getIt.registerSingleton<AppState>(appState);
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(VerseScrubber), findsNothing);
+        expect(find.byType(VerseScrubber), findsNothing);
 
-      // Now toggle showVerseGrid to false
-      await appState.setShowVerseGrid(false);
-      await tester.pumpAndSettle();
+        // Now toggle showVerseGrid to false
+        await appState.setShowVerseGrid(false);
+        await tester.pumpAndSettle();
 
-      // Scrubber should now appear
-      expect(find.byType(VerseScrubber), findsOneWidget);
-    });
+        // Scrubber should now appear
+        expect(find.byType(VerseScrubber), findsOneWidget);
+      },
+    );
 
-    testWidgets('showScrubberNotifier makes scrubber reappear on active page', (tester) async {
+    testWidgets('showScrubberNotifier makes scrubber reappear on active page', (
+      tester,
+    ) async {
       getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
       final showScrubberNotifier = ValueNotifier<int>(0);
 
@@ -674,17 +738,14 @@ void main() {
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
     });
 
-    testWidgets('scrolling text directly immediately hides the scrubber', (tester) async {
+    testWidgets('scrolling text directly immediately hides the scrubber', (
+      tester,
+    ) async {
       getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
 
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
-          ),
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
         ),
       );
       await tester.pumpAndSettle();
@@ -693,151 +754,168 @@ void main() {
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isTrue);
 
       // Scroll the chapter text
-      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -50));
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -50),
+      );
       await tester.pump();
 
       // Scrubber immediately hides on scroll
       expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
     });
 
-    testWidgets('overlay bubble matches touch location vertically and is clamped', (tester) async {
-      final verses = List.generate(20, (i) => i + 1);
+    testWidgets(
+      'overlay bubble matches touch location vertically and is clamped',
+      (tester) async {
+        final verses = List.generate(20, (i) => i + 1);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              height: 600,
-              width: 400,
-              child: VerseScrubber(
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 600,
+                width: 400,
+                child: VerseScrubber(
+                  verses: verses,
+                  isVisible: true,
+                  onVerseSelected: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
+        final barRect = tester.getRect(bar);
+
+        // Touch at Y = 250
+        final touchPos = Offset(barRect.center.dx, 250);
+        final gesture = await tester.startGesture(touchPos);
+        await tester.pump();
+
+        final bubbleFinder = find.byKey(
+          const ValueKey('verse_scrubber_overlay_bubble'),
+        );
+        expect(bubbleFinder, findsOneWidget);
+
+        // Bubble center Y should match the touch Y (250)
+        final bubbleRect = tester.getRect(bubbleFinder);
+        expect(bubbleRect.center.dy, closeTo(250.0, 2.0));
+
+        // Move touch way up past the top (Y = -50)
+        await gesture.moveTo(Offset(barRect.center.dx, -50));
+        await tester.pump();
+
+        // Bubble should be clamped to the top bounds, not offscreen
+        final topClampedRect = tester.getRect(bubbleFinder);
+        expect(topClampedRect.top, greaterThanOrEqualTo(12.0));
+
+        // Move touch way down past the bottom (Y = 800)
+        await gesture.moveTo(Offset(barRect.center.dx, 800));
+        await tester.pump();
+
+        // Bubble should be clamped to the bottom bounds, not offscreen
+        final bottomClampedRect = tester.getRect(bubbleFinder);
+        expect(bottomClampedRect.bottom, lessThanOrEqualTo(600.0 - 12.0));
+
+        await gesture.up();
+      },
+    );
+
+    testWidgets(
+      'inactive page does not render VerseScrubber (prevents left-side scrubber)',
+      (tester) async {
+        getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
+        final activeIndexNotifier = ValueNotifier<int>(1);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  Expanded(
+                    child: ChapterText(
+                      bookId: 1,
+                      chapter: 1,
+                      pageIndex: 0,
+                      activePageIndexListenable: activeIndexNotifier,
+                    ),
+                  ),
+                  Expanded(
+                    child: ChapterText(
+                      bookId: 1,
+                      chapter: 2,
+                      pageIndex: 1,
+                      activePageIndexListenable: activeIndexNotifier,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Page 0 is inactive, Page 1 is active
+        final scrubbers = tester
+            .widgetList<VerseScrubber>(find.byType(VerseScrubber))
+            .toList();
+        expect(scrubbers.length, equals(2));
+        expect(scrubbers[0].isActive, isFalse);
+        expect(scrubbers[1].isActive, isTrue);
+      },
+    );
+
+    testWidgets(
+      'verse bar smoothly slides out of view over animation duration',
+      (tester) async {
+        final verses = List.generate(10, (i) => i + 1);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VerseScrubber(
                 verses: verses,
                 isVisible: true,
                 onVerseSelected: (_) {},
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final bar = find.byKey(const ValueKey('verse_scrubber_gesture_area'));
-      final barRect = tester.getRect(bar);
+        final slideFinder = find.byKey(
+          const ValueKey('verse_scrubber_animated_slide'),
+        );
+        expect(slideFinder, findsOneWidget);
 
-      // Touch at Y = 250
-      final touchPos = Offset(barRect.center.dx, 250);
-      final gesture = await tester.startGesture(touchPos);
-      await tester.pump();
+        AnimatedSlide slideWidget = tester.widget<AnimatedSlide>(slideFinder);
+        expect(slideWidget.offset, equals(Offset.zero));
 
-      final bubbleFinder = find.byKey(const ValueKey('verse_scrubber_overlay_bubble'));
-      expect(bubbleFinder, findsOneWidget);
-
-      // Bubble center Y should match the touch Y (250)
-      final bubbleRect = tester.getRect(bubbleFinder);
-      expect(bubbleRect.center.dy, closeTo(250.0, 2.0));
-
-      // Move touch way up past the top (Y = -50)
-      await gesture.moveTo(Offset(barRect.center.dx, -50));
-      await tester.pump();
-
-      // Bubble should be clamped to the top bounds, not offscreen
-      final topClampedRect = tester.getRect(bubbleFinder);
-      expect(topClampedRect.top, greaterThanOrEqualTo(12.0));
-
-      // Move touch way down past the bottom (Y = 800)
-      await gesture.moveTo(Offset(barRect.center.dx, 800));
-      await tester.pump();
-
-      // Bubble should be clamped to the bottom bounds, not offscreen
-      final bottomClampedRect = tester.getRect(bubbleFinder);
-      expect(bottomClampedRect.bottom, lessThanOrEqualTo(600.0 - 12.0));
-
-      await gesture.up();
-    });
-
-    testWidgets('inactive page does not render VerseScrubber (prevents left-side scrubber)', (tester) async {
-      getIt.registerSingleton<DatabaseHelper>(FakeTenVerseDbHelper());
-      final activeIndexNotifier = ValueNotifier<int>(1);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Column(
-              children: [
-                Expanded(
-                  child: ChapterText(
-                    bookId: 1,
-                    chapter: 1,
-                    pageIndex: 0,
-                    activePageIndexListenable: activeIndexNotifier,
-                  ),
-                ),
-                Expanded(
-                  child: ChapterText(
-                    bookId: 1,
-                    chapter: 2,
-                    pageIndex: 1,
-                    activePageIndexListenable: activeIndexNotifier,
-                  ),
-                ),
-              ],
+        // Rebuild with isVisible = false
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VerseScrubber(
+                verses: verses,
+                isVisible: false,
+                onVerseSelected: (_) {},
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
 
-      // Page 0 is inactive, Page 1 is active
-      final scrubbers =
-          tester.widgetList<VerseScrubber>(find.byType(VerseScrubber)).toList();
-      expect(scrubbers.length, equals(2));
-      expect(scrubbers[0].isActive, isFalse);
-      expect(scrubbers[1].isActive, isTrue);
-    });
+        // Advance by 150ms (halfway through 300ms animation)
+        await tester.pump(const Duration(milliseconds: 150));
 
-    testWidgets('verse bar smoothly slides out of view over animation duration', (tester) async {
-      final verses = List.generate(10, (i) => i + 1);
+        // Target offset in the updated widget
+        slideWidget = tester.widget<AnimatedSlide>(slideFinder);
+        expect(slideWidget.offset, equals(const Offset(1.2, 0)));
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VerseScrubber(
-              verses: verses,
-              isVisible: true,
-              onVerseSelected: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      final slideFinder = find.byKey(const ValueKey('verse_scrubber_animated_slide'));
-      expect(slideFinder, findsOneWidget);
-
-      AnimatedSlide slideWidget = tester.widget<AnimatedSlide>(slideFinder);
-      expect(slideWidget.offset, equals(Offset.zero));
-
-      // Rebuild with isVisible = false
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VerseScrubber(
-              verses: verses,
-              isVisible: false,
-              onVerseSelected: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      // Advance by 150ms (halfway through 300ms animation)
-      await tester.pump(const Duration(milliseconds: 150));
-
-      // Target offset in the updated widget
-      slideWidget = tester.widget<AnimatedSlide>(slideFinder);
-      expect(slideWidget.offset, equals(const Offset(1.2, 0)));
-
-      // Complete animation
-      await tester.pump(const Duration(milliseconds: 150));
-      await tester.pumpAndSettle();
-    });
+        // Complete animation
+        await tester.pump(const Duration(milliseconds: 150));
+        await tester.pumpAndSettle();
+      },
+    );
   });
 
   group('TextScreen chapter swipe and slide-back verse scrubber tests', () {
@@ -869,87 +947,79 @@ void main() {
     });
 
     testWidgets(
-        'starting swipe towards next chapter and letting chapter slide back shows scrubber again',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: TextScreen(
-              bookId: 1,
-              chapter: 1,
-            ),
+      'starting swipe towards next chapter and letting chapter slide back shows scrubber again',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: TextScreen(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      VerseScrubber getActiveScrubber() {
-        return tester
-            .widgetList<VerseScrubber>(find.byType(VerseScrubber))
-            .firstWhere((s) => s.isActive);
-      }
+        VerseScrubber getActiveScrubber() {
+          return tester
+              .widgetList<VerseScrubber>(find.byType(VerseScrubber))
+              .firstWhere((s) => s.isActive);
+        }
 
-      expect(getActiveScrubber().isVisible, isTrue);
+        expect(getActiveScrubber().isVisible, isTrue);
 
-      // Auto-hides after 5 seconds
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-      expect(getActiveScrubber().isVisible, isFalse);
+        // Auto-hides after 5 seconds
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(getActiveScrubber().isVisible, isFalse);
 
-      // Start swiping towards next chapter (finger drags left) by 50px and release
-      final gesture = await tester.startGesture(const Offset(300, 300));
-      await gesture.moveBy(const Offset(-25, 0));
-      await tester.pump();
-      await gesture.moveBy(const Offset(-25, 0));
-      await tester.pump();
-      await gesture.up();
-      await tester.pumpAndSettle();
+        // Start swiping towards next chapter (finger drags left) by 50px and release
+        final gesture = await tester.startGesture(const Offset(300, 300));
+        await gesture.moveBy(const Offset(-25, 0));
+        await tester.pump();
+        await gesture.moveBy(const Offset(-25, 0));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      // Scrubber should be visible again after sliding back into place
-      expect(getActiveScrubber().isVisible, isTrue);
+        // Scrubber should be visible again after sliding back into place
+        expect(getActiveScrubber().isVisible, isTrue);
 
-      // And auto-hides after 5s
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-      expect(getActiveScrubber().isVisible, isFalse);
-    });
+        // And auto-hides after 5s
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(getActiveScrubber().isVisible, isFalse);
+      },
+    );
 
     testWidgets(
-        'swiping towards previous chapter and sliding back does not show scrubber',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: TextScreen(
-              bookId: 1,
-              chapter: 1,
-            ),
+      'swiping towards previous chapter and sliding back does not show scrubber',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: TextScreen(bookId: 1, chapter: 1)),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      VerseScrubber getActiveScrubber() {
-        return tester
-            .widgetList<VerseScrubber>(find.byType(VerseScrubber))
-            .firstWhere((s) => s.isActive);
-      }
+        VerseScrubber getActiveScrubber() {
+          return tester
+              .widgetList<VerseScrubber>(find.byType(VerseScrubber))
+              .firstWhere((s) => s.isActive);
+        }
 
-      // Auto-hides after 5 seconds
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-      expect(getActiveScrubber().isVisible, isFalse);
+        // Auto-hides after 5 seconds
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(getActiveScrubber().isVisible, isFalse);
 
-      // Swipe towards previous chapter (finger drags right) by 40px and release
-      final gesture = await tester.startGesture(const Offset(300, 300));
-      await gesture.moveBy(const Offset(40, 0));
-      await tester.pump();
-      await gesture.up();
-      await tester.pumpAndSettle();
+        // Swipe towards previous chapter (finger drags right) by 40px and release
+        final gesture = await tester.startGesture(const Offset(300, 300));
+        await gesture.moveBy(const Offset(40, 0));
+        await tester.pump();
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      // Scrubber should NOT be visible
-      expect(getActiveScrubber().isVisible, isFalse);
-    });
+        // Scrubber should NOT be visible
+        expect(getActiveScrubber().isVisible, isFalse);
+      },
+    );
 
     testWidgets(
       'TextScreen with initialTargetVerse: selecting a verse in VerseScrubber does not scroll back to initialTargetVerse when scrubber auto hides',
@@ -957,11 +1027,7 @@ void main() {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
-              body: TextScreen(
-                bookId: 1,
-                chapter: 1,
-                initialTargetVerse: 10,
-              ),
+              body: TextScreen(bookId: 1, chapter: 1, initialTargetVerse: 10),
             ),
           ),
         );
@@ -977,7 +1043,9 @@ void main() {
           of: chapterTextFinder,
           matching: find.byType(Scrollable),
         );
-        final scrollPosition = tester.state<ScrollableState>(scrollableFinder).position;
+        final scrollPosition = tester
+            .state<ScrollableState>(scrollableFinder)
+            .position;
 
         VerseScrubber getActiveScrubber() {
           return tester
@@ -1006,12 +1074,7 @@ void main() {
 
         await tester.pumpWidget(
           const MaterialApp(
-            home: Scaffold(
-              body: TextScreen(
-                bookId: 1,
-                chapter: 1,
-              ),
-            ),
+            home: Scaffold(body: TextScreen(bookId: 1, chapter: 1)),
           ),
         );
         await tester.pumpAndSettle();
@@ -1079,8 +1142,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const ValueKey('verse_scrubber_edge_drag_detector')), findsNothing);
-        expect(find.byKey(const ValueKey('verse_scrubber_edge_drag_detector_positioned')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_edge_drag_detector')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(
+            const ValueKey('verse_scrubber_edge_drag_detector_positioned'),
+          ),
+          findsNothing,
+        );
       },
     );
 
@@ -1095,10 +1166,7 @@ void main() {
               body: SizedBox(
                 width: 400,
                 height: 800,
-                child: ChapterText(
-                  bookId: 1,
-                  chapter: 1,
-                ),
+                child: ChapterText(bookId: 1, chapter: 1),
               ),
             ),
           ),
@@ -1117,7 +1185,10 @@ void main() {
           of: find.byType(ChapterText),
           matching: find.byType(Scrollable),
         );
-        final initialOffset = tester.state<ScrollableState>(scrollableFinder).position.pixels;
+        final initialOffset = tester
+            .state<ScrollableState>(scrollableFinder)
+            .position
+            .pixels;
 
         // Vertical drag on right edge (width 400 => x = 385)
         await tester.dragFrom(const Offset(385, 400), const Offset(0, -80));
@@ -1125,8 +1196,14 @@ void main() {
 
         // Scrubber remains hidden and text scrolled
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
-        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
-        final finalOffset = tester.state<ScrollableState>(scrollableFinder).position.pixels;
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
+        final finalOffset = tester
+            .state<ScrollableState>(scrollableFinder)
+            .position
+            .pixels;
         expect(finalOffset, greaterThan(initialOffset));
       },
     );
@@ -1142,10 +1219,7 @@ void main() {
               body: SizedBox(
                 width: 400,
                 height: 800,
-                child: ChapterText(
-                  bookId: 1,
-                  chapter: 1,
-                ),
+                child: ChapterText(bookId: 1, chapter: 1),
               ),
             ),
           ),
@@ -1164,13 +1238,19 @@ void main() {
         }
 
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
-        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
 
         await gesture.up();
         await tester.pumpAndSettle();
 
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
-        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
       },
     );
 
@@ -1185,10 +1265,7 @@ void main() {
               body: SizedBox(
                 width: 400,
                 height: 800,
-                child: ChapterText(
-                  bookId: 1,
-                  chapter: 1,
-                ),
+                child: ChapterText(bookId: 1, chapter: 1),
               ),
             ),
           ),
@@ -1221,10 +1298,7 @@ void main() {
               body: SizedBox(
                 width: 400,
                 height: 800,
-                child: ChapterText(
-                  bookId: 1,
-                  chapter: 1,
-                ),
+                child: ChapterText(bookId: 1, chapter: 1),
               ),
             ),
           ),
@@ -1244,7 +1318,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Bubble should NOT have appeared and scrubber should still be hidden
-        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
       },
     );
@@ -1260,10 +1337,7 @@ void main() {
               body: SizedBox(
                 width: 400,
                 height: 800,
-                child: ChapterText(
-                  bookId: 1,
-                  chapter: 1,
-                ),
+                child: ChapterText(bookId: 1, chapter: 1),
               ),
             ),
           ),
@@ -1328,7 +1402,10 @@ void main() {
         expect(selectionController?.hasSelection, isTrue);
         // Scrubber should NOT appear
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
-        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
       },
     );
 
@@ -1379,9 +1456,11 @@ void main() {
 
         // Scrubber should NOT appear
         expect(tester.widget<VerseScrubber>(scrubberFinder).isVisible, isFalse);
-        expect(find.byKey(const ValueKey('verse_scrubber_overlay_bubble')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('verse_scrubber_overlay_bubble')),
+          findsNothing,
+        );
       },
     );
   });
 }
-

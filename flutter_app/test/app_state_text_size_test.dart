@@ -11,9 +11,7 @@ void main() {
   late UserSettings userSettings;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({
-      'textSize': 18.0,
-    });
+    SharedPreferences.setMockInitialValues({'textSize': 18.0});
     await getIt.reset();
     userSettings = UserSettings();
     await userSettings.init();
@@ -27,7 +25,10 @@ void main() {
   group('AppState text size management', () {
     test('init loads text size from UserSettings', () async {
       final appState = AppState();
-      expect(appState.textSizeNotifier.value, equals(FontScale.defaultBaseSize));
+      expect(
+        appState.textSizeNotifier.value,
+        equals(FontScale.defaultBaseSize),
+      );
 
       await appState.init();
       expect(appState.textSizeNotifier.value, equals(18.0));
@@ -51,7 +52,10 @@ void main() {
       appState.updateTextSizePreview(22.0);
       expect(appState.textSizeNotifier.value, equals(22.0));
       expect(appState.textSize, equals(22.0));
-      expect(userSettings.textSize, equals(18.0)); // UserSettings remains unmutated
+      expect(
+        userSettings.textSize,
+        equals(18.0),
+      ); // UserSettings remains unmutated
     });
 
     test('setTextSize clamps values outside allowed range', () async {
@@ -67,21 +71,24 @@ void main() {
       expect(userSettings.textSize, equals(FontScale.maxBaseSize));
     });
 
-    test('AppState notifies listeners when text size or settings change', () async {
-      final appState = AppState();
-      await appState.init();
+    test(
+      'AppState notifies listeners when text size or settings change',
+      () async {
+        final appState = AppState();
+        await appState.init();
 
-      int notifyCount = 0;
-      appState.addListener(() {
-        notifyCount++;
-      });
+        int notifyCount = 0;
+        appState.addListener(() {
+          notifyCount++;
+        });
 
-      await appState.setTextSize(21.0);
-      expect(notifyCount, greaterThan(0));
+        await appState.setTextSize(21.0);
+        expect(notifyCount, greaterThan(0));
 
-      final prevCount = notifyCount;
-      appState.updateTextSizePreview(23.0);
-      expect(notifyCount, greaterThan(prevCount));
-    });
+        final prevCount = notifyCount;
+        appState.updateTextSizePreview(23.0);
+        expect(notifyCount, greaterThan(prevCount));
+      },
+    );
   });
 }

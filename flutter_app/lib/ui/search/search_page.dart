@@ -5,7 +5,7 @@ import 'package:bsb/ui/search/search_manager.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -148,7 +148,8 @@ class _SearchPageState extends State<SearchPage> {
                 onPressed: () {
                   _textController.clear();
                   _manager.clearSearch();
-                  if (_bookScrollController.hasClients && _bookScrollController.offset > 0) {
+                  if (_bookScrollController.hasClients &&
+                      _bookScrollController.offset > 0) {
                     _bookScrollController.jumpTo(0.0);
                   }
                 },
@@ -236,7 +237,10 @@ class _SearchPageState extends State<SearchPage> {
             return SingleChildScrollView(
               controller: _bookScrollController,
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
               child: Row(
                 children: [
                   ChoiceChip(
@@ -298,9 +302,8 @@ class _SearchPageState extends State<SearchPage> {
               children: [
                 Text(
                   'Recent Searches',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 TextButton(
                   onPressed: _manager.clearRecentSearches,
@@ -385,10 +388,7 @@ class _SearchPageState extends State<SearchPage> {
     return ListTile(
       title: Text(
         refTitle,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 4.0),
@@ -401,10 +401,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  TextSpan _buildHighlightedTextSpan(
-    String text,
-    List<(int, int)> spans,
-  ) {
+  TextSpan _buildHighlightedTextSpan(String text, List<(int, int)> spans) {
     if (spans.isEmpty) {
       return TextSpan(text: text);
     }
@@ -452,14 +449,14 @@ class _SearchPageState extends State<SearchPage> {
             Icon(
               Icons.search_off_outlined,
               size: 48,
-              color: Theme.of(context).textTheme.bodySmall?.color?.withAlpha(120),
+              color: Theme.of(context).textTheme.bodySmall?.color
+                  ?.withAlpha(120),
             ),
             const SizedBox(height: 16),
             Text(
               isExact ? 'No exact matches found' : 'No verses found',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (isExact) ...[
               const SizedBox(height: 8),

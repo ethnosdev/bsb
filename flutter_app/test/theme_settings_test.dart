@@ -7,7 +7,7 @@ import 'package:bsb/ui/settings/theme/custom_theme_editor_page.dart';
 import 'package:bsb/ui/settings/theme/scripture_theme_preview_card.dart';
 import 'package:bsb/ui/settings/theme/theme_selection_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,7 +27,9 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('ScriptureThemePreviewCard renders title and passage', (tester) async {
+  testWidgets('ScriptureThemePreviewCard renders title and passage', (
+    tester,
+  ) async {
     final scheme = AppThemePreset.findById('sepia').lightScheme;
 
     await tester.pumpWidget(
@@ -57,17 +59,15 @@ void main() {
     expect(headerWidget.style?.color, equals(scheme.onSurface));
   });
 
-  testWidgets('ThemeSelectionPage renders all presets and custom theme card', (tester) async {
+  testWidgets('ThemeSelectionPage renders all presets and custom theme card', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ThemeSelectionPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ThemeSelectionPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('Color Theme'), findsOneWidget);
@@ -81,7 +81,9 @@ void main() {
     expect(find.text('Custom Theme'), findsOneWidget);
   });
 
-  testWidgets('Selecting a preset and tapping Apply updates AppState', (tester) async {
+  testWidgets('Selecting a preset and tapping Apply updates AppState', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -90,11 +92,7 @@ void main() {
     final appState = getIt<AppState>();
     expect(appState.appThemeId, equals('sepia'));
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ThemeSelectionPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ThemeSelectionPage()));
     await tester.pumpAndSettle();
 
     // Tap 'Clean Paper'
@@ -112,113 +110,123 @@ void main() {
     expect(userSettings.appThemeId, equals('paper'));
   });
 
-  testWidgets('CustomThemeEditorPage renders background color on primary screen and mode/accent in Customize All Colors', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage renders background color on primary screen and mode/accent in Customize All Colors',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final appState = getIt<AppState>();
-    final initialLight = CustomThemeConfig.defaultLight();
-    final initialDark = CustomThemeConfig.defaultDark();
+      final appState = getIt<AppState>();
+      final initialLight = CustomThemeConfig.defaultLight();
+      final initialDark = CustomThemeConfig.defaultDark();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: initialLight,
-          initialDarkConfig: initialDark,
-          initialIsDark: false,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: initialLight,
+            initialDarkConfig: initialDark,
+            initialIsDark: false,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Custom Theme Editor'), findsOneWidget);
-    expect(find.text('Background Color'), findsOneWidget);
-    expect(find.text('Customize All Colors'), findsOneWidget);
+      expect(find.text('Custom Theme Editor'), findsOneWidget);
+      expect(find.text('Background Color'), findsOneWidget);
+      expect(find.text('Customize All Colors'), findsOneWidget);
 
-    // Primary screen should NOT have edit mode buttons or accent color
-    expect(find.text('Edit Light Mode'), findsNothing);
-    expect(find.text('Edit Dark Mode'), findsNothing);
-    expect(find.text('Accent Color'), findsNothing);
+      // Primary screen should NOT have edit mode buttons or accent color
+      expect(find.text('Edit Light Mode'), findsNothing);
+      expect(find.text('Edit Dark Mode'), findsNothing);
+      expect(find.text('Accent Color'), findsNothing);
 
-    // Expand fine-tune section
-    await tester.tap(find.text('Customize All Colors'));
-    await tester.pumpAndSettle();
+      // Expand fine-tune section
+      await tester.tap(find.text('Customize All Colors'));
+      await tester.pumpAndSettle();
 
-    // Mode toggle and accent color are now inside Customize All Colors
-    expect(find.text('Light Mode'), findsOneWidget);
-    expect(find.text('Dark Mode'), findsOneWidget);
-    expect(find.text('Accent Color'), findsOneWidget);
-    expect(find.text('Scripture Text Color'), findsOneWidget);
-    expect(find.text('Verse Numbers & Secondary Text'), findsOneWidget);
-    expect(find.text('Cards & Panels Surface'), findsOneWidget);
-    expect(find.text('Dividers & Outlines'), findsOneWidget);
+      // Mode toggle and accent color are now inside Customize All Colors
+      expect(find.text('Light Mode'), findsOneWidget);
+      expect(find.text('Dark Mode'), findsOneWidget);
+      expect(find.text('Accent Color'), findsOneWidget);
+      expect(find.text('Scripture Text Color'), findsOneWidget);
+      expect(find.text('Verse Numbers & Secondary Text'), findsOneWidget);
+      expect(find.text('Cards & Panels Surface'), findsOneWidget);
+      expect(find.text('Dividers & Outlines'), findsOneWidget);
 
-    // Tap Apply Custom Theme
-    await tester.tap(find.text('Apply Custom Theme'));
-    await tester.pumpAndSettle();
+      // Tap Apply Custom Theme
+      await tester.tap(find.text('Apply Custom Theme'));
+      await tester.pumpAndSettle();
 
-    expect(appState.appThemeId, equals('custom'));
-  });
+      expect(appState.appThemeId, equals('custom'));
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage selecting background auto-harmonizes theme', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage selecting background auto-harmonizes theme',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    // Pre-populate color history with a distinct color (dark navy)
-    const darkNavy = Color(0xFF0B131E);
-    await userSettings.addCustomColorToHistory(darkNavy);
+      final userSettings = getIt<UserSettings>();
+      // Pre-populate color history with a distinct color (dark navy)
+      const darkNavy = Color(0xFF0B131E);
+      await userSettings.addCustomColorToHistory(darkNavy);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Background Color' to open picker
-    await tester.tap(find.text('Background Color'));
-    await tester.pumpAndSettle();
+      // Tap 'Background Color' to open picker
+      await tester.tap(find.text('Background Color'));
+      await tester.pumpAndSettle();
 
-    // In the picker, recent colors contains darkNavy. Tap it.
-    final swatchFinder = find.byKey(ValueKey(darkNavy.toARGB32()));
-    await tester.tap(swatchFinder);
-    await tester.pumpAndSettle();
+      // In the picker, recent colors contains darkNavy. Tap it.
+      final swatchFinder = find.byKey(ValueKey(darkNavy.toARGB32()));
+      await tester.tap(swatchFinder);
+      await tester.pumpAndSettle();
 
-    // Tap Select
-    await tester.tap(find.text('Select'));
-    await tester.pumpAndSettle();
+      // Tap Select
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
 
-    // Apply the custom theme
-    await tester.tap(find.text('Apply Custom Theme'));
-    await tester.pumpAndSettle();
+      // Apply the custom theme
+      await tester.tap(find.text('Apply Custom Theme'));
+      await tester.pumpAndSettle();
 
-    // The dialog asks if user wants to switch to Dark Mode since darkNavy was chosen in Light Mode
-    expect(find.text('Switch to Dark Mode?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Switch to Dark Mode'));
-    await tester.pumpAndSettle();
+      // The dialog asks if user wants to switch to Dark Mode since darkNavy was chosen in Light Mode
+      expect(find.text('Switch to Dark Mode?'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Switch to Dark Mode'),
+      );
+      await tester.pumpAndSettle();
 
-    // Active dark config should have darkNavy background and harmonized accent (Sky Cyan 0xFF88C9FA)
-    final savedDark = userSettings.customThemeDark;
-    expect(savedDark.backgroundColor, equals(darkNavy));
-    expect(savedDark.primaryColor, isNull);
-    expect(savedDark.effectivePrimaryColor, equals(const Color(0xFF88C9FA)));
-    expect(savedDark.isBackgroundAutoDerived, isFalse);
+      // Active dark config should have darkNavy background and harmonized accent (Sky Cyan 0xFF88C9FA)
+      final savedDark = userSettings.customThemeDark;
+      expect(savedDark.backgroundColor, equals(darkNavy));
+      expect(savedDark.primaryColor, isNull);
+      expect(savedDark.effectivePrimaryColor, equals(const Color(0xFF88C9FA)));
+      expect(savedDark.isBackgroundAutoDerived, isFalse);
 
-    final savedLight = userSettings.customThemeLight;
-    expect(savedLight.primaryColor, isNull);
-    expect(savedLight.isBackgroundAutoDerived, isTrue);
-  });
+      final savedLight = userSettings.customThemeLight;
+      expect(savedLight.primaryColor, isNull);
+      expect(savedLight.isBackgroundAutoDerived, isTrue);
+    },
+  );
 
-  testWidgets('AppColorPicker renders recent colors and sliders', (tester) async {
+  testWidgets('AppColorPicker renders recent colors and sliders', (
+    tester,
+  ) async {
     Color selected = Colors.black;
 
     // Test with empty recent colors
@@ -274,48 +282,56 @@ void main() {
     expect(selected, equals(const Color(0xFFF7F1E5)));
   });
 
-  testWidgets('AppColorPicker.show saves selected color to UserSettings history', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'AppColorPicker.show saves selected color to UserSettings history',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    expect(userSettings.customColorHistory, isEmpty);
+      final userSettings = getIt<UserSettings>();
+      expect(userSettings.customColorHistory, isEmpty);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () {
-                  AppColorPicker.show(
-                    context: context,
-                    initialColor: const Color(0xFF865328),
-                  );
-                },
-                child: const Text('Open Picker'),
-              );
-            },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    AppColorPicker.show(
+                      context: context,
+                      initialColor: const Color(0xFF865328),
+                    );
+                  },
+                  child: const Text('Open Picker'),
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Open the color picker modal
-    await tester.tap(find.text('Open Picker'));
-    await tester.pumpAndSettle();
+      // Open the color picker modal
+      await tester.tap(find.text('Open Picker'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Select'), findsOneWidget);
-    await tester.tap(find.text('Select'));
-    await tester.pumpAndSettle();
+      expect(find.text('Select'), findsOneWidget);
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
 
-    expect(userSettings.customColorHistory, contains(const Color(0xFF865328)));
-  });
+      expect(
+        userSettings.customColorHistory,
+        contains(const Color(0xFF865328)),
+      );
+    },
+  );
 
-  testWidgets('AppColorPicker renders Clear all button and invokes callback', (tester) async {
+  testWidgets('AppColorPicker renders Clear all button and invokes callback', (
+    tester,
+  ) async {
     bool cleared = false;
     await tester.pumpWidget(
       MaterialApp(
@@ -355,591 +371,652 @@ void main() {
     expect(find.text('Clear all'), findsNothing);
   });
 
-  testWidgets('AppColorPicker.show Clear all button clears UserSettings history and updates sheet UI', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'AppColorPicker.show Clear all button clears UserSettings history and updates sheet UI',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    await userSettings.addCustomColorToHistory(const Color(0xFF112233));
-    expect(userSettings.customColorHistory, isNotEmpty);
+      final userSettings = getIt<UserSettings>();
+      await userSettings.addCustomColorToHistory(const Color(0xFF112233));
+      expect(userSettings.customColorHistory, isNotEmpty);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) {
-              return ElevatedButton(
-                onPressed: () {
-                  AppColorPicker.show(
-                    context: context,
-                    initialColor: const Color(0xFF865328),
-                  );
-                },
-                child: const Text('Open Picker'),
-              );
-            },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    AppColorPicker.show(
+                      context: context,
+                      initialColor: const Color(0xFF865328),
+                    );
+                  },
+                  child: const Text('Open Picker'),
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Open Picker'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Picker'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Clear all'), findsOneWidget);
-    await tester.tap(find.text('Clear all'));
-    await tester.pumpAndSettle();
+      expect(find.text('Clear all'), findsOneWidget);
+      await tester.tap(find.text('Clear all'));
+      await tester.pumpAndSettle();
 
-    // Verify history in UserSettings is cleared
-    expect(userSettings.customColorHistory, isEmpty);
+      // Verify history in UserSettings is cleared
+      expect(userSettings.customColorHistory, isEmpty);
 
-    // Verify sheet UI updated: Clear all button gone, empty prompt shown
-    expect(find.text('Clear all'), findsNothing);
-    expect(find.textContaining('No previous colors yet'), findsOneWidget);
-  });
+      // Verify sheet UI updated: Clear all button gone, empty prompt shown
+      expect(find.text('Clear all'), findsNothing);
+      expect(find.textContaining('No previous colors yet'), findsOneWidget);
+    },
+  );
 
-  testWidgets('choosing a light background marks only light background as custom and all other colors as auto-derived', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'choosing a light background marks only light background as custom and all other colors as auto-derived',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    const lightParchment = Color(0xFFFAF0E6);
-    await userSettings.addCustomColorToHistory(lightParchment);
+      final userSettings = getIt<UserSettings>();
+      const lightParchment = Color(0xFFFAF0E6);
+      await userSettings.addCustomColorToHistory(lightParchment);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Background Color' to open picker
-    await tester.tap(find.text('Background Color'));
-    await tester.pumpAndSettle();
+      // Tap 'Background Color' to open picker
+      await tester.tap(find.text('Background Color'));
+      await tester.pumpAndSettle();
 
-    // Select lightParchment swatch and tap Select
-    final swatchFinder = find.byKey(ValueKey(lightParchment.toARGB32()));
-    await tester.tap(swatchFinder);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Select'));
-    await tester.pumpAndSettle();
+      // Select lightParchment swatch and tap Select
+      final swatchFinder = find.byKey(ValueKey(lightParchment.toARGB32()));
+      await tester.tap(swatchFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
 
-    // Open Customize All Colors
-    await tester.tap(find.text('Customize All Colors'));
-    await tester.pumpAndSettle();
+      // Open Customize All Colors
+      await tester.tap(find.text('Customize All Colors'));
+      await tester.pumpAndSettle();
 
-    // In Light Mode:
-    // ONLY Background Color should say 'Custom color'
-    expect(find.text('Custom color'), findsOneWidget);
-    // 6 other colors (Accent, Scripture Text, Words of Jesus, Verse Numbers, Cards, Outlines) should say 'Auto-derived'
-    expect(find.text('Auto-derived'), findsNWidgets(6));
+      // In Light Mode:
+      // ONLY Background Color should say 'Custom color'
+      expect(find.text('Custom color'), findsOneWidget);
+      // 6 other colors (Accent, Scripture Text, Words of Jesus, Verse Numbers, Cards, Outlines) should say 'Auto-derived'
+      expect(find.text('Auto-derived'), findsNWidgets(6));
 
-    // Switch to Dark Mode
-    await tester.tap(find.text('Dark Mode'));
-    await tester.pumpAndSettle();
+      // Switch to Dark Mode
+      await tester.tap(find.text('Dark Mode'));
+      await tester.pumpAndSettle();
 
-    // In Dark Mode:
-    // ALL 7 colors (including Background Color and Accent Color) should say 'Auto-derived'
-    expect(find.text('Custom color'), findsNothing);
-    expect(find.text('Auto-derived'), findsNWidgets(7));
+      // In Dark Mode:
+      // ALL 7 colors (including Background Color and Accent Color) should say 'Auto-derived'
+      expect(find.text('Custom color'), findsNothing);
+      expect(find.text('Auto-derived'), findsNWidgets(7));
 
-    // Now customize Accent Color in Dark Mode
-    await tester.tap(find.text('Accent Color'));
-    await tester.pumpAndSettle();
-    expect(find.text('Select'), findsOneWidget);
-    await tester.tap(find.text('Select'));
-    await tester.pumpAndSettle();
+      // Now customize Accent Color in Dark Mode
+      await tester.tap(find.text('Accent Color'));
+      await tester.pumpAndSettle();
+      expect(find.text('Select'), findsOneWidget);
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
 
-    // Accent Color should now say 'Custom color'
-    expect(find.text('Custom color'), findsOneWidget);
-    expect(find.text('Auto-derived'), findsNWidgets(6));
+      // Accent Color should now say 'Custom color'
+      expect(find.text('Custom color'), findsOneWidget);
+      expect(find.text('Auto-derived'), findsNWidgets(6));
 
-    // Reset Accent Color via the reset icon button
-    final resetAccentFinder = find.byTooltip('Reset to auto-derived');
-    expect(resetAccentFinder, findsOneWidget);
-    await tester.tap(resetAccentFinder);
-    await tester.pumpAndSettle();
+      // Reset Accent Color via the reset icon button
+      final resetAccentFinder = find.byTooltip('Reset to auto-derived');
+      expect(resetAccentFinder, findsOneWidget);
+      await tester.tap(resetAccentFinder);
+      await tester.pumpAndSettle();
 
-    // Accent Color reverts to 'Auto-derived'
-    expect(find.text('Custom color'), findsNothing);
-    expect(find.text('Auto-derived'), findsNWidgets(7));
-  });
+      // Accent Color reverts to 'Auto-derived'
+      expect(find.text('Custom color'), findsNothing);
+      expect(find.text('Auto-derived'), findsNWidgets(7));
+    },
+  );
 
-  testWidgets('choosing a dark background marks only dark background as custom and all other colors as auto-derived', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'choosing a dark background marks only dark background as custom and all other colors as auto-derived',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    const darkNavy = Color(0xFF0B131E);
-    await userSettings.addCustomColorToHistory(darkNavy);
+      final userSettings = getIt<UserSettings>();
+      const darkNavy = Color(0xFF0B131E);
+      await userSettings.addCustomColorToHistory(darkNavy);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Background Color' to open picker
-    await tester.tap(find.text('Background Color'));
-    await tester.pumpAndSettle();
+      // Tap 'Background Color' to open picker
+      await tester.tap(find.text('Background Color'));
+      await tester.pumpAndSettle();
 
-    // Select darkNavy swatch and tap Select
-    final swatchFinder = find.byKey(ValueKey(darkNavy.toARGB32()));
-    await tester.tap(swatchFinder);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Select'));
-    await tester.pumpAndSettle();
+      // Select darkNavy swatch and tap Select
+      final swatchFinder = find.byKey(ValueKey(darkNavy.toARGB32()));
+      await tester.tap(swatchFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
 
-    // Open Customize All Colors
-    await tester.tap(find.text('Customize All Colors'));
-    await tester.pumpAndSettle();
+      // Open Customize All Colors
+      await tester.tap(find.text('Customize All Colors'));
+      await tester.pumpAndSettle();
 
-    // Because darkNavy is dark, the editor switched to Dark Mode:
-    // ONLY Background Color should say 'Custom color'
-    expect(find.text('Custom color'), findsOneWidget);
-    expect(find.text('Auto-derived'), findsNWidgets(6));
+      // Because darkNavy is dark, the editor switched to Dark Mode:
+      // ONLY Background Color should say 'Custom color'
+      expect(find.text('Custom color'), findsOneWidget);
+      expect(find.text('Auto-derived'), findsNWidgets(6));
 
-    // Switch to Light Mode
-    await tester.tap(find.text('Light Mode'));
-    await tester.pumpAndSettle();
+      // Switch to Light Mode
+      await tester.tap(find.text('Light Mode'));
+      await tester.pumpAndSettle();
 
-    // In Light Mode:
-    // ALL 7 colors (including Background Color) should say 'Auto-derived'
-    expect(find.text('Custom color'), findsNothing);
-    expect(find.text('Auto-derived'), findsNWidgets(7));
-  });
+      // In Light Mode:
+      // ALL 7 colors (including Background Color) should say 'Auto-derived'
+      expect(find.text('Custom color'), findsNothing);
+      expect(find.text('Auto-derived'), findsNWidgets(7));
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage defaults background to current theme background color when not chosen', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage defaults background to current theme background color when not chosen',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    await userSettings.clearCustomColorHistory();
-    expect(userSettings.lastSelectedCustomColor, isNull);
+      final userSettings = getIt<UserSettings>();
+      await userSettings.clearCustomColorHistory();
+      expect(userSettings.lastSelectedCustomColor, isNull);
 
-    const currentPaperBg = Color(0xFFFFFFFF);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false,
-          currentThemeBackgroundColor: currentPaperBg,
+      const currentPaperBg = Color(0xFFFFFFFF);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false,
+            currentThemeBackgroundColor: currentPaperBg,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Verify circular color indicator in the Background Color card displays current theme background color #FFFFFF
-    final bgTileFinder = find.ancestor(
-      of: find.text('Background Color'),
-      matching: find.byType(ListTile),
-    ).first;
-    final bgTile = tester.widget<ListTile>(bgTileFinder);
-    final indicator = bgTile.leading as Container;
-    final decoration = indicator.decoration as BoxDecoration;
-    expect(decoration.color, equals(currentPaperBg));
+      // Verify circular color indicator in the Background Color card displays current theme background color #FFFFFF
+      final bgTileFinder = find
+          .ancestor(
+            of: find.text('Background Color'),
+            matching: find.byType(ListTile),
+          )
+          .first;
+      final bgTile = tester.widget<ListTile>(bgTileFinder);
+      final indicator = bgTile.leading as Container;
+      final decoration = indicator.decoration as BoxDecoration;
+      expect(decoration.color, equals(currentPaperBg));
 
-    // Tap 'Background Color' to open picker
-    await tester.tap(find.text('Background Color'));
-    await tester.pumpAndSettle();
+      // Tap 'Background Color' to open picker
+      await tester.tap(find.text('Background Color'));
+      await tester.pumpAndSettle();
 
-    // Verify hex field in the picker defaults to the current theme background color #FFFFFF
-    final hexField = tester.widget<TextField>(find.byType(TextField));
-    expect(hexField.controller?.text, equals('#FFFFFF'));
-  });
+      // Verify hex field in the picker defaults to the current theme background color #FFFFFF
+      final hexField = tester.widget<TextField>(find.byType(TextField));
+      expect(hexField.controller?.text, equals('#FFFFFF'));
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage defaults background to last selected color if previously chosen', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage defaults background to last selected color if previously chosen',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final userSettings = getIt<UserSettings>();
-    const lastChosenColor = Color(0xFFE5D5C5);
-    await userSettings.addCustomColorToHistory(lastChosenColor);
-    expect(userSettings.lastSelectedCustomColor, equals(lastChosenColor));
+      final userSettings = getIt<UserSettings>();
+      const lastChosenColor = Color(0xFFE5D5C5);
+      await userSettings.addCustomColorToHistory(lastChosenColor);
+      expect(userSettings.lastSelectedCustomColor, equals(lastChosenColor));
 
-    // Even if current theme background is dark or white, the last chosen color should take priority!
-    const currentPaperBg = Color(0xFFFFFFFF);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          // Even if opening from dark mode, user's light chosen color should be respected!
-          initialIsDark: true,
-          currentThemeBackgroundColor: currentPaperBg,
+      // Even if current theme background is dark or white, the last chosen color should take priority!
+      const currentPaperBg = Color(0xFFFFFFFF);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            // Even if opening from dark mode, user's light chosen color should be respected!
+            initialIsDark: true,
+            currentThemeBackgroundColor: currentPaperBg,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Verify circular color indicator in the Background Color card displays the user's chosen light color
-    final bgTileFinder = find.ancestor(
-      of: find.text('Background Color'),
-      matching: find.byType(ListTile),
-    ).first;
-    final bgTile = tester.widget<ListTile>(bgTileFinder);
-    final indicator = bgTile.leading as Container;
-    final decoration = indicator.decoration as BoxDecoration;
-    expect(decoration.color, equals(lastChosenColor));
+      // Verify circular color indicator in the Background Color card displays the user's chosen light color
+      final bgTileFinder = find
+          .ancestor(
+            of: find.text('Background Color'),
+            matching: find.byType(ListTile),
+          )
+          .first;
+      final bgTile = tester.widget<ListTile>(bgTileFinder);
+      final indicator = bgTile.leading as Container;
+      final decoration = indicator.decoration as BoxDecoration;
+      expect(decoration.color, equals(lastChosenColor));
 
-    // Tap 'Background Color' to open picker
-    await tester.tap(find.text('Background Color'));
-    await tester.pumpAndSettle();
+      // Tap 'Background Color' to open picker
+      await tester.tap(find.text('Background Color'));
+      await tester.pumpAndSettle();
 
-    // Verify hex field in the picker defaults to the last selected color #E5D5C5
-    final hexField = tester.widget<TextField>(find.byType(TextField));
-    expect(hexField.controller?.text, equals('#E5D5C5'));
-  });
+      // Verify hex field in the picker defaults to the last selected color #E5D5C5
+      final hexField = tester.widget<TextField>(find.byType(TextField));
+      expect(hexField.controller?.text, equals('#E5D5C5'));
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage prompts to switch to Light Mode when applying light theme while app is in dark mode', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage prompts to switch to Light Mode when applying light theme while app is in dark mode',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.dark);
-    expect(appState.themeMode, equals(ThemeMode.dark));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.dark);
+      expect(appState.themeMode, equals(ThemeMode.dark));
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.dark,
-        darkTheme: ThemeData.dark(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false, // Light mode active
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.dark,
+          darkTheme: ThemeData.dark(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false, // Light mode active
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    // Verify dialog appears asking to switch to Light Mode
-    expect(find.text('Switch to Light Mode?'), findsOneWidget);
-    expect(find.text('Keep Dark Mode'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Switch to Light Mode'), findsOneWidget);
+      // Verify dialog appears asking to switch to Light Mode
+      expect(find.text('Switch to Light Mode?'), findsOneWidget);
+      expect(find.text('Keep Dark Mode'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Switch to Light Mode'),
+        findsOneWidget,
+      );
 
-    // Tap 'Switch to Light Mode' in dialog
-    await tester.tap(find.widgetWithText(FilledButton, 'Switch to Light Mode'));
-    await tester.pumpAndSettle();
+      // Tap 'Switch to Light Mode' in dialog
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Switch to Light Mode'),
+      );
+      await tester.pumpAndSettle();
 
-    // Verify AppState was updated to Light Mode and custom theme
-    expect(appState.themeMode, equals(ThemeMode.light));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      // Verify AppState was updated to Light Mode and custom theme
+      expect(appState.themeMode, equals(ThemeMode.light));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage respects Keep Dark Mode when user declines mode switch', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage respects Keep Dark Mode when user declines mode switch',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.dark);
-    expect(appState.themeMode, equals(ThemeMode.dark));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.dark);
+      expect(appState.themeMode, equals(ThemeMode.dark));
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.dark,
-        darkTheme: ThemeData.dark(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false, // Light mode active
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.dark,
+          darkTheme: ThemeData.dark(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false, // Light mode active
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Switch to Light Mode?'), findsOneWidget);
+      expect(find.text('Switch to Light Mode?'), findsOneWidget);
 
-    // Tap 'Keep Dark Mode'
-    await tester.tap(find.widgetWithText(TextButton, 'Keep Dark Mode'));
-    await tester.pumpAndSettle();
+      // Tap 'Keep Dark Mode'
+      await tester.tap(find.widgetWithText(TextButton, 'Keep Dark Mode'));
+      await tester.pumpAndSettle();
 
-    // Verify AppState remained in Dark Mode and custom theme applied
-    expect(appState.themeMode, equals(ThemeMode.dark));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      // Verify AppState remained in Dark Mode and custom theme applied
+      expect(appState.themeMode, equals(ThemeMode.dark));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage prompts to switch to Dark Mode when applying dark theme while app is in light mode', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage prompts to switch to Dark Mode when applying dark theme while app is in light mode',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.light);
-    expect(appState.themeMode, equals(ThemeMode.light));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.light);
+      expect(appState.themeMode, equals(ThemeMode.light));
 
-    // Prepare dark background custom color
-    final userSettings = getIt<UserSettings>();
-    const darkBgColor = Color(0xFF101820);
-    await userSettings.addCustomColorToHistory(darkBgColor);
+      // Prepare dark background custom color
+      final userSettings = getIt<UserSettings>();
+      const darkBgColor = Color(0xFF101820);
+      await userSettings.addCustomColorToHistory(darkBgColor);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.light,
-        theme: ThemeData.light(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: true, // Dark mode active
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.light,
+          theme: ThemeData.light(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: true, // Dark mode active
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    // Verify dialog appears asking to switch to Dark Mode
-    expect(find.text('Switch to Dark Mode?'), findsOneWidget);
-    expect(find.text('Keep Light Mode'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Switch to Dark Mode'), findsOneWidget);
+      // Verify dialog appears asking to switch to Dark Mode
+      expect(find.text('Switch to Dark Mode?'), findsOneWidget);
+      expect(find.text('Keep Light Mode'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Switch to Dark Mode'),
+        findsOneWidget,
+      );
 
-    // Tap 'Switch to Dark Mode'
-    await tester.tap(find.widgetWithText(FilledButton, 'Switch to Dark Mode'));
-    await tester.pumpAndSettle();
+      // Tap 'Switch to Dark Mode'
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Switch to Dark Mode'),
+      );
+      await tester.pumpAndSettle();
 
-    expect(appState.themeMode, equals(ThemeMode.dark));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      expect(appState.themeMode, equals(ThemeMode.dark));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage applies directly without dialog when mode matches', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage applies directly without dialog when mode matches',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.light);
-    expect(appState.themeMode, equals(ThemeMode.light));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.light);
+      expect(appState.themeMode, equals(ThemeMode.light));
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.light,
-        theme: ThemeData.light(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false, // Light mode matches appState light mode
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.light,
+          theme: ThemeData.light(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false, // Light mode matches appState light mode
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    // No dialog shown
-    expect(find.text('Switch to Dark Mode?'), findsNothing);
-    expect(find.text('Switch to Light Mode?'), findsNothing);
-    expect(appState.themeMode, equals(ThemeMode.light));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      // No dialog shown
+      expect(find.text('Switch to Dark Mode?'), findsNothing);
+      expect(find.text('Switch to Light Mode?'), findsNothing);
+      expect(appState.themeMode, equals(ThemeMode.light));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage prompts with device settings when in ThemeMode.system and device is dark', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  testWidgets(
+    'CustomThemeEditorPage prompts with device settings when in ThemeMode.system and device is dark',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.system);
-    expect(appState.themeMode, equals(ThemeMode.system));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.system);
+      expect(appState.themeMode, equals(ThemeMode.system));
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.system,
-        darkTheme: ThemeData.dark(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false, // Light mode custom theme
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.system,
+          darkTheme: ThemeData.dark(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false, // Light mode custom theme
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    // Verify dialog with device settings phrasing appears
-    expect(find.text('Switch to Light Mode?'), findsOneWidget);
-    expect(find.text('Keep Device Settings'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Switch to Light Mode'), findsOneWidget);
-    expect(find.textContaining('matching your device settings (Dark Mode)'), findsOneWidget);
+      // Verify dialog with device settings phrasing appears
+      expect(find.text('Switch to Light Mode?'), findsOneWidget);
+      expect(find.text('Keep Device Settings'), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Switch to Light Mode'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('matching your device settings (Dark Mode)'),
+        findsOneWidget,
+      );
 
-    // Tap 'Keep Device Settings'
-    await tester.tap(find.widgetWithText(TextButton, 'Keep Device Settings'));
-    await tester.pumpAndSettle();
+      // Tap 'Keep Device Settings'
+      await tester.tap(find.widgetWithText(TextButton, 'Keep Device Settings'));
+      await tester.pumpAndSettle();
 
-    // Verify ThemeMode.system is preserved
-    expect(appState.themeMode, equals(ThemeMode.system));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      // Verify ThemeMode.system is preserved
+      expect(appState.themeMode, equals(ThemeMode.system));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage allows switching from ThemeMode.system to explicit mode', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  testWidgets(
+    'CustomThemeEditorPage allows switching from ThemeMode.system to explicit mode',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.system);
-    expect(appState.themeMode, equals(ThemeMode.system));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.system);
+      expect(appState.themeMode, equals(ThemeMode.system));
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.system,
-        darkTheme: ThemeData.dark(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false, // Light mode custom theme
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.system,
+          darkTheme: ThemeData.dark(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false, // Light mode custom theme
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    // Tap 'Switch to Light Mode'
-    await tester.tap(find.widgetWithText(FilledButton, 'Switch to Light Mode'));
-    await tester.pumpAndSettle();
+      // Tap 'Switch to Light Mode'
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Switch to Light Mode'),
+      );
+      await tester.pumpAndSettle();
 
-    // Verify ThemeMode is now explicit Light
-    expect(appState.themeMode, equals(ThemeMode.light));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      // Verify ThemeMode is now explicit Light
+      expect(appState.themeMode, equals(ThemeMode.light));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage preserves ThemeMode.system without dialog when matching system brightness', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+  testWidgets(
+    'CustomThemeEditorPage preserves ThemeMode.system without dialog when matching system brightness',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
-    final appState = getIt<AppState>();
-    await appState.setThemeMode(ThemeMode.system);
-    expect(appState.themeMode, equals(ThemeMode.system));
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.system);
+      expect(appState.themeMode, equals(ThemeMode.system));
 
-    await tester.pumpWidget(
-      MaterialApp(
-        themeMode: ThemeMode.system,
-        theme: ThemeData.light(),
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false, // Light custom theme matches light system brightness
+      await tester.pumpWidget(
+        MaterialApp(
+          themeMode: ThemeMode.system,
+          theme: ThemeData.light(),
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark:
+                false, // Light custom theme matches light system brightness
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap 'Apply' in AppBar
-    await tester.tap(find.widgetWithText(TextButton, 'Apply'));
-    await tester.pumpAndSettle();
+      // Tap 'Apply' in AppBar
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
+      await tester.pumpAndSettle();
 
-    // No dialog shown, ThemeMode.system preserved
-    expect(find.text('Switch to Dark Mode?'), findsNothing);
-    expect(find.text('Switch to Light Mode?'), findsNothing);
-    expect(appState.themeMode, equals(ThemeMode.system));
-    expect(appState.isCustomTheme, isTrue);
-  });
+      // No dialog shown, ThemeMode.system preserved
+      expect(find.text('Switch to Dark Mode?'), findsNothing);
+      expect(find.text('Switch to Light Mode?'), findsNothing);
+      expect(appState.themeMode, equals(ThemeMode.system));
+      expect(appState.isCustomTheme, isTrue);
+    },
+  );
 
-  testWidgets('CustomThemeEditorPage allows customizing and resetting Words of Jesus color', (tester) async {
-    tester.view.physicalSize = const Size(800, 1800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'CustomThemeEditorPage allows customizing and resetting Words of Jesus color',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CustomThemeEditorPage(
-          initialLightConfig: CustomThemeConfig.defaultLight(),
-          initialDarkConfig: CustomThemeConfig.defaultDark(),
-          initialIsDark: false,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialLightConfig: CustomThemeConfig.defaultLight(),
+            initialDarkConfig: CustomThemeConfig.defaultDark(),
+            initialIsDark: false,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Expand Customize All Colors
-    await tester.tap(find.text('Customize All Colors'));
-    await tester.pumpAndSettle();
+      // Expand Customize All Colors
+      await tester.tap(find.text('Customize All Colors'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Words of Jesus Color'), findsOneWidget);
+      expect(find.text('Words of Jesus Color'), findsOneWidget);
 
-    // Tap Words of Jesus Color tile
-    await tester.tap(find.text('Words of Jesus Color'));
-    await tester.pumpAndSettle();
+      // Tap Words of Jesus Color tile
+      await tester.tap(find.text('Words of Jesus Color'));
+      await tester.pumpAndSettle();
 
-    // AppColorPicker opens
-    expect(find.text('Words of Jesus Color'), findsWidgets);
-    expect(find.text('Select'), findsOneWidget);
+      // AppColorPicker opens
+      expect(find.text('Words of Jesus Color'), findsWidgets);
+      expect(find.text('Select'), findsOneWidget);
 
-    await tester.tap(find.text('Select'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Select'));
+      await tester.pumpAndSettle();
 
-    // Now Words of Jesus Color tile shows Custom color badge (Background + Words of Jesus)
-    expect(find.text('Custom color'), findsNWidgets(2));
+      // Now Words of Jesus Color tile shows Custom color badge (Background + Words of Jesus)
+      expect(find.text('Custom color'), findsNWidgets(2));
 
-    // Tap reset button for Words of Jesus Color
-    final wordsTile = find.ancestor(
-      of: find.text('Words of Jesus Color'),
-      matching: find.byType(ListTile),
-    );
-    final resetFinder = find.descendant(
-      of: wordsTile,
-      matching: find.byTooltip('Reset to auto-derived'),
-    );
-    expect(resetFinder, findsOneWidget);
-    await tester.tap(resetFinder);
-    await tester.pumpAndSettle();
+      // Tap reset button for Words of Jesus Color
+      final wordsTile = find.ancestor(
+        of: find.text('Words of Jesus Color'),
+        matching: find.byType(ListTile),
+      );
+      final resetFinder = find.descendant(
+        of: wordsTile,
+        matching: find.byTooltip('Reset to auto-derived'),
+      );
+      expect(resetFinder, findsOneWidget);
+      await tester.tap(resetFinder);
+      await tester.pumpAndSettle();
 
-    // Reverts to 1 Custom color (Background only)
-    expect(find.text('Custom color'), findsOneWidget);
-  });
+      // Reverts to 1 Custom color (Background only)
+      expect(find.text('Custom color'), findsOneWidget);
+    },
+  );
 }
-

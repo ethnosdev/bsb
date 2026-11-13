@@ -23,7 +23,10 @@ void main() {
       final androidUri = MemorizeScriptureLauncher.getStoreUri(
         platform: TargetPlatform.android,
       );
-      expect(androidUri.toString(), 'market://details?id=dev.ethnos.memorize_scripture');
+      expect(
+        androidUri.toString(),
+        'market://details?id=dev.ethnos.memorize_scripture',
+      );
 
       final iosUri = MemorizeScriptureLauncher.getStoreUri(
         platform: TargetPlatform.iOS,
@@ -69,57 +72,66 @@ void main() {
       expect(launchedMode, LaunchMode.externalApplication);
     });
 
-    test('launchMemorize falls back to store when app is not installed', () async {
-      Uri? launchedUri;
-      LaunchMode? launchedMode;
+    test(
+      'launchMemorize falls back to store when app is not installed',
+      () async {
+        Uri? launchedUri;
+        LaunchMode? launchedMode;
 
-      final result = await MemorizeScriptureLauncher.launchMemorize(
-        prompt: 'Romans 8:28',
-        text: 'And we know that in all things God works for the good...',
-        platform: TargetPlatform.android,
-        canLaunch: (uri) async {
-          // App not installed, but store market:// works
-          return uri.scheme == 'market';
-        },
-        launch: (uri, {mode = LaunchMode.platformDefault}) async {
-          launchedUri = uri;
-          launchedMode = mode;
-          return true;
-        },
-      );
+        final result = await MemorizeScriptureLauncher.launchMemorize(
+          prompt: 'Romans 8:28',
+          text: 'And we know that in all things God works for the good...',
+          platform: TargetPlatform.android,
+          canLaunch: (uri) async {
+            // App not installed, but store market:// works
+            return uri.scheme == 'market';
+          },
+          launch: (uri, {mode = LaunchMode.platformDefault}) async {
+            launchedUri = uri;
+            launchedMode = mode;
+            return true;
+          },
+        );
 
-      expect(result, isTrue);
-      expect(launchedUri, isNotNull);
-      expect(launchedUri.toString(), 'market://details?id=dev.ethnos.memorize_scripture');
-      expect(launchedMode, LaunchMode.externalApplication);
-    });
+        expect(result, isTrue);
+        expect(launchedUri, isNotNull);
+        expect(
+          launchedUri.toString(),
+          'market://details?id=dev.ethnos.memorize_scripture',
+        );
+        expect(launchedMode, LaunchMode.externalApplication);
+      },
+    );
 
-    test('launchMemorize falls back to web store when market uri is unsupported', () async {
-      Uri? launchedUri;
-      LaunchMode? launchedMode;
+    test(
+      'launchMemorize falls back to web store when market uri is unsupported',
+      () async {
+        Uri? launchedUri;
+        LaunchMode? launchedMode;
 
-      final result = await MemorizeScriptureLauncher.launchMemorize(
-        prompt: 'Romans 8:28',
-        text: 'And we know that in all things God works for the good...',
-        platform: TargetPlatform.android,
-        canLaunch: (uri) async {
-          // Only https web links work
-          return uri.scheme == 'https';
-        },
-        launch: (uri, {mode = LaunchMode.platformDefault}) async {
-          launchedUri = uri;
-          launchedMode = mode;
-          return true;
-        },
-      );
+        final result = await MemorizeScriptureLauncher.launchMemorize(
+          prompt: 'Romans 8:28',
+          text: 'And we know that in all things God works for the good...',
+          platform: TargetPlatform.android,
+          canLaunch: (uri) async {
+            // Only https web links work
+            return uri.scheme == 'https';
+          },
+          launch: (uri, {mode = LaunchMode.platformDefault}) async {
+            launchedUri = uri;
+            launchedMode = mode;
+            return true;
+          },
+        );
 
-      expect(result, isTrue);
-      expect(launchedUri, isNotNull);
-      expect(
-        launchedUri.toString(),
-        'https://play.google.com/store/apps/details?id=dev.ethnos.memorize_scripture',
-      );
-      expect(launchedMode, LaunchMode.externalApplication);
-    });
+        expect(result, isTrue);
+        expect(launchedUri, isNotNull);
+        expect(
+          launchedUri.toString(),
+          'https://play.google.com/store/apps/details?id=dev.ethnos.memorize_scripture',
+        );
+        expect(launchedMode, LaunchMode.externalApplication);
+      },
+    );
   });
 }

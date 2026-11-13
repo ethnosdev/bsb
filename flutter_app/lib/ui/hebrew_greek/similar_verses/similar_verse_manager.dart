@@ -7,32 +7,29 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 
-enum WordSearchMode {
-  exactForm,
-  strongs,
-}
+enum WordSearchMode { exactForm, strongs }
 
 class VerseDisplayContent {
   final TextSpan english;
   final TextSpan original;
 
-  const VerseDisplayContent({
-    required this.english,
-    required this.original,
-  });
+  const VerseDisplayContent({required this.english, required this.original});
 }
 
 class SimilarVerseManager {
   SimilarVerseManager({DatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? getIt<DatabaseHelper>();
+    : _dbHelper = dbHelper ?? getIt<DatabaseHelper>();
 
   final DatabaseHelper _dbHelper;
   final similarVersesNotifier = ValueNotifier<List<Reference>>([]);
-  final searchModeNotifier =
-      ValueNotifier<WordSearchMode>(WordSearchMode.strongs);
+  final searchModeNotifier = ValueNotifier<WordSearchMode>(
+    WordSearchMode.strongs,
+  );
   final isLoadingNotifier = ValueNotifier<bool>(true);
-  final countsNotifier =
-      ValueNotifier<({int exact, int strongs})>((exact: 0, strongs: 0));
+  final countsNotifier = ValueNotifier<({int exact, int strongs})>((
+    exact: 0,
+    strongs: 0,
+  ));
   final Map<(int, WordSearchMode, int), VerseDisplayContent> _contentCache = {};
 
   late OriginalWord word;
@@ -126,30 +123,33 @@ class SimilarVerseManager {
     return content;
   }
 
-  TextSpan _formatEnglish(
-    List<VerseElement> data,
-    Color highlightColor,
-  ) {
+  TextSpan _formatEnglish(List<VerseElement> data, Color highlightColor) {
     final spans = <TextSpan>[];
     final isExact = searchModeNotifier.value == WordSearchMode.exactForm;
     final allOriginalWords = data.whereType<OriginalWord>().toList();
-    final englishWords = allOriginalWords
-        .where((w) => w.hasEnglishChip)
-        .toList()
-      ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
+    final englishWords =
+        allOriginalWords.where((w) => w.hasEnglishChip).toList()
+          ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
 
     for (int i = 0; i < englishWords.length; i++) {
       final element = englishWords[i];
       final bool isMatch = isExact
           ? (element.originalId == word.originalId ||
-              element.clusterWordIds.any((cid) => allOriginalWords
-                  .any((w) => w.id == cid && w.originalId == word.originalId)))
+                element.clusterWordIds.any(
+                  (cid) => allOriginalWords.any(
+                    (w) => w.id == cid && w.originalId == word.originalId,
+                  ),
+                ))
           : ((element.strongsNumber == word.strongsNumber &&
-                  word.strongsNumber > 0) ||
-              element.clusterWordIds.any((cid) => allOriginalWords.any((w) =>
-                  w.id == cid &&
-                  w.strongsNumber == word.strongsNumber &&
-                  word.strongsNumber > 0)));
+                    word.strongsNumber > 0) ||
+                element.clusterWordIds.any(
+                  (cid) => allOriginalWords.any(
+                    (w) =>
+                        w.id == cid &&
+                        w.strongsNumber == word.strongsNumber &&
+                        word.strongsNumber > 0,
+                  ),
+                ));
 
       final color = isMatch ? highlightColor : null;
       final bold = isMatch ? FontWeight.bold : null;
@@ -161,20 +161,14 @@ class SimilarVerseManager {
       spans.add(
         TextSpan(
           text: '${element.englishGloss}$punct$trailingSpace',
-          style: TextStyle(
-            color: color,
-            fontWeight: bold,
-          ),
+          style: TextStyle(color: color, fontWeight: bold),
         ),
       );
     }
     return TextSpan(children: spans);
   }
 
-  TextSpan _formatOriginal(
-    List<VerseElement> data,
-    Color highlightColor,
-  ) {
+  TextSpan _formatOriginal(List<VerseElement> data, Color highlightColor) {
     final spans = <TextSpan>[];
     final isExact = searchModeNotifier.value == WordSearchMode.exactForm;
 
@@ -185,7 +179,7 @@ class SimilarVerseManager {
         final bool isMatch = isExact
             ? (element.originalId == word.originalId)
             : (element.strongsNumber == word.strongsNumber &&
-                word.strongsNumber > 0);
+                  word.strongsNumber > 0);
 
         final color = isMatch ? highlightColor : null;
         final bold = isMatch ? FontWeight.bold : null;
@@ -202,11 +196,7 @@ class SimilarVerseManager {
           ),
         );
       } else if (element is Punctuation) {
-        spans.add(
-          TextSpan(
-            text: element.punctuation,
-          ),
-        );
+        spans.add(TextSpan(text: element.punctuation));
       }
     }
     return TextSpan(children: spans);

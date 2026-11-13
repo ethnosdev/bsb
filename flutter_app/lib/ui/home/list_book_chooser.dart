@@ -3,7 +3,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ListBookChooser extends StatefulWidget {
   const ListBookChooser({
@@ -15,7 +15,8 @@ class ListBookChooser extends StatefulWidget {
     this.verseStyle,
   });
 
-  final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final void Function(int bookId, int chapter, [String? sectionHeading])
+  onSelected;
   final void Function(int bookId)? onBookSelected;
   final void Function(int bookId, int chapter, int verse)? onVerseSelected;
   final bool? showVerseGrid;
@@ -28,10 +29,14 @@ class ListBookChooser extends StatefulWidget {
 class _ListBookChooserState extends State<ListBookChooser> {
   final _chapterNotifier = ValueNotifier<(int, int)?>(null);
 
-  static final List<int> _oldTestamentBooks =
-      List.generate(39, (index) => index + 1); // 1..39
-  static final List<int> _newTestamentBooks =
-      List.generate(27, (index) => index + 40); // 40..66
+  static final List<int> _oldTestamentBooks = List.generate(
+    39,
+    (index) => index + 1,
+  ); // 1..39
+  static final List<int> _newTestamentBooks = List.generate(
+    27,
+    (index) => index + 40,
+  ); // 40..66
 
   @override
   void dispose() {
@@ -45,11 +50,15 @@ class _ListBookChooserState extends State<ListBookChooser> {
       return;
     }
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
-    final showVerseGrid = widget.showVerseGrid ??
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
+    final showVerseGrid =
+        widget.showVerseGrid ??
         (widget.verseStyle != null ||
-            (appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false));
+            (appState?.showVerseGridNotifier.value ??
+                userSettings?.showVerseGrid ??
+                false));
 
     if (chapterCount == 1 && !showVerseGrid) {
       widget.onSelected(bookId, 1);
@@ -115,10 +124,7 @@ class _ListBookChooserState extends State<ListBookChooser> {
     );
   }
 
-  Widget _buildList({
-    required String storageKey,
-    required List<int> bookIds,
-  }) {
+  Widget _buildList({required String storageKey, required List<int> bookIds}) {
     return ListView.separated(
       key: PageStorageKey('list_book_chooser_$storageKey'),
       itemCount: bookIds.length,

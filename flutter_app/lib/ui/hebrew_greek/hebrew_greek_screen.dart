@@ -9,11 +9,12 @@ import 'package:bsb/ui/hebrew_greek/reference_modal_sheet.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verse_manager.dart';
 import 'package:bsb/ui/hebrew_greek/similar_verses/similar_verses_page.dart';
 import 'package:bsb/ui/hebrew_greek/verse_page_manager.dart';
+import 'package:bsb/ui/shared/markdown_style.dart';
 import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HebrewGreekScreen extends StatefulWidget {
@@ -45,12 +46,10 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
     final safeVerse = widget.verse <= 0 ? 1 : widget.verse;
     manager.init(widget.bookId, widget.chapter, safeVerse);
     _pageIndex = safeVerse - 1;
-    _pageController = PageController(
-      initialPage: _pageIndex,
-    );
+    _pageController = PageController(initialPage: _pageIndex);
     _pageController.addListener(() {
-      final currentIndex =
-          (_pageController.page ?? _pageIndex.toDouble()).round();
+      final currentIndex = (_pageController.page ?? _pageIndex.toDouble())
+          .round();
       if (_pageIndex != currentIndex) {
         _pageIndex = currentIndex;
         manager.updateTitle(
@@ -101,8 +100,9 @@ class _HebrewGreekScreenState extends State<HebrewGreekScreen> {
               },
             );
 
-            final appState =
-                getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+            final appState = getIt.isRegistered<AppState>()
+                ? getIt<AppState>()
+                : null;
             if (appState == null) return pageView;
 
             return ValueListenableBuilder<double>(
@@ -174,7 +174,8 @@ class _VersePageViewState extends State<_VersePageView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final textSizeNotifier = appState?.textSizeNotifier ??
+    final textSizeNotifier =
+        appState?.textSizeNotifier ??
         ValueNotifier<double>(FontScale.defaultBaseSize);
 
     return ValueListenableBuilder<double>(
@@ -241,7 +242,9 @@ class _VersePageViewState extends State<_VersePageView> {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(120)),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withAlpha(120),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -277,8 +280,8 @@ class _VersePageViewState extends State<_VersePageView> {
                 word.isVvv && word.partOfTranslation != null
                     ? 'Translated as part of "${word.partOfTranslation}"'
                     : (word.isUntranslated
-                        ? '(not translated in English text)'
-                        : word.englishGloss),
+                          ? '(not translated in English text)'
+                          : word.englishGloss),
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w500,
                   fontStyle: (word.isUntranslated || word.isVvv)
@@ -372,7 +375,7 @@ class _VersePageViewState extends State<_VersePageView> {
               MarkdownBody(
                 data: verseManager.lexiconContent!,
                 selectable: true,
-                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                styleSheet: markdownStyleSheetFromTheme(theme).copyWith(
                   a: TextStyle(
                     color: theme.colorScheme.primary,
                     decoration: TextDecoration.underline,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,7 +34,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -75,12 +78,16 @@ void main() {
   });
 
   group('SafeArea Bottom Navigation Tests', () {
-    testWidgets('NoteEditorSheet respects bottom safe area insets', (tester) async {
+    testWidgets('NoteEditorSheet respects bottom safe area insets', (
+      tester,
+    ) async {
       const bottomInset = 48.0;
       const screenHeight = 800.0;
       const screenWidth = 400.0;
 
-      await tester.binding.setSurfaceSize(const Size(screenWidth, screenHeight));
+      await tester.binding.setSurfaceSize(
+        const Size(screenWidth, screenHeight),
+      );
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
@@ -92,10 +99,7 @@ void main() {
           ),
           child: MaterialApp(
             home: Scaffold(
-              body: NoteEditorSheet(
-                title: 'Genesis 1:1',
-                onSave: (_) {},
-              ),
+              body: NoteEditorSheet(title: 'Genesis 1:1', onSave: (_) {}),
             ),
           ),
         ),
@@ -118,12 +122,16 @@ void main() {
       expect(saveButtonBottom, lessThanOrEqualTo(screenHeight - bottomInset));
     });
 
-    testWidgets('NoteViewerSheet respects bottom safe area insets', (tester) async {
+    testWidgets('NoteViewerSheet respects bottom safe area insets', (
+      tester,
+    ) async {
       const bottomInset = 48.0;
       const screenHeight = 800.0;
       const screenWidth = 400.0;
 
-      await tester.binding.setSurfaceSize(const Size(screenWidth, screenHeight));
+      await tester.binding.setSurfaceSize(
+        const Size(screenWidth, screenHeight),
+      );
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
@@ -156,65 +164,61 @@ void main() {
       expect(safeArea.bottom, isTrue);
     });
 
-    testWidgets('TextScreen BottomNavigationBar is wrapped in SafeArea(top: false)', (tester) async {
-      const bottomInset = 48.0;
-      const screenHeight = 800.0;
-      const screenWidth = 400.0;
+    testWidgets(
+      'TextScreen BottomNavigationBar is wrapped in SafeArea(top: false)',
+      (tester) async {
+        const bottomInset = 48.0;
+        const screenHeight = 800.0;
+        const screenWidth = 400.0;
 
-      await tester.binding.setSurfaceSize(const Size(screenWidth, screenHeight));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.binding.setSurfaceSize(
+          const Size(screenWidth, screenHeight),
+        );
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            size: Size(screenWidth, screenHeight),
-            viewPadding: EdgeInsets.only(bottom: bottomInset),
-            padding: EdgeInsets.only(bottom: bottomInset),
-          ),
-          child: const MaterialApp(
-            home: Scaffold(
-              body: TextScreen(
-                bookId: 19,
-                chapter: 23,
-              ),
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              size: Size(screenWidth, screenHeight),
+              viewPadding: EdgeInsets.only(bottom: bottomInset),
+              padding: EdgeInsets.only(bottom: bottomInset),
+            ),
+            child: const MaterialApp(
+              home: Scaffold(body: TextScreen(bookId: 19, chapter: 23)),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Trigger text selection to show the bottom menu bar
-      final chapterTextFinder = find.byType(ChapterText).first;
-      final chapterText = tester.widget<ChapterText>(chapterTextFinder);
-      final controller = ScriptureSelectionController();
-      controller.selectWord(19023004001);
-      chapterText.onSelectionChanged?.call(controller);
-      await tester.pumpAndSettle();
+        // Trigger text selection to show the bottom menu bar
+        final chapterTextFinder = find.byType(ChapterText).first;
+        final chapterText = tester.widget<ChapterText>(chapterTextFinder);
+        final controller = ScriptureSelectionController();
+        controller.selectWord(19023004001);
+        chapterText.onSelectionChanged?.call(controller);
+        await tester.pumpAndSettle();
 
-      final navBarFinder = find.byType(BottomNavigationBar);
-      expect(navBarFinder, findsOneWidget);
+        final navBarFinder = find.byType(BottomNavigationBar);
+        expect(navBarFinder, findsOneWidget);
 
-      final navBar = tester.widget<BottomNavigationBar>(navBarFinder);
-      expect(navBar.elevation, 0);
-      expect(navBar.backgroundColor, Colors.transparent);
+        final navBar = tester.widget<BottomNavigationBar>(navBarFinder);
+        expect(navBar.elevation, 0);
+        expect(navBar.backgroundColor, Colors.transparent);
 
-      final safeAreaFinder = find.ancestor(
-        of: navBarFinder,
-        matching: find.byType(SafeArea),
-      );
-      expect(safeAreaFinder, findsWidgets);
+        final safeAreaFinder = find.ancestor(
+          of: navBarFinder,
+          matching: find.byType(SafeArea),
+        );
+        expect(safeAreaFinder, findsWidgets);
 
-      final safeArea = tester.widget<SafeArea>(safeAreaFinder.first);
-      expect(safeArea.top, isFalse);
-      expect(safeArea.bottom, isTrue);
-    });
+        final safeArea = tester.widget<SafeArea>(safeAreaFinder.first);
+        expect(safeArea.top, isFalse);
+        expect(safeArea.bottom, isTrue);
+      },
+    );
 
     testWidgets('SettingsPage body uses SafeArea(top: false)', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: SettingsPage(),
-        ),
-      );
+      await tester.pumpWidget(const MaterialApp(home: SettingsPage()));
       await tester.pumpAndSettle();
 
       final scaffoldFinder = find.byType(Scaffold);
@@ -226,11 +230,7 @@ void main() {
     });
 
     testWidgets('HelpPage body uses SafeArea(top: false)', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: HelpPage(),
-        ),
-      );
+      await tester.pumpWidget(const MaterialApp(home: HelpPage()));
       await tester.pumpAndSettle();
 
       final scaffoldFinder = find.byType(Scaffold);
@@ -242,11 +242,7 @@ void main() {
     });
 
     testWidgets('AboutPage body uses SafeArea(top: false)', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: AboutPage(),
-        ),
-      );
+      await tester.pumpWidget(const MaterialApp(home: AboutPage()));
       await tester.pumpAndSettle();
 
       final scaffoldFinder = find.byType(Scaffold);
@@ -259,11 +255,7 @@ void main() {
 
     testWidgets('AppDrawer contains SafeArea(top: false)', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            drawer: AppDrawer(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(drawer: AppDrawer())),
       );
       await tester.pumpAndSettle();
 
@@ -284,60 +276,64 @@ void main() {
       expect(safeArea.bottom, isTrue);
     });
 
-    testWidgets('AppColorPicker.show respects bottom safe area insets and protects brightness slider', (tester) async {
-      const bottomInset = 48.0;
-      const screenHeight = 600.0;
-      const screenWidth = 400.0;
+    testWidgets(
+      'AppColorPicker.show respects bottom safe area insets and protects brightness slider',
+      (tester) async {
+        const bottomInset = 48.0;
+        const screenHeight = 600.0;
+        const screenWidth = 400.0;
 
-      await tester.binding.setSurfaceSize(const Size(screenWidth, screenHeight));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.binding.setSurfaceSize(
+          const Size(screenWidth, screenHeight),
+        );
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            size: Size(screenWidth, screenHeight),
-            viewPadding: EdgeInsets.only(bottom: bottomInset),
-            padding: EdgeInsets.only(bottom: bottomInset),
-          ),
-          child: MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      AppColorPicker.show(
-                        context: context,
-                        initialColor: const Color(0xFF865328),
-                      );
-                    },
-                    child: const Text('Open Color Chooser'),
-                  );
-                },
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              size: Size(screenWidth, screenHeight),
+              viewPadding: EdgeInsets.only(bottom: bottomInset),
+              padding: EdgeInsets.only(bottom: bottomInset),
+            ),
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) {
+                    return ElevatedButton(
+                      onPressed: () {
+                        AppColorPicker.show(
+                          context: context,
+                          initialColor: const Color(0xFF865328),
+                        );
+                      },
+                      child: const Text('Open Color Chooser'),
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Color Chooser'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Color Chooser'));
+        await tester.pumpAndSettle();
 
-      final safeAreaFinder = find.descendant(
-        of: find.byType(StatefulBuilder),
-        matching: find.byType(SafeArea),
-      );
-      expect(safeAreaFinder, findsOneWidget);
-      final safeArea = tester.widget<SafeArea>(safeAreaFinder);
-      expect(safeArea.top, isFalse);
-      expect(safeArea.bottom, isTrue);
+        final safeAreaFinder = find.descendant(
+          of: find.byType(StatefulBuilder),
+          matching: find.byType(SafeArea),
+        );
+        expect(safeAreaFinder, findsOneWidget);
+        final safeArea = tester.widget<SafeArea>(safeAreaFinder);
+        expect(safeArea.top, isFalse);
+        expect(safeArea.bottom, isTrue);
 
-      final brightnessFinder = find.text('Brightness');
-      expect(brightnessFinder, findsOneWidget);
+        final brightnessFinder = find.text('Brightness');
+        expect(brightnessFinder, findsOneWidget);
 
-      final brightnessBottom = tester.getBottomRight(brightnessFinder).dy;
-      expect(brightnessBottom, lessThanOrEqualTo(screenHeight - bottomInset));
-    });
+        final brightnessBottom = tester.getBottomRight(brightnessFinder).dy;
+        expect(brightnessBottom, lessThanOrEqualTo(screenHeight - bottomInset));
+      },
+    );
   });
 }
-

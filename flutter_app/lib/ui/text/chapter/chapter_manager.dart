@@ -8,7 +8,6 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/source_texts.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
@@ -50,10 +49,7 @@ class ChapterManager {
       ? getIt<AppState>().textSizeNotifier.value
       : getIt<UserSettings>().textSize;
 
-  Future<void> requestText({
-    required int bookId,
-    required int chapter,
-  }) async {
+  Future<void> requestText({required int bookId, required int chapter}) async {
     _currentBookId = bookId;
     _currentChapter = chapter;
     textParagraphNotifier.value = await _dbHelper.getChapter(bookId, chapter);
@@ -110,8 +106,7 @@ class ChapterManager {
   }
 
   RegExp footnoteKeywords() {
-    const scriptureRef =
-        r'(?:\d+:\d+(?:[–\-—]\d+)?|\d+(?:[–\-—]\d+)?\b(?!:))';
+    const scriptureRef = r'(?:\d+:\d+(?:[–\-—]\d+)?|\d+(?:[–\-—]\d+)?\b(?!:))';
     final sortedBookNames = List<String>.from(validBookNames)
       ..sort((a, b) => b.length.compareTo(a.length));
     final patterns = [
@@ -137,7 +132,10 @@ class ChapterManager {
       final withNewLine = source.replaceAll('; ', '\n');
       return [
         UsfmLine(
-            bookChapterVerse: 0, text: withNewLine, format: ParagraphFormat.m)
+          bookChapterVerse: 0,
+          text: withNewLine,
+          format: ParagraphFormat.m,
+        ),
       ];
     }
 
@@ -168,7 +166,7 @@ class ChapterManager {
     }
     if (content == null) return null;
     return [
-      UsfmLine(bookChapterVerse: 0, text: content, format: ParagraphFormat.m)
+      UsfmLine(bookChapterVerse: 0, text: content, format: ParagraphFormat.m),
     ];
   }
 }

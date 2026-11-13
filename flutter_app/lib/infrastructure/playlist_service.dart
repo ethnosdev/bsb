@@ -8,7 +8,7 @@ class PlaylistService {
   final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
 
   PlaylistService({AnnotationDatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? getIt<AnnotationDatabaseHelper>();
+    : _dbHelper = dbHelper ?? getIt<AnnotationDatabaseHelper>();
 
   Future<List<Playlist>> getPlaylists() async {
     return await _dbHelper.getAllPlaylists();

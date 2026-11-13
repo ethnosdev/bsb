@@ -1,11 +1,6 @@
 import '../reference.dart';
 
-enum SearchScope {
-  all,
-  ot,
-  nt,
-  book,
-}
+enum SearchScope { all, ot, nt, book }
 
 class SearchResult {
   final Reference reference;

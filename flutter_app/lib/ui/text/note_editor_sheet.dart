@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class NoteEditorSheet extends StatefulWidget {
   final String title;
@@ -88,7 +88,9 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -97,7 +99,10 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
             // Title row
             Row(
               children: [
-                Icon(Icons.sticky_note_2_outlined, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.sticky_note_2_outlined,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -118,12 +123,15 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
                   ),
               ],
             ),
-            if (widget.passageText != null && widget.passageText!.isNotEmpty) ...[
+            if (widget.passageText != null &&
+                widget.passageText!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -147,14 +155,21 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
               decoration: InputDecoration(
                 hintText: 'Type your note here...',
                 filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),

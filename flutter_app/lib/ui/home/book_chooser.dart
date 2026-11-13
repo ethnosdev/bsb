@@ -5,19 +5,12 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
-enum ChapterSelectionState {
-  start,
-  selecting,
-  end,
-}
+enum ChapterSelectionState { start, selecting, end }
 
 class _BookChooserScope extends InheritedWidget {
-  const _BookChooserScope({
-    required this.useFullName,
-    required super.child,
-  });
+  const _BookChooserScope({required this.useFullName, required super.child});
 
   final bool useFullName;
 
@@ -162,7 +155,8 @@ class BookChooser extends StatefulWidget {
   /// The width threshold above which full book names are displayed instead of abbreviations.
   static const double defaultWideScreenBreakpoint = 800.0;
 
-  final void Function(int bookId, int chapter, [String? sectionHeading]) onSelected;
+  final void Function(int bookId, int chapter, [String? sectionHeading])
+  onSelected;
   final void Function(int bookId)? onBookSelected;
   final void Function(int bookId, int chapter, int verse)? onVerseSelected;
   final bool? showVerseGrid;
@@ -236,11 +230,15 @@ class _BookChooserState extends State<BookChooser> {
       return;
     }
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
-    final showVerseGrid = widget.showVerseGrid ??
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
+    final showVerseGrid =
+        widget.showVerseGrid ??
         (widget.verseStyle != null ||
-            (appState?.showVerseGridNotifier.value ?? userSettings?.showVerseGrid ?? false));
+            (appState?.showVerseGridNotifier.value ??
+                userSettings?.showVerseGrid ??
+                false));
 
     if (chapterCount == 1 && !showVerseGrid) {
       widget.onSelected(bookId, 1);
@@ -281,8 +279,11 @@ class _BookChooserState extends State<BookChooser> {
     return fallbackLocal;
   }
 
-  ( _BookData?, Rect? ) _getBookAndRectAt(
-      Offset position, double totalWidth, double totalHeight) {
+  (_BookData?, Rect?) _getBookAndRectAt(
+    Offset position,
+    double totalWidth,
+    double totalHeight,
+  ) {
     if (position.dx < 0 ||
         position.dx > totalWidth ||
         position.dy < 0 ||
@@ -306,9 +307,15 @@ class _BookChooserState extends State<BookChooser> {
   }
 
   void _handlePointerDown(
-      PointerDownEvent event, double fallbackWidth, double fallbackHeight) {
+    PointerDownEvent event,
+    double fallbackWidth,
+    double fallbackHeight,
+  ) {
     if (_chapterNotifier.value != null) return;
-    final (totalWidth, totalHeight) = _getGridSize(fallbackWidth, fallbackHeight);
+    final (totalWidth, totalHeight) = _getGridSize(
+      fallbackWidth,
+      fallbackHeight,
+    );
     final localPos = _getLocalPosition(event.position, event.localPosition);
 
     _pointerDownPosition = localPos;
@@ -326,9 +333,15 @@ class _BookChooserState extends State<BookChooser> {
   }
 
   void _handlePointerMove(
-      PointerMoveEvent event, double fallbackWidth, double fallbackHeight) {
+    PointerMoveEvent event,
+    double fallbackWidth,
+    double fallbackHeight,
+  ) {
     if (_chapterNotifier.value != null || _startBook == null) return;
-    final (totalWidth, totalHeight) = _getGridSize(fallbackWidth, fallbackHeight);
+    final (totalWidth, totalHeight) = _getGridSize(
+      fallbackWidth,
+      fallbackHeight,
+    );
     final localPos = _getLocalPosition(event.position, event.localPosition);
 
     if (localPos.dx < -50 ||
@@ -393,7 +406,8 @@ class _BookChooserState extends State<BookChooser> {
         ? delta.dy / (duration.inMilliseconds / 1000.0)
         : 0.0;
 
-    final isVerticalSwipe = delta.dy.abs() >= 25.0 &&
+    final isVerticalSwipe =
+        delta.dy.abs() >= 25.0 &&
         delta.dy.abs() > delta.dx.abs() * 1.5 &&
         duration.inMilliseconds <= 500 &&
         velocityY.abs() >= 250.0;
@@ -461,10 +475,10 @@ class _BookChooserState extends State<BookChooser> {
 
     final theme = Theme.of(context);
     final book = _activeBook!;
-    final fullName =
-        bookIdToBookNameMap[book.bookId] ?? book.title;
+    final fullName = bookIdToBookNameMap[book.bookId] ?? book.title;
 
-    final textStyle = theme.textTheme.titleLarge?.copyWith(
+    final textStyle =
+        theme.textTheme.titleLarge?.copyWith(
           color: theme.colorScheme.onPrimary,
           fontWeight: FontWeight.bold,
         ) ??
@@ -510,10 +524,7 @@ class _BookChooserState extends State<BookChooser> {
               horizontal: paddingH,
               vertical: paddingV,
             ),
-            child: Text(
-              fullName,
-              style: textStyle,
-            ),
+            child: Text(fullName, style: textStyle),
           ),
         ),
       ),
@@ -726,10 +737,7 @@ class _BookItemState extends State<BookItem> {
         color: backgroundColor,
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(
-              color: borderColor,
-              width: 0.5,
-            ),
+            border: Border.all(color: borderColor, width: 0.5),
           ),
           child: Center(
             child: FittedBox(

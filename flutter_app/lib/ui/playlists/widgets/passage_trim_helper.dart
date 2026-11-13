@@ -21,7 +21,8 @@ class ScriptureWordInfo {
   });
 
   @override
-  String toString() => 'Word($word, id: $wordId, $bookId $chapter:$verse#$wordIndex)';
+  String toString() =>
+      'Word($word, id: $wordId, $bookId $chapter:$verse#$wordIndex)';
 }
 
 /// Extracts all biblical words from [lines] with their exact packed word IDs (BBCCCVVVWWW).
@@ -42,14 +43,16 @@ List<ScriptureWordInfo> extractWordsFromLines(List<UsfmLine> lines) {
     final elements = UsfmParser.getWords(line, currentWordOffset);
     final words = elements.whereType<Word>().toList();
     for (final word in words) {
-      result.add(ScriptureWordInfo(
-        wordId: word.id,
-        word: word.text,
-        bookId: line.bookId,
-        chapter: line.chapter,
-        verse: line.verse,
-        wordIndex: word.id % 1000,
-      ));
+      result.add(
+        ScriptureWordInfo(
+          wordId: word.id,
+          word: word.text,
+          bookId: line.bookId,
+          chapter: line.chapter,
+          verse: line.verse,
+          wordIndex: word.id % 1000,
+        ),
+      );
     }
     currentWordOffset += words.length;
   }
@@ -173,7 +176,9 @@ List<UsfmLine> trimPassageLines(
       currentWordOffset = 0;
     }
 
-    final tokenizer = RegExp(r'(\\f.+?\\f\*)|(\\[a-zA-Z0-9*]+)|(\s+)|([^\s\\]+)');
+    final tokenizer = RegExp(
+      r'(\\f.+?\\f\*)|(\\[a-zA-Z0-9*]+)|(\s+)|([^\s\\]+)',
+    );
     final matches = tokenizer.allMatches(line.text);
 
     final keptTokens = <String>[];
@@ -227,7 +232,8 @@ List<UsfmLine> trimPassageLines(
         (startWordId ~/ 1000 == line.bookChapterVerse);
 
     final resolvedBookChapterVerse = wasFirstWordOfVerseTrimmed
-        ? (line.bookChapterVerse ~/ 1000) * 1000 + 0 // verse 0 suppresses verse number
+        ? (line.bookChapterVerse ~/ 1000) * 1000 +
+              0 // verse 0 suppresses verse number
         : line.bookChapterVerse;
 
     trimmedLines.add(

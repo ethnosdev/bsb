@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
 import 'package:bsb/infrastructure/search/search_models.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
@@ -7,11 +8,9 @@ import 'package:database_builder/database_builder.dart';
 import 'package:flutter/foundation.dart';
 
 class SearchManager {
-  SearchManager({
-    BibleSearchService? searchService,
-    UserSettings? userSettings,
-  })  : _searchService = searchService ?? getIt<BibleSearchService>(),
-        _userSettings = userSettings ?? getIt<UserSettings>();
+  SearchManager({BibleSearchService? searchService, UserSettings? userSettings})
+    : _searchService = searchService ?? getIt<BibleSearchService>(),
+      _userSettings = userSettings ?? getIt<UserSettings>();
 
   final BibleSearchService _searchService;
   final UserSettings _userSettings;
@@ -107,11 +106,17 @@ class SearchManager {
         counts[res.reference.bookId] = (counts[res.reference.bookId] ?? 0) + 1;
       }
 
-      final books = counts.entries.map((e) => BookMatch(
-        bookId: e.key,
-        bookName: bookIdToBookNameMap[e.key] ?? 'Book ${e.key}',
-        count: e.value,
-      )).toList()..sort((a, b) => a.bookId.compareTo(b.bookId));
+      final books =
+          counts.entries
+              .map(
+                (e) => BookMatch(
+                  bookId: e.key,
+                  bookName: bookIdToBookNameMap[e.key] ?? 'Book ${e.key}',
+                  count: e.value,
+                ),
+              )
+              .toList()
+            ..sort((a, b) => a.bookId.compareTo(b.bookId));
 
       matchingBooksNotifier.value = books;
 

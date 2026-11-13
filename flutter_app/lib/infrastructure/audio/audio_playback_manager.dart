@@ -22,8 +22,9 @@ class AudioPlaybackManager {
   final UserSettings? userSettings;
 
   final ValueNotifier<bool> isPlayerVisible = ValueNotifier<bool>(false);
-  final ValueNotifier<String?> playbackErrorNotifier =
-      ValueNotifier<String?>(null);
+  final ValueNotifier<String?> playbackErrorNotifier = ValueNotifier<String?>(
+    null,
+  );
   final ValueNotifier<double> speedNotifier;
   final ValueNotifier<AudioPlayMode> playModeNotifier;
   final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
@@ -46,34 +47,32 @@ class AudioPlaybackManager {
     return null;
   }
 
-  AudioPlaybackManager({
-    required this.audioHandler,
-    this.userSettings,
-  })  : speedNotifier = ValueNotifier<double>(
-          (userSettings ??
-                  (getIt.isRegistered<UserSettings>()
-                      ? getIt<UserSettings>()
-                      : null))
-              ?.audioSpeed ??
-              1.0,
-        ),
-        playModeNotifier = ValueNotifier<AudioPlayMode>(
-          AudioPlayMode.fromString(
-            (userSettings ??
+  AudioPlaybackManager({required this.audioHandler, this.userSettings})
+    : speedNotifier = ValueNotifier<double>(
+        (userSettings ??
                     (getIt.isRegistered<UserSettings>()
                         ? getIt<UserSettings>()
                         : null))
-                ?.audioPlayMode,
-          ),
-        ),
-        syncTextNotifier = ValueNotifier<bool>(
+                ?.audioSpeed ??
+            1.0,
+      ),
+      playModeNotifier = ValueNotifier<AudioPlayMode>(
+        AudioPlayMode.fromString(
           (userSettings ??
                   (getIt.isRegistered<UserSettings>()
                       ? getIt<UserSettings>()
                       : null))
-              ?.audioSyncText ??
-              true,
-        ) {
+              ?.audioPlayMode,
+        ),
+      ),
+      syncTextNotifier = ValueNotifier<bool>(
+        (userSettings ??
+                    (getIt.isRegistered<UserSettings>()
+                        ? getIt<UserSettings>()
+                        : null))
+                ?.audioSyncText ??
+            true,
+      ) {
     audioHandler.setSpeed(speedNotifier.value);
     audioHandler.playMode = playModeNotifier.value;
 
@@ -97,8 +96,8 @@ class AudioPlaybackManager {
     _positionSaveSub = audioHandler.player.positionStream
         .throttleTime(const Duration(seconds: 5))
         .listen((pos) {
-      _saveCurrentState(pos);
-    });
+          _saveCurrentState(pos);
+        });
   }
 
   void _saveCurrentState([Duration? pos]) {
@@ -120,11 +119,8 @@ class AudioPlaybackManager {
         audioHandler.player.positionStream,
         audioHandler.player.bufferedPositionStream,
         audioHandler.player.durationStream,
-        (position, buffered, duration) => PositionData(
-          position,
-          buffered,
-          duration ?? Duration.zero,
-        ),
+        (position, buffered, duration) =>
+            PositionData(position, buffered, duration ?? Duration.zero),
       );
 
   /// Starts or resumes playing the given chapter and ensures player bar is visible.
@@ -157,7 +153,11 @@ class AudioPlaybackManager {
         }
       }
 
-      await audioHandler.playChapter(bookId, chapter, initialPosition: resumePos);
+      await audioHandler.playChapter(
+        bookId,
+        chapter,
+        initialPosition: resumePos,
+      );
     } catch (e) {
       playbackErrorNotifier.value =
           'Unable to play audio. Check internet connection.';
@@ -245,7 +245,9 @@ class AudioPlaybackManager {
       sleepTimerOptionNotifier.value = option;
       sleepTimerRemainingNotifier.value = duration;
 
-      _sleepCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _sleepCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
+        timer,
+      ) {
         final current = sleepTimerRemainingNotifier.value;
         if (current == null || current.inSeconds <= 1) {
           timer.cancel();

@@ -2,13 +2,13 @@ import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppState extends ChangeNotifier {
   final UserSettings userSettings;
 
   AppState({UserSettings? userSettings})
-      : userSettings = userSettings ?? getIt<UserSettings>() {
+    : userSettings = userSettings ?? getIt<UserSettings>() {
     themeNotifier.addListener(notifyListeners);
     appThemeIdNotifier.addListener(notifyListeners);
     customThemeLightNotifier.addListener(notifyListeners);
@@ -23,20 +23,26 @@ class AppState extends ChangeNotifier {
   }
 
   final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
-  final appThemeIdNotifier =
-      ValueNotifier<String>(AppThemePreset.defaultPresetId);
-  final customThemeLightNotifier =
-      ValueNotifier<CustomThemeConfig>(CustomThemeConfig.defaultLight());
-  final customThemeDarkNotifier =
-      ValueNotifier<CustomThemeConfig>(CustomThemeConfig.defaultDark());
+  final appThemeIdNotifier = ValueNotifier<String>(
+    AppThemePreset.defaultPresetId,
+  );
+  final customThemeLightNotifier = ValueNotifier<CustomThemeConfig>(
+    CustomThemeConfig.defaultLight(),
+  );
+  final customThemeDarkNotifier = ValueNotifier<CustomThemeConfig>(
+    CustomThemeConfig.defaultDark(),
+  );
   final textSizeNotifier = ValueNotifier<double>(FontScale.defaultBaseSize);
-  final bookChooserStyleNotifier =
-      ValueNotifier<BookChooserStyle>(BookChooserStyle.grid);
-  final chapterChooserStyleNotifier =
-      ValueNotifier<ChapterChooserStyle>(ChapterChooserStyle.keypad);
+  final bookChooserStyleNotifier = ValueNotifier<BookChooserStyle>(
+    BookChooserStyle.grid,
+  );
+  final chapterChooserStyleNotifier = ValueNotifier<ChapterChooserStyle>(
+    ChapterChooserStyle.keypad,
+  );
   final showVerseGridNotifier = ValueNotifier<bool>(false);
-  final verseChooserStyleNotifier =
-      ValueNotifier<VerseChooserStyle>(VerseChooserStyle.sidebar);
+  final verseChooserStyleNotifier = ValueNotifier<VerseChooserStyle>(
+    VerseChooserStyle.sidebar,
+  );
   final wordsOfJesusInRedNotifier = ValueNotifier<bool>(false);
   final keepScreenAwakeNotifier = ValueNotifier<bool>(true);
 
@@ -79,21 +85,21 @@ class AppState extends ChangeNotifier {
     }
     final customColor = isDark
         ? (customThemeDark.wordsOfJesusColor ??
-            (customThemeLight.wordsOfJesusColor != null
-                ? Color.lerp(
-                    customThemeLight.wordsOfJesusColor,
-                    Colors.white,
-                    0.3,
-                  )
-                : null))
+              (customThemeLight.wordsOfJesusColor != null
+                  ? Color.lerp(
+                      customThemeLight.wordsOfJesusColor,
+                      Colors.white,
+                      0.3,
+                    )
+                  : null))
         : (customThemeLight.wordsOfJesusColor ??
-            (customThemeDark.wordsOfJesusColor != null
-                ? Color.lerp(
-                    customThemeDark.wordsOfJesusColor,
-                    Colors.black,
-                    0.3,
-                  )
-                : null));
+              (customThemeDark.wordsOfJesusColor != null
+                  ? Color.lerp(
+                      customThemeDark.wordsOfJesusColor,
+                      Colors.black,
+                      0.3,
+                    )
+                  : null));
 
     if (customColor != null) {
       return customColor;
@@ -189,8 +195,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> setShowVerseGrid(bool show) async {
     showVerseGridNotifier.value = show;
-    verseChooserStyleNotifier.value =
-        show ? VerseChooserStyle.grid : VerseChooserStyle.sidebar;
+    verseChooserStyleNotifier.value = show
+        ? VerseChooserStyle.grid
+        : VerseChooserStyle.sidebar;
     await userSettings.setShowVerseGrid(show);
   }
 

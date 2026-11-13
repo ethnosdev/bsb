@@ -4,7 +4,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/playlist_share_handler.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PlaylistsPage extends StatefulWidget {
   const PlaylistsPage({super.key});
@@ -84,9 +84,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
     );
 
     if (created == true && mounted) {
-      final newPlaylist = Playlist(
-        title: titleController.text.trim(),
-      );
+      final newPlaylist = Playlist(title: titleController.text.trim());
       await _playlistService.savePlaylist(newPlaylist);
 
       if (mounted) {
@@ -157,8 +155,18 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
@@ -204,130 +212,136 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _playlists.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.playlist_play_rounded,
-                          size: 72,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.5),
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.playlist_play_rounded,
+                      size: 72,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No Playlists Yet',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'A playlist is an ordered collection of passages and notes for leading a study or reading topically.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create Playlist'),
+                      onPressed: _createPlaylist,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              itemCount: _playlists.length,
+              itemBuilder: (context, index) {
+                final playlist = _playlists[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    title: Text(
+                      playlist.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _formatDate(playlist.updatedAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (val) {
+                        if (val == 'present') {
+                          _present(playlist);
+                        } else if (val == 'edit') {
+                          _openEditor(playlist);
+                        } else if (val == 'duplicate') {
+                          _playlistService.duplicatePlaylist(playlist);
+                        } else if (val == 'share_file') {
+                          _shareHandler.exportPlaylistFile(context, playlist);
+                        } else if (val == 'share_code') {
+                          _shareHandler.copyShareCode(context, playlist);
+                        } else if (val == 'delete') {
+                          _deletePlaylist(playlist);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'present',
+                          child: ListTile(
+                            leading: Icon(Icons.play_circle_outline),
+                            title: Text('Present'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No Playlists Yet',
-                          style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Edit'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'A playlist is an ordered collection of passages and notes for leading a study or reading topically.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                        const PopupMenuItem(
+                          value: 'duplicate',
+                          child: ListTile(
+                            leading: Icon(Icons.copy_outlined),
+                            title: Text('Duplicate'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
                         ),
-                        const SizedBox(height: 24),
-                        FilledButton.icon(
-                          icon: const Icon(Icons.add),
-                          label: const Text('Create Playlist'),
-                          onPressed: _createPlaylist,
+                        const PopupMenuItem(
+                          value: 'share_file',
+                          child: ListTile(
+                            leading: Icon(Icons.share_outlined),
+                            title: Text('Share File (.bsbplaylist)'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'share_code',
+                          child: ListTile(
+                            leading: Icon(Icons.copy_outlined),
+                            title: Text('Copy Share Code'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            leading: Icon(Icons.delete_outline),
+                            title: Text('Delete'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
                         ),
                       ],
                     ),
+                    onTap: () => _present(playlist),
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  itemCount: _playlists.length,
-                  itemBuilder: (context, index) {
-                    final playlist = _playlists[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      clipBehavior: Clip.antiAlias,
-                      child: ListTile(
-                        title: Text(
-                          playlist.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _formatDate(playlist.updatedAt),
-                          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert),
-                          onSelected: (val) {
-                            if (val == 'present') {
-                              _present(playlist);
-                            } else if (val == 'edit') {
-                              _openEditor(playlist);
-                            } else if (val == 'duplicate') {
-                              _playlistService.duplicatePlaylist(playlist);
-                            } else if (val == 'share_file') {
-                              _shareHandler.exportPlaylistFile(context, playlist);
-                            } else if (val == 'share_code') {
-                              _shareHandler.copyShareCode(context, playlist);
-                            } else if (val == 'delete') {
-                              _deletePlaylist(playlist);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'present',
-                              child: ListTile(
-                                leading: Icon(Icons.play_circle_outline),
-                                title: Text('Present'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: ListTile(
-                                leading: Icon(Icons.edit_outlined),
-                                title: Text('Edit'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'duplicate',
-                              child: ListTile(
-                                leading: Icon(Icons.copy_outlined),
-                                title: Text('Duplicate'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'share_file',
-                              child: ListTile(
-                                leading: Icon(Icons.share_outlined),
-                                title: Text('Share File (.bsbplaylist)'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'share_code',
-                              child: ListTile(
-                                leading: Icon(Icons.copy_outlined),
-                                title: Text('Copy Share Code'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: ListTile(
-                                leading: Icon(Icons.delete_outline),
-                                title: Text('Delete'),
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ],
-                        ),
-                        onTap: () => _present(playlist),
-                      ),
-                    );
-                  },
-                ),
+                );
+              },
+            ),
       floatingActionButton: _playlists.isNotEmpty
           ? FloatingActionButton(
               onPressed: _createPlaylist,

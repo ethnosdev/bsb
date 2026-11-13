@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'bible_tab.dart';
 
 /// A single tab chip. Supports:
@@ -89,7 +90,8 @@ class _ChapterChipState extends State<ChapterChip>
               side: widget.isActive
                   ? BorderSide(color: colorScheme.primary, width: 1.2)
                   : BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
             ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(

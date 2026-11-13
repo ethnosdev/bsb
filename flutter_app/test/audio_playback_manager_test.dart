@@ -85,12 +85,15 @@ void main() {
       expect(manager.sleepTimerOptionNotifier.value, SleepTimerOption.off);
     });
 
-    test('setSpeed updates handler, notifier, and persists to userSettings', () async {
-      await manager.setSpeed(1.5);
-      expect(manager.speedNotifier.value, 1.5);
-      expect(mockPlayer.currentSpeed, 1.5);
-      expect(userSettings.audioSpeed, 1.5);
-    });
+    test(
+      'setSpeed updates handler, notifier, and persists to userSettings',
+      () async {
+        await manager.setSpeed(1.5);
+        expect(manager.speedNotifier.value, 1.5);
+        expect(mockPlayer.currentSpeed, 1.5);
+        expect(userSettings.audioSpeed, 1.5);
+      },
+    );
 
     test('setPlayMode and cyclePlayMode cycle properly and persist', () {
       expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
@@ -123,7 +126,10 @@ void main() {
 
     test('setSleepTimer endOfChapter sets handler flag', () {
       manager.setSleepTimer(SleepTimerOption.endOfChapter);
-      expect(manager.sleepTimerOptionNotifier.value, SleepTimerOption.endOfChapter);
+      expect(
+        manager.sleepTimerOptionNotifier.value,
+        SleepTimerOption.endOfChapter,
+      );
       expect(audioHandler.stopAtEndOfChapter, isTrue);
       expect(manager.sleepTimerRemainingNotifier.value, isNull);
 
@@ -134,8 +140,14 @@ void main() {
 
     test('setSleepTimer duration initializes remaining countdown', () {
       manager.setSleepTimer(SleepTimerOption.fifteenMinutes);
-      expect(manager.sleepTimerOptionNotifier.value, SleepTimerOption.fifteenMinutes);
-      expect(manager.sleepTimerRemainingNotifier.value, const Duration(minutes: 15));
+      expect(
+        manager.sleepTimerOptionNotifier.value,
+        SleepTimerOption.fifteenMinutes,
+      );
+      expect(
+        manager.sleepTimerRemainingNotifier.value,
+        const Duration(minutes: 15),
+      );
 
       manager.setSleepTimer(SleepTimerOption.off);
       expect(manager.sleepTimerRemainingNotifier.value, isNull);

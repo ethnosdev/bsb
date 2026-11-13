@@ -44,21 +44,9 @@ enum PlanTrack {
 }
 
 enum PlanPace {
-  finishInYear(
-    'finish_in_year',
-    'Finish in a year',
-    365,
-  ),
-  finishIn90Days(
-    'finish_in_90_days',
-    'Finish in 90 days',
-    90,
-  ),
-  oneChapterADay(
-    'one_chapter_a_day',
-    'One chapter a day',
-    null,
-  );
+  finishInYear('finish_in_year', 'Finish in a year', 365),
+  finishIn90Days('finish_in_90_days', 'Finish in 90 days', 90),
+  oneChapterADay('one_chapter_a_day', 'One chapter a day', null);
 
   final String id;
   final String label;
@@ -83,9 +71,7 @@ class ChapterRef {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ChapterRef &&
-          other.bookId == bookId &&
-          other.chapter == chapter;
+      other is ChapterRef && other.bookId == bookId && other.chapter == chapter;
 
   @override
   int get hashCode => Object.hash(bookId, chapter);
@@ -108,7 +94,8 @@ class PlanReading {
   String get id => '${bookId}_${startChapter}_$endChapter';
 
   String get referenceDisplay {
-    final bookName = bookIdToFullNameMap[bookId] ??
+    final bookName =
+        bookIdToFullNameMap[bookId] ??
         (bookIdToBookNameMap[bookId] ?? 'Book $bookId');
     if (startChapter == endChapter) {
       return '$bookName $startChapter';
@@ -119,26 +106,23 @@ class PlanReading {
   int get chapterCount => endChapter - startChapter + 1;
 
   Map<String, dynamic> toMap() => {
-        'bookId': bookId,
-        'startChapter': startChapter,
-        'endChapter': endChapter,
-      };
+    'bookId': bookId,
+    'startChapter': startChapter,
+    'endChapter': endChapter,
+  };
 
   factory PlanReading.fromMap(Map<String, dynamic> map) => PlanReading(
-        bookId: map['bookId'] as int,
-        startChapter: map['startChapter'] as int,
-        endChapter: map['endChapter'] as int,
-      );
+    bookId: map['bookId'] as int,
+    startChapter: map['startChapter'] as int,
+    endChapter: map['endChapter'] as int,
+  );
 }
 
 class PlanDay {
   final int dayNumber;
   final List<PlanReading> readings;
 
-  const PlanDay({
-    required this.dayNumber,
-    required this.readings,
-  });
+  const PlanDay({required this.dayNumber, required this.readings});
 
   int get totalChapters => readings.fold(0, (sum, r) => sum + r.chapterCount);
 
@@ -146,16 +130,16 @@ class PlanDay {
       readings.map((r) => r.referenceDisplay).join(', ');
 
   Map<String, dynamic> toMap() => {
-        'dayNumber': dayNumber,
-        'readings': readings.map((r) => r.toMap()).toList(),
-      };
+    'dayNumber': dayNumber,
+    'readings': readings.map((r) => r.toMap()).toList(),
+  };
 
   factory PlanDay.fromMap(Map<String, dynamic> map) => PlanDay(
-        dayNumber: map['dayNumber'] as int,
-        readings: (map['readings'] as List<dynamic>)
-            .map((r) => PlanReading.fromMap(r as Map<String, dynamic>))
-            .toList(),
-      );
+    dayNumber: map['dayNumber'] as int,
+    readings: (map['readings'] as List<dynamic>)
+        .map((r) => PlanReading.fromMap(r as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class ReadingPlan {
@@ -258,28 +242,28 @@ class UserPlanProgress {
   }
 
   Map<String, dynamic> toMap() => {
-        'plan_id': planId,
-        'track_id': trackId,
-        'pace_id': paceId,
-        'total_days': totalDays,
-        'started_at': startedAt.millisecondsSinceEpoch,
-        'last_read_at': lastReadAt?.millisecondsSinceEpoch,
-        'completed_days': jsonEncode(completedDays.toList()..sort()),
-        'completed_readings': jsonEncode(completedReadingIds.toList()..sort()),
-        'is_active': isActive ? 1 : 0,
-      };
+    'plan_id': planId,
+    'track_id': trackId,
+    'pace_id': paceId,
+    'total_days': totalDays,
+    'started_at': startedAt.millisecondsSinceEpoch,
+    'last_read_at': lastReadAt?.millisecondsSinceEpoch,
+    'completed_days': jsonEncode(completedDays.toList()..sort()),
+    'completed_readings': jsonEncode(completedReadingIds.toList()..sort()),
+    'is_active': isActive ? 1 : 0,
+  };
 
   factory UserPlanProgress.fromMap(Map<String, dynamic> map) {
     final completedDaysList = (map['completed_days'] is String)
         ? (jsonDecode(map['completed_days'] as String) as List<dynamic>)
-            .map((e) => (e as num).toInt())
-            .toSet()
+              .map((e) => (e as num).toInt())
+              .toSet()
         : <int>{};
 
     final completedReadingsList = (map['completed_readings'] is String)
         ? (jsonDecode(map['completed_readings'] as String) as List<dynamic>)
-            .map((e) => e.toString())
-            .toSet()
+              .map((e) => e.toString())
+              .toSet()
         : <String>{};
 
     return UserPlanProgress(
@@ -288,10 +272,12 @@ class UserPlanProgress {
       paceId: map['pace_id'] as String? ?? '',
       totalDays: (map['total_days'] as num?)?.toInt() ?? 0,
       startedAt: DateTime.fromMillisecondsSinceEpoch(
-          (map['started_at'] as num).toInt()),
+        (map['started_at'] as num).toInt(),
+      ),
       lastReadAt: map['last_read_at'] != null
           ? DateTime.fromMillisecondsSinceEpoch(
-              (map['last_read_at'] as num).toInt())
+              (map['last_read_at'] as num).toInt(),
+            )
           : null,
       completedDays: completedDaysList,
       completedReadingIds: completedReadingsList,

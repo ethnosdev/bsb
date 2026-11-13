@@ -3,7 +3,7 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Manages the state of a single verse page: dual passage tokens,
 /// selected word, lexicon entry, and occurrence counts.
@@ -37,9 +37,7 @@ class VersePageManager extends ChangeNotifier {
     final data = await _dbHelper.getOriginalLanguageData(reference);
 
     originalWords = data.whereType<OriginalWord>().toList();
-    englishWords = originalWords
-        .where((w) => w.hasEnglishChip)
-        .toList()
+    englishWords = originalWords.where((w) => w.hasEnglishChip).toList()
       ..sort((a, b) => a.bsbSort.compareTo(b.bsbSort));
 
     isLoading = false;

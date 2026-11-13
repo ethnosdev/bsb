@@ -1,7 +1,7 @@
 import 'package:bsb/infrastructure/deep_link_handler.dart';
 import 'package:bsb/ui/playlists/playlist_share_handler.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class MockTabManager extends Fake implements TabManager {
@@ -79,7 +79,9 @@ void main() {
   }
 
   group('DeepLinkHandler - Bible deep links', () {
-    testWidgets('opens chapter without verse (bsb://bible/43/3)', (tester) async {
+    testWidgets('opens chapter without verse (bsb://bible/43/3)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
@@ -91,11 +93,16 @@ void main() {
       expect(mockTabManager.lastTargetVerse, isNull);
     });
 
-    testWidgets('opens chapter with verse (bsb://bible/43/3/16)', (tester) async {
+    testWidgets('opens chapter with verse (bsb://bible/43/3/16)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
-      await handler.handleIncomingUri(context, Uri.parse('bsb://bible/43/3/16'));
+      await handler.handleIncomingUri(
+        context,
+        Uri.parse('bsb://bible/43/3/16'),
+      );
 
       expect(mockTabManager.openTabCallCount, 1);
       expect(mockTabManager.lastBookId, 43);
@@ -113,14 +120,19 @@ void main() {
       expect(mockTabManager.lastChapter, 3);
       expect(mockTabManager.lastTargetVerse, isNull);
 
-      await handler.handleIncomingUri(context, Uri.parse('bsb://bible/43/3/16/'));
+      await handler.handleIncomingUri(
+        context,
+        Uri.parse('bsb://bible/43/3/16/'),
+      );
       expect(mockTabManager.openTabCallCount, 2);
       expect(mockTabManager.lastBookId, 43);
       expect(mockTabManager.lastChapter, 3);
       expect(mockTabManager.lastTargetVerse, 16);
     });
 
-    testWidgets('handles Genesis 1:1 and Revelation 22:21 boundaries', (tester) async {
+    testWidgets('handles Genesis 1:1 and Revelation 22:21 boundaries', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
@@ -129,13 +141,18 @@ void main() {
       expect(mockTabManager.lastChapter, 1);
       expect(mockTabManager.lastTargetVerse, 1);
 
-      await handler.handleIncomingUri(context, Uri.parse('bsb://bible/66/22/21'));
+      await handler.handleIncomingUri(
+        context,
+        Uri.parse('bsb://bible/66/22/21'),
+      );
       expect(mockTabManager.lastBookId, 66);
       expect(mockTabManager.lastChapter, 22);
       expect(mockTabManager.lastTargetVerse, 21);
     });
 
-    testWidgets('dismisses open subpages back to root when opening link', (tester) async {
+    testWidgets('dismisses open subpages back to root when opening link', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
 
       // Push a subpage
@@ -155,7 +172,9 @@ void main() {
       expect(mockTabManager.lastChapter, 23);
     });
 
-    testWidgets('shows SnackBar and does not open tab for invalid book ID', (tester) async {
+    testWidgets('shows SnackBar and does not open tab for invalid book ID', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
@@ -176,13 +195,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Non-numeric book
-      await handler.handleIncomingUri(context, Uri.parse('bsb://bible/John/3/16'));
+      await handler.handleIncomingUri(
+        context,
+        Uri.parse('bsb://bible/John/3/16'),
+      );
       await tester.pump();
       expect(mockTabManager.openTabCallCount, 0);
       expect(find.text('Invalid Bible link'), findsOneWidget);
     });
 
-    testWidgets('shows SnackBar and does not open tab for invalid chapter', (tester) async {
+    testWidgets('shows SnackBar and does not open tab for invalid chapter', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
@@ -209,7 +233,9 @@ void main() {
       expect(find.text('Invalid Bible link'), findsOneWidget);
     });
 
-    testWidgets('shows SnackBar and does not open tab for invalid verse', (tester) async {
+    testWidgets('shows SnackBar and does not open tab for invalid verse', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
@@ -222,13 +248,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // John 3 has 36 verses, 37 is invalid
-      await handler.handleIncomingUri(context, Uri.parse('bsb://bible/43/3/37'));
+      await handler.handleIncomingUri(
+        context,
+        Uri.parse('bsb://bible/43/3/37'),
+      );
       await tester.pump();
       expect(mockTabManager.openTabCallCount, 0);
       expect(find.text('Invalid Bible link'), findsOneWidget);
     });
 
-    testWidgets('shows SnackBar and does not open tab for malformed path', (tester) async {
+    testWidgets('shows SnackBar and does not open tab for malformed path', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 
@@ -241,7 +272,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Extra path segments
-      await handler.handleIncomingUri(context, Uri.parse('bsb://bible/43/3/16/extra'));
+      await handler.handleIncomingUri(
+        context,
+        Uri.parse('bsb://bible/43/3/16/extra'),
+      );
       await tester.pump();
       expect(mockTabManager.openTabCallCount, 0);
       expect(find.text('Invalid Bible link'), findsOneWidget);
@@ -249,7 +283,9 @@ void main() {
   });
 
   group('DeepLinkHandler - Playlist delegation', () {
-    testWidgets('delegates bsb://playlist to playlistShareHandler', (tester) async {
+    testWidgets('delegates bsb://playlist to playlistShareHandler', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestApp());
       final context = tester.element(find.text('Open SubPage'));
 

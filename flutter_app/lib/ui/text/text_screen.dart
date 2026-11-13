@@ -8,7 +8,7 @@ import 'package:bsb/ui/shared/snappy_scroll_physics.dart';
 import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:scripture/scripture.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -757,10 +757,7 @@ class _TextScreenState extends State<TextScreen>
           value: 'add_to_playlist',
           child: Text('Add to Playlist'),
         ),
-        PopupMenuItem<String>(
-          value: 'memorize',
-          child: Text('Memorize'),
-        ),
+        PopupMenuItem<String>(value: 'memorize', child: Text('Memorize')),
       ],
     );
 

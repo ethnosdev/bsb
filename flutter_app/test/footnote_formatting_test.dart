@@ -1,14 +1,15 @@
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final dummyKeywords = RegExp(r'\b(2 Corinthians 4:6|1 Corinthians 15:45|LXX|MT)\b');
+  final dummyKeywords = RegExp(
+    r'\b(2 Corinthians 4:6|1 Corinthians 15:45|LXX|MT)\b',
+  );
 
   test('formatFootnote preserves spaces around fqa text', () {
     final TextSpan span = formatFootnote(
-      footnote:
-          r'\fqa Selah\fqa* or \fqa Interlude\fqa* is probably a musical or literary term; here and throughout the Psalms.',
+      footnote: r'\fqa Selah\fqa* or \fqa Interlude\fqa* is probably a musical or literary term; here and throughout the Psalms.',
       highlightColor: Colors.blue,
       keywords: dummyKeywords,
       onTapKeyword: (kw, count) {},
@@ -49,8 +50,7 @@ void main() {
 
   test('formatFootnote preserves punctuation immediately following fqa*', () {
     final TextSpan span = formatFootnote(
-      footnote:
-          r'Or \fqa Hallelu YAH\fqa*, meaning \fqa Praise the LORD\fqa*. This psalm is an acrostic poem.',
+      footnote: r'Or \fqa Hallelu YAH\fqa*, meaning \fqa Praise the LORD\fqa*. This psalm is an acrostic poem.',
       highlightColor: Colors.blue,
       keywords: dummyKeywords,
       onTapKeyword: (kw, count) {},

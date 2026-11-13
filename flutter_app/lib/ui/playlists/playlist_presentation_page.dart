@@ -10,19 +10,22 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
+import 'package:bsb/ui/shared/markdown_style.dart';
 import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
 /// Strips footnote markup and footnote lines from USFM lines so that footnote
 /// markers are not rendered during presentation.
 List<UsfmLine> stripFootnotesFromLines(List<UsfmLine> lines) {
-  final footnoteRegex =
-      RegExp(r'\\[fx]e?\s*[+-]?\s*.*?(?:\\[fx]e?\*|$)', dotAll: true);
+  final footnoteRegex = RegExp(
+    r'\\[fx]e?\s*[+-]?\s*.*?(?:\\[fx]e?\*|$)',
+    dotAll: true,
+  );
 
   return lines
       .where((line) => line.format != ParagraphFormat.r)
@@ -40,7 +43,10 @@ List<UsfmLine> stripFootnotesFromLines(List<UsfmLine> lines) {
           format: line.format,
         );
       })
-      .where((line) => line.format == ParagraphFormat.b || line.text.trim().isNotEmpty)
+      .where(
+        (line) =>
+            line.format == ParagraphFormat.b || line.text.trim().isNotEmpty,
+      )
       .toList();
 }
 
@@ -63,7 +69,8 @@ class PlaylistPresentationPage extends StatefulWidget {
   }) : assert(playlist != null || playlistId != null);
 
   @override
-  State<PlaylistPresentationPage> createState() => _PlaylistPresentationPageState();
+  State<PlaylistPresentationPage> createState() =>
+      _PlaylistPresentationPageState();
 }
 
 class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
@@ -80,10 +87,13 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   void initState() {
     super.initState();
     _playlist = widget.playlist;
-    _appState = widget.appState ??
+    _appState =
+        widget.appState ??
         (getIt.isRegistered<AppState>() ? getIt<AppState>() : null);
     if (getIt.isRegistered<PlaylistService>()) {
-      getIt<PlaylistService>().changeNotifier.addListener(_onPlaylistServiceChanged);
+      getIt<PlaylistService>().changeNotifier.addListener(
+        _onPlaylistServiceChanged,
+      );
     }
     _initPlaylist();
   }
@@ -92,7 +102,8 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     if (widget.playlist != null) {
       _playlist = widget.playlist;
       await _loadPassages();
-    } else if (widget.playlistId != null && getIt.isRegistered<PlaylistService>()) {
+    } else if (widget.playlistId != null &&
+        getIt.isRegistered<PlaylistService>()) {
       final p = await getIt<PlaylistService>().getPlaylist(widget.playlistId!);
       if (mounted) {
         setState(() {
@@ -147,7 +158,9 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   @override
   void dispose() {
     if (getIt.isRegistered<PlaylistService>()) {
-      getIt<PlaylistService>().changeNotifier.removeListener(_onPlaylistServiceChanged);
+      getIt<PlaylistService>().changeNotifier.removeListener(
+        _onPlaylistServiceChanged,
+      );
     }
     _selectionController.dispose();
     if (!widget.embedded && _isDistractionFree) {
@@ -166,7 +179,11 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
       if (item.isReference && item.reference != null) {
         try {
           final lines = await _dbHelper.getRange(item.reference!);
-          final trimmedLines = trimPassageLines(lines, item.startWordId, item.endWordId);
+          final trimmedLines = trimPassageLines(
+            lines,
+            item.startWordId,
+            item.endWordId,
+          );
           _passageCache[item.id] = stripFootnotesFromLines(trimmedLines);
         } catch (e) {
           log('Error loading passage for ${item.reference}: $e');
@@ -220,12 +237,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
 
   void _openInBibleTab(Reference ref) {
     if (getIt.isRegistered<TabManager>()) {
-      getIt<TabManager>().openTab(
-        ref.bookId,
-        ref.chapter,
-        null,
-        ref.verse,
-      );
+      getIt<TabManager>().openTab(ref.bookId, ref.chapter, null, ref.verse);
       if (!widget.embedded) {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
@@ -237,9 +249,11 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     final appState = _appState;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final defaultRed =
-        isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
-    final redColor = theme.extension<ScriptureTheme>()?.wordsOfJesusColor ??
+    final defaultRed = isDark
+        ? const Color(0xFFFF8A80)
+        : const Color(0xFFB71C1C);
+    final redColor =
+        theme.extension<ScriptureTheme>()?.wordsOfJesusColor ??
         (appState?.getWordsOfJesusColor(theme.brightness) ?? defaultRed);
     final topPadding = _maxTopInset + kToolbarHeight + 16.0;
     final double baseTextSize =
@@ -267,8 +281,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
                 bottom: 40,
               ),
               itemCount: items.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: 32),
+              separatorBuilder: (context, index) => const SizedBox(height: 32),
               itemBuilder: (context, index) {
                 final item = items[index];
                 if (item.isReference) {
@@ -316,11 +329,7 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
       onTap: widget.embedded
           ? widget.onToggleDistractionFree
           : _toggleDistractionFree,
-      child: SafeArea(
-        top: false,
-        bottom: true,
-        child: contentBody,
-      ),
+      child: SafeArea(top: false, bottom: true, child: contentBody),
     );
 
     if (widget.embedded) {
@@ -419,7 +428,9 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 'Unable to load scripture for $ref',
-                style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             )
           else
@@ -433,7 +444,9 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
               onWordTapped: (_) => toggleDistraction?.call(),
               styleBuilder: (format) {
                 final base = UsfmParagraphStyle.usfmDefaults(
-                  format: format == ParagraphFormat.p ? ParagraphFormat.m : format,
+                  format: format == ParagraphFormat.p
+                      ? ParagraphFormat.m
+                      : format,
                   baseStyle: theme.textTheme.bodyMedium!.copyWith(
                     fontSize: textSize,
                     height: 1.5,
@@ -452,9 +465,14 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     );
   }
 
-  Widget _buildNoteView(BuildContext context, PlaylistItem item, double textSize) {
+  Widget _buildNoteView(
+    BuildContext context,
+    PlaylistItem item,
+    double textSize,
+  ) {
     final theme = Theme.of(context);
-    final hasTitle = item.noteTitle != null && item.noteTitle!.trim().isNotEmpty;
+    final hasTitle =
+        item.noteTitle != null && item.noteTitle!.trim().isNotEmpty;
     final noteTitle = hasTitle ? item.noteTitle!.trim() : null;
     final noteColor = theme.colorScheme.primary;
     final titleStyle = theme.textTheme.bodyMedium?.copyWith(
@@ -475,16 +493,12 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
         children: [
           // Note Title (Left aligned)
           if (noteTitle != null) ...[
-            Text(
-              noteTitle,
-              textAlign: TextAlign.left,
-              style: titleStyle,
-            ),
+            Text(noteTitle, textAlign: TextAlign.left, style: titleStyle),
             const SizedBox(height: 8),
           ],
           MarkdownBody(
             data: item.noteText ?? '',
-            styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+            styleSheet: markdownStyleSheetFromTheme(theme).copyWith(
               p: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: textSize * 0.95,
                 height: 1.5,

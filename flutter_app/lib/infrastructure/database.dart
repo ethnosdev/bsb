@@ -183,8 +183,8 @@ class DatabaseHelper {
       final transliteration = (language == Language.greek)
           ? transliterateGreek(text)
           : (language == Language.hebrew || language == Language.aramaic)
-              ? transliterateHebrew(text)
-              : '';
+          ? transliterateHebrew(text)
+          : '';
       final rawPunctuation = row[Schema.ilColPunctuation] as String?;
       final punctuation = rawPunctuation?.replaceAll(htmlTagRegex, '');
       final bsbSort = (row[Schema.ilColBsbSort] as int?) ?? 0;
@@ -439,10 +439,7 @@ class DatabaseHelper {
       final ref = entry.key;
       final fullText = entry.value.join(' ');
 
-      batch.rawInsert(Schema.insertVerseSearch, [
-        ref,
-        fullText,
-      ]);
+      batch.rawInsert(Schema.insertVerseSearch, [ref, fullText]);
     }
     await batch.commit(noResult: true);
     log("Verse search table populated with ${verses.length} verses");

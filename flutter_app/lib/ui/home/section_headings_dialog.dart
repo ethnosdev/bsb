@@ -1,7 +1,7 @@
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SectionHeadingsDialog extends StatefulWidget {
   final int bookId;
@@ -25,7 +25,8 @@ class _SectionHeadingsDialogState extends State<SectionHeadingsDialog> {
   @override
   void initState() {
     super.initState();
-    final loader = widget.headingsLoader ??
+    final loader =
+        widget.headingsLoader ??
         (bookId) => getIt<DatabaseHelper>().getSectionHeadings(bookId);
     _headingsFuture = loader(widget.bookId);
   }

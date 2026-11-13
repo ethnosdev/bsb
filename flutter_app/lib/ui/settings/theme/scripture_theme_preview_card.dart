@@ -1,6 +1,6 @@
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A realistic scripture reading preview card that renders real typography,
 /// verse numbers, headings, footnote marker, and text selection handles for any [ColorScheme].
@@ -26,7 +26,8 @@ class ScriptureThemePreviewCard extends StatelessWidget {
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
     final showWordsInColor =
         wordsOfJesusInRed ?? appState?.wordsOfJesusInRed ?? true;
-    final redWordsColor = wordsOfJesusColor ??
+    final redWordsColor =
+        wordsOfJesusColor ??
         (isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C));
 
     return IgnorePointer(
@@ -65,11 +66,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.menu,
-                    size: 22,
-                    color: colorScheme.onSurface,
-                  ),
+                  Icon(Icons.menu, size: 22, color: colorScheme.onSurface),
                   const SizedBox(width: 12),
                   // Real Chapter Tab Chip
                   Container(
@@ -107,17 +104,9 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Icon(
-                    Icons.add,
-                    size: 22,
-                    color: colorScheme.onSurface,
-                  ),
+                  Icon(Icons.add, size: 22, color: colorScheme.onSurface),
                   const SizedBox(width: 12),
-                  Icon(
-                    Icons.more_vert,
-                    size: 22,
-                    color: colorScheme.onSurface,
-                  ),
+                  Icon(Icons.more_vert, size: 22, color: colorScheme.onSurface),
                 ],
               ),
             ),
@@ -160,8 +149,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                           ),
                         ),
                         const TextSpan(
-                          text:
-                              'When Jesus came down from the mountain, large crowds followed Him. ',
+                          text: 'When Jesus came down from the mountain, large crowds followed Him. ',
                         ),
                         // Verse 2
                         TextSpan(
@@ -172,9 +160,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const TextSpan(
-                          text: 'Suddenly a leper',
-                        ),
+                        const TextSpan(text: 'Suddenly a leper'),
                         // Footnote marker in accent color
                         TextSpan(
                           text: '*',
@@ -185,8 +171,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                           ),
                         ),
                         const TextSpan(
-                          text:
-                              ' came and knelt before Him, saying, “Lord, if You are willing, You can make me clean.”\n\n',
+                          text: ' came and knelt before Him, saying, “Lord, if You are willing, You can make me clean.”\n\n',
                         ),
                         // Verse 3 (New paragraph)
                         TextSpan(
@@ -198,8 +183,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                           ),
                         ),
                         const TextSpan(
-                          text:
-                              'Jesus reached out His hand and touched the man. ',
+                          text: 'Jesus reached out His hand and touched the man. ',
                         ),
                         TextSpan(
                           text: '“I am willing,”',
@@ -230,8 +214,9 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                               height: 1.25,
                               color: colorScheme.onSurface,
                             ),
-                            highlightColor:
-                                colorScheme.primary.withValues(alpha: 0.28),
+                            highlightColor: colorScheme.primary.withValues(
+                              alpha: 0.28,
+                            ),
                             handleColor: colorScheme.primary,
                           ),
                         ),
@@ -277,10 +262,7 @@ class _SelectedWordWithHandles extends StatelessWidget {
             borderRadius: BorderRadius.circular(2.0),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 1.0),
-          child: Text(
-            word,
-            style: style,
-          ),
+          child: Text(word, style: style),
         ),
         // Start handle (bottom-left)
         Positioned(
@@ -288,10 +270,7 @@ class _SelectedWordWithHandles extends StatelessWidget {
           bottom: -handleSize,
           child: CustomPaint(
             size: const Size(handleSize, handleSize),
-            painter: _SelectionHandlePainter(
-              color: handleColor,
-              isStart: true,
-            ),
+            painter: _SelectionHandlePainter(color: handleColor, isStart: true),
           ),
         ),
         // End handle (bottom-right)
@@ -315,10 +294,7 @@ class _SelectionHandlePainter extends CustomPainter {
   final Color color;
   final bool isStart;
 
-  const _SelectionHandlePainter({
-    required this.color,
-    required this.isStart,
-  });
+  const _SelectionHandlePainter({required this.color, required this.isStart});
 
   @override
   void paint(Canvas canvas, Size size) {

@@ -7,8 +7,8 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -79,12 +79,12 @@ class FakeDatabaseHelper implements DatabaseHelper {
 
   @override
   Future<List<UsfmLine>> getRange(Reference reference) async => [
-        UsfmLine(
-          bookChapterVerse: reference.packedVerse,
-          text: 'For God so loved the world that He gave His one and only Son.',
-          format: ParagraphFormat.p,
-        ),
-      ];
+    UsfmLine(
+      bookChapterVerse: reference.packedVerse,
+      text: 'For God so loved the world that He gave His one and only Son.',
+      format: ParagraphFormat.p,
+    ),
+  ];
 }
 
 void main() {
@@ -107,163 +107,186 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('PlaylistPresentationPage renders passages and notes in continuous scroll', (tester) async {
-    final playlist = Playlist(
-      id: 'p-pres',
-      title: 'Romans & John Study',
-      items: [
-        PlaylistItem.reference(
-          id: 'item-1',
-          reference: Reference(bookId: 43, chapter: 3, verse: 16),
-          orderIndex: 0,
+  testWidgets(
+    'PlaylistPresentationPage renders passages and notes in continuous scroll',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'p-pres',
+        title: 'Romans & John Study',
+        items: [
+          PlaylistItem.reference(
+            id: 'item-1',
+            reference: Reference(bookId: 43, chapter: 3, verse: 16),
+            orderIndex: 0,
+          ),
+          PlaylistItem.note(
+            id: 'item-2',
+            text: 'What does everlasting life mean here?',
+            orderIndex: 1,
+          ),
+          PlaylistItem.note(
+            id: 'item-3',
+            noteTitle: 'Study Question',
+            text: 'How should we apply this verse?',
+            orderIndex: 2,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(home: PlaylistPresentationPage(playlist: playlist)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Romans & John Study'), findsOneWidget);
+      expect(find.text('John 3:16'), findsOneWidget);
+      expect(
+        find.text('What does everlasting life mean here?'),
+        findsOneWidget,
+      );
+      expect(find.text('Study Question'), findsOneWidget);
+      expect(find.byType(UsfmWidget), findsOneWidget);
+
+      // Verify Passage title is bold and matches scripture section heading style
+      final passageTitleText = tester.widget<Text>(find.text('John 3:16'));
+      expect(passageTitleText.textAlign, equals(TextAlign.left));
+      expect(passageTitleText.style?.fontSize, equals(20.0));
+      expect(passageTitleText.style?.fontWeight, equals(FontWeight.bold));
+
+      // Note without a title does not display any title
+      expect(find.text('Note'), findsNothing);
+
+      // Note with title is rendered with bold and matches scripture section heading size and uses primary color
+      final noteTitleText = tester.widget<Text>(find.text('Study Question'));
+      expect(noteTitleText.textAlign, equals(TextAlign.left));
+      expect(noteTitleText.style?.fontSize, equals(20.0));
+      expect(noteTitleText.style?.fontWeight, equals(FontWeight.bold));
+      expect(
+        noteTitleText.style?.color,
+        equals(
+          Theme.of(tester.element(find.byType(PlaylistPresentationPage)))
+              .colorScheme
+              .primary,
         ),
-        PlaylistItem.note(
-          id: 'item-2',
-          text: 'What does everlasting life mean here?',
-          orderIndex: 1,
+      );
+
+      // Note body text uses primary color
+      final markdown = tester.widget<MarkdownBody>(
+        find.byType(MarkdownBody).first,
+      );
+      expect(
+        markdown.styleSheet?.p?.color,
+        equals(
+          Theme.of(tester.element(find.byType(PlaylistPresentationPage)))
+              .colorScheme
+              .primary,
         ),
-        PlaylistItem.note(
-          id: 'item-3',
-          noteTitle: 'Study Question',
-          text: 'How should we apply this verse?',
-          orderIndex: 2,
-        ),
-      ],
-    );
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PlaylistPresentationPage(playlist: playlist),
-      ),
-    );
-    await tester.pumpAndSettle();
+      // Record initial top position of the passage title on screen
+      final initialTop = tester.getTopLeft(find.text('John 3:16')).dy;
 
-    expect(find.text('Romans & John Study'), findsOneWidget);
-    expect(find.text('John 3:16'), findsOneWidget);
-    expect(find.text('What does everlasting life mean here?'), findsOneWidget);
-    expect(find.text('Study Question'), findsOneWidget);
-    expect(find.byType(UsfmWidget), findsOneWidget);
+      // Test that fullscreen action button is replaced with edit button
+      expect(find.byIcon(Icons.fullscreen), findsNothing);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-    // Verify Passage title is bold and matches scripture section heading style
-    final passageTitleText = tester.widget<Text>(find.text('John 3:16'));
-    expect(passageTitleText.textAlign, equals(TextAlign.left));
-    expect(passageTitleText.style?.fontSize, equals(20.0));
-    expect(passageTitleText.style?.fontWeight, equals(FontWeight.bold));
+      // Test fullscreen toggle via tapping text
+      await tester.tap(find.byType(UsfmWidget));
+      await tester.pumpAndSettle();
 
-    // Note without a title does not display any title
-    expect(find.text('Note'), findsNothing);
+      bool isDistractionFree() {
+        final ignorePointer = tester.widget<IgnorePointer>(
+          find.byWidgetPredicate(
+            (w) => w is IgnorePointer && w.child is AppBar,
+          ),
+        );
+        return ignorePointer.ignoring;
+      }
 
-    // Note with title is rendered with bold and matches scripture section heading size and uses primary color
-    final noteTitleText = tester.widget<Text>(find.text('Study Question'));
-    expect(noteTitleText.textAlign, equals(TextAlign.left));
-    expect(noteTitleText.style?.fontSize, equals(20.0));
-    expect(noteTitleText.style?.fontWeight, equals(FontWeight.bold));
-    expect(noteTitleText.style?.color, equals(Theme.of(tester.element(find.byType(PlaylistPresentationPage))).colorScheme.primary));
+      expect(isDistractionFree(), isTrue);
+      // Verify text does not jump when going into fullscreen mode
+      final fullscreenTop = tester.getTopLeft(find.text('John 3:16')).dy;
+      expect(fullscreenTop, equals(initialTop));
 
-    // Note body text uses primary color
-    final markdown = tester.widget<MarkdownBody>(find.byType(MarkdownBody).first);
-    expect(markdown.styleSheet?.p?.color, equals(Theme.of(tester.element(find.byType(PlaylistPresentationPage))).colorScheme.primary));
+      // Tap whitespace on screen to exit distraction free
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pumpAndSettle();
+      expect(isDistractionFree(), isFalse);
+      // Verify text position remains identical after exiting fullscreen mode
+      expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
 
-    // Record initial top position of the passage title on screen
-    final initialTop = tester.getTopLeft(find.text('John 3:16')).dy;
+      // Tap on scripture passage to enter full screen mode
+      await tester.tap(find.byType(UsfmWidget));
+      await tester.pumpAndSettle();
+      expect(isDistractionFree(), isTrue);
+      expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
 
-    // Test that fullscreen action button is replaced with edit button
-    expect(find.byIcon(Icons.fullscreen), findsNothing);
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+      // Tap on note to exit full screen mode
+      await tester.tap(find.text('What does everlasting life mean here?'));
+      await tester.pumpAndSettle();
+      expect(isDistractionFree(), isFalse);
+      expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
 
-    // Test fullscreen toggle via tapping text
-    await tester.tap(find.byType(UsfmWidget));
-    await tester.pumpAndSettle();
+      // Tap on note to enter full screen mode
+      await tester.tap(find.text('What does everlasting life mean here?'));
+      await tester.pumpAndSettle();
+      expect(isDistractionFree(), isTrue);
+      expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
 
-    bool isDistractionFree() {
-      final ignorePointer = tester.widget<IgnorePointer>(find.byWidgetPredicate(
-        (w) => w is IgnorePointer && w.child is AppBar,
-      ));
-      return ignorePointer.ignoring;
-    }
+      // Tap on passage header to exit full screen mode
+      await tester.tap(find.text('John 3:16'));
+      await tester.pumpAndSettle();
+      expect(isDistractionFree(), isFalse);
+      expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
+    },
+  );
 
-    expect(isDistractionFree(), isTrue);
-    // Verify text does not jump when going into fullscreen mode
-    final fullscreenTop = tester.getTopLeft(find.text('John 3:16')).dy;
-    expect(fullscreenTop, equals(initialTop));
+  testWidgets(
+    'Tapping edit button navigates to PlaylistEditorPage and updates presentation on return',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'p-edit-test',
+        title: 'Original Title',
+        items: [
+          PlaylistItem.reference(
+            id: 'item-1',
+            reference: Reference(bookId: 43, chapter: 3, verse: 16),
+            orderIndex: 0,
+          ),
+        ],
+      );
+      await fakePlaylistDb.savePlaylist(playlist);
 
-    // Tap whitespace on screen to exit distraction free
-    await tester.tap(find.byType(GestureDetector).first);
-    await tester.pumpAndSettle();
-    expect(isDistractionFree(), isFalse);
-    // Verify text position remains identical after exiting fullscreen mode
-    expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
+      await tester.pumpWidget(
+        MaterialApp(home: PlaylistPresentationPage(playlist: playlist)),
+      );
+      await tester.pumpAndSettle();
 
-    // Tap on scripture passage to enter full screen mode
-    await tester.tap(find.byType(UsfmWidget));
-    await tester.pumpAndSettle();
-    expect(isDistractionFree(), isTrue);
-    expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
+      expect(find.text('Original Title'), findsOneWidget);
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
 
-    // Tap on note to exit full screen mode
-    await tester.tap(find.text('What does everlasting life mean here?'));
-    await tester.pumpAndSettle();
-    expect(isDistractionFree(), isFalse);
-    expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
+      // Tap the edit button
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
 
-    // Tap on note to enter full screen mode
-    await tester.tap(find.text('What does everlasting life mean here?'));
-    await tester.pumpAndSettle();
-    expect(isDistractionFree(), isTrue);
-    expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
+      // Verify PlaylistEditorPage is open
+      expect(find.byType(PlaylistEditorPage), findsOneWidget);
+      expect(find.text('Edit Playlist'), findsOneWidget);
 
-    // Tap on passage header to exit full screen mode
-    await tester.tap(find.text('John 3:16'));
-    await tester.pumpAndSettle();
-    expect(isDistractionFree(), isFalse);
-    expect(tester.getTopLeft(find.text('John 3:16')).dy, equals(initialTop));
-  });
+      // Edit the title
+      await tester.enterText(find.byType(TextField), 'Updated Title');
+      await tester.pumpAndSettle();
 
-  testWidgets('Tapping edit button navigates to PlaylistEditorPage and updates presentation on return', (tester) async {
-    final playlist = Playlist(
-      id: 'p-edit-test',
-      title: 'Original Title',
-      items: [
-        PlaylistItem.reference(
-          id: 'item-1',
-          reference: Reference(bookId: 43, chapter: 3, verse: 16),
-          orderIndex: 0,
-        ),
-      ],
-    );
-    await fakePlaylistDb.savePlaylist(playlist);
+      // Tap back button to return to PlaylistPresentationPage
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PlaylistPresentationPage(playlist: playlist),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Original Title'), findsOneWidget);
-    expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-
-    // Tap the edit button
-    await tester.tap(find.byIcon(Icons.edit_outlined));
-    await tester.pumpAndSettle();
-
-    // Verify PlaylistEditorPage is open
-    expect(find.byType(PlaylistEditorPage), findsOneWidget);
-    expect(find.text('Edit Playlist'), findsOneWidget);
-
-    // Edit the title
-    await tester.enterText(find.byType(TextField), 'Updated Title');
-    await tester.pumpAndSettle();
-
-    // Tap back button to return to PlaylistPresentationPage
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
-
-    // Verify we are back on PlaylistPresentationPage and title has updated
-    expect(find.byType(PlaylistEditorPage), findsNothing);
-    expect(find.byType(PlaylistPresentationPage), findsOneWidget);
-    expect(find.text('Updated Title'), findsOneWidget);
-  });
+      // Verify we are back on PlaylistPresentationPage and title has updated
+      expect(find.byType(PlaylistEditorPage), findsNothing);
+      expect(find.byType(PlaylistPresentationPage), findsOneWidget);
+      expect(find.text('Updated Title'), findsOneWidget);
+    },
+  );
 
   test('stripFootnotesFromLines removes inline footnote markers and paragraph format r lines', () {
     final rawLines = [
@@ -291,80 +314,85 @@ void main() {
 
     final stripped = stripFootnotesFromLines(rawLines);
     expect(stripped.length, 3);
-    expect(stripped[0].text, 'For God so loved the world that He gave His one and only Son,');
+    expect(
+      stripped[0].text,
+      'For God so loved the world that He gave His one and only Son,',
+    );
     expect(stripped[1].text, 'Attached withoutspace');
     expect(stripped[2].text, 'Trailing.');
   });
 
-  testWidgets('PlaylistPresentationPage does not render footnote markers when presenting', (tester) async {
-    final fakeDb = FakeDatabaseHelperWithFootnotes();
-    await getIt.reset();
-    final userSettings = UserSettings();
-    await userSettings.init();
-    getIt.registerSingleton<UserSettings>(userSettings);
-    getIt.registerSingleton<DatabaseHelper>(fakeDb);
+  testWidgets(
+    'PlaylistPresentationPage does not render footnote markers when presenting',
+    (tester) async {
+      final fakeDb = FakeDatabaseHelperWithFootnotes();
+      await getIt.reset();
+      final userSettings = UserSettings();
+      await userSettings.init();
+      getIt.registerSingleton<UserSettings>(userSettings);
+      getIt.registerSingleton<DatabaseHelper>(fakeDb);
 
-    final playlist = Playlist(
-      id: 'p-fn',
-      title: 'Passage with Footnotes',
-      items: [
-        PlaylistItem.reference(
-          id: 'item-fn',
-          reference: Reference(bookId: 43, chapter: 3, verse: 16),
-          orderIndex: 0,
-        ),
-      ],
-    );
+      final playlist = Playlist(
+        id: 'p-fn',
+        title: 'Passage with Footnotes',
+        items: [
+          PlaylistItem.reference(
+            id: 'item-fn',
+            reference: Reference(bookId: 43, chapter: 3, verse: 16),
+            orderIndex: 0,
+          ),
+        ],
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PlaylistPresentationPage(playlist: playlist),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(home: PlaylistPresentationPage(playlist: playlist)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(UsfmWidget), findsOneWidget);
-    // Assert no FootnoteWidget is rendered
-    expect(find.byType(FootnoteWidget), findsNothing);
-    expect(find.text('*'), findsNothing);
-  });
+      expect(find.byType(UsfmWidget), findsOneWidget);
+      // Assert no FootnoteWidget is rendered
+      expect(find.byType(FootnoteWidget), findsNothing);
+      expect(find.text('*'), findsNothing);
+    },
+  );
 
-  testWidgets('PlaylistPresentationPage trims words and suppresses verse number when start is trimmed', (tester) async {
-    final playlist = Playlist(
-      id: 'p-trim',
-      title: 'Trimmed Presentation',
-      items: [
-        PlaylistItem.reference(
-          id: 'item-trim',
-          reference: Reference(bookId: 43, chapter: 3, verse: 16),
-          // Trim starting at word 1 ("God"), omitting word 0 ("For")
-          startWordId: 43003016001,
-          orderIndex: 0,
-        ),
-      ],
-    );
+  testWidgets(
+    'PlaylistPresentationPage trims words and suppresses verse number when start is trimmed',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'p-trim',
+        title: 'Trimmed Presentation',
+        items: [
+          PlaylistItem.reference(
+            id: 'item-trim',
+            reference: Reference(bookId: 43, chapter: 3, verse: 16),
+            // Trim starting at word 1 ("God"), omitting word 0 ("For")
+            startWordId: 43003016001,
+            orderIndex: 0,
+          ),
+        ],
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PlaylistPresentationPage(playlist: playlist),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(home: PlaylistPresentationPage(playlist: playlist)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(UsfmWidget), findsOneWidget);
-    // "For" was trimmed away
-    expect(
-      find.byWidgetPredicate((w) => w is WordWidget && w.text == 'For'),
-      findsNothing,
-    );
-    // "God" is present
-    expect(
-      find.byWidgetPredicate((w) => w is WordWidget && w.text == 'God'),
-      findsOneWidget,
-    );
-    // Verse number is suppressed because the first word of the verse was trimmed
-    expect(find.byType(VerseNumberWidget), findsNothing);
-  });
+      expect(find.byType(UsfmWidget), findsOneWidget);
+      // "For" was trimmed away
+      expect(
+        find.byWidgetPredicate((w) => w is WordWidget && w.text == 'For'),
+        findsNothing,
+      );
+      // "God" is present
+      expect(
+        find.byWidgetPredicate((w) => w is WordWidget && w.text == 'God'),
+        findsOneWidget,
+      );
+      // Verse number is suppressed because the first word of the verse was trimmed
+      expect(find.byType(VerseNumberWidget), findsNothing);
+    },
+  );
 }
 
 class FakeDatabaseHelperWithFootnotes implements DatabaseHelper {
@@ -373,10 +401,10 @@ class FakeDatabaseHelperWithFootnotes implements DatabaseHelper {
 
   @override
   Future<List<UsfmLine>> getRange(Reference reference) async => [
-        UsfmLine(
-          bookChapterVerse: reference.packedVerse,
-          text: 'For God so loved the world that He gave His one and only\\f + \\fr 3:16 \\ft Or unique\\f* Son.',
-          format: ParagraphFormat.p,
-        ),
-      ];
+    UsfmLine(
+      bookChapterVerse: reference.packedVerse,
+      text: 'For God so loved the world that He gave His one and only\\f + \\fr 3:16 \\ft Or unique\\f* Son.',
+      format: ParagraphFormat.p,
+    ),
+  ];
 }

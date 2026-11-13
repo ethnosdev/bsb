@@ -9,7 +9,7 @@ import 'package:bsb/main.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/text_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -36,7 +36,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -153,10 +156,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             navigatorObservers: [routeObserver],
-            home: const TextScreen(
-              bookId: 1,
-              chapter: 1,
-            ),
+            home: const TextScreen(bookId: 1, chapter: 1),
           ),
         );
         await tester.pumpAndSettle();
@@ -191,9 +191,7 @@ void main() {
 
         // When TextScreen is replaced / disposed, wakelock should be disabled
         await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: Text('Empty')),
-          ),
+          const MaterialApp(home: Scaffold(body: Text('Empty'))),
         );
         await tester.pumpAndSettle();
         expect(screenWakeService.isAwake, isFalse);

@@ -1,6 +1,6 @@
 import 'package:bsb/core/app_theme_presets.dart';
 import 'package:bsb/core/custom_theme_config.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -31,35 +31,40 @@ void main() {
       expect(unknown.id, equals('sepia'));
     });
 
-    test('all presets have high contrast text in both light and dark modes', () {
-      for (final preset in AppThemePreset.all) {
-        // Light mode contrast check (at least WCAG AA 4.5:1, typically AAA > 7:1)
-        final lightContrast = CustomThemeConfig.calculateContrastRatio(
-          preset.lightScheme.onSurface,
-          preset.lightScheme.surface,
-        );
-        expect(
-          lightContrast,
-          greaterThanOrEqualTo(4.5),
-          reason: '${preset.name} light mode contrast too low ($lightContrast:1)',
-        );
+    test(
+      'all presets have high contrast text in both light and dark modes',
+      () {
+        for (final preset in AppThemePreset.all) {
+          // Light mode contrast check (at least WCAG AA 4.5:1, typically AAA > 7:1)
+          final lightContrast = CustomThemeConfig.calculateContrastRatio(
+            preset.lightScheme.onSurface,
+            preset.lightScheme.surface,
+          );
+          expect(
+            lightContrast,
+            greaterThanOrEqualTo(4.5),
+            reason:
+                '${preset.name} light mode contrast too low ($lightContrast:1)',
+          );
 
-        // Dark mode contrast check
-        final darkContrast = CustomThemeConfig.calculateContrastRatio(
-          preset.darkScheme.onSurface,
-          preset.darkScheme.surface,
-        );
-        expect(
-          darkContrast,
-          greaterThanOrEqualTo(4.5),
-          reason: '${preset.name} dark mode contrast too low ($darkContrast:1)',
-        );
+          // Dark mode contrast check
+          final darkContrast = CustomThemeConfig.calculateContrastRatio(
+            preset.darkScheme.onSurface,
+            preset.darkScheme.surface,
+          );
+          expect(
+            darkContrast,
+            greaterThanOrEqualTo(4.5),
+            reason:
+                '${preset.name} dark mode contrast too low ($darkContrast:1)',
+          );
 
-        // Verify brightness flags
-        expect(preset.lightScheme.brightness, equals(Brightness.light));
-        expect(preset.darkScheme.brightness, equals(Brightness.dark));
-      }
-    });
+          // Verify brightness flags
+          expect(preset.lightScheme.brightness, equals(Brightness.light));
+          expect(preset.darkScheme.brightness, equals(Brightness.dark));
+        }
+      },
+    );
   });
 
   group('CustomThemeConfig Tests', () {
@@ -114,27 +119,35 @@ void main() {
       expect(restored.backgroundColor, equals(config.backgroundColor));
       expect(restored.textColor, equals(config.textColor));
       expect(restored.primaryColor, equals(config.primaryColor));
-      expect(restored.surfaceContainerColor, equals(config.surfaceContainerColor));
+      expect(
+        restored.surfaceContainerColor,
+        equals(config.surfaceContainerColor),
+      );
       expect(restored.secondaryTextColor, equals(config.secondaryTextColor));
       expect(restored.outlineColor, equals(config.outlineColor));
       expect(restored.wordsOfJesusColor, equals(config.wordsOfJesusColor));
-      expect(restored.effectiveWordsOfJesusColor, equals(const Color(0xFFE91E63)));
+      expect(
+        restored.effectiveWordsOfJesusColor,
+        equals(const Color(0xFFE91E63)),
+      );
     });
 
     test('effectiveWordsOfJesusColor falls back to defaults for light and dark modes', () {
-      const lightConfig = CustomThemeConfig(
-        backgroundColor: Color(0xFFFFFFFF),
-      );
+      const lightConfig = CustomThemeConfig(backgroundColor: Color(0xFFFFFFFF));
       expect(lightConfig.isDark, isFalse);
       expect(lightConfig.wordsOfJesusColor, isNull);
-      expect(lightConfig.effectiveWordsOfJesusColor, equals(const Color(0xFFB71C1C)));
-
-      const darkConfig = CustomThemeConfig(
-        backgroundColor: Color(0xFF000000),
+      expect(
+        lightConfig.effectiveWordsOfJesusColor,
+        equals(const Color(0xFFB71C1C)),
       );
+
+      const darkConfig = CustomThemeConfig(backgroundColor: Color(0xFF000000));
       expect(darkConfig.isDark, isTrue);
       expect(darkConfig.wordsOfJesusColor, isNull);
-      expect(darkConfig.effectiveWordsOfJesusColor, equals(const Color(0xFFFF8A80)));
+      expect(
+        darkConfig.effectiveWordsOfJesusColor,
+        equals(const Color(0xFFFF8A80)),
+      );
     });
 
     test('copyWith allows overriding and clearing individual color slots', () {
@@ -156,7 +169,10 @@ void main() {
       expect(updated.isDark, isTrue);
       // Effective text color should automatically flip to light
       expect(updated.effectiveTextColor.computeLuminance(), greaterThan(0.6));
-      expect(updated.effectiveWordsOfJesusColor, equals(const Color(0xFFFF8A80)));
+      expect(
+        updated.effectiveWordsOfJesusColor,
+        equals(const Color(0xFFFF8A80)),
+      );
     });
   });
 }

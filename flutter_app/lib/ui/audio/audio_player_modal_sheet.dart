@@ -2,7 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens the expanded full-featured audio player bottom sheet.
 Future<void> showAudioPlayerModalSheet(

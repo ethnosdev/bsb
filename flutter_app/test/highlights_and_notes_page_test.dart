@@ -8,7 +8,7 @@ import 'package:bsb/ui/home/drawer.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -20,7 +20,9 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) async {
+  Future<List<Highlight>> getAllHighlights({
+    String orderBy = 'updated_at DESC',
+  }) async {
     final list = List<Highlight>.from(_highlights);
     if (orderBy.contains('start_word_id') || orderBy.contains('book_id')) {
       list.sort((a, b) {
@@ -184,7 +186,12 @@ class TrackingTabManager extends TabManager {
   int? openedVerse;
 
   @override
-  Future<void> openTab(int bookId, int chapter, [String? title, int? targetVerse]) async {
+  Future<void> openTab(
+    int bookId,
+    int chapter, [
+    String? title,
+    int? targetVerse,
+  ]) async {
     openedBookId = bookId;
     openedChapter = chapter;
     openedVerse = targetVerse;
@@ -214,8 +221,10 @@ void main() {
     getIt.registerSingleton<AnnotationService>(annotationService);
 
     fakeDbHelper = FakeDatabaseHelper();
-    fakeDbHelper.verseTexts[1001001] = 'In the beginning God created the heavens and the earth.';
-    fakeDbHelper.verseTexts[43003016] = 'For God so loved the world that He gave His one and only Son.';
+    fakeDbHelper.verseTexts[1001001] =
+        'In the beginning God created the heavens and the earth.';
+    fakeDbHelper.verseTexts[43003016] =
+        'For God so loved the world that He gave His one and only Son.';
     getIt.registerSingleton<DatabaseHelper>(fakeDbHelper);
 
     trackingTabManager = TrackingTabManager();
@@ -257,78 +266,92 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('AppDrawer contains Highlights & Notes option and navigates to page', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          drawer: const AppDrawer(),
-          body: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => Scaffold.of(context).openDrawer(),
-              child: const Text('Open Drawer'),
+  testWidgets(
+    'AppDrawer contains Highlights & Notes option and navigates to page',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            drawer: const AppDrawer(),
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => Scaffold.of(context).openDrawer(),
+                child: const Text('Open Drawer'),
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    // Open the drawer
-    await tester.tap(find.text('Open Drawer'));
-    await tester.pumpAndSettle();
+      // Open the drawer
+      await tester.tap(find.text('Open Drawer'));
+      await tester.pumpAndSettle();
 
-    // Verify 'Highlights & Notes' list tile exists
-    final tileFinder = find.text('Highlights & Notes');
-    expect(tileFinder, findsOneWidget);
+      // Verify 'Highlights & Notes' list tile exists
+      final tileFinder = find.text('Highlights & Notes');
+      expect(tileFinder, findsOneWidget);
 
-    // Tap 'Highlights & Notes'
-    await tester.tap(tileFinder);
-    await tester.pumpAndSettle();
+      // Tap 'Highlights & Notes'
+      await tester.tap(tileFinder);
+      await tester.pumpAndSettle();
 
-    // Verify we navigated to HighlightsAndNotesPage
-    expect(find.byType(HighlightsAndNotesPage), findsOneWidget);
-    expect(find.text('Highlights'), findsOneWidget);
-    expect(find.text('Notes'), findsOneWidget);
-  });
+      // Verify we navigated to HighlightsAndNotesPage
+      expect(find.byType(HighlightsAndNotesPage), findsOneWidget);
+      expect(find.text('Highlights'), findsOneWidget);
+      expect(find.text('Notes'), findsOneWidget);
+    },
+  );
 
-  testWidgets('Highlights tab displays empty state when no highlights exist', (tester) async {
+  testWidgets('Highlights tab displays empty state when no highlights exist', (
+    tester,
+  ) async {
     await openPage(tester);
 
     expect(find.text('No highlights yet'), findsOneWidget);
-    expect(find.textContaining('Long press a verse in the Bible reader'), findsOneWidget);
-  });
-
-  testWidgets('Highlights tab displays highlights with snippets and navigates on tap', (tester) async {
-    // Add a highlight in Genesis 1:1 (book 1, ch 1, v 1, words 1..5)
-    final h1 = Highlight(
-      id: 'h1',
-      bookId: 1,
-      chapter: 1,
-      startWordId: 1001001001,
-      endWordId: 1001001005,
-      color: HighlightColor.yellow,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      updatedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+    expect(
+      find.textContaining('Long press a verse in the Bible reader'),
+      findsOneWidget,
     );
-    await fakeAnnotationDb.insertHighlight(h1);
-
-    await openPage(tester);
-
-    // Verify highlight is rendered
-    expect(find.text('Genesis 1:1'), findsOneWidget);
-    expect(find.text('In the beginning God created the heavens and the earth.'), findsOneWidget);
-    expect(find.text('Highlights (1)'), findsOneWidget);
-
-    // Tap highlight card
-    await tester.tap(find.text('Genesis 1:1'));
-    await tester.pumpAndSettle();
-
-    // Verify TabManager was invoked with target verse and page popped back to root
-    expect(trackingTabManager.openedBookId, 1);
-    expect(trackingTabManager.openedChapter, 1);
-    expect(trackingTabManager.openedVerse, 1);
-    expect(find.text('Open Page'), findsOneWidget);
-    expect(find.byType(HighlightsAndNotesPage), findsNothing);
   });
+
+  testWidgets(
+    'Highlights tab displays highlights with snippets and navigates on tap',
+    (tester) async {
+      // Add a highlight in Genesis 1:1 (book 1, ch 1, v 1, words 1..5)
+      final h1 = Highlight(
+        id: 'h1',
+        bookId: 1,
+        chapter: 1,
+        startWordId: 1001001001,
+        endWordId: 1001001005,
+        color: HighlightColor.yellow,
+        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        updatedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      );
+      await fakeAnnotationDb.insertHighlight(h1);
+
+      await openPage(tester);
+
+      // Verify highlight is rendered
+      expect(find.text('Genesis 1:1'), findsOneWidget);
+      expect(
+        find.text('In the beginning God created the heavens and the earth.'),
+        findsOneWidget,
+      );
+      expect(find.text('Highlights (1)'), findsOneWidget);
+
+      // Tap highlight card
+      await tester.tap(find.text('Genesis 1:1'));
+      await tester.pumpAndSettle();
+
+      // Verify TabManager was invoked with target verse and page popped back to root
+      expect(trackingTabManager.openedBookId, 1);
+      expect(trackingTabManager.openedChapter, 1);
+      expect(trackingTabManager.openedVerse, 1);
+      expect(find.text('Open Page'), findsOneWidget);
+      expect(find.byType(HighlightsAndNotesPage), findsNothing);
+    },
+  );
 
   testWidgets('Highlights can be deleted with confirmation', (tester) async {
     final h1 = Highlight(
@@ -370,14 +393,21 @@ void main() {
     expect(find.text('Highlights'), findsOneWidget);
   });
 
-  testWidgets('Notes tab displays empty state when no notes exist', (tester) async {
+  testWidgets('Notes tab displays empty state when no notes exist', (
+    tester,
+  ) async {
     await openPage(tester, initialTabIndex: 1);
 
     expect(find.text('No notes yet'), findsOneWidget);
-    expect(find.textContaining('Select a verse and tap the Note option'), findsOneWidget);
+    expect(
+      find.textContaining('Select a verse and tap the Note option'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('Notes tab displays note, allows editing and deleting', (tester) async {
+  testWidgets('Notes tab displays note, allows editing and deleting', (
+    tester,
+  ) async {
     final note1 = Note(
       id: 'n1',
       bookId: 43,
@@ -394,7 +424,12 @@ void main() {
 
     expect(find.text('John 3:16'), findsOneWidget);
     expect(find.text('Key verse for God\'s love'), findsOneWidget);
-    expect(find.text('For God so loved the world that He gave His one and only Son.'), findsOneWidget);
+    expect(
+      find.text(
+        'For God so loved the world that He gave His one and only Son.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Notes (1)'), findsOneWidget);
 
     // Edit note
@@ -402,7 +437,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NoteEditorSheet), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'Updated insight on John 3:16');
+    await tester.enterText(
+      find.byType(TextField),
+      'Updated insight on John 3:16',
+    );
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
@@ -420,7 +458,9 @@ void main() {
     expect(find.text('No notes yet'), findsOneWidget);
   });
 
-  testWidgets('Notes tab navigates to verse on card tap and pops page', (tester) async {
+  testWidgets('Notes tab navigates to verse on card tap and pops page', (
+    tester,
+  ) async {
     final note1 = Note(
       id: 'n1',
       bookId: 43,
@@ -512,164 +552,188 @@ void main() {
     expect(find.text('John 3:16'), findsOneWidget);
   });
 
-  testWidgets('Biblical order is default and selecting another sort order is remembered', (tester) async {
-    // h1: Revelation 1:1 (book 66, created today)
-    final h1 = Highlight(
-      id: 'h1',
-      bookId: 66,
-      chapter: 1,
-      startWordId: 66001001001,
-      endWordId: 66001001005,
-      color: HighlightColor.blue,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    // h2: Genesis 1:1 (book 1, created 2 days ago)
-    final h2 = Highlight(
-      id: 'h2',
-      bookId: 1,
-      chapter: 1,
-      startWordId: 1001001001,
-      endWordId: 1001001005,
-      color: HighlightColor.yellow,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-    );
-    await fakeAnnotationDb.insertHighlight(h1);
-    await fakeAnnotationDb.insertHighlight(h2);
+  testWidgets(
+    'Biblical order is default and selecting another sort order is remembered',
+    (tester) async {
+      // h1: Revelation 1:1 (book 66, created today)
+      final h1 = Highlight(
+        id: 'h1',
+        bookId: 66,
+        chapter: 1,
+        startWordId: 66001001001,
+        endWordId: 66001001005,
+        color: HighlightColor.blue,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      // h2: Genesis 1:1 (book 1, created 2 days ago)
+      final h2 = Highlight(
+        id: 'h2',
+        bookId: 1,
+        chapter: 1,
+        startWordId: 1001001001,
+        endWordId: 1001001005,
+        color: HighlightColor.yellow,
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        updatedAt: DateTime.now().subtract(const Duration(days: 2)),
+      );
+      await fakeAnnotationDb.insertHighlight(h1);
+      await fakeAnnotationDb.insertHighlight(h2);
 
-    // 1. Initial open: no saved preference, default should be Biblical order
-    expect(userSettings.annotationSortOrder, isNull);
-    await openPage(tester);
+      // 1. Initial open: no saved preference, default should be Biblical order
+      expect(userSettings.annotationSortOrder, isNull);
+      await openPage(tester);
 
-    // In Biblical order: Genesis 1:1 (book 1) comes before Revelation 1:1 (book 66)
-    var firstCard = find.byType(Card).first;
-    expect(find.descendant(of: firstCard, matching: find.text('Genesis 1:1')), findsOneWidget);
+      // In Biblical order: Genesis 1:1 (book 1) comes before Revelation 1:1 (book 66)
+      var firstCard = find.byType(Card).first;
+      expect(
+        find.descendant(of: firstCard, matching: find.text('Genesis 1:1')),
+        findsOneWidget,
+      );
 
-    // 2. Select 'Newest first' from sort menu
-    await tester.tap(find.byTooltip('Sort by'));
-    await tester.pumpAndSettle();
+      // 2. Select 'Newest first' from sort menu
+      await tester.tap(find.byTooltip('Sort by'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Newest first'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Newest first'));
+      await tester.pumpAndSettle();
 
-    // Now Revelation 1:1 (created today) should be first
-    firstCard = find.byType(Card).first;
-    expect(find.descendant(of: firstCard, matching: find.text('Revelation 1:1')), findsOneWidget);
+      // Now Revelation 1:1 (created today) should be first
+      firstCard = find.byType(Card).first;
+      expect(
+        find.descendant(of: firstCard, matching: find.text('Revelation 1:1')),
+        findsOneWidget,
+      );
 
-    // Verify preference was saved in userSettings
-    expect(userSettings.annotationSortOrder, 'newest');
+      // Verify preference was saved in userSettings
+      expect(userSettings.annotationSortOrder, 'newest');
 
-    // 3. Pop page and reopen: verify remembered sort order is 'Newest first'
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+      // 3. Pop page and reopen: verify remembered sort order is 'Newest first'
+      await tester.pageBack();
+      await tester.pumpAndSettle();
 
-    // Reopen page
-    await tester.tap(find.text('Open Page'));
-    await tester.pumpAndSettle();
+      // Reopen page
+      await tester.tap(find.text('Open Page'));
+      await tester.pumpAndSettle();
 
-    firstCard = find.byType(Card).first;
-    expect(find.descendant(of: firstCard, matching: find.text('Revelation 1:1')), findsOneWidget);
+      firstCard = find.byType(Card).first;
+      expect(
+        find.descendant(of: firstCard, matching: find.text('Revelation 1:1')),
+        findsOneWidget,
+      );
 
-    // 4. Switch back to 'Biblical order' and verify saved
-    await tester.tap(find.byTooltip('Sort by'));
-    await tester.pumpAndSettle();
+      // 4. Switch back to 'Biblical order' and verify saved
+      await tester.tap(find.byTooltip('Sort by'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Biblical order'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Biblical order'));
+      await tester.pumpAndSettle();
 
-    firstCard = find.byType(Card).first;
-    expect(find.descendant(of: firstCard, matching: find.text('Genesis 1:1')), findsOneWidget);
-    expect(userSettings.annotationSortOrder, 'biblical');
-  });
+      firstCard = find.byType(Card).first;
+      expect(
+        find.descendant(of: firstCard, matching: find.text('Genesis 1:1')),
+        findsOneWidget,
+      );
+      expect(userSettings.annotationSortOrder, 'biblical');
+    },
+  );
 
-  testWidgets('Preview displays only the highlighted text for partial-verse highlights', (tester) async {
-    // Psalm 32:2 (book 19, ch 32, v 2)
-    // Highlight 1: words 0..5
-    final h1 = Highlight(
-      id: 'h1',
-      bookId: 19,
-      chapter: 32,
-      startWordId: 19032002000,
-      endWordId: 19032002005,
-      color: HighlightColor.purple,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    // Highlight 2: words 6..19
-    final h2 = Highlight(
-      id: 'h2',
-      bookId: 19,
-      chapter: 32,
-      startWordId: 19032002006,
-      endWordId: 19032002019,
-      color: HighlightColor.yellow,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    await fakeAnnotationDb.insertHighlight(h1);
-    await fakeAnnotationDb.insertHighlight(h2);
+  testWidgets(
+    'Preview displays only the highlighted text for partial-verse highlights',
+    (tester) async {
+      // Psalm 32:2 (book 19, ch 32, v 2)
+      // Highlight 1: words 0..5
+      final h1 = Highlight(
+        id: 'h1',
+        bookId: 19,
+        chapter: 32,
+        startWordId: 19032002000,
+        endWordId: 19032002005,
+        color: HighlightColor.purple,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      // Highlight 2: words 6..19
+      final h2 = Highlight(
+        id: 'h2',
+        bookId: 19,
+        chapter: 32,
+        startWordId: 19032002006,
+        endWordId: 19032002019,
+        color: HighlightColor.yellow,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await fakeAnnotationDb.insertHighlight(h1);
+      await fakeAnnotationDb.insertHighlight(h2);
 
-    fakeDbHelper.rangeTexts['19032002000_19032002005'] = 'Blessed is the man whose iniquity';
-    fakeDbHelper.rangeTexts['19032002006_19032002019'] =
-        'the LORD does not count against him, in whose spirit there is no deceit.';
-    fakeDbHelper.verseTexts[19032002] =
-        'Blessed is the man whose iniquity the LORD does not count against him, in whose spirit there is no deceit.';
+      fakeDbHelper.rangeTexts['19032002000_19032002005'] =
+          'Blessed is the man whose iniquity';
+      fakeDbHelper.rangeTexts['19032002006_19032002019'] = 'the LORD does not count against him, in whose spirit there is no deceit.';
+      fakeDbHelper.verseTexts[19032002] = 'Blessed is the man whose iniquity the LORD does not count against him, in whose spirit there is no deceit.';
 
-    await openPage(tester);
+      await openPage(tester);
 
-    // Both cards have title 'Psalm 32:2'
-    expect(find.text('Psalm 32:2'), findsNWidgets(2));
+      // Both cards have title 'Psalm 32:2'
+      expect(find.text('Psalm 32:2'), findsNWidgets(2));
 
-    // But each card displays only its specific highlighted words
-    expect(find.text('Blessed is the man whose iniquity'), findsOneWidget);
-    expect(
-      find.text('the LORD does not count against him, in whose spirit there is no deceit.'),
-      findsOneWidget,
-    );
-  });
+      // But each card displays only its specific highlighted words
+      expect(find.text('Blessed is the man whose iniquity'), findsOneWidget);
+      expect(
+        find.text(
+          'the LORD does not count against him, in whose spirit there is no deceit.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('Stored text on Highlight and passageText on Note render directly', (tester) async {
-    final h1 = Highlight(
-      id: 'h_stored',
-      bookId: 19,
-      chapter: 32,
-      startWordId: 19032002000,
-      endWordId: 19032002005,
-      color: HighlightColor.pink,
-      text: 'Blessed is the man',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    final n1 = Note(
-      id: 'n_stored',
-      bookId: 43,
-      chapter: 3,
-      startWordId: 43003016001,
-      endWordId: 43003016010,
-      content: 'Personal reflection',
-      passageText: 'For God so loved the world',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    await fakeAnnotationDb.insertHighlight(h1);
-    await fakeAnnotationDb.insertNote(n1);
+  testWidgets(
+    'Stored text on Highlight and passageText on Note render directly',
+    (tester) async {
+      final h1 = Highlight(
+        id: 'h_stored',
+        bookId: 19,
+        chapter: 32,
+        startWordId: 19032002000,
+        endWordId: 19032002005,
+        color: HighlightColor.pink,
+        text: 'Blessed is the man',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final n1 = Note(
+        id: 'n_stored',
+        bookId: 43,
+        chapter: 3,
+        startWordId: 43003016001,
+        endWordId: 43003016010,
+        content: 'Personal reflection',
+        passageText: 'For God so loved the world',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await fakeAnnotationDb.insertHighlight(h1);
+      await fakeAnnotationDb.insertNote(n1);
 
-    await openPage(tester);
+      await openPage(tester);
 
-    // Highlight shows stored text directly
-    expect(find.text('Blessed is the man'), findsOneWidget);
+      // Highlight shows stored text directly
+      expect(find.text('Blessed is the man'), findsOneWidget);
 
-    // Switch to Notes tab
-    await tester.tap(find.text('Notes (1)'));
-    await tester.pumpAndSettle();
+      // Switch to Notes tab
+      await tester.tap(find.text('Notes (1)'));
+      await tester.pumpAndSettle();
 
-    // Note shows user content and stored passageText directly
-    expect(find.text('Personal reflection'), findsOneWidget);
-    expect(find.text('For God so loved the world'), findsOneWidget);
-  });
+      // Note shows user content and stored passageText directly
+      expect(find.text('Personal reflection'), findsOneWidget);
+      expect(find.text('For God so loved the world'), findsOneWidget);
+    },
+  );
 
-  testWidgets('Overflow menu displays Export and Import options', (tester) async {
+  testWidgets('Overflow menu displays Export and Import options', (
+    tester,
+  ) async {
     await openPage(tester);
 
     await tester.tap(find.byIcon(Icons.more_vert));

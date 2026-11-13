@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AnnotationDisambiguationSheet extends StatelessWidget {
   final String title;
@@ -56,7 +56,9 @@ class AnnotationDisambiguationSheet extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -73,11 +75,15 @@ class AnnotationDisambiguationSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: Icon(Icons.sticky_note_2_outlined,
-                  color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.sticky_note_2_outlined,
+                color: theme.colorScheme.primary,
+              ),
               title: const Text('My Note'),
               subtitle: Text(
-                notePreview.isNotEmpty ? notePreview : 'Tap to view or edit note',
+                notePreview.isNotEmpty
+                    ? notePreview
+                    : 'Tap to view or edit note',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -88,10 +94,15 @@ class AnnotationDisambiguationSheet extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: Icon(Icons.info_outline, color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.info_outline,
+                color: theme.colorScheme.primary,
+              ),
               title: const Text('Translation Footnote'),
               subtitle: Text(
-                footnotePreview.isNotEmpty ? footnotePreview : 'Tap to view footnote details',
+                footnotePreview.isNotEmpty
+                    ? footnotePreview
+                    : 'Tap to view footnote details',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

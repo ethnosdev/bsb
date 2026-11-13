@@ -37,20 +37,38 @@ void main() {
 
     test('heroWord scales and clamps within [24.0, 64.0]', () {
       expect(FontScale.heroWord(20.0), equals(42.0));
-      expect(FontScale.heroWord(8.0), equals(24.0)); // 8 * 2.1 = 16.8 clamped to 24.0
-      expect(FontScale.heroWord(35.0), equals(64.0)); // 35 * 2.1 = 73.5 clamped to 64.0
+      expect(
+        FontScale.heroWord(8.0),
+        equals(24.0),
+      ); // 8 * 2.1 = 16.8 clamped to 24.0
+      expect(
+        FontScale.heroWord(35.0),
+        equals(64.0),
+      ); // 35 * 2.1 = 73.5 clamped to 64.0
     });
 
     test('lexiconBody scales and clamps within [12.0, 26.0]', () {
       expect(FontScale.lexiconBody(20.0), equals(15.0));
-      expect(FontScale.lexiconBody(8.0), equals(12.0)); // 8 * 0.75 = 6.0 clamped to 12.0
-      expect(FontScale.lexiconBody(40.0), equals(26.0)); // 40 * 0.75 = 30.0 clamped to 26.0
+      expect(
+        FontScale.lexiconBody(8.0),
+        equals(12.0),
+      ); // 8 * 0.75 = 6.0 clamped to 12.0
+      expect(
+        FontScale.lexiconBody(40.0),
+        equals(26.0),
+      ); // 40 * 0.75 = 30.0 clamped to 26.0
     });
 
     test('sheetHeadword scales and clamps within [20.0, 48.0]', () {
       expect(FontScale.sheetHeadword(20.0), equals(32.0));
-      expect(FontScale.sheetHeadword(8.0), equals(20.0)); // 8 * 1.6 = 12.8 clamped to 20.0
-      expect(FontScale.sheetHeadword(35.0), equals(48.0)); // 35 * 1.6 = 56.0 clamped to 48.0
+      expect(
+        FontScale.sheetHeadword(8.0),
+        equals(20.0),
+      ); // 8 * 1.6 = 12.8 clamped to 20.0
+      expect(
+        FontScale.sheetHeadword(35.0),
+        equals(48.0),
+      ); // 35 * 1.6 = 56.0 clamped to 48.0
     });
 
     test('sheetRootLemma scales and rounds appropriately', () {

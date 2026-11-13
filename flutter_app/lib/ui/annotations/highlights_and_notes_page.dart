@@ -7,7 +7,7 @@ import 'package:bsb/ui/annotations/annotation_file_handler.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/note_editor_sheet.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum AnnotationSortOrder {
   biblical('Biblical order'),
@@ -29,19 +29,12 @@ enum AnnotationSortOrder {
   }
 }
 
-enum _AnnotationMenuAction {
-  exportJson,
-  exportMarkdown,
-  importJson,
-}
+enum _AnnotationMenuAction { exportJson, exportMarkdown, importJson }
 
 class HighlightsAndNotesPage extends StatefulWidget {
   final int initialTabIndex;
 
-  const HighlightsAndNotesPage({
-    super.key,
-    this.initialTabIndex = 0,
-  });
+  const HighlightsAndNotesPage({super.key, this.initialTabIndex = 0});
 
   @override
   State<HighlightsAndNotesPage> createState() => _HighlightsAndNotesPageState();
@@ -129,7 +122,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
       }
       for (final n in notes) {
         if (n.passageText != null && n.passageText!.isNotEmpty) {
-          _snippetCache[_snippetKey(n.startWordId, n.endWordId)] = n.passageText!;
+          _snippetCache[_snippetKey(n.startWordId, n.endWordId)] =
+              n.passageText!;
         }
       }
 
@@ -280,7 +274,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
       packedInt: note.startWordId,
       packedIntEnd: note.endWordId,
     );
-    final passageText = note.passageText ??
+    final passageText =
+        note.passageText ??
         _snippetCache[_snippetKey(note.startWordId, note.endWordId)];
 
     await NoteEditorSheet.show(
@@ -310,8 +305,18 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
     final now = DateTime.now();
     final diff = now.difference(dt);
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
 
     if (diff.inDays == 0 && now.day == dt.day) {
@@ -477,9 +482,7 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                   ? 'Highlights (${_highlights.length})'
                   : 'Highlights',
             ),
-            Tab(
-              text: _notes.isNotEmpty ? 'Notes (${_notes.length})' : 'Notes',
-            ),
+            Tab(text: _notes.isNotEmpty ? 'Notes (${_notes.length})' : 'Notes'),
           ],
         ),
       ),
@@ -489,10 +492,7 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
                 controller: _tabController,
-                children: [
-                  _buildHighlightsTab(),
-                  _buildNotesTab(),
-                ],
+                children: [_buildHighlightsTab(), _buildNotesTab()],
               ),
       ),
     );
@@ -522,13 +522,11 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
               ),
               const SizedBox(height: 8),
               Text(
-                _searchQuery.isNotEmpty
-                    ? 'Try a different search term.'
-                    : 'Long press a verse in the Bible reader to select and highlight text.',
+                _searchQuery.isNotEmpty ? 'Try a different search term.' : 'Long press a verse in the Bible reader to select and highlight text.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
               ),
             ],
           ),
@@ -545,8 +543,11 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
           packedInt: highlight.startWordId,
           packedIntEnd: highlight.endWordId,
         );
-        final snippet = _snippetCache[
-            _snippetKey(highlight.startWordId, highlight.endWordId)];
+        final snippet =
+            _snippetCache[_snippetKey(
+              highlight.startWordId,
+              highlight.endWordId,
+            )];
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -586,12 +587,12 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                           children: [
                             Text(
                               ref.toString(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
                                   ),
                             ),
                             IconButton(
@@ -600,7 +601,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                               visualDensity: VisualDensity.compact,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
-                              onPressed: () => _confirmDeleteHighlight(highlight),
+                              onPressed: () =>
+                                  _confirmDeleteHighlight(highlight),
                             ),
                           ],
                         ),
@@ -616,7 +618,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                         const SizedBox(height: 8),
                         Text(
                           _formatDate(highlight.updatedAt),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 fontSize: 11,
                                 color: Theme.of(context)
                                     .textTheme
@@ -664,8 +667,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                     : 'Select a verse and tap the Note option to write notes.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
+                  color: Theme.of(context).textTheme.bodySmall?.color,
+                ),
               ),
             ],
           ),
@@ -693,11 +696,7 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _navigateToVerse(
-              note.bookId,
-              note.chapter,
-              ref.verse,
-            ),
+            onTap: () => _navigateToVerse(note.bookId, note.chapter, ref.verse),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -716,9 +715,7 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                           const SizedBox(width: 8),
                           Text(
                             ref.toString(),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).colorScheme.primary,
@@ -754,9 +751,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                   // Note content
                   Text(
                     note.content,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w500),
                   ),
                   if (snippet != null) ...[
                     const SizedBox(height: 10),
@@ -773,9 +769,8 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                         snippet,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontStyle: FontStyle.italic,
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(fontStyle: FontStyle.italic),
                       ),
                     ),
                   ],
@@ -783,13 +778,10 @@ class _HighlightsAndNotesPageState extends State<HighlightsAndNotesPage>
                   Text(
                     _formatDate(note.updatedAt),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.color
-                              ?.withValues(alpha: 0.7),
-                        ),
+                      fontSize: 11,
+                      color: Theme.of(context).textTheme.bodySmall?.color
+                          ?.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),

@@ -14,14 +14,20 @@ void main() {
       service = ReadingPlanService(dbHelper: fakeDb);
     });
 
-    test('init sets activeProgressNotifier to null when no active plan', () async {
-      await service.init();
-      expect(service.activeProgressNotifier.value, isNull);
-      expect(service.getActivePlan(), isNull);
-    });
+    test(
+      'init sets activeProgressNotifier to null when no active plan',
+      () async {
+        await service.init();
+        expect(service.activeProgressNotifier.value, isNull);
+        expect(service.getActivePlan(), isNull);
+      },
+    );
 
     test('startOrResumePlan creates new progress and activates it', () async {
-      await service.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+      await service.startOrResumePlan(
+        PlanTrack.throughTheBible,
+        PlanPace.finishInYear,
+      );
 
       final active = service.activeProgressNotifier.value;
       expect(active, isNotNull);
@@ -41,30 +47,51 @@ void main() {
       expect(dbProgress!.planId, active.planId);
     });
 
-    test('switchActivePlan switches active plan between existing progress records', () async {
-      // Start Plan A (Through the Bible)
-      await service.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
-      // Toggle day 1 in Plan A
-      await service.toggleDayComplete(1);
+    test(
+      'switchActivePlan switches active plan between existing progress records',
+      () async {
+        // Start Plan A (Through the Bible)
+        await service.startOrResumePlan(
+          PlanTrack.throughTheBible,
+          PlanPace.finishInYear,
+        );
+        // Toggle day 1 in Plan A
+        await service.toggleDayComplete(1);
 
-      // Start Plan B (New Testament)
-      await service.startOrResumePlan(PlanTrack.newTestament, PlanPace.finishIn90Days);
-      expect(service.activeProgressNotifier.value!.planId, 'new_testament_finish_in_90_days');
-      expect(service.activeProgressNotifier.value!.completedDays, isEmpty);
+        // Start Plan B (New Testament)
+        await service.startOrResumePlan(
+          PlanTrack.newTestament,
+          PlanPace.finishIn90Days,
+        );
+        expect(
+          service.activeProgressNotifier.value!.planId,
+          'new_testament_finish_in_90_days',
+        );
+        expect(service.activeProgressNotifier.value!.completedDays, isEmpty);
 
-      // Switch back to Plan A
-      await service.switchActivePlan('through_the_bible_finish_in_year');
-      expect(service.activeProgressNotifier.value!.planId, 'through_the_bible_finish_in_year');
-      expect(service.activeProgressNotifier.value!.completedDays, contains(1));
+        // Switch back to Plan A
+        await service.switchActivePlan('through_the_bible_finish_in_year');
+        expect(
+          service.activeProgressNotifier.value!.planId,
+          'through_the_bible_finish_in_year',
+        );
+        expect(
+          service.activeProgressNotifier.value!.completedDays,
+          contains(1),
+        );
 
-      // Check DB persistence
-      final all = await fakeDb.getAllPlanProgress();
-      expect(all.length, 2);
-    });
+        // Check DB persistence
+        final all = await fakeDb.getAllPlanProgress();
+        expect(all.length, 2);
+      },
+    );
 
     test('toggleReadingComplete and toggleDayComplete correctly track sub-day and full-day', () async {
       // Start Through the Bible Finish in a Year (interleaves OT + NT)
-      await service.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+      await service.startOrResumePlan(
+        PlanTrack.throughTheBible,
+        PlanPace.finishInYear,
+      );
       final plan = service.getActivePlan()!;
       final day1 = plan.days[0];
       expect(day1.readings.length, greaterThanOrEqualTo(2));
@@ -110,15 +137,23 @@ void main() {
       expect(progress.isReadingCompleted(1, secondReading), isFalse);
     });
 
-    test('resetPlan deletes progress and clears or updates active plan', () async {
-      await service.startOrResumePlan(PlanTrack.newTestament, PlanPace.oneChapterADay);
-      expect(service.activeProgressNotifier.value, isNotNull);
+    test(
+      'resetPlan deletes progress and clears or updates active plan',
+      () async {
+        await service.startOrResumePlan(
+          PlanTrack.newTestament,
+          PlanPace.oneChapterADay,
+        );
+        expect(service.activeProgressNotifier.value, isNotNull);
 
-      await service.resetPlan('new_testament_one_chapter_a_day');
-      expect(service.activeProgressNotifier.value, isNull);
+        await service.resetPlan('new_testament_one_chapter_a_day');
+        expect(service.activeProgressNotifier.value, isNull);
 
-      final dbRecord = await fakeDb.getPlanProgress('new_testament_one_chapter_a_day');
-      expect(dbRecord, isNull);
-    });
+        final dbRecord = await fakeDb.getPlanProgress(
+          'new_testament_one_chapter_a_day',
+        );
+        expect(dbRecord, isNull);
+      },
+    );
   });
 }

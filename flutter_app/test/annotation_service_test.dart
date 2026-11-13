@@ -13,7 +13,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async {
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async {
     return _highlights
         .where((h) => h.bookId == bookId && h.chapter == chapter)
         .toList()
@@ -21,7 +24,9 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   }
 
   @override
-  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) async {
+  Future<List<Highlight>> getAllHighlights({
+    String orderBy = 'updated_at DESC',
+  }) async {
     final list = List<Highlight>.from(_highlights);
     if (orderBy.contains('start_word_id') || orderBy.contains('book_id')) {
       list.sort((a, b) {
@@ -212,7 +217,8 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   final List<UserPlanProgress> _readingPlans = [];
 
   @override
-  Future<List<UserPlanProgress>> getAllPlanProgress() async => List.from(_readingPlans);
+  Future<List<UserPlanProgress>> getAllPlanProgress() async =>
+      List.from(_readingPlans);
 
   @override
   Future<UserPlanProgress?> getPlanProgress(String planId) async {
@@ -302,69 +308,75 @@ void main() {
       expect(highlights.first.color, HighlightColor.yellow);
     });
 
-    test('splits existing highlight when new color is placed in the middle', () async {
-      await service.addHighlight(
-        bookId: 1,
-        chapter: 1,
-        startWordId: 10,
-        endWordId: 30,
-        color: HighlightColor.yellow,
-      );
+    test(
+      'splits existing highlight when new color is placed in the middle',
+      () async {
+        await service.addHighlight(
+          bookId: 1,
+          chapter: 1,
+          startWordId: 10,
+          endWordId: 30,
+          color: HighlightColor.yellow,
+        );
 
-      // Highlight words 15 to 20 in green
-      await service.addHighlight(
-        bookId: 1,
-        chapter: 1,
-        startWordId: 15,
-        endWordId: 20,
-        color: HighlightColor.green,
-      );
+        // Highlight words 15 to 20 in green
+        await service.addHighlight(
+          bookId: 1,
+          chapter: 1,
+          startWordId: 15,
+          endWordId: 20,
+          color: HighlightColor.green,
+        );
 
-      final highlights = await service.getHighlights(1, 1);
-      expect(highlights.length, 3);
-      // Yellow left part: 10..14
-      expect(highlights[0].startWordId, 10);
-      expect(highlights[0].endWordId, 14);
-      expect(highlights[0].color, HighlightColor.yellow);
+        final highlights = await service.getHighlights(1, 1);
+        expect(highlights.length, 3);
+        // Yellow left part: 10..14
+        expect(highlights[0].startWordId, 10);
+        expect(highlights[0].endWordId, 14);
+        expect(highlights[0].color, HighlightColor.yellow);
 
-      // Green middle: 15..20
-      expect(highlights[1].startWordId, 15);
-      expect(highlights[1].endWordId, 20);
-      expect(highlights[1].color, HighlightColor.green);
+        // Green middle: 15..20
+        expect(highlights[1].startWordId, 15);
+        expect(highlights[1].endWordId, 20);
+        expect(highlights[1].color, HighlightColor.green);
 
-      // Yellow right part: 21..30
-      expect(highlights[2].startWordId, 21);
-      expect(highlights[2].endWordId, 30);
-      expect(highlights[2].color, HighlightColor.yellow);
-    });
+        // Yellow right part: 21..30
+        expect(highlights[2].startWordId, 21);
+        expect(highlights[2].endWordId, 30);
+        expect(highlights[2].color, HighlightColor.yellow);
+      },
+    );
 
-    test('trims right tail of existing highlight when new color overlaps right', () async {
-      await service.addHighlight(
-        bookId: 1,
-        chapter: 1,
-        startWordId: 10,
-        endWordId: 20,
-        color: HighlightColor.yellow,
-      );
+    test(
+      'trims right tail of existing highlight when new color overlaps right',
+      () async {
+        await service.addHighlight(
+          bookId: 1,
+          chapter: 1,
+          startWordId: 10,
+          endWordId: 20,
+          color: HighlightColor.yellow,
+        );
 
-      await service.addHighlight(
-        bookId: 1,
-        chapter: 1,
-        startWordId: 18,
-        endWordId: 25,
-        color: HighlightColor.blue,
-      );
+        await service.addHighlight(
+          bookId: 1,
+          chapter: 1,
+          startWordId: 18,
+          endWordId: 25,
+          color: HighlightColor.blue,
+        );
 
-      final highlights = await service.getHighlights(1, 1);
-      expect(highlights.length, 2);
-      expect(highlights[0].startWordId, 10);
-      expect(highlights[0].endWordId, 17);
-      expect(highlights[0].color, HighlightColor.yellow);
+        final highlights = await service.getHighlights(1, 1);
+        expect(highlights.length, 2);
+        expect(highlights[0].startWordId, 10);
+        expect(highlights[0].endWordId, 17);
+        expect(highlights[0].color, HighlightColor.yellow);
 
-      expect(highlights[1].startWordId, 18);
-      expect(highlights[1].endWordId, 25);
-      expect(highlights[1].color, HighlightColor.blue);
-    });
+        expect(highlights[1].startWordId, 18);
+        expect(highlights[1].endWordId, 25);
+        expect(highlights[1].color, HighlightColor.blue);
+      },
+    );
 
     test('clears highlights in range', () async {
       await service.addHighlight(

@@ -1,7 +1,6 @@
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/scheduler.dart';
 
 /// This class manages the whole screen while TextPageManager only
@@ -12,9 +11,7 @@ class TextScreenManager {
 
   final titleNotifier = ValueNotifier<String>('');
 
-  void updateTitle({
-    required int? index,
-  }) {
+  void updateTitle({required int? index}) {
     if (index == null) return;
     final (bookId, chapter) = bookAndChapterForPageIndex(index);
 
@@ -29,9 +26,7 @@ class TextScreenManager {
     return (bookId, chapterCount);
   }
 
-  (int bookId, int chapter) bookAndChapterForPageIndex(
-    int index,
-  ) {
+  (int bookId, int chapter) bookAndChapterForPageIndex(int index) {
     int pageIndex = index % (maxPageIndex + 1);
 
     int currentBookId = 1;
@@ -56,10 +51,7 @@ class TextScreenManager {
     return verse != null ? '$book $chapter:$verse' : '$book $chapter';
   }
 
-  int pageIndexForBookAndChapter({
-    required int bookId,
-    required int chapter,
-  }) {
+  int pageIndexForBookAndChapter({required int bookId, required int chapter}) {
     return bookIdToChapterIndexMap[bookId]! + chapter - 1;
   }
 

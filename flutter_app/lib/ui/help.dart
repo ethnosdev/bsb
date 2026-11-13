@@ -2,7 +2,7 @@ import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HelpPage extends StatelessWidget {
   const HelpPage({super.key});

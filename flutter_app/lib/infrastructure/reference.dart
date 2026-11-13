@@ -7,23 +7,23 @@ class Reference {
     this.verse,
     this.endVerse,
     this.endChapter,
-  })  : assert(bookId >= 1 && bookId <= 66),
-        assert(chapter >= 1 && chapter <= 150),
-        assert(endChapter == null || endChapter >= chapter),
-        assert(verse == null || verse >= 0),
-        assert(verse != null || endVerse == null),
-        assert(
-          endChapter == null ||
-              verse == null ||
-              endChapter > chapter ||
-              (endChapter == chapter && (endVerse == null || verse <= endVerse)),
-        ),
-        assert(
-          endVerse == null ||
-              verse == null ||
-              endChapter != null ||
-              verse <= endVerse,
-        );
+  }) : assert(bookId >= 1 && bookId <= 66),
+       assert(chapter >= 1 && chapter <= 150),
+       assert(endChapter == null || endChapter >= chapter),
+       assert(verse == null || verse >= 0),
+       assert(verse != null || endVerse == null),
+       assert(
+         endChapter == null ||
+             verse == null ||
+             endChapter > chapter ||
+             (endChapter == chapter && (endVerse == null || verse <= endVerse)),
+       ),
+       assert(
+         endVerse == null ||
+             verse == null ||
+             endChapter != null ||
+             verse <= endVerse,
+       );
 
   /// [packedInt] is in the form BBCCCVVV
   factory Reference.fromVerseId({required int packedInt, int? packedIntEnd}) {
@@ -117,7 +117,10 @@ class Reference {
     );
     final crossMatch = crossChapterRegex.firstMatch(cleanRef);
     if (crossMatch != null) {
-      final bookName = crossMatch.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim();
+      final bookName = crossMatch
+          .group(1)!
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
       final bookId = fullNameToBookIdMap[bookName];
       if (bookId == null) return null;
       final startChapter = int.parse(crossMatch.group(2)!);
@@ -151,15 +154,13 @@ class Reference {
       return null;
     }
 
-    final bookName =
-        match.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final bookName = match.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim();
     final chapter = int.parse(match.group(2)!);
-    final verse =
-        match.group(3) != null ? int.parse(match.group(3)!) : null;
-    final endVerse =
-        match.group(4) != null ? int.parse(match.group(4)!) : null;
-    final endChapter =
-        match.group(5) != null ? int.parse(match.group(5)!) : null;
+    final verse = match.group(3) != null ? int.parse(match.group(3)!) : null;
+    final endVerse = match.group(4) != null ? int.parse(match.group(4)!) : null;
+    final endChapter = match.group(5) != null
+        ? int.parse(match.group(5)!)
+        : null;
 
     final bookId = fullNameToBookIdMap[bookName];
     if (bookId == null) {
@@ -192,11 +193,14 @@ class Reference {
   @override
   String toString() {
     final bookName =
-        (bookId == 19 && endChapter != null && endChapter != chapter && verse == null)
-            ? 'Psalms'
-            : (bookId == 19 && verse != null)
-                ? 'Psalm'
-                : bookIdToFullNameMap[bookId];
+        (bookId == 19 &&
+            endChapter != null &&
+            endChapter != chapter &&
+            verse == null)
+        ? 'Psalms'
+        : (bookId == 19 && verse != null)
+        ? 'Psalm'
+        : bookIdToFullNameMap[bookId];
     if (verse == null) {
       if (endChapter != null && endChapter != chapter) {
         return '$bookName $chapter–$endChapter';
@@ -227,8 +231,7 @@ class Reference {
           endChapter == other.endChapter;
 
   @override
-  int get hashCode =>
-      Object.hash(bookId, chapter, verse, endVerse, endChapter);
+  int get hashCode => Object.hash(bookId, chapter, verse, endVerse, endChapter);
 }
 
 const validBookNames = [

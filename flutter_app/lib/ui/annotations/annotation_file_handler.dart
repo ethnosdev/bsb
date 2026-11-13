@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -14,7 +14,7 @@ class AnnotationFileHandler {
   final AnnotationService _annotationService;
 
   AnnotationFileHandler({AnnotationService? annotationService})
-      : _annotationService = annotationService ?? getIt<AnnotationService>();
+    : _annotationService = annotationService ?? getIt<AnnotationService>();
 
   static String _todayDateString() {
     final now = DateTime.now();
@@ -37,7 +37,9 @@ class AnnotationFileHandler {
 
     if (!context.mounted) return;
 
-    if (backup.highlights.isEmpty && backup.notes.isEmpty && backup.playlists.isEmpty) {
+    if (backup.highlights.isEmpty &&
+        backup.notes.isEmpty &&
+        backup.playlists.isEmpty) {
       final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -79,10 +81,14 @@ class AnnotationFileHandler {
 
     if (!context.mounted) return;
 
-    if (backup.highlights.isEmpty && backup.notes.isEmpty && backup.playlists.isEmpty) {
+    if (backup.highlights.isEmpty &&
+        backup.notes.isEmpty &&
+        backup.playlists.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No highlights, notes, or playlists to export as Markdown.'),
+          content: Text(
+            'No highlights, notes, or playlists to export as Markdown.',
+          ),
         ),
       );
       return;
@@ -107,7 +113,8 @@ class AnnotationFileHandler {
     required String dialogTitle,
     required List<String> allowedExtensions,
   }) async {
-    final isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+    final isDesktop =
+        Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
     if (isDesktop) {
       final savedUri = await FilePicker.saveFile(
@@ -119,11 +126,8 @@ class AnnotationFileHandler {
       );
 
       if (savedUri != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Saved to $fileName'),
-          ),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Saved to $fileName')));
       }
     } else {
       // Mobile (iOS, Android)
@@ -240,9 +244,7 @@ class AnnotationFileHandler {
                     const SizedBox(height: 16),
                     Text(
                       'Choose import option:',
-                      style: Theme.of(ctx)
-                          .textTheme
-                          .bodyMedium
+                      style: Theme.of(ctx).textTheme.bodyMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),

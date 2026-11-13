@@ -10,7 +10,7 @@ import 'package:bsb/ui/playlists/widgets/passage_trim_dialog.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
@@ -65,7 +65,8 @@ class PassageRangePickerDialog extends StatefulWidget {
   }
 
   @override
-  State<PassageRangePickerDialog> createState() => _PassageRangePickerDialogState();
+  State<PassageRangePickerDialog> createState() =>
+      _PassageRangePickerDialogState();
 }
 
 class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
@@ -86,7 +87,8 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
   @override
   void initState() {
     super.initState();
-    _dbHelper = widget.dbHelper ??
+    _dbHelper =
+        widget.dbHelper ??
         (getIt.isRegistered<DatabaseHelper>()
             ? getIt<DatabaseHelper>()
             : DatabaseHelper());
@@ -199,10 +201,12 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
   }
 
   Future<void> _openBookPicker() async {
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final bookStyle = appState?.bookChooserStyleNotifier.value ??
+    final bookStyle =
+        appState?.bookChooserStyleNotifier.value ??
         userSettings?.bookChooserStyle ??
         BookChooserStyle.grid;
 
@@ -210,8 +214,13 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
       context: context,
       builder: (dialogCtx) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600, maxHeight: 650),
@@ -260,10 +269,12 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
   Future<void> _openChapterPicker({required bool isStart}) async {
     if (_bookId == null) return;
 
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final chapterStyle = appState?.chapterChooserStyleNotifier.value ??
+    final chapterStyle =
+        appState?.chapterChooserStyleNotifier.value ??
         userSettings?.chapterChooserStyle ??
         ChapterChooserStyle.keypad;
 
@@ -305,7 +316,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
         _endWordId = null;
         if (isStart) {
           _startChapter = chosenChapter;
-          final maxVerses = getVerseCountForBookAndChapter(_bookId!, chosenChapter);
+          final maxVerses = getVerseCountForBookAndChapter(
+            _bookId!,
+            chosenChapter,
+          );
           if (_startVerse != null && _startVerse! > maxVerses) {
             _startVerse = 1;
           }
@@ -315,13 +329,22 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
 
           // If start range is changed to be greater than end range:
           // make end range match start range
-          if (_compareReference(_startChapter!, _startVerse!, _endChapter!, _endVerse!) > 0) {
+          if (_compareReference(
+                _startChapter!,
+                _startVerse!,
+                _endChapter!,
+                _endVerse!,
+              ) >
+              0) {
             _endChapter = _startChapter;
             _endVerse = _startVerse;
           }
         } else {
           _endChapter = chosenChapter;
-          final maxVerses = getVerseCountForBookAndChapter(_bookId!, chosenChapter);
+          final maxVerses = getVerseCountForBookAndChapter(
+            _bookId!,
+            chosenChapter,
+          );
           if (_endVerse != null && _endVerse! > maxVerses) {
             _endVerse = maxVerses;
           }
@@ -331,7 +354,13 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
 
           // If end range is changed to be before current start range:
           // make start range match end range
-          if (_compareReference(_endChapter!, _endVerse!, _startChapter!, _startVerse!) < 0) {
+          if (_compareReference(
+                _endChapter!,
+                _endVerse!,
+                _startChapter!,
+                _startVerse!,
+              ) <
+              0) {
             _startChapter = _endChapter;
             _startVerse = _endVerse;
           }
@@ -346,10 +375,12 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
     final targetChapter = isStart ? _startChapter : _endChapter;
     if (targetChapter == null) return;
 
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-    final verseStyle = appState?.verseChooserStyleNotifier.value ??
+    final verseStyle =
+        appState?.verseChooserStyleNotifier.value ??
         userSettings?.verseChooserStyle ??
         VerseChooserStyle.sidebar;
 
@@ -396,7 +427,13 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
 
           // If start range is changed to be greater than end range:
           // make end range match start range
-          if (_compareReference(_startChapter!, _startVerse!, _endChapter!, _endVerse!) > 0) {
+          if (_compareReference(
+                _startChapter!,
+                _startVerse!,
+                _endChapter!,
+                _endVerse!,
+              ) >
+              0) {
             _endChapter = _startChapter;
             _endVerse = _startVerse;
           }
@@ -407,7 +444,13 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
 
           // If end range is changed to be before current start range:
           // make start range match end range
-          if (_compareReference(_endChapter!, _endVerse!, _startChapter!, _startVerse!) < 0) {
+          if (_compareReference(
+                _endChapter!,
+                _endVerse!,
+                _startChapter!,
+                _startVerse!,
+              ) <
+              0) {
             _startChapter = _endChapter;
             _startVerse = _endVerse;
           }
@@ -422,7 +465,9 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Passage'),
-        content: const Text('Are you sure you want to remove this passage from the playlist?'),
+        content: const Text(
+          'Are you sure you want to remove this passage from the playlist?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -487,9 +532,7 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
               const SizedBox(height: 16),
 
               // Preview Area
-              Flexible(
-                child: _buildPreviewArea(theme, currentRef),
-              ),
+              Flexible(child: _buildPreviewArea(theme, currentRef)),
               const SizedBox(height: 16),
 
               // Action Buttons (Cancel / Add to Playlist)
@@ -535,7 +578,9 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
   }
 
   Widget _buildSelectorRow(ThemeData theme) {
-    final bookLabel = _bookId == null ? 'Book' : (bookIdToBookNameMap[_bookId] ?? 'Book');
+    final bookLabel = _bookId == null
+        ? 'Book'
+        : (bookIdToBookNameMap[_bookId] ?? 'Book');
     final startChLabel = _startChapter == null ? 'Ch' : '$_startChapter';
     final startVsLabel = _startVerse == null ? 'Vs' : '$_startVerse';
     final endChLabel = _endChapter == null ? 'Ch' : '$_endChapter';
@@ -561,7 +606,9 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
             _buildBtn(
               key: const ValueKey('passage_start_chapter_button'),
               label: startChLabel,
-              onPressed: _bookId == null ? null : () => _openChapterPicker(isStart: true),
+              onPressed: _bookId == null
+                  ? null
+                  : () => _openChapterPicker(isStart: true),
             ),
             // 4. followed by a colon
             _buildColon(theme),
@@ -582,7 +629,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
             _buildBtn(
               key: const ValueKey('passage_end_chapter_button'),
               label: endChLabel,
-              onPressed: (_bookId == null || _startChapter == null || _startVerse == null)
+              onPressed:
+                  (_bookId == null ||
+                      _startChapter == null ||
+                      _startVerse == null)
                   ? null
                   : () => _openChapterPicker(isStart: false),
             ),
@@ -593,7 +643,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
             _buildBtn(
               key: const ValueKey('passage_end_verse_button'),
               label: endVsLabel,
-              onPressed: (_bookId == null || _startChapter == null || _startVerse == null)
+              onPressed:
+                  (_bookId == null ||
+                      _startChapter == null ||
+                      _startVerse == null)
                   ? null
                   : () => _openVersePicker(isStart: false),
             ),
@@ -613,7 +666,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
       key: key,
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: isWide ? 14 : 10, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: isWide ? 14 : 10,
+          vertical: 8,
+        ),
         minimumSize: Size(isWide ? 76 : 44, 40),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -658,7 +714,9 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.3,
+          ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -721,7 +779,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
                     if (_startWordId != null || _endWordId != null) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(4),
@@ -743,7 +804,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
                 icon: const Icon(Icons.content_cut, size: 16),
                 label: const Text('Trim'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),

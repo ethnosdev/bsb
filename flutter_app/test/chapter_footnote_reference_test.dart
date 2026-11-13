@@ -9,7 +9,7 @@ import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -29,8 +29,7 @@ class FakeDatabaseHelper implements DatabaseHelper {
         [
           UsfmLine(
             bookChapterVerse: 2004006,
-            text:
-                r'his hand was leprous,\f + \fr 4:6 \ft The Hebrew word traditionally translated as \fqa leprous\fqa* was used for various skin diseases; see Leviticus 13.\f* white as snow.',
+            text: r'his hand was leprous,\f + \fr 4:6 \ft The Hebrew word traditionally translated as \fqa leprous\fqa* was used for various skin diseases; see Leviticus 13.\f* white as snow.',
             format: ParagraphFormat.p,
           ),
         ];
@@ -56,7 +55,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -245,50 +247,59 @@ void main() {
   });
 
   group('ChapterManager footnote keywords and lookup', () {
-    test('footnoteKeywords regex matches single chapter and chapter ranges', () {
-      final manager = ChapterManager();
+    test(
+      'footnoteKeywords regex matches single chapter and chapter ranges',
+      () {
+        final manager = ChapterManager();
 
-      final regex = manager.footnoteKeywords();
+        final regex = manager.footnoteKeywords();
 
-      expect(regex.hasMatch('Leviticus 13'), isTrue);
-      expect(regex.hasMatch('Job 1'), isTrue);
-      expect(regex.hasMatch('Psalm 16'), isTrue);
-      expect(regex.hasMatch('Psalms 56–60'), isTrue);
-      expect(regex.hasMatch('Psalms 56-60'), isTrue);
-      expect(regex.hasMatch('1 Samuel 21–29'), isTrue);
-      expect(regex.hasMatch('Ezekiel 40–48'), isTrue);
-      expect(regex.hasMatch('2 Kings 18'), isTrue);
+        expect(regex.hasMatch('Leviticus 13'), isTrue);
+        expect(regex.hasMatch('Job 1'), isTrue);
+        expect(regex.hasMatch('Psalm 16'), isTrue);
+        expect(regex.hasMatch('Psalms 56–60'), isTrue);
+        expect(regex.hasMatch('Psalms 56-60'), isTrue);
+        expect(regex.hasMatch('1 Samuel 21–29'), isTrue);
+        expect(regex.hasMatch('Ezekiel 40–48'), isTrue);
+        expect(regex.hasMatch('2 Kings 18'), isTrue);
 
-      // Book name alone should not match
-      expect(regex.hasMatch('In John we see'), isFalse);
-      manager.dispose();
-    });
+        // Book name alone should not match
+        expect(regex.hasMatch('In John we see'), isFalse);
+        manager.dispose();
+      },
+    );
 
-    test('lookupFootnoteDetails retrieves correct range for single chapter', () async {
-      final manager = ChapterManager();
+    test(
+      'lookupFootnoteDetails retrieves correct range for single chapter',
+      () async {
+        final manager = ChapterManager();
 
-      await manager.lookupFootnoteDetails('Leviticus 13');
-      expect(fakeDb.lastRequestedReference, isNotNull);
-      expect(fakeDb.lastRequestedReference!.bookId, equals(3));
-      expect(fakeDb.lastRequestedReference!.chapter, equals(13));
-      expect(fakeDb.lastRequestedReference!.verse, isNull);
-      expect(fakeDb.lastRequestedReference!.packedVerse, equals(3013000));
-      expect(fakeDb.lastRequestedReference!.packedEndVerse, equals(3013999));
-      manager.dispose();
-    });
+        await manager.lookupFootnoteDetails('Leviticus 13');
+        expect(fakeDb.lastRequestedReference, isNotNull);
+        expect(fakeDb.lastRequestedReference!.bookId, equals(3));
+        expect(fakeDb.lastRequestedReference!.chapter, equals(13));
+        expect(fakeDb.lastRequestedReference!.verse, isNull);
+        expect(fakeDb.lastRequestedReference!.packedVerse, equals(3013000));
+        expect(fakeDb.lastRequestedReference!.packedEndVerse, equals(3013999));
+        manager.dispose();
+      },
+    );
 
-    test('lookupFootnoteDetails retrieves correct range for chapter range', () async {
-      final manager = ChapterManager();
+    test(
+      'lookupFootnoteDetails retrieves correct range for chapter range',
+      () async {
+        final manager = ChapterManager();
 
-      await manager.lookupFootnoteDetails('1 Samuel 21–29');
-      expect(fakeDb.lastRequestedReference, isNotNull);
-      expect(fakeDb.lastRequestedReference!.bookId, equals(9));
-      expect(fakeDb.lastRequestedReference!.chapter, equals(21));
-      expect(fakeDb.lastRequestedReference!.endChapter, equals(29));
-      expect(fakeDb.lastRequestedReference!.packedVerse, equals(9021000));
-      expect(fakeDb.lastRequestedReference!.packedEndVerse, equals(9029999));
-      manager.dispose();
-    });
+        await manager.lookupFootnoteDetails('1 Samuel 21–29');
+        expect(fakeDb.lastRequestedReference, isNotNull);
+        expect(fakeDb.lastRequestedReference!.bookId, equals(9));
+        expect(fakeDb.lastRequestedReference!.chapter, equals(21));
+        expect(fakeDb.lastRequestedReference!.endChapter, equals(29));
+        expect(fakeDb.lastRequestedReference!.packedVerse, equals(9021000));
+        expect(fakeDb.lastRequestedReference!.packedEndVerse, equals(9029999));
+        manager.dispose();
+      },
+    );
   });
 
   group('formatFootnote with chapter references', () {
@@ -299,8 +310,7 @@ void main() {
       int? tappedCount;
 
       final span = formatFootnote(
-        footnote:
-            r'A \fqa leper\fqa* was one afflicted with a skin disease; see Leviticus 13.',
+        footnote: r'A \fqa leper\fqa* was one afflicted with a skin disease; see Leviticus 13.',
         highlightColor: Colors.blue,
         keywords: manager.footnoteKeywords(),
         onTapKeyword: (kw, count) {
@@ -333,8 +343,7 @@ void main() {
       final tappedKeywords = <String>[];
 
       final span = formatFootnote(
-        footnote:
-            r'\fqa Abimelech\fqa* is another name for \fqa Achish\fqa*; see 1 Samuel 21–29 and 1 Kings 2:39.',
+        footnote: r'\fqa Abimelech\fqa* is another name for \fqa Achish\fqa*; see 1 Samuel 21–29 and 1 Kings 2:39.',
         highlightColor: Colors.blue,
         keywords: manager.footnoteKeywords(),
         onTapKeyword: (kw, count) {
@@ -359,286 +368,290 @@ void main() {
       manager.dispose();
     });
 
-    test('renders multiple chapter references including Psalm and Psalms range', () {
-      final manager = ChapterManager();
+    test(
+      'renders multiple chapter references including Psalm and Psalms range',
+      () {
+        final manager = ChapterManager();
 
-      final tappedKeywords = <String>[];
+        final tappedKeywords = <String>[];
 
-      final span = formatFootnote(
-        footnote:
-            r'\fqa Miktam\fqa* is probably a musical or liturgical term; used for Psalm 16 and Psalms 56–60.',
-        highlightColor: Colors.blue,
-        keywords: manager.footnoteKeywords(),
-        onTapKeyword: (kw, count) {
-          tappedKeywords.add(kw);
-        },
-      );
+        final span = formatFootnote(
+          footnote: r'\fqa Miktam\fqa* is probably a musical or liturgical term; used for Psalm 16 and Psalms 56–60.',
+          highlightColor: Colors.blue,
+          keywords: manager.footnoteKeywords(),
+          onTapKeyword: (kw, count) {
+            tappedKeywords.add(kw);
+          },
+        );
 
-      final psalmSpan = span.children!.firstWhere(
-        (child) => (child as TextSpan).text == 'Psalm 16',
-      ) as TextSpan;
-      (psalmSpan.recognizer as TapGestureRecognizer).onTap!();
+        final psalmSpan = span.children!.firstWhere(
+          (child) => (child as TextSpan).text == 'Psalm 16',
+        ) as TextSpan;
+        (psalmSpan.recognizer as TapGestureRecognizer).onTap!();
 
-      final psalmsRangeSpan = span.children!.firstWhere(
-        (child) => (child as TextSpan).text == 'Psalms 56–60',
-      ) as TextSpan;
-      (psalmsRangeSpan.recognizer as TapGestureRecognizer).onTap!();
+        final psalmsRangeSpan = span.children!.firstWhere(
+          (child) => (child as TextSpan).text == 'Psalms 56–60',
+        ) as TextSpan;
+        (psalmsRangeSpan.recognizer as TapGestureRecognizer).onTap!();
 
-      expect(tappedKeywords, equals(['Psalm 16', 'Psalms 56–60']));
-      manager.dispose();
-    });
+        expect(tappedKeywords, equals(['Psalm 16', 'Psalms 56–60']));
+        manager.dispose();
+      },
+    );
 
-    testWidgets('ChapterText footnote dialog allows tapping chapter-only reference', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 2,
-              chapter: 4,
-            ),
+    testWidgets(
+      'ChapterText footnote dialog allows tapping chapter-only reference',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 2, chapter: 4)),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Find footnote marker and tap it
-      expect(find.byType(FootnoteWidget), findsOneWidget);
-      await tester.tap(find.byType(FootnoteWidget));
-      await tester.pumpAndSettle();
+        // Find footnote marker and tap it
+        expect(find.byType(FootnoteWidget), findsOneWidget);
+        await tester.tap(find.byType(FootnoteWidget));
+        await tester.pumpAndSettle();
 
-      // Footnote dialog is now visible
-      expect(find.byType(AlertDialog), findsOneWidget);
+        // Footnote dialog is now visible
+        expect(find.byType(AlertDialog), findsOneWidget);
 
-      // Verify SelectableText.rich contains Leviticus 13
-      final selectableFinder = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(SelectableText),
-      );
-      expect(selectableFinder, findsOneWidget);
+        // Verify SelectableText.rich contains Leviticus 13
+        final selectableFinder = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(SelectableText),
+        );
+        expect(selectableFinder, findsOneWidget);
 
-      final selectableWidget = tester.widget<SelectableText>(selectableFinder);
-      final textSpan = selectableWidget.textSpan!;
-      final plainText = textSpan.toPlainText();
-      expect(plainText, contains('Leviticus 13'));
+        final selectableWidget = tester.widget<SelectableText>(
+          selectableFinder,
+        );
+        final textSpan = selectableWidget.textSpan!;
+        final plainText = textSpan.toPlainText();
+        expect(plainText, contains('Leviticus 13'));
 
-      // Find the Leviticus 13 span and trigger its onTap
-      final levSpan = textSpan.children!.firstWhere(
-        (child) => (child as TextSpan).text == 'Leviticus 13',
-      ) as TextSpan;
-      expect(levSpan.recognizer, isA<TapGestureRecognizer>());
-      (levSpan.recognizer as TapGestureRecognizer).onTap!();
+        // Find the Leviticus 13 span and trigger its onTap
+        final levSpan = textSpan.children!.firstWhere(
+          (child) => (child as TextSpan).text == 'Leviticus 13',
+        ) as TextSpan;
+        expect(levSpan.recognizer, isA<TapGestureRecognizer>());
+        (levSpan.recognizer as TapGestureRecognizer).onTap!();
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // The original dialog should be dismissed and details dialog is shown
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.text('Leviticus 13'), findsOneWidget);
-      expect(
-        find.descendant(of: find.byType(Dialog), matching: find.byType(UsfmWidget)),
-        findsOneWidget,
-      );
-      expect(
-        find.byWidgetPredicate((w) => w is WordWidget && w.text == 'Moses'),
-        findsOneWidget,
-      );
-
-      // Verify database helper was called with the correct Reference
-      expect(fakeDb.lastRequestedReference, isNotNull);
-      expect(fakeDb.lastRequestedReference!.bookId, equals(3));
-      expect(fakeDb.lastRequestedReference!.chapter, equals(13));
-      expect(fakeDb.lastRequestedReference!.verse, isNull);
-      expect(fakeDb.lastRequestedReference!.packedVerse, equals(3013000));
-      expect(fakeDb.lastRequestedReference!.packedEndVerse, equals(3013999));
-
-      // Verify open-in-new-tab icon is shown and tap it
-      final openInNewButton = find.descendant(
-        of: find.byType(Dialog),
-        matching: find.byIcon(Icons.open_in_new),
-      );
-      expect(openInNewButton, findsOneWidget);
-
-      await tester.tap(openInNewButton);
-      await tester.pumpAndSettle();
-
-      // Dialog should be dismissed
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(AlertDialog), findsNothing);
-
-      // Verify TabManager opened Leviticus 13 with no target verse
-      final tabManager = getIt<TabManager>();
-      expect(tabManager.tabs.length, equals(1));
-      expect(tabManager.activeTab?.bookId, equals(3));
-      expect(tabManager.activeTab?.chapter, equals(13));
-      expect(tabManager.activeTab?.targetVerse, isNull);
-    });
-
-    testWidgets('Footnote reference with verse shows open-in-new-tab icon and opens tab with target verse', (tester) async {
-      fakeDb.chapterLines = [
-        UsfmLine(
-          bookChapterVerse: 40001001,
-          text: r'The record of the genealogy of Jesus.\f + \fr 1:1 \ft For details see John 3:16.\f*',
-          format: ParagraphFormat.p,
-        ),
-      ];
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 40,
-              chapter: 1,
-            ),
+        // The original dialog should be dismissed and details dialog is shown
+        expect(find.byType(Dialog), findsOneWidget);
+        expect(find.text('Leviticus 13'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(Dialog),
+            matching: find.byType(UsfmWidget),
           ),
-        ),
-      );
+          findsOneWidget,
+        );
+        expect(
+          find.byWidgetPredicate((w) => w is WordWidget && w.text == 'Moses'),
+          findsOneWidget,
+        );
 
-      await tester.pumpAndSettle();
+        // Verify database helper was called with the correct Reference
+        expect(fakeDb.lastRequestedReference, isNotNull);
+        expect(fakeDb.lastRequestedReference!.bookId, equals(3));
+        expect(fakeDb.lastRequestedReference!.chapter, equals(13));
+        expect(fakeDb.lastRequestedReference!.verse, isNull);
+        expect(fakeDb.lastRequestedReference!.packedVerse, equals(3013000));
+        expect(fakeDb.lastRequestedReference!.packedEndVerse, equals(3013999));
 
-      expect(find.byType(FootnoteWidget), findsOneWidget);
-      await tester.tap(find.byType(FootnoteWidget));
-      await tester.pumpAndSettle();
+        // Verify open-in-new-tab icon is shown and tap it
+        final openInNewButton = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byIcon(Icons.open_in_new),
+        );
+        expect(openInNewButton, findsOneWidget);
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+        await tester.tap(openInNewButton);
+        await tester.pumpAndSettle();
 
-      final selectableFinder = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(SelectableText),
-      );
-      final selectableWidget = tester.widget<SelectableText>(selectableFinder);
-      final textSpan = selectableWidget.textSpan!;
-      final johnSpan = textSpan.children!.firstWhere(
-        (child) => (child as TextSpan).text == 'John 3:16',
-      ) as TextSpan;
-      (johnSpan.recognizer as TapGestureRecognizer).onTap!();
+        // Dialog should be dismissed
+        expect(find.byType(Dialog), findsNothing);
+        expect(find.byType(AlertDialog), findsNothing);
 
-      await tester.pumpAndSettle();
+        // Verify TabManager opened Leviticus 13 with no target verse
+        final tabManager = getIt<TabManager>();
+        expect(tabManager.tabs.length, equals(1));
+        expect(tabManager.activeTab?.bookId, equals(3));
+        expect(tabManager.activeTab?.chapter, equals(13));
+        expect(tabManager.activeTab?.targetVerse, isNull);
+      },
+    );
 
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.text('John 3:16'), findsOneWidget);
-
-      final openInNewButton = find.descendant(
-        of: find.byType(Dialog),
-        matching: find.byIcon(Icons.open_in_new),
-      );
-      expect(openInNewButton, findsOneWidget);
-
-      await tester.tap(openInNewButton);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsNothing);
-      final tabManager = getIt<TabManager>();
-      expect(tabManager.tabs.length, equals(1));
-      expect(tabManager.activeTab?.bookId, equals(43));
-      expect(tabManager.activeTab?.chapter, equals(3));
-      expect(tabManager.activeTab?.targetVerse, equals(16));
-    });
-
-    testWidgets('Footnote details dialog does not show open-in-new-tab icon for non-biblical keyword', (tester) async {
-      fakeDb.chapterLines = [
-        UsfmLine(
-          bookChapterVerse: 40001001,
-          text: r'The record.\f + \fr 1:1 \ft Compare with LXX.\f*',
-          format: ParagraphFormat.p,
-        ),
-      ];
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 40,
-              chapter: 1,
-            ),
+    testWidgets(
+      'Footnote reference with verse shows open-in-new-tab icon and opens tab with target verse',
+      (tester) async {
+        fakeDb.chapterLines = [
+          UsfmLine(
+            bookChapterVerse: 40001001,
+            text: r'The record of the genealogy of Jesus.\f + \fr 1:1 \ft For details see John 3:16.\f*',
+            format: ParagraphFormat.p,
           ),
-        ),
-      );
+        ];
 
-      await tester.pumpAndSettle();
-
-      expect(find.byType(FootnoteWidget), findsOneWidget);
-      await tester.tap(find.byType(FootnoteWidget));
-      await tester.pumpAndSettle();
-
-      final selectableFinder = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(SelectableText),
-      );
-      final selectableWidget = tester.widget<SelectableText>(selectableFinder);
-      final textSpan = selectableWidget.textSpan!;
-      final lxxSpan = textSpan.children!.firstWhere(
-        (child) => (child as TextSpan).text == 'LXX',
-      ) as TextSpan;
-      (lxxSpan.recognizer as TapGestureRecognizer).onTap!();
-
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.text('LXX'), findsOneWidget);
-
-      final openInNewButton = find.descendant(
-        of: find.byType(Dialog),
-        matching: find.byIcon(Icons.open_in_new),
-      );
-      expect(openInNewButton, findsNothing);
-    });
-
-    testWidgets('Tapping the word before a footnote marker in a section header opens the cross references footnote dialog', (tester) async {
-      fakeDb.chapterLines = [
-        UsfmLine(
-          bookChapterVerse: 1001000,
-          text: 'The Creation',
-          format: ParagraphFormat.s1,
-        ),
-        UsfmLine(
-          bookChapterVerse: 1001000,
-          text: 'John 1:1–5; Hebrews 11:1–3',
-          format: ParagraphFormat.r,
-        ),
-        UsfmLine(
-          bookChapterVerse: 1001001,
-          text: 'In the beginning God created the heavens and the earth.',
-          format: ParagraphFormat.p,
-        ),
-      ];
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ChapterText(
-              bookId: 1,
-              chapter: 1,
-            ),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 40, chapter: 1)),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Find the word 'Creation' in the section header
-      final creationFinder = find.byWidgetPredicate(
-        (w) => w is WordWidget && w.text == 'Creation',
-      );
-      expect(creationFinder, findsOneWidget);
+        expect(find.byType(FootnoteWidget), findsOneWidget);
+        await tester.tap(find.byType(FootnoteWidget));
+        await tester.pumpAndSettle();
 
-      // Tap 'Creation'
-      await tester.tap(creationFinder);
-      await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
 
-      // Footnote dialog (AlertDialog) should be shown containing the cross references
-      expect(find.byType(AlertDialog), findsOneWidget);
+        final selectableFinder = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(SelectableText),
+        );
+        final selectableWidget = tester.widget<SelectableText>(
+          selectableFinder,
+        );
+        final textSpan = selectableWidget.textSpan!;
+        final johnSpan = textSpan.children!.firstWhere(
+          (child) => (child as TextSpan).text == 'John 3:16',
+        ) as TextSpan;
+        (johnSpan.recognizer as TapGestureRecognizer).onTap!();
 
-      final selectableFinder = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(SelectableText),
-      );
-      expect(selectableFinder, findsOneWidget);
-      final selectableWidget = tester.widget<SelectableText>(selectableFinder);
-      final textSpan = selectableWidget.textSpan!;
-      // Contains the cross reference text
-      expect(textSpan.toPlainText(), contains('John 1:1–5'));
-      expect(textSpan.toPlainText(), contains('Hebrews 11:1–3'));
-    });
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dialog), findsOneWidget);
+        expect(find.text('John 3:16'), findsOneWidget);
+
+        final openInNewButton = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byIcon(Icons.open_in_new),
+        );
+        expect(openInNewButton, findsOneWidget);
+
+        await tester.tap(openInNewButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dialog), findsNothing);
+        final tabManager = getIt<TabManager>();
+        expect(tabManager.tabs.length, equals(1));
+        expect(tabManager.activeTab?.bookId, equals(43));
+        expect(tabManager.activeTab?.chapter, equals(3));
+        expect(tabManager.activeTab?.targetVerse, equals(16));
+      },
+    );
+
+    testWidgets(
+      'Footnote details dialog does not show open-in-new-tab icon for non-biblical keyword',
+      (tester) async {
+        fakeDb.chapterLines = [
+          UsfmLine(
+            bookChapterVerse: 40001001,
+            text: r'The record.\f + \fr 1:1 \ft Compare with LXX.\f*',
+            format: ParagraphFormat.p,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 40, chapter: 1)),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FootnoteWidget), findsOneWidget);
+        await tester.tap(find.byType(FootnoteWidget));
+        await tester.pumpAndSettle();
+
+        final selectableFinder = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(SelectableText),
+        );
+        final selectableWidget = tester.widget<SelectableText>(
+          selectableFinder,
+        );
+        final textSpan = selectableWidget.textSpan!;
+        final lxxSpan = textSpan.children!.firstWhere(
+          (child) => (child as TextSpan).text == 'LXX',
+        ) as TextSpan;
+        (lxxSpan.recognizer as TapGestureRecognizer).onTap!();
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Dialog), findsOneWidget);
+        expect(find.text('LXX'), findsOneWidget);
+
+        final openInNewButton = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byIcon(Icons.open_in_new),
+        );
+        expect(openInNewButton, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Tapping the word before a footnote marker in a section header opens the cross references footnote dialog',
+      (tester) async {
+        fakeDb.chapterLines = [
+          UsfmLine(
+            bookChapterVerse: 1001000,
+            text: 'The Creation',
+            format: ParagraphFormat.s1,
+          ),
+          UsfmLine(
+            bookChapterVerse: 1001000,
+            text: 'John 1:1–5; Hebrews 11:1–3',
+            format: ParagraphFormat.r,
+          ),
+          UsfmLine(
+            bookChapterVerse: 1001001,
+            text: 'In the beginning God created the heavens and the earth.',
+            format: ParagraphFormat.p,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Find the word 'Creation' in the section header
+        final creationFinder = find.byWidgetPredicate(
+          (w) => w is WordWidget && w.text == 'Creation',
+        );
+        expect(creationFinder, findsOneWidget);
+
+        // Tap 'Creation'
+        await tester.tap(creationFinder);
+        await tester.pumpAndSettle();
+
+        // Footnote dialog (AlertDialog) should be shown containing the cross references
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        final selectableFinder = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(SelectableText),
+        );
+        expect(selectableFinder, findsOneWidget);
+        final selectableWidget = tester.widget<SelectableText>(
+          selectableFinder,
+        );
+        final textSpan = selectableWidget.textSpan!;
+        // Contains the cross reference text
+        expect(textSpan.toPlainText(), contains('John 1:1–5'));
+        expect(textSpan.toPlainText(), contains('Hebrews 11:1–3'));
+      },
+    );
   });
 }
-

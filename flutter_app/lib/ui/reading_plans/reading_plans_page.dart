@@ -3,7 +3,7 @@ import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/reading_plans/widgets/active_plan_dashboard.dart';
 import 'package:bsb/ui/reading_plans/widgets/plan_catalog_view.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ReadingPlansPage extends StatefulWidget {
   const ReadingPlansPage({super.key});
@@ -27,7 +27,9 @@ class _ReadingPlansPageState extends State<ReadingPlansPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(isCatalogView && hasActivePlan ? 'Browse Plans' : 'Reading Plans'),
+            title: Text(
+              isCatalogView && hasActivePlan ? 'Browse Plans' : 'Reading Plans',
+            ),
             leading: isCatalogView && hasActivePlan
                 ? IconButton(
                     icon: const Icon(Icons.close),

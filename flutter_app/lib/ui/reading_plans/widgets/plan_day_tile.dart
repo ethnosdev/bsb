@@ -2,7 +2,7 @@ import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PlanDayTile extends StatelessWidget {
   final PlanDay day;
@@ -38,9 +38,7 @@ class PlanDayTile extends StatelessWidget {
     if (readingIndex > 0) {
       // Previous reading in the same day
       final prev = day.readings[readingIndex - 1];
-      previousChapters.add(
-        (bookId: prev.bookId, chapter: prev.endChapter),
-      );
+      previousChapters.add((bookId: prev.bookId, chapter: prev.endChapter));
     }
 
     if (readingIndex <= 0) {
@@ -50,9 +48,10 @@ class PlanDayTile extends StatelessWidget {
         final prevDay = plan.days[dayIndex - 1];
         if (prevDay.readings.isNotEmpty) {
           final prevReading = prevDay.readings.last;
-          previousChapters.add(
-            (bookId: prevReading.bookId, chapter: prevReading.endChapter),
-          );
+          previousChapters.add((
+            bookId: prevReading.bookId,
+            chapter: prevReading.endChapter,
+          ));
         }
       }
     }
@@ -86,13 +85,17 @@ class PlanDayTile extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: isDayDone
-                        ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)
+                        ? theme.textTheme.bodyMedium?.color?.withValues(
+                            alpha: 0.6,
+                          )
                         : theme.colorScheme.primary,
                   ),
                 ),
               ),
               IconButton(
-                tooltip: isDayDone ? 'Mark day as incomplete' : 'Mark day as complete',
+                tooltip: isDayDone
+                    ? 'Mark day as incomplete'
+                    : 'Mark day as complete',
                 icon: Icon(
                   isDayDone ? Icons.check_circle : Icons.check_circle_outline,
                   color: isDayDone
@@ -110,25 +113,35 @@ class PlanDayTile extends StatelessWidget {
                 : theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
           ),
           ...day.readings.map((reading) {
-            final isReadingDone = progress.isReadingCompleted(day.dayNumber, reading);
+            final isReadingDone = progress.isReadingCompleted(
+              day.dayNumber,
+              reading,
+            );
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
                 children: [
                   Checkbox(
                     value: isReadingDone,
-                    onChanged: (_) => service.toggleReadingComplete(day.dayNumber, reading),
+                    onChanged: (_) =>
+                        service.toggleReadingComplete(day.dayNumber, reading),
                     visualDensity: VisualDensity.compact,
                   ),
                   Expanded(
                     child: Text(
                       reading.referenceDisplay,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        decoration: isReadingDone ? TextDecoration.lineThrough : null,
-                        color: isReadingDone
-                            ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5)
+                        decoration: isReadingDone
+                            ? TextDecoration.lineThrough
                             : null,
-                        fontWeight: isReadingDone ? FontWeight.normal : FontWeight.w500,
+                        color: isReadingDone
+                            ? theme.textTheme.bodyMedium?.color?.withValues(
+                                alpha: 0.5,
+                              )
+                            : null,
+                        fontWeight: isReadingDone
+                            ? FontWeight.normal
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -154,8 +167,8 @@ class PlanDayTile extends StatelessWidget {
       color: isHighlighted
           ? theme.colorScheme.primaryContainer.withValues(alpha: 0.25)
           : (isDayDone
-              ? theme.colorScheme.surfaceContainerLowest
-              : theme.colorScheme.surfaceContainerLow),
+                ? theme.colorScheme.surfaceContainerLowest
+                : theme.colorScheme.surfaceContainerLow),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       shape: RoundedRectangleBorder(
         borderRadius: borderRadius,

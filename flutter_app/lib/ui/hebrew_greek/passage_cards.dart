@@ -4,7 +4,7 @@ import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Interactive word chip used for both English and Original Language words.
 class PassageWordChip extends StatelessWidget {
@@ -85,7 +85,8 @@ class EnglishPassageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final base = baseTextSize ??
+    final base =
+        baseTextSize ??
         (getIt.isRegistered<AppState>()
             ? getIt<AppState>().textSizeNotifier.value
             : FontScale.defaultBaseSize);
@@ -99,9 +100,7 @@ class EnglishPassageCard extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withAlpha(80),
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14.0),
@@ -121,7 +120,8 @@ class EnglishPassageCard extends StatelessWidget {
                 spacing: 3,
                 runSpacing: 4,
                 children: words.map((word) {
-                  final isSelected = word.id == selectedWord?.id ||
+                  final isSelected =
+                      word.id == selectedWord?.id ||
                       (selectedWord != null &&
                           word.clusterWordIds.contains(selectedWord!.id));
                   return PassageWordChip(
@@ -176,27 +176,26 @@ class OriginalPassageCard extends StatelessWidget {
     final isRtl = language == Language.hebrew || language == Language.aramaic;
     final direction = isRtl ? TextDirection.rtl : TextDirection.ltr;
     final fontFamily = fontFamilyForLanguage(language);
-    final base = baseTextSize ??
+    final base =
+        baseTextSize ??
         (getIt.isRegistered<AppState>()
             ? getIt<AppState>().textSizeNotifier.value
             : FontScale.defaultBaseSize);
-    final chipFontSize =
-        fontSize ?? FontScale.originalPassage(base, language);
+    final chipFontSize = fontSize ?? FontScale.originalPassage(base, language);
 
     return Card(
       elevation: 0,
       color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withAlpha(80),
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14.0),
         child: Column(
-          crossAxisAlignment:
-              isRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isRtl
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               language.displayName,
@@ -211,7 +210,8 @@ class OriginalPassageCard extends StatelessWidget {
               spacing: 4,
               runSpacing: 6,
               children: words.map((word) {
-                final isSelected = word.id == selectedWord?.id ||
+                final isSelected =
+                    word.id == selectedWord?.id ||
                     (selectedWord != null &&
                         selectedWord!.clusterWordIds.contains(word.id));
                 return PassageWordChip(

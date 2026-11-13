@@ -26,9 +26,7 @@ class MemorizeScriptureLauncher {
   }
 
   /// Gets the platform store URI (market:// on Android, https://apps.apple.com on iOS).
-  static Uri getStoreUri({
-    TargetPlatform? platform,
-  }) {
+  static Uri getStoreUri({TargetPlatform? platform}) {
     final currentPlatform = platform ?? defaultTargetPlatform;
     if (currentPlatform == TargetPlatform.android) {
       return Uri.parse('market://details?id=$androidPackageId');
@@ -43,9 +41,7 @@ class MemorizeScriptureLauncher {
   }
 
   /// Gets the web fallback URL for the store.
-  static Uri getWebStoreUri({
-    TargetPlatform? platform,
-  }) {
+  static Uri getWebStoreUri({TargetPlatform? platform}) {
     final currentPlatform = platform ?? defaultTargetPlatform;
     if (currentPlatform == TargetPlatform.android) {
       return Uri.parse(
@@ -67,7 +63,8 @@ class MemorizeScriptureLauncher {
     TargetPlatform? platform,
   }) async {
     final canLaunchFn = canLaunch ?? canLaunchUrl;
-    final launchFn = launch ??
+    final launchFn =
+        launch ??
         ((uri, {mode = LaunchMode.platformDefault}) =>
             launchUrl(uri, mode: mode));
 
@@ -109,7 +106,10 @@ class MemorizeScriptureLauncher {
     final webStoreUri = getWebStoreUri(platform: platform);
     try {
       if (await canLaunchFn(webStoreUri)) {
-        return await launchFn(webStoreUri, mode: LaunchMode.externalApplication);
+        return await launchFn(
+          webStoreUri,
+          mode: LaunchMode.externalApplication,
+        );
       }
     } catch (_) {}
 

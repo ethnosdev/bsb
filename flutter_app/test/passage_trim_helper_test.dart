@@ -40,7 +40,12 @@ void main() {
 
     test('computeAdjustedReference keeps original reference when verses are partially trimmed', () {
       final allWords = extractWordsFromLines(sampleLines);
-      final origRef = Reference(bookId: 43, chapter: 3, verse: 16, endVerse: 18);
+      final origRef = Reference(
+        bookId: 43,
+        chapter: 3,
+        verse: 16,
+        endVerse: 18,
+      );
 
       // Trim words 2..end in verse 16 (verse 16 still partially included)
       final startWordId = 43003016002;
@@ -58,7 +63,12 @@ void main() {
 
     test('computeAdjustedReference adjusts start verse when entire verse 16 is trimmed away', () {
       final allWords = extractWordsFromLines(sampleLines);
-      final origRef = Reference(bookId: 43, chapter: 3, verse: 16, endVerse: 18);
+      final origRef = Reference(
+        bookId: 43,
+        chapter: 3,
+        verse: 16,
+        endVerse: 18,
+      );
 
       // Trim start into verse 17
       final startWordId = 43003017001; // "God" in verse 17
@@ -76,7 +86,12 @@ void main() {
 
     test('computeAdjustedReference adjusts end verse when entire verse 18 is trimmed away', () {
       final allWords = extractWordsFromLines(sampleLines);
-      final origRef = Reference(bookId: 43, chapter: 3, verse: 16, endVerse: 18);
+      final origRef = Reference(
+        bookId: 43,
+        chapter: 3,
+        verse: 16,
+        endVerse: 18,
+      );
 
       // End in verse 17
       final startWordId = 43003016000;

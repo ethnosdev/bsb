@@ -9,7 +9,7 @@ import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
 import 'package:bsb/ui/text/text_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -58,7 +58,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -87,7 +90,11 @@ RenderPassage findRenderPassage(WidgetTester tester, {int chapter = 119}) {
   throw StateError('RenderPassage not found for chapter $chapter');
 }
 
-double findVerseScreenDy(WidgetTester tester, int targetVerse, {int chapter = 119}) {
+double findVerseScreenDy(
+  WidgetTester tester,
+  int targetVerse, {
+  int chapter = 119,
+}) {
   final passage = findRenderPassage(tester, chapter: chapter);
   final targetStr = targetVerse.toString();
   RenderBox? child = passage.firstChild;
@@ -101,10 +108,12 @@ double findVerseScreenDy(WidgetTester tester, int targetVerse, {int chapter = 11
         if (elem is RenderTextAtom) {
           RenderBox? atomChild = elem.firstChild;
           while (atomChild != null) {
-            if (atomChild is RenderVerseNumber && atomChild.number == targetStr) {
+            if (atomChild is RenderVerseNumber &&
+                atomChild.number == targetStr) {
               return atomChild.localToGlobal(Offset.zero).dy;
             }
-            atomChild = (atomChild.parentData as TextAtomParentData).nextSibling;
+            atomChild =
+                (atomChild.parentData as TextAtomParentData).nextSibling;
           }
         }
         elem = (elem.parentData as ParagraphParentData).nextSibling;
@@ -115,16 +124,16 @@ double findVerseScreenDy(WidgetTester tester, int targetVerse, {int chapter = 11
   throw StateError('Verse $targetVerse not found');
 }
 
-ScrollableState findChapterScrollable(WidgetTester tester, {int chapter = 119}) {
+ScrollableState findChapterScrollable(
+  WidgetTester tester, {
+  int chapter = 119,
+}) {
   final chapterFinder = find.byWidgetPredicate(
     (w) => w is ChapterText && w.chapter == chapter,
   );
   return tester
       .stateList<ScrollableState>(
-        find.descendant(
-          of: chapterFinder,
-          matching: find.byType(Scrollable),
-        ),
+        find.descendant(of: chapterFinder, matching: find.byType(Scrollable)),
       )
       .firstWhere((s) => s.axisDirection == AxisDirection.down);
 }
@@ -165,15 +174,13 @@ void main() {
     getIt.reset();
   });
 
-  testWidgets('ChapterText renders and mounts with targetVerse without error', (tester) async {
+  testWidgets('ChapterText renders and mounts with targetVerse without error', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: ChapterText(
-            bookId: 1,
-            chapter: 1,
-            targetVerse: 3,
-          ),
+          body: ChapterText(bookId: 1, chapter: 1, targetVerse: 3),
         ),
       ),
     );
@@ -184,38 +191,41 @@ void main() {
     expect(find.byType(SelectableScripture), findsOneWidget);
   });
 
-  testWidgets('ChapterText invokes onTargetVerseScrolled when targetVerse is reached and does not re-trigger on rebuild', (tester) async {
-    int targetScrolledCount = 0;
+  testWidgets(
+    'ChapterText invokes onTargetVerseScrolled when targetVerse is reached and does not re-trigger on rebuild',
+    (tester) async {
+      int targetScrolledCount = 0;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: StatefulBuilder(
-            builder: (context, setState) {
-              return ChapterText(
-                bookId: 1,
-                chapter: 1,
-                targetVerse: 3,
-                onTargetVerseScrolled: () {
-                  targetScrolledCount++;
-                },
-              );
-            },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return ChapterText(
+                  bookId: 1,
+                  chapter: 1,
+                  targetVerse: 3,
+                  onTargetVerseScrolled: () {
+                    targetScrolledCount++;
+                  },
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(targetScrolledCount, equals(1));
+      expect(targetScrolledCount, equals(1));
 
-    // Rebuild ChapterText (e.g. simulating parent setState or selection change)
-    await tester.pump();
-    await tester.pumpAndSettle();
+      // Rebuild ChapterText (e.g. simulating parent setState or selection change)
+      await tester.pump();
+      await tester.pumpAndSettle();
 
-    // Must not trigger again
-    expect(targetScrolledCount, equals(1));
-  });
+      // Must not trigger again
+      expect(targetScrolledCount, equals(1));
+    },
+  );
 
   testWidgets(
     'Using verse scrubber does not cause ChapterText to scroll back to initial targetVerse when scrubber auto hides',
@@ -241,9 +251,14 @@ void main() {
       expect(targetScrolledCount, equals(1));
 
       final scrollableFinder = find.byType(SingleChildScrollView);
-      final scrollPosition = tester.state<ScrollableState>(
-        find.descendant(of: scrollableFinder, matching: find.byType(Scrollable)),
-      ).position;
+      final scrollPosition = tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: scrollableFinder,
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
       final initialScrollOffset = scrollPosition.pixels;
 
       final scrubberFinder = find.byType(VerseScrubber);
@@ -253,9 +268,15 @@ void main() {
       scrubberWidget.onVerseSelected(1);
       await tester.pumpAndSettle();
 
-      final scrubbedOffset = tester.state<ScrollableState>(
-        find.descendant(of: scrollableFinder, matching: find.byType(Scrollable)),
-      ).position.pixels;
+      final scrubbedOffset = tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: scrollableFinder,
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position
+          .pixels;
 
       // Scrolling to verse 1 should move scroll position to 0 (top)
       expect(scrubbedOffset, equals(0.0));
@@ -269,119 +290,132 @@ void main() {
       expect(targetScrolledCount, equals(1));
 
       // Scroll position must remain at 0, not jump back down to verse 10
-      final offsetAfterAutoHide = tester.state<ScrollableState>(
-        find.descendant(of: scrollableFinder, matching: find.byType(Scrollable)),
-      ).position.pixels;
+      final offsetAfterAutoHide = tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: scrollableFinder,
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position
+          .pixels;
       expect(offsetAfterAutoHide, equals(0.0));
     },
   );
 
-  testWidgets('resizing font preserves top visible verse at end of resizing event', (tester) async {
-    await appState.setTextSize(16.0);
+  testWidgets(
+    'resizing font preserves top visible verse at end of resizing event',
+    (tester) async {
+      await appState.setTextSize(16.0);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: ChapterText(
-            bookId: 19,
-            chapter: 119,
-            targetVerse: 10,
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ChapterText(bookId: 19, chapter: 119, targetVerse: 10),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final initialVerse10Dy = findVerseScreenDy(tester, 10);
+      );
+      await tester.pumpAndSettle();
+      final initialVerse10Dy = findVerseScreenDy(tester, 10);
 
-    // Increase font size from 16 to 24
-    await appState.setTextSize(24.0);
-    await tester.pumpAndSettle();
+      // Increase font size from 16 to 24
+      await appState.setTextSize(24.0);
+      await tester.pumpAndSettle();
 
-    // Verse 10 should still be at the top of the visible area
-    final enlargedVerse10Dy = findVerseScreenDy(tester, 10);
-    expect((enlargedVerse10Dy - initialVerse10Dy).abs(), lessThan(5.0));
+      // Verse 10 should still be at the top of the visible area
+      final enlargedVerse10Dy = findVerseScreenDy(tester, 10);
+      expect((enlargedVerse10Dy - initialVerse10Dy).abs(), lessThan(5.0));
 
-    // Decrease font size from 24 down to 12
-    await appState.setTextSize(12.0);
-    await tester.pumpAndSettle();
+      // Decrease font size from 24 down to 12
+      await appState.setTextSize(12.0);
+      await tester.pumpAndSettle();
 
-    // Verse 10 should still be at the top of the visible area
-    final shrunkVerse10Dy = findVerseScreenDy(tester, 10);
-    expect((shrunkVerse10Dy - initialVerse10Dy).abs(), lessThan(5.0));
-  });
+      // Verse 10 should still be at the top of the visible area
+      final shrunkVerse10Dy = findVerseScreenDy(tester, 10);
+      expect((shrunkVerse10Dy - initialVerse10Dy).abs(), lessThan(5.0));
+    },
+  );
 
-  testWidgets('pinch-to-zoom gesture in TextScreen preserves top visible verse at end of gesture', (tester) async {
-    await appState.setTextSize(16.0);
+  testWidgets(
+    'pinch-to-zoom gesture in TextScreen preserves top visible verse at end of gesture',
+    (tester) async {
+      await appState.setTextSize(16.0);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: TextScreen(
-            bookId: 19,
-            chapter: 119,
-            initialTargetVerse: 10,
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: TextScreen(bookId: 19, chapter: 119, initialTargetVerse: 10),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final initialDy = findVerseScreenDy(tester, 10);
+      final initialDy = findVerseScreenDy(tester, 10);
 
-    // Pinch-to-zoom gesture (scale up)
-    final gesture1 = await tester.startGesture(const Offset(350, 300), pointer: 1);
-    final gesture2 = await tester.startGesture(const Offset(450, 300), pointer: 2);
-    await tester.pump();
+      // Pinch-to-zoom gesture (scale up)
+      final gesture1 = await tester.startGesture(
+        const Offset(350, 300),
+        pointer: 1,
+      );
+      final gesture2 = await tester.startGesture(
+        const Offset(450, 300),
+        pointer: 2,
+      );
+      await tester.pump();
 
-    await gesture1.moveBy(const Offset(-60, 0));
-    await gesture2.moveBy(const Offset(60, 0));
-    await tester.pump();
+      await gesture1.moveBy(const Offset(-60, 0));
+      await gesture2.moveBy(const Offset(60, 0));
+      await tester.pump();
 
-    await gesture1.up();
-    await gesture2.up();
-    await tester.pumpAndSettle();
+      await gesture1.up();
+      await gesture2.up();
+      await tester.pumpAndSettle();
 
-    expect(appState.textSize, greaterThan(16.0));
+      expect(appState.textSize, greaterThan(16.0));
 
-    final zoomedDy = findVerseScreenDy(tester, 10);
-    expect((zoomedDy - initialDy).abs(), lessThan(5.0));
-  });
+      final zoomedDy = findVerseScreenDy(tester, 10);
+      expect((zoomedDy - initialDy).abs(), lessThan(5.0));
+    },
+  );
 
-  testWidgets('pinch-to-zoom at top of chapter (verse 1) remains at top (offset 0)', (tester) async {
-    await appState.setTextSize(16.0);
+  testWidgets(
+    'pinch-to-zoom at top of chapter (verse 1) remains at top (offset 0)',
+    (tester) async {
+      await appState.setTextSize(16.0);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: TextScreen(
-            bookId: 19,
-            chapter: 119,
-          ),
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: TextScreen(bookId: 19, chapter: 119)),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final initialOffset = findChapterScrollable(tester).position.pixels;
-    expect(initialOffset, equals(0.0));
+      final initialOffset = findChapterScrollable(tester).position.pixels;
+      expect(initialOffset, equals(0.0));
 
-    // Pinch-to-zoom gesture
-    final gesture1 = await tester.startGesture(const Offset(350, 300), pointer: 1);
-    final gesture2 = await tester.startGesture(const Offset(450, 300), pointer: 2);
-    await tester.pump();
+      // Pinch-to-zoom gesture
+      final gesture1 = await tester.startGesture(
+        const Offset(350, 300),
+        pointer: 1,
+      );
+      final gesture2 = await tester.startGesture(
+        const Offset(450, 300),
+        pointer: 2,
+      );
+      await tester.pump();
 
-    await gesture1.moveBy(const Offset(-60, 0));
-    await gesture2.moveBy(const Offset(60, 0));
-    await tester.pump();
+      await gesture1.moveBy(const Offset(-60, 0));
+      await gesture2.moveBy(const Offset(60, 0));
+      await tester.pump();
 
-    await gesture1.up();
-    await gesture2.up();
-    await tester.pumpAndSettle();
+      await gesture1.up();
+      await gesture2.up();
+      await tester.pumpAndSettle();
 
-    expect(appState.textSize, greaterThan(16.0));
+      expect(appState.textSize, greaterThan(16.0));
 
-    final zoomedOffset = findChapterScrollable(tester).position.pixels;
-    expect(zoomedOffset, equals(0.0));
-  });
+      final zoomedOffset = findChapterScrollable(tester).position.pixels;
+      expect(zoomedOffset, equals(0.0));
+    },
+  );
 }
-

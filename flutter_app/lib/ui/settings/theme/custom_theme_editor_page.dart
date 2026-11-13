@@ -5,7 +5,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/theme/app_color_picker.dart';
 import 'package:bsb/ui/settings/theme/scripture_theme_preview_card.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-featured custom theme editor with live scripture preview,
 /// simple background picking, and expandable fine-tuning for all colors.
@@ -203,9 +203,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
       // but designed/viewed a Light Mode background.
       final message = isSystemMode
           ? 'The background color you selected is a light mode color, but your app is currently matching your device settings (Dark Mode).\n\n'
-              'Would you like to switch to Light Mode so your chosen background color is applied immediately?'
+                'Would you like to switch to Light Mode so your chosen background color is applied immediately?'
           : 'The background color you selected is a light mode color, but your app is currently in Dark Mode.\n\n'
-              'Would you like to switch to Light Mode so your chosen background color is applied immediately?';
+                'Would you like to switch to Light Mode so your chosen background color is applied immediately?';
 
       final switchMode = await showDialog<bool>(
         context: context,
@@ -216,7 +216,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(isSystemMode ? 'Keep Device Settings' : 'Keep Dark Mode'),
+              child: Text(
+                isSystemMode ? 'Keep Device Settings' : 'Keep Dark Mode',
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -235,9 +237,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
       // but designed/viewed a Dark Mode background.
       final message = isSystemMode
           ? 'The background color you selected is a dark mode color, but your app is currently matching your device settings (Light Mode).\n\n'
-              'Would you like to switch to Dark Mode so your chosen background color is applied immediately?'
+                'Would you like to switch to Dark Mode so your chosen background color is applied immediately?'
           : 'The background color you selected is a dark mode color, but your app is currently in Light Mode.\n\n'
-              'Would you like to switch to Dark Mode so your chosen background color is applied immediately?';
+                'Would you like to switch to Dark Mode so your chosen background color is applied immediately?';
 
       final switchMode = await showDialog<bool>(
         context: context,
@@ -248,7 +250,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(isSystemMode ? 'Keep Device Settings' : 'Keep Light Mode'),
+              child: Text(
+                isSystemMode ? 'Keep Device Settings' : 'Keep Light Mode',
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.of(ctx).pop(true),
@@ -300,22 +304,23 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
             ScriptureThemePreviewCard(
               colorScheme: activeScheme,
               wordsOfJesusInRed: appState.wordsOfJesusInRed,
-              wordsOfJesusColor: _activeConfig.wordsOfJesusColor ??
+              wordsOfJesusColor:
+                  _activeConfig.wordsOfJesusColor ??
                   (_isEditingDark
                       ? (_lightConfig.wordsOfJesusColor != null
-                          ? Color.lerp(
-                              _lightConfig.wordsOfJesusColor,
-                              Colors.white,
-                              0.3,
-                            )
-                          : null)
+                            ? Color.lerp(
+                                _lightConfig.wordsOfJesusColor,
+                                Colors.white,
+                                0.3,
+                              )
+                            : null)
                       : (_darkConfig.wordsOfJesusColor != null
-                          ? Color.lerp(
-                              _darkConfig.wordsOfJesusColor,
-                              Colors.black,
-                              0.3,
-                            )
-                          : null)) ??
+                            ? Color.lerp(
+                                _darkConfig.wordsOfJesusColor,
+                                Colors.black,
+                                0.3,
+                              )
+                            : null)) ??
                   _activeConfig.effectiveWordsOfJesusColor,
               textSize: appState.textSize,
             ),
@@ -331,8 +336,10 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                 ),
               ),
               child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 leading: _buildColorIndicator(
                   _activeConfig.backgroundColor,
                   size: 36,
@@ -446,7 +453,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                           currentColor: _activeConfig.backgroundColor,
                           onSelected: (c) {
                             if (getIt.isRegistered<UserSettings>()) {
-                              getIt<UserSettings>().setLastSelectedCustomColor(c);
+                              getIt<UserSettings>().setLastSelectedCustomColor(
+                                c,
+                              );
                             }
                             _updateActiveConfig(
                               _activeConfig.copyWith(
@@ -554,8 +563,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                       onTap: () {
                         _pickColor(
                           title: 'Cards & Panels Surface',
-                          currentColor:
-                              _activeConfig.effectiveSurfaceContainer,
+                          currentColor: _activeConfig.effectiveSurfaceContainer,
                           onSelected: (c) {
                             _updateActiveConfig(
                               _activeConfig.copyWith(surfaceContainerColor: c),
@@ -566,7 +574,8 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                       onReset: () {
                         _updateActiveConfig(
                           _activeConfig.copyWith(
-                              clearSurfaceContainerColor: true),
+                            clearSurfaceContainerColor: true,
+                          ),
                         );
                       },
                     ),
@@ -694,11 +703,7 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         shape: BoxShape.circle,
         border: Border.all(color: Colors.grey.shade400, width: 1.5),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 1)),
         ],
       ),
     );

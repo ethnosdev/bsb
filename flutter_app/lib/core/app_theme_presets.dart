@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Represents a predefined application theme palette.
 class AppThemePreset {
@@ -41,10 +41,7 @@ class AppThemePreset {
 
   /// Look up a preset by its ID. Falls back to default Sepia Parchment theme.
   static AppThemePreset findById(String id) {
-    return all.firstWhere(
-      (preset) => preset.id == id,
-      orElse: () => _sepia,
-    );
+    return all.firstWhere((preset) => preset.id == id, orElse: () => _sepia);
   }
 
   // 2. Clean Paper
@@ -379,7 +376,8 @@ class AppThemePreset {
   static final _charcoal = AppThemePreset(
     id: 'charcoal',
     name: 'Night Charcoal',
-    description: 'Comfortable charcoal dark palette with warm candlelight accents.',
+    description:
+        'Comfortable charcoal dark palette with warm candlelight accents.',
     lightScheme: const ColorScheme(
       brightness: Brightness.light,
       primary: Color(0xFF3B607D),

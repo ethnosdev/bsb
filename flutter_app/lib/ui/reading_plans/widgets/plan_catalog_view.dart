@@ -1,15 +1,12 @@
 import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PlanCatalogView extends StatefulWidget {
   final VoidCallback? onPlanSelected;
 
-  const PlanCatalogView({
-    super.key,
-    this.onPlanSelected,
-  });
+  const PlanCatalogView({super.key, this.onPlanSelected});
 
   @override
   State<PlanCatalogView> createState() => _PlanCatalogViewState();
@@ -72,7 +69,8 @@ class _PlanCatalogViewState extends State<PlanCatalogView> {
                 } else {
                   subtitle = 'Currently active';
                 }
-              } else if (progress != null && progress.completedDays.isNotEmpty) {
+              } else if (progress != null &&
+                  progress.completedDays.isNotEmpty) {
                 subtitle =
                     '${progress.completedDays.length} of ${progress.totalDays} days completed';
               }
@@ -89,8 +87,8 @@ class _PlanCatalogViewState extends State<PlanCatalogView> {
                         color: Theme.of(dialogContext).colorScheme.primary,
                       )
                     : (progress != null && progress.completedDays.isNotEmpty
-                        ? const Icon(Icons.chevron_right)
-                        : null),
+                          ? const Icon(Icons.chevron_right)
+                          : null),
                 onTap: () async {
                   Navigator.of(dialogContext).pop();
                   await _service.startOrResumePlan(track, pace);
@@ -125,9 +123,8 @@ class _PlanCatalogViewState extends State<PlanCatalogView> {
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             'Available Plans',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
         _buildTrackCard(

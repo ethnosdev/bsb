@@ -8,11 +8,12 @@ import 'package:bsb/ui/home/section_headings_dialog.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
-export 'package:bsb/ui/settings/user_settings.dart' show ChapterChooserStyle, VerseChooserStyle;
+export 'package:bsb/ui/settings/user_settings.dart'
+    show ChapterChooserStyle, VerseChooserStyle;
 
 /// Generic chapter chooser widget that displays either a keypad or a grid
 /// of chapter numbers based on user settings or an explicit [style] override.
@@ -117,13 +118,15 @@ class _ChapterChooserState extends State<ChapterChooser> {
     if (appState != null) {
       return appState.showVerseGridNotifier.value;
     }
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
     return userSettings?.showVerseGrid ?? false;
   }
 
   int _getVerseCount(int chapter) {
-    final bookId = widget.bookId ??
+    final bookId =
+        widget.bookId ??
         (widget.bookName != null
             ? fullNameToBookIdMap[widget.bookName] ?? 1
             : 1);
@@ -177,15 +180,19 @@ class _ChapterChooserState extends State<ChapterChooser> {
   @override
   Widget build(BuildContext context) {
     if (_chosenChapter != null) {
-      final appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
-      final userSettings =
-          getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
-      final verseStyle = widget.verseStyle ??
+      final appState = getIt.isRegistered<AppState>()
+          ? getIt<AppState>()
+          : null;
+      final userSettings = getIt.isRegistered<UserSettings>()
+          ? getIt<UserSettings>()
+          : null;
+      final verseStyle =
+          widget.verseStyle ??
           (widget.showVerseGrid == true
               ? VerseChooserStyle.grid
               : (appState?.verseChooserStyleNotifier.value ??
-                  userSettings?.verseChooserStyle ??
-                  VerseChooserStyle.sidebar));
+                    userSettings?.verseChooserStyle ??
+                    VerseChooserStyle.sidebar));
 
       if (verseStyle == VerseChooserStyle.grid) {
         return GridVerseChooser(
@@ -227,9 +234,11 @@ class _ChapterChooserState extends State<ChapterChooser> {
       );
     }
 
-    final userSettings =
-        getIt.isRegistered<UserSettings>() ? getIt<UserSettings>() : null;
-    final currentStyle = widget.style ??
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
+    final currentStyle =
+        widget.style ??
         userSettings?.chapterChooserStyle ??
         ChapterChooserStyle.keypad;
     return _buildChooser(currentStyle);
@@ -519,11 +528,7 @@ class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
 
     return Row(
       children: [
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: leading,
-        ),
+        SizedBox(width: 40, height: 40, child: leading),
         Expanded(
           child: Text(
             widget.title,
@@ -563,7 +568,9 @@ class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
                 color: theme.colorScheme.primary,
               )
             : theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.6,
+                ),
               ),
       ),
     );
@@ -574,9 +581,7 @@ class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
       children: [
         for (var i = 0; i < keys.length; i++) ...[
           if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: _buildDigitButton(int.parse(keys[i])),
-          ),
+          Expanded(child: _buildDigitButton(int.parse(keys[i]))),
         ],
       ],
     );
@@ -597,10 +602,7 @@ class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
         ),
         child: Text(
           '$digit',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -622,18 +624,13 @@ class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
                 ),
                 padding: EdgeInsets.zero,
               ),
-              child: const Icon(
-                Icons.backspace_outlined,
-                size: 22,
-              ),
+              child: const Icon(Icons.backspace_outlined, size: 22),
             ),
           ),
         ),
         const SizedBox(width: 8),
         // 0 digit
-        Expanded(
-          child: _buildDigitButton(0),
-        ),
+        Expanded(child: _buildDigitButton(0)),
         const SizedBox(width: 8),
         // Go button
         Expanded(
@@ -650,10 +647,7 @@ class _NumericKeypadChooserState extends State<NumericKeypadChooser> {
               ),
               child: const Text(
                 'Go',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -688,7 +682,8 @@ class KeypadChapterChooser extends StatefulWidget {
 
 class _KeypadChapterChooserState extends State<KeypadChapterChooser> {
   String get _displayBookName {
-    final resolvedBookId = widget.bookId ??
+    final resolvedBookId =
+        widget.bookId ??
         (widget.bookName != null ? fullNameToBookIdMap[widget.bookName] : null);
     if (resolvedBookId != null &&
         bookIdToBookNameMap.containsKey(resolvedBookId)) {
@@ -752,9 +747,10 @@ class KeypadVerseChooser extends StatelessWidget {
   final VoidCallback? onBackPressed;
 
   String get _displayTitle {
-    final resolvedBookId = bookId ??
-        (bookName != null ? fullNameToBookIdMap[bookName] : null);
-    final bName = (resolvedBookId != null &&
+    final resolvedBookId =
+        bookId ?? (bookName != null ? fullNameToBookIdMap[bookName] : null);
+    final bName =
+        (resolvedBookId != null &&
             bookIdToFullNameMap.containsKey(resolvedBookId))
         ? bookIdToFullNameMap[resolvedBookId]!
         : (bookName ?? '');
@@ -801,7 +797,8 @@ class GridChapterChooser extends StatefulWidget {
 
 class _GridChapterChooserState extends State<GridChapterChooser> {
   String get _displayBookName {
-    final resolvedBookId = widget.bookId ??
+    final resolvedBookId =
+        widget.bookId ??
         (widget.bookName != null ? fullNameToBookIdMap[widget.bookName] : null);
     if (resolvedBookId != null &&
         bookIdToBookNameMap.containsKey(resolvedBookId)) {
@@ -965,7 +962,8 @@ class GridVerseChooser extends StatefulWidget {
 
 class _GridVerseChooserState extends State<GridVerseChooser> {
   String get _displayBookName {
-    final resolvedBookId = widget.bookId ??
+    final resolvedBookId =
+        widget.bookId ??
         (widget.bookName != null ? fullNameToBookIdMap[widget.bookName] : null);
     if (resolvedBookId != null &&
         bookIdToFullNameMap.containsKey(resolvedBookId)) {
@@ -1105,10 +1103,7 @@ class _GridVerseChooserState extends State<GridVerseChooser> {
 }
 
 class _NumberGridWidget extends LeafRenderObjectWidget {
-  const _NumberGridWidget({
-    required this.itemCount,
-    this.onItemSelected,
-  });
+  const _NumberGridWidget({required this.itemCount, this.onItemSelected});
 
   final int itemCount;
   final void Function(int? item)? onItemSelected;
@@ -1129,7 +1124,9 @@ class _NumberGridWidget extends LeafRenderObjectWidget {
 
   @override
   void updateRenderObject(
-      BuildContext context, covariant _RenderNumberGrid renderObject) {
+    BuildContext context,
+    covariant _RenderNumberGrid renderObject,
+  ) {
     final theme = Theme.of(context);
     renderObject
       ..itemCount = itemCount
@@ -1143,17 +1140,11 @@ class _NumberGridWidget extends LeafRenderObjectWidget {
 }
 
 class _ChapterGridWidget extends _NumberGridWidget {
-  const _ChapterGridWidget({
-    required super.itemCount,
-    super.onItemSelected,
-  });
+  const _ChapterGridWidget({required super.itemCount, super.onItemSelected});
 }
 
 class _VerseGridWidget extends _NumberGridWidget {
-  const _VerseGridWidget({
-    required super.itemCount,
-    super.onItemSelected,
-  });
+  const _VerseGridWidget({required super.itemCount, super.onItemSelected});
 }
 
 class _RenderNumberGrid extends RenderBox {
@@ -1407,10 +1398,7 @@ class _RenderNumberGrid extends RenderBox {
   void _paintItem(PaintingContext context, int row, int col, int index) {
     final canvas = context.canvas;
     canvas.save();
-    canvas.translate(
-      col * _tileSize.width,
-      row * _tileSize.height,
-    );
+    canvas.translate(col * _tileSize.width, row * _tileSize.height);
 
     if (_highlightedItem == index) {
       _paintHighlight(context, index);
@@ -1424,7 +1412,9 @@ class _RenderNumberGrid extends RenderBox {
     final canvas = context.canvas;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-          Offset.zero & _tileSize, const Radius.circular(4)),
+        Offset.zero & _tileSize,
+        const Radius.circular(4),
+      ),
       _highlightPaint,
     );
 
@@ -1482,8 +1472,11 @@ class _RenderNumberGrid extends RenderBox {
     );
   }
 
-  TextPainter _createTextPainter(String text,
-      {Color? color, double? fontSize}) {
+  TextPainter _createTextPainter(
+    String text, {
+    Color? color,
+    double? fontSize,
+  }) {
     final textPainter = TextPainter(
       text: TextSpan(
         text: text,

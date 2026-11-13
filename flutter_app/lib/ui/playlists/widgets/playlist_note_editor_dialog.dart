@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PlaylistNoteEditorResult {
   final String? title;
@@ -41,7 +41,8 @@ class PlaylistNoteEditorDialog extends StatefulWidget {
   }
 
   @override
-  State<PlaylistNoteEditorDialog> createState() => _PlaylistNoteEditorDialogState();
+  State<PlaylistNoteEditorDialog> createState() =>
+      _PlaylistNoteEditorDialogState();
 }
 
 class _PlaylistNoteEditorDialogState extends State<PlaylistNoteEditorDialog> {
@@ -67,7 +68,9 @@ class _PlaylistNoteEditorDialogState extends State<PlaylistNoteEditorDialog> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Note'),
-        content: const Text('Are you sure you want to delete this note from the playlist?'),
+        content: const Text(
+          'Are you sure you want to delete this note from the playlist?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -82,7 +85,8 @@ class _PlaylistNoteEditorDialogState extends State<PlaylistNoteEditorDialog> {
     );
 
     if (confirmed == true && mounted) {
-      Navigator.of(context).pop(const PlaylistNoteEditorResult(isDeleted: true));
+      Navigator.of(context)
+          .pop(const PlaylistNoteEditorResult(isDeleted: true));
     }
   }
 
@@ -140,9 +144,9 @@ class _PlaylistNoteEditorDialogState extends State<PlaylistNoteEditorDialog> {
                       final title = _titleController.text.trim().isEmpty
                           ? null
                           : _titleController.text.trim();
-                      Navigator.of(context).pop(
-                        PlaylistNoteEditorResult(title: title, text: text),
-                      );
+                      Navigator.of(
+                        context,
+                      ).pop(PlaylistNoteEditorResult(title: title, text: text));
                     },
               child: const Text('Save'),
             );

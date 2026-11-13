@@ -127,9 +127,7 @@ List<VerseElement> resolveWordClusters(List<VerseElement> elements) {
       }
     } else if (clusterMap.containsKey(w.id)) {
       final fullCluster = clusterMap[w.id]!;
-      updatedOriginalWords[w.id] = w.copyWith(
-        clusterWordIds: fullCluster,
-      );
+      updatedOriginalWords[w.id] = w.copyWith(clusterWordIds: fullCluster);
     } else {
       updatedOriginalWords[w.id] = w;
     }

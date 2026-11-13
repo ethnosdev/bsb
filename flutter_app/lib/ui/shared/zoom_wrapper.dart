@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ZoomWrapper extends StatefulWidget {
   const ZoomWrapper({
@@ -45,39 +45,39 @@ class _ZoomWrapperState extends State<ZoomWrapper> {
     return {
       CustomScaleGestureRecognizer:
           GestureRecognizerFactoryWithHandlers<CustomScaleGestureRecognizer>(
-        () => CustomScaleGestureRecognizer(),
-        (CustomScaleGestureRecognizer instance) {
-          instance
-            ..onStart = (details) {
-              widget.onZoomStart?.call(details.localFocalPoint);
-              _gestureStartAbsoluteScale = _currentInitialScale;
-              _updateTransformAlignment(details.localFocalPoint);
-            }
-            ..onUpdate = (details) {
-              setState(() {
-                _visualScale = details.scale.clamp(
-                  widget.minScale / _gestureStartAbsoluteScale,
-                  widget.maxScale / _gestureStartAbsoluteScale,
-                );
-              });
-            }
-            ..onEnd = (details) {
-              final newAbsoluteScale =
-                  (_gestureStartAbsoluteScale * _visualScale).clamp(
-                widget.minScale,
-                widget.maxScale,
-              );
-              // Only persist if the scale actually changed
-              if ((_visualScale - 1.0).abs() > 0.01) {
-                widget.onScaleChanged(newAbsoluteScale.roundToDouble());
-              }
-              widget.onZoomEnd?.call();
-              setState(() {
-                _visualScale = 1.0;
-              });
-            };
-        },
-      ),
+            () => CustomScaleGestureRecognizer(),
+            (CustomScaleGestureRecognizer instance) {
+              instance
+                ..onStart = (details) {
+                  widget.onZoomStart?.call(details.localFocalPoint);
+                  _gestureStartAbsoluteScale = _currentInitialScale;
+                  _updateTransformAlignment(details.localFocalPoint);
+                }
+                ..onUpdate = (details) {
+                  setState(() {
+                    _visualScale = details.scale.clamp(
+                      widget.minScale / _gestureStartAbsoluteScale,
+                      widget.maxScale / _gestureStartAbsoluteScale,
+                    );
+                  });
+                }
+                ..onEnd = (details) {
+                  final newAbsoluteScale =
+                      (_gestureStartAbsoluteScale * _visualScale).clamp(
+                        widget.minScale,
+                        widget.maxScale,
+                      );
+                  // Only persist if the scale actually changed
+                  if ((_visualScale - 1.0).abs() > 0.01) {
+                    widget.onScaleChanged(newAbsoluteScale.roundToDouble());
+                  }
+                  widget.onZoomEnd?.call();
+                  setState(() {
+                    _visualScale = 1.0;
+                  });
+                };
+            },
+          ),
     };
   }
 

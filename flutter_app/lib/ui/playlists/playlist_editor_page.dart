@@ -8,7 +8,7 @@ import 'package:bsb/ui/playlists/playlist_share_handler.dart';
 import 'package:bsb/ui/playlists/widgets/passage_range_picker_dialog.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
 import 'package:bsb/ui/playlists/widgets/playlist_note_editor_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PlaylistEditorPage extends StatefulWidget {
   final Playlist playlist;
@@ -72,10 +72,16 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
 
   Future<void> _loadSnippets() async {
     for (final item in _items) {
-      if (item.isReference && item.reference != null && !_snippetCache.containsKey(item.id)) {
+      if (item.isReference &&
+          item.reference != null &&
+          !_snippetCache.containsKey(item.id)) {
         try {
           final lines = await _dbHelper.getRange(item.reference!);
-          final trimmed = trimPassageLines(lines, item.startWordId, item.endWordId);
+          final trimmed = trimPassageLines(
+            lines,
+            item.startWordId,
+            item.endWordId,
+          );
           final text = cleanPassagePreview(trimmed);
           _snippetCache[item.id] = text;
         } catch (_) {}
@@ -86,7 +92,9 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
 
   Playlist _buildPlaylist() {
     return widget.playlist.copyWith(
-      title: _titleController.text.trim().isEmpty ? 'Untitled Playlist' : _titleController.text.trim(),
+      title: _titleController.text.trim().isEmpty
+          ? 'Untitled Playlist'
+          : _titleController.text.trim(),
       updatedAt: DateTime.now(),
       items: _items,
     );
@@ -94,7 +102,9 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
 
   Future<void> _saveTitle() async {
     _titleDebounceTimer?.cancel();
-    final newTitle = _titleController.text.trim().isEmpty ? 'Untitled Playlist' : _titleController.text.trim();
+    final newTitle = _titleController.text.trim().isEmpty
+        ? 'Untitled Playlist'
+        : _titleController.text.trim();
     if (newTitle == _lastSavedTitle.trim()) {
       return;
     }
@@ -224,143 +234,158 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-        title: const Text('Edit Playlist'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (val) {
-              final playlist = _buildPlaylist();
-              if (val == 'share') {
-                _shareHandler.exportPlaylistFile(context, playlist);
-              } else if (val == 'code') {
-                _shareHandler.copyShareCode(context, playlist);
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'share',
-                child: ListTile(
-                  leading: Icon(Icons.share),
-                  title: Text('Share File (.bsbplaylist)'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'code',
-                child: ListTile(
-                  leading: Icon(Icons.copy_outlined),
-                  title: Text('Copy Share Code'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Title Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            child: TextField(
-              controller: _titleController,
-              focusNode: _titleFocusNode,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              decoration: const InputDecoration(
-                labelText: 'Playlist Title',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              onChanged: _onTitleChanged,
-            ),
-          ),
-
-          // Items List
-          Expanded(
-            child: _items.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.playlist_add_rounded, size: 54, color: theme.colorScheme.primary.withValues(alpha: 0.5)),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No items in this playlist yet',
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Add scripture passages and notes using the buttons below.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ReorderableListView.builder(
-                    buildDefaultDragHandles: false,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    itemCount: _items.length,
-                    onReorderItem: _onReorderItem,
-                    itemBuilder: (context, index) {
-                      final item = _items[index];
-                      return ReorderableDelayedDragStartListener(
-                        key: ValueKey(item.id),
-                        index: index,
-                        child: Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: item.isReference
-                              ? _buildPassageTile(item, index)
-                              : _buildNoteTile(item, index),
-                        ),
-                      );
-                    },
+          title: const Text('Edit Playlist'),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (val) {
+                final playlist = _buildPlaylist();
+                if (val == 'share') {
+                  _shareHandler.exportPlaylistFile(context, playlist);
+                } else if (val == 'code') {
+                  _shareHandler.copyShareCode(context, playlist);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'share',
+                  child: ListTile(
+                    leading: Icon(Icons.share),
+                    title: Text('Share File (.bsbplaylist)'),
+                    contentPadding: EdgeInsets.zero,
                   ),
-          ),
-
-          // Bottom Bar for Adding Items
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  offset: const Offset(0, -2),
-                  blurRadius: 4,
+                ),
+                const PopupMenuItem(
+                  value: 'code',
+                  child: ListTile(
+                    leading: Icon(Icons.copy_outlined),
+                    title: Text('Copy Share Code'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ],
             ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Passage'),
-                      onPressed: _addPassage,
+          ],
+        ),
+        body: Column(
+          children: [
+            // Title Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
+              child: TextField(
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Playlist Title',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: _onTitleChanged,
+              ),
+            ),
+
+            // Items List
+            Expanded(
+              child: _items.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.playlist_add_rounded,
+                              size: 54,
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No items in this playlist yet',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add scripture passages and notes using the buttons below.',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ReorderableListView.builder(
+                      buildDefaultDragHandles: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      itemCount: _items.length,
+                      onReorderItem: _onReorderItem,
+                      itemBuilder: (context, index) {
+                        final item = _items[index];
+                        return ReorderableDelayedDragStartListener(
+                          key: ValueKey(item.id),
+                          index: index,
+                          child: Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: item.isReference
+                                ? _buildPassageTile(item, index)
+                                : _buildNoteTile(item, index),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.edit_note),
-                      label: const Text('Add Note'),
-                      onPressed: _addNote,
-                    ),
+            ),
+
+            // Bottom Bar for Adding Items
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    offset: const Offset(0, -2),
+                    blurRadius: 4,
                   ),
                 ],
               ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Passage'),
+                        onPressed: _addPassage,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.edit_note),
+                        label: const Text('Add Note'),
+                        onPressed: _addNote,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildPassageTile(PlaylistItem item, int index) {
@@ -370,7 +395,11 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(Icons.menu_book, color: theme.colorScheme.onPrimaryContainer, size: 20),
+        child: Icon(
+          Icons.menu_book,
+          color: theme.colorScheme.onPrimaryContainer,
+          size: 20,
+        ),
       ),
       title: Row(
         children: [
@@ -419,12 +448,13 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.secondaryContainer,
-        child: Icon(Icons.note_alt_outlined, color: theme.colorScheme.onSecondaryContainer, size: 20),
+        child: Icon(
+          Icons.note_alt_outlined,
+          color: theme.colorScheme.onSecondaryContainer,
+          size: 20,
+        ),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(
         item.noteText ?? '',
         maxLines: 2,

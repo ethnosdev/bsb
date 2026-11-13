@@ -31,27 +31,30 @@ void main() {
       expect(fromMap.reference?.toString(), 'Romans 8:28–30');
     });
 
-    test('serializes and deserializes PlaylistItem cross-chapter reference', () {
-      final ref = Reference(
-        bookId: 42, // Luke
-        chapter: 23,
-        verse: 50,
-        endChapter: 24,
-        endVerse: 12,
-      );
-      final item = PlaylistItem.reference(
-        id: 'item-cross',
-        reference: ref,
-        orderIndex: 1,
-      );
+    test(
+      'serializes and deserializes PlaylistItem cross-chapter reference',
+      () {
+        final ref = Reference(
+          bookId: 42, // Luke
+          chapter: 23,
+          verse: 50,
+          endChapter: 24,
+          endVerse: 12,
+        );
+        final item = PlaylistItem.reference(
+          id: 'item-cross',
+          reference: ref,
+          orderIndex: 1,
+        );
 
-      final map = item.toMap();
-      expect(map['end_chapter'], 24);
-      expect(map['end_verse'], 12);
+        final map = item.toMap();
+        expect(map['end_chapter'], 24);
+        expect(map['end_verse'], 12);
 
-      final fromMap = PlaylistItem.fromMap(map);
-      expect(fromMap.reference?.toString(), 'Luke 23:50–24:12');
-    });
+        final fromMap = PlaylistItem.fromMap(map);
+        expect(fromMap.reference?.toString(), 'Luke 23:50–24:12');
+      },
+    );
 
     test('serializes and deserializes PlaylistItem note', () {
       final item = PlaylistItem.note(

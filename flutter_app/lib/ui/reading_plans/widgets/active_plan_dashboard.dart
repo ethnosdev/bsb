@@ -1,6 +1,6 @@
 import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/ui/reading_plans/widgets/plan_day_tile.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ActivePlanDashboard extends StatefulWidget {

@@ -4,7 +4,7 @@ import 'package:bsb/ui/help.dart';
 import 'package:bsb/ui/playlists/playlists_page.dart';
 import 'package:bsb/ui/reading_plans/reading_plans_page.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});

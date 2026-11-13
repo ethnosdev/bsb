@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class NoteViewerSheet extends StatefulWidget {
   final String title;
@@ -109,152 +109,161 @@ class _NoteViewerSheetState extends State<NoteViewerSheet> {
           bottom: bottomInset + 16,
         ),
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Header row
-          Row(
-            children: [
-              Icon(Icons.sticky_note_2_outlined, color: colorScheme.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              if (!_isEditing) ...[
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Edit note',
-                  onPressed: () {
-                    setState(() {
-                      _isEditing = true;
-                    });
-                  },
-                ),
-                if (widget.onDelete != null)
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'Delete note',
-                    onPressed: _confirmDelete,
-                  ),
-              ],
-            ],
-          ),
-
-          // Scripture passage snippet preview
-          if (widget.passageText != null && widget.passageText!.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                widget.passageText!,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontStyle: FontStyle.italic,
-                  color: colorScheme.onSurfaceVariant,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-          ],
+            const SizedBox(height: 12),
 
-          const SizedBox(height: 12),
-
-          // Content body: view mode vs edit mode
-          if (!_isEditing) ...[
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.4,
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: SelectableText(
-                    _currentContent,
-                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ] else ...[
-            TextField(
-              controller: _textController,
-              autofocus: true,
-              maxLines: 7,
-              minLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Type your note here...',
-                filled: true,
-                fillColor:
-                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: colorScheme.outlineVariant),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      BorderSide(color: colorScheme.primary, width: 1.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+            // Header row
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _textController.text = _currentContent;
-                      _isEditing = false;
-                    });
-                  },
-                  child: const Text('Cancel'),
-                ),
+                Icon(Icons.sticky_note_2_outlined, color: colorScheme.primary),
                 const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () {
-                    final newContent = _textController.text.trim();
-                    if (newContent.isEmpty) {
-                      _confirmDelete();
-                    } else {
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (!_isEditing) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Edit note',
+                    onPressed: () {
                       setState(() {
-                        _currentContent = newContent;
+                        _isEditing = true;
+                      });
+                    },
+                  ),
+                  if (widget.onDelete != null)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Delete note',
+                      onPressed: _confirmDelete,
+                    ),
+                ],
+              ],
+            ),
+
+            // Scripture passage snippet preview
+            if (widget.passageText != null &&
+                widget.passageText!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  widget.passageText!,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 12),
+
+            // Content body: view mode vs edit mode
+            if (!_isEditing) ...[
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.4,
+                ),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: SelectableText(
+                      _currentContent,
+                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else ...[
+              TextField(
+                controller: _textController,
+                autofocus: true,
+                maxLines: 7,
+                minLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Type your note here...',
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.3,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: colorScheme.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _textController.text = _currentContent;
                         _isEditing = false;
                       });
-                      widget.onSave(newContent);
-                    }
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () {
+                      final newContent = _textController.text.trim();
+                      if (newContent.isEmpty) {
+                        _confirmDelete();
+                      } else {
+                        setState(() {
+                          _currentContent = newContent;
+                          _isEditing = false;
+                        });
+                        widget.onSave(newContent);
+                      }
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

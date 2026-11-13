@@ -1,5 +1,5 @@
 import 'package:bsb/infrastructure/annotation_models.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HighlightPaletteSheet extends StatelessWidget {
   final ValueChanged<HighlightColor> onColorSelected;
@@ -43,7 +43,9 @@ class HighlightPaletteSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.4,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -51,13 +53,15 @@ class HighlightPaletteSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ...HighlightColor.values.map((color) => _ColorButton(
-                      color: color.previewColor,
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        onColorSelected(color);
-                      },
-                    )),
+                ...HighlightColor.values.map(
+                  (color) => _ColorButton(
+                    color: color.previewColor,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      onColorSelected(color);
+                    },
+                  ),
+                ),
                 // Clear button
                 InkWell(
                   onTap: () {
@@ -95,10 +99,7 @@ class _ColorButton extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
-  const _ColorButton({
-    required this.color,
-    required this.onTap,
-  });
+  const _ColorButton({required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

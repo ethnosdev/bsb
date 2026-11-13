@@ -14,7 +14,7 @@ import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/chapter_chip.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/text_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -26,21 +26,21 @@ class FakeDatabaseHelper implements DatabaseHelper {
 
   @override
   Future<List<UsfmLine>> getChapter(int bookId, int chapter) async => [
-        UsfmLine(
-          bookChapterVerse: bookId * 1000000 + chapter * 1000 + 1,
-          text: 'Chapter text line.',
-          format: ParagraphFormat.p,
-        ),
-      ];
+    UsfmLine(
+      bookChapterVerse: bookId * 1000000 + chapter * 1000 + 1,
+      text: 'Chapter text line.',
+      format: ParagraphFormat.p,
+    ),
+  ];
 
   @override
   Future<List<UsfmLine>> getRange(Reference reference) async => [
-        UsfmLine(
-          bookChapterVerse: reference.packedVerse,
-          text: 'Passage verse line.',
-          format: ParagraphFormat.p,
-        ),
-      ];
+    UsfmLine(
+      bookChapterVerse: reference.packedVerse,
+      text: 'Passage verse line.',
+      format: ParagraphFormat.p,
+    ),
+  ];
 
   @override
   Future<List<SectionHeading>> getSectionHeadings(int bookId) async => [];
@@ -53,7 +53,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -126,56 +129,49 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('Opening a playlist tab displays the playlist presentation on HomePage', (tester) async {
-    final playlist = Playlist(
-      id: 'pl-1',
-      title: 'Grace & Truth',
-      items: [
-        PlaylistItem.reference(
-          reference: Reference(bookId: 43, chapter: 1, verse: 14),
-          orderIndex: 0,
-        ),
-      ],
-    );
+  testWidgets(
+    'Opening a playlist tab displays the playlist presentation on HomePage',
+    (tester) async {
+      final playlist = Playlist(
+        id: 'pl-1',
+        title: 'Grace & Truth',
+        items: [
+          PlaylistItem.reference(
+            reference: Reference(bookId: 43, chapter: 1, verse: 14),
+            orderIndex: 0,
+          ),
+        ],
+      );
+      await playlistService.savePlaylist(playlist);
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      // Initially no tabs, so book chooser is shown
+      expect(find.byType(TextScreen), findsNothing);
+      expect(find.byType(PlaylistPresentationPage), findsNothing);
+
+      // Open playlist tab
+      tabManager.openPlaylistTab('pl-1', 'Grace & Truth');
+      await tester.pumpAndSettle();
+
+      // Should display ChapterChip with playlist title (no icon)
+      expect(find.byType(ChapterChip), findsOneWidget);
+      expect(find.text('Grace & Truth'), findsOneWidget);
+
+      // Should display PlaylistPresentationPage embedded, not TextScreen
+      expect(find.byType(PlaylistPresentationPage), findsOneWidget);
+      expect(find.byType(TextScreen), findsNothing);
+    },
+  );
+
+  testWidgets('Tapping the active playlist tab chip opens PlaylistEditorPage', (
+    tester,
+  ) async {
+    final playlist = Playlist(id: 'pl-1', title: 'Grace & Truth', items: []);
     await playlistService.savePlaylist(playlist);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: HomePage(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Initially no tabs, so book chooser is shown
-    expect(find.byType(TextScreen), findsNothing);
-    expect(find.byType(PlaylistPresentationPage), findsNothing);
-
-    // Open playlist tab
-    tabManager.openPlaylistTab('pl-1', 'Grace & Truth');
-    await tester.pumpAndSettle();
-
-    // Should display ChapterChip with playlist title (no icon)
-    expect(find.byType(ChapterChip), findsOneWidget);
-    expect(find.text('Grace & Truth'), findsOneWidget);
-
-    // Should display PlaylistPresentationPage embedded, not TextScreen
-    expect(find.byType(PlaylistPresentationPage), findsOneWidget);
-    expect(find.byType(TextScreen), findsNothing);
-  });
-
-  testWidgets('Tapping the active playlist tab chip opens PlaylistEditorPage', (tester) async {
-    final playlist = Playlist(
-      id: 'pl-1',
-      title: 'Grace & Truth',
-      items: [],
-    );
-    await playlistService.savePlaylist(playlist);
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: HomePage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: HomePage()));
     await tester.pumpAndSettle();
 
     tabManager.openPlaylistTab('pl-1', 'Grace & Truth');
@@ -197,52 +193,41 @@ void main() {
     expect(find.byType(PlaylistEditorPage), findsNothing);
   });
 
-  testWidgets('Overflow menu shows Edit Playlist and Search when playlist tab is active', (tester) async {
-    final playlist = Playlist(
-      id: 'pl-1',
-      title: 'Study 1',
-      items: [],
-    );
+  testWidgets(
+    'Overflow menu shows Edit Playlist and Search when playlist tab is active',
+    (tester) async {
+      final playlist = Playlist(id: 'pl-1', title: 'Study 1', items: []);
+      await playlistService.savePlaylist(playlist);
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      tabManager.openPlaylistTab('pl-1', 'Study 1');
+      await tester.pumpAndSettle();
+
+      // Open overflow menu
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Playlist'), findsOneWidget);
+      expect(find.text('Search'), findsOneWidget);
+      expect(find.text('Play Audio'), findsNothing);
+
+      // Tapping Edit Playlist opens PlaylistEditorPage
+      await tester.tap(find.text('Edit Playlist'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlaylistEditorPage), findsOneWidget);
+    },
+  );
+
+  testWidgets('Can switch between chapter tab and playlist tab seamlessly', (
+    tester,
+  ) async {
+    final playlist = Playlist(id: 'pl-1', title: 'Sermon on Mount', items: []);
     await playlistService.savePlaylist(playlist);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: HomePage(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    tabManager.openPlaylistTab('pl-1', 'Study 1');
-    await tester.pumpAndSettle();
-
-    // Open overflow menu
-    await tester.tap(find.byIcon(Icons.more_vert));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Edit Playlist'), findsOneWidget);
-    expect(find.text('Search'), findsOneWidget);
-    expect(find.text('Play Audio'), findsNothing);
-
-    // Tapping Edit Playlist opens PlaylistEditorPage
-    await tester.tap(find.text('Edit Playlist'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(PlaylistEditorPage), findsOneWidget);
-  });
-
-  testWidgets('Can switch between chapter tab and playlist tab seamlessly', (tester) async {
-    final playlist = Playlist(
-      id: 'pl-1',
-      title: 'Sermon on Mount',
-      items: [],
-    );
-    await playlistService.savePlaylist(playlist);
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: HomePage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: HomePage()));
     await tester.pumpAndSettle();
 
     tabManager.openTab(43, 1); // JHN 1

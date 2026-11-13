@@ -17,7 +17,7 @@ import 'package:bsb/ui/text/chapter/verse_scrubber.dart';
 import 'package:bsb/ui/text/note_viewer_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart' show BoxParentData;
 import 'package:database_builder/database_builder.dart';
 import 'package:scripture/scripture.dart';

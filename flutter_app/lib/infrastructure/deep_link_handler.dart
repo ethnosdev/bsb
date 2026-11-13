@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:database_builder/database_builder.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../ui/playlists/playlist_share_handler.dart';
 import '../ui/tabs/tab_manager.dart';
@@ -14,9 +14,9 @@ class DeepLinkHandler {
     AppLinks? appLinks,
     PlaylistShareHandler? playlistShareHandler,
     TabManager? tabManager,
-  })  : _appLinks = appLinks ?? AppLinks(),
-        _playlistShareHandler = playlistShareHandler ?? PlaylistShareHandler(),
-        _tabManager = tabManager ?? getIt<TabManager>();
+  }) : _appLinks = appLinks ?? AppLinks(),
+       _playlistShareHandler = playlistShareHandler ?? PlaylistShareHandler(),
+       _tabManager = tabManager ?? getIt<TabManager>();
 
   final AppLinks _appLinks;
   final PlaylistShareHandler _playlistShareHandler;
@@ -82,7 +82,9 @@ class DeepLinkHandler {
     final chapter = int.tryParse(segments[1]);
     final verse = segments.length == 3 ? int.tryParse(segments[2]) : null;
 
-    if (bookId == null || chapter == null || (segments.length == 3 && verse == null)) {
+    if (bookId == null ||
+        chapter == null ||
+        (segments.length == 3 && verse == null)) {
       _showInvalidLinkError(context);
       return;
     }
@@ -110,7 +112,10 @@ class DeepLinkHandler {
     }
 
     // Dismiss any open modal sheets, dialogs, or subpages back to root
-    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).popUntil((route) => route.isFirst);
 
     // Open or switch to chapter tab, and scroll to verse
     _tabManager.openTab(bookId, chapter, null, verse);
@@ -118,8 +123,7 @@ class DeepLinkHandler {
 
   void _showInvalidLinkError(BuildContext context) {
     if (!context.mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('Invalid Bible link')),
-    );
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(const SnackBar(content: Text('Invalid Bible link')));
   }
 }

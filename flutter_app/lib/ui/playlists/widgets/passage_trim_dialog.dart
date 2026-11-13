@@ -1,7 +1,7 @@
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/ui/playlists/playlist_presentation_page.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
 
@@ -252,7 +252,9 @@ class _PassageTrimDialogState extends State<PassageTrimDialog> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: theme.colorScheme.outlineVariant),
                   ),
@@ -269,15 +271,16 @@ class _PassageTrimDialogState extends State<PassageTrimDialog> {
                         showSelectionHandles: true,
                         showHeadings: false,
                         showVerseNumbers: true,
-                        styleBuilder: (format) => UsfmParagraphStyle.usfmDefaults(
-                          format: format == ParagraphFormat.p
-                              ? ParagraphFormat.m
-                              : format,
-                          baseStyle: theme.textTheme.bodyLarge!.copyWith(
-                            fontSize: 18.0,
-                            height: 1.6,
-                          ),
-                        ),
+                        styleBuilder: (format) =>
+                            UsfmParagraphStyle.usfmDefaults(
+                              format: format == ParagraphFormat.p
+                                  ? ParagraphFormat.m
+                                  : format,
+                              baseStyle: theme.textTheme.bodyLarge!.copyWith(
+                                fontSize: 18.0,
+                                height: 1.6,
+                              ),
+                            ),
                       ),
                     ),
                   ),

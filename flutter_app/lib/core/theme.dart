@@ -1,6 +1,6 @@
 // ignore_for_file: use_full_hex_values_for_flutter_colors
 
-import "package:flutter/material.dart";
+import "package:material_ui/material_ui.dart";
 
 export 'app_theme_presets.dart';
 export 'custom_theme_config.dart';
@@ -341,30 +341,31 @@ class MaterialTheme {
   }
 
   ThemeData theme(ColorScheme colorScheme) => ThemeData(
-        useMaterial3: true,
-        brightness: colorScheme.brightness,
-        colorScheme: colorScheme,
-        textTheme: textTheme.apply(
-          bodyColor: colorScheme.onSurface,
-          displayColor: colorScheme.onSurface,
-        ),
-        extensions: [
-          ScriptureTheme(
-            wordsOfJesusColor: colorScheme.brightness == Brightness.dark
-                ? const Color(0xFFFF8A80)
-                : const Color(0xFFB71C1C),
-          ),
-        ],
-        scaffoldBackgroundColor: colorScheme.surface,
-        canvasColor: colorScheme.surface,
-      );
+    useMaterial3: true,
+    brightness: colorScheme.brightness,
+    colorScheme: colorScheme,
+    textTheme: textTheme.apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    ),
+    extensions: [
+      ScriptureTheme(
+        wordsOfJesusColor: colorScheme.brightness == Brightness.dark
+            ? const Color(0xFFFF8A80)
+            : const Color(0xFFB71C1C),
+      ),
+    ],
+    scaffoldBackgroundColor: colorScheme.surface,
+    canvasColor: colorScheme.surface,
+  );
 
   static ThemeData buildTheme({
     required ColorScheme colorScheme,
     String fontFamily = 'Charis',
     Color? wordsOfJesusColor,
   }) {
-    final effectiveWordsOfJesusColor = wordsOfJesusColor ??
+    final effectiveWordsOfJesusColor =
+        wordsOfJesusColor ??
         (colorScheme.brightness == Brightness.dark
             ? const Color(0xFFFF8A80)
             : const Color(0xFFB71C1C));
@@ -444,9 +445,7 @@ class ColorFamily {
 class ScriptureTheme extends ThemeExtension<ScriptureTheme> {
   final Color wordsOfJesusColor;
 
-  const ScriptureTheme({
-    required this.wordsOfJesusColor,
-  });
+  const ScriptureTheme({required this.wordsOfJesusColor});
 
   @override
   ScriptureTheme copyWith({Color? wordsOfJesusColor}) {
@@ -461,7 +460,7 @@ class ScriptureTheme extends ThemeExtension<ScriptureTheme> {
     return ScriptureTheme(
       wordsOfJesusColor:
           Color.lerp(wordsOfJesusColor, other.wordsOfJesusColor, t) ??
-              wordsOfJesusColor,
+          wordsOfJesusColor,
     );
   }
 

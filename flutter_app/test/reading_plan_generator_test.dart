@@ -48,11 +48,21 @@ void main() {
       final seenChapters = <ChapterRef>{};
       for (final day in plan.days) {
         for (final reading in day.readings) {
-          expect(reading.chapterCount, equals(1)); // Individual chapter per reading
+          expect(
+            reading.chapterCount,
+            equals(1),
+          ); // Individual chapter per reading
           expect(reading.startChapter, equals(reading.endChapter));
           totalChapters += reading.chapterCount;
-          final added = seenChapters.add(ChapterRef(reading.bookId, reading.startChapter));
-          expect(added, isTrue, reason: 'Duplicate chapter in plan: ${reading.bookId}:${reading.startChapter}');
+          final added = seenChapters.add(
+            ChapterRef(reading.bookId, reading.startChapter),
+          );
+          expect(
+            added,
+            isTrue,
+            reason:
+                'Duplicate chapter in plan: ${reading.bookId}:${reading.startChapter}',
+          );
         }
       }
       expect(totalChapters, equals(1189));
@@ -65,8 +75,14 @@ void main() {
         PlanPace.oneChapterADay,
       );
       expect(plan.days.length, equals(1189));
-      expect(plan.days.first.readings.first.referenceDisplay, equals('Genesis 1'));
-      expect(plan.days.last.readings.first.referenceDisplay, equals('Revelation 22'));
+      expect(
+        plan.days.first.readings.first.referenceDisplay,
+        equals('Genesis 1'),
+      );
+      expect(
+        plan.days.last.readings.first.referenceDisplay,
+        equals('Revelation 22'),
+      );
     });
 
     test('Chronological Bible - Finish in a Year covers all 1,189 chapters with individual readings', () {
@@ -83,8 +99,15 @@ void main() {
           expect(reading.chapterCount, equals(1));
           expect(reading.startChapter, equals(reading.endChapter));
           totalChapters += reading.chapterCount;
-          final added = seenChapters.add(ChapterRef(reading.bookId, reading.startChapter));
-          expect(added, isTrue, reason: 'Duplicate chapter in chronological plan: ${reading.bookId}:${reading.startChapter}');
+          final added = seenChapters.add(
+            ChapterRef(reading.bookId, reading.startChapter),
+          );
+          expect(
+            added,
+            isTrue,
+            reason:
+                'Duplicate chapter in chronological plan: ${reading.bookId}:${reading.startChapter}',
+          );
         }
       }
       expect(totalChapters, equals(1189));
@@ -105,8 +128,15 @@ void main() {
           expect(reading.chapterCount, equals(1));
           expect(reading.startChapter, equals(reading.endChapter));
           totalChapters += reading.chapterCount;
-          final added = seenChapters.add(ChapterRef(reading.bookId, reading.startChapter));
-          expect(added, isTrue, reason: 'Duplicate NT chapter: ${reading.bookId}:${reading.startChapter}');
+          final added = seenChapters.add(
+            ChapterRef(reading.bookId, reading.startChapter),
+          );
+          expect(
+            added,
+            isTrue,
+            reason:
+                'Duplicate NT chapter: ${reading.bookId}:${reading.startChapter}',
+          );
         }
       }
       expect(totalChapters, equals(260));
@@ -119,8 +149,14 @@ void main() {
         PlanPace.oneChapterADay,
       );
       expect(plan.days.length, equals(260));
-      expect(plan.days.first.readings.first.referenceDisplay, equals('Matthew 1'));
-      expect(plan.days.last.readings.first.referenceDisplay, equals('Revelation 22'));
+      expect(
+        plan.days.first.readings.first.referenceDisplay,
+        equals('Matthew 1'),
+      );
+      expect(
+        plan.days.last.readings.first.referenceDisplay,
+        equals('Revelation 22'),
+      );
     });
 
     test('allPlans returns 6 distinct plans', () {

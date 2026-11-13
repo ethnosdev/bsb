@@ -1,29 +1,27 @@
 import 'package:bsb/ui/home/book_chooser.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget createTestApp(Widget child) {
   return MaterialApp(
     theme: ThemeData.light(useMaterial3: true),
-    home: Scaffold(
-      body: child,
-    ),
+    home: Scaffold(body: child),
   );
 }
 
 void main() {
   group('BookChooser Responsive Book Names Tests', () {
-    testWidgets('shows abbreviated book names on narrow screens (< 800)', (tester) async {
+    testWidgets('shows abbreviated book names on narrow screens (< 800)', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(600, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
+        createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
       );
       await tester.pumpAndSettle();
 
@@ -46,16 +44,16 @@ void main() {
       expect(find.text('Revelation'), findsNothing);
     });
 
-    testWidgets('shows full book names on wide screens (>= 800)', (tester) async {
+    testWidgets('shows full book names on wide screens (>= 800)', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
+        createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
       );
       await tester.pumpAndSettle();
 
@@ -80,38 +78,39 @@ void main() {
       expect(find.text('Rev'), findsNothing);
     });
 
-    testWidgets('dynamically updates book names when screen size changes across 800 breakpoint', (tester) async {
-      tester.view.physicalSize = const Size(600, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'dynamically updates book names when screen size changes across 800 breakpoint',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
+        );
+        await tester.pumpAndSettle();
 
-      // Initially narrow (< 800): abbreviations
-      expect(find.text('Gen'), findsOneWidget);
-      expect(find.text('Genesis'), findsNothing);
+        // Initially narrow (< 800): abbreviations
+        expect(find.text('Gen'), findsOneWidget);
+        expect(find.text('Genesis'), findsNothing);
 
-      // Resize to wide screen (>= 800)
-      tester.view.physicalSize = const Size(900, 800);
-      await tester.pumpAndSettle();
+        // Resize to wide screen (>= 800)
+        tester.view.physicalSize = const Size(900, 800);
+        await tester.pumpAndSettle();
 
-      // Now wide: full names
-      expect(find.text('Genesis'), findsOneWidget);
-      expect(find.text('Gen'), findsNothing);
+        // Now wide: full names
+        expect(find.text('Genesis'), findsOneWidget);
+        expect(find.text('Gen'), findsNothing);
 
-      // Resize back to narrow (< 800)
-      tester.view.physicalSize = const Size(700, 800);
-      await tester.pumpAndSettle();
+        // Resize back to narrow (< 800)
+        tester.view.physicalSize = const Size(700, 800);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Gen'), findsOneWidget);
-      expect(find.text('Genesis'), findsNothing);
-    });
+        expect(find.text('Gen'), findsOneWidget);
+        expect(find.text('Genesis'), findsNothing);
+      },
+    );
 
     testWidgets('respects custom wideScreenBreakpoint', (tester) async {
       // Screen width is 700. With breakpoint 750, it should still be abbreviated.
@@ -122,10 +121,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          BookChooser(
-            wideScreenBreakpoint: 750,
-            onSelected: (_, _, [_]) {},
-          ),
+          BookChooser(wideScreenBreakpoint: 750, onSelected: (_, _, [_]) {}),
         ),
       );
       await tester.pumpAndSettle();
@@ -136,10 +132,7 @@ void main() {
       // Screen width is 550. With breakpoint 500, it should use full names.
       await tester.pumpWidget(
         createTestApp(
-          BookChooser(
-            wideScreenBreakpoint: 500,
-            onSelected: (_, _, [_]) {},
-          ),
+          BookChooser(wideScreenBreakpoint: 500, onSelected: (_, _, [_]) {}),
         ),
       );
       await tester.pumpAndSettle();
@@ -148,7 +141,9 @@ void main() {
       expect(find.text('Gen'), findsNothing);
     });
 
-    testWidgets('tapping a single-chapter book directly selects chapter 1', (tester) async {
+    testWidgets('tapping a single-chapter book directly selects chapter 1', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -178,16 +173,16 @@ void main() {
       expect(find.byType(ChapterChooser), findsNothing);
     });
 
-    testWidgets('tapping a multi-chapter book opens ChapterChooser', (tester) async {
+    testWidgets('tapping a multi-chapter book opens ChapterChooser', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
+        createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
       );
       await tester.pumpAndSettle();
 
@@ -256,51 +251,53 @@ void main() {
       expect(selectedChapter, equals(40));
     });
 
-    testWidgets('uses subtle outlineVariant border in light mode and black in dark mode', (tester) async {
-      final lightTheme = ThemeData.light(useMaterial3: true);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: lightTheme,
-          home: Scaffold(
-            body: BookChooser(onSelected: (_, _, [_]) {}),
+    testWidgets(
+      'uses subtle outlineVariant border in light mode and black in dark mode',
+      (tester) async {
+        final lightTheme = ThemeData.light(useMaterial3: true);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: lightTheme,
+            home: Scaffold(body: BookChooser(onSelected: (_, _, [_]) {})),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Find Container of first BookItem
-      final containerFinder = find.descendant(
-        of: find.byType(BookItem).first,
-        matching: find.byType(Container),
-      );
-      final containerWidget = tester.widget<Container>(containerFinder);
-      final boxDecoration = containerWidget.decoration as BoxDecoration;
-      final border = boxDecoration.border as Border;
+        // Find Container of first BookItem
+        final containerFinder = find.descendant(
+          of: find.byType(BookItem).first,
+          matching: find.byType(Container),
+        );
+        final containerWidget = tester.widget<Container>(containerFinder);
+        final boxDecoration = containerWidget.decoration as BoxDecoration;
+        final border = boxDecoration.border as Border;
 
-      expect(border.top.color, equals(lightTheme.colorScheme.outlineVariant));
+        expect(border.top.color, equals(lightTheme.colorScheme.outlineVariant));
 
-      // Now switch to dark mode
-      final darkTheme = ThemeData.dark(useMaterial3: true);
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: darkTheme,
-          home: Scaffold(
-            body: BookChooser(onSelected: (_, _, [_]) {}),
+        // Now switch to dark mode
+        final darkTheme = ThemeData.dark(useMaterial3: true);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: darkTheme,
+            home: Scaffold(body: BookChooser(onSelected: (_, _, [_]) {})),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final darkContainerFinder = find.descendant(
-        of: find.byType(BookItem).first,
-        matching: find.byType(Container),
-      );
-      final darkContainerWidget = tester.widget<Container>(darkContainerFinder);
-      final darkBoxDecoration = darkContainerWidget.decoration as BoxDecoration;
-      final darkBorder = darkBoxDecoration.border as Border;
+        final darkContainerFinder = find.descendant(
+          of: find.byType(BookItem).first,
+          matching: find.byType(Container),
+        );
+        final darkContainerWidget = tester.widget<Container>(
+          darkContainerFinder,
+        );
+        final darkBoxDecoration =
+            darkContainerWidget.decoration as BoxDecoration;
+        final darkBorder = darkBoxDecoration.border as Border;
 
-      expect(darkBorder.top.color, equals(Colors.black));
-    });
+        expect(darkBorder.top.color, equals(Colors.black));
+      },
+    );
   });
 
   group('BookChooser Popup and Drag Tests', () {
@@ -311,64 +308,58 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
     }
 
-    testWidgets('tapping and holding on a book displays a popup of the full book name',
-        (tester) async {
-      setNarrowScreen(tester);
-      await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping and holding on a book displays a popup of the full book name',
+      (tester) async {
+        setNarrowScreen(tester);
+        await tester.pumpWidget(
+          createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
+        );
+        await tester.pumpAndSettle();
 
-      // Initially no popup
-      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+        // Initially no popup
+        expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
 
-      // Touch down on 'Gen'
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Gen')));
-      await tester.pump();
+        // Touch down on 'Gen'
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Gen')),
+        );
+        await tester.pump();
 
-      // Popup should appear with "Genesis"
-      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
-      expect(popupFinder, findsOneWidget);
-      expect(
-        find.descendant(
-          of: popupFinder,
-          matching: find.text('Genesis'),
-        ),
-        findsOneWidget,
-      );
+        // Popup should appear with "Genesis"
+        final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+        expect(popupFinder, findsOneWidget);
+        expect(
+          find.descendant(of: popupFinder, matching: find.text('Genesis')),
+          findsOneWidget,
+        );
 
-      // Release
-      await gesture.up();
-      await tester.pumpAndSettle();
+        // Release
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      // Popup disappears
-      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
-    });
+        // Popup disappears
+        expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+      },
+    );
 
     testWidgets('displays full book name for Psalms', (tester) async {
       setNarrowScreen(tester);
       await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
+        createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
       );
       await tester.pumpAndSettle();
 
       // Touch 'Psa' -> popup "Psalms"
-      final gesturePsa =
-          await tester.startGesture(tester.getCenter(find.text('Psa')));
+      final gesturePsa = await tester.startGesture(
+        tester.getCenter(find.text('Psa')),
+      );
       await tester.pump();
 
       final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
       expect(popupFinder, findsOneWidget);
       expect(
-        find.descendant(
-          of: popupFinder,
-          matching: find.text('Psalms'),
-        ),
+        find.descendant(of: popupFinder, matching: find.text('Psalms')),
         findsOneWidget,
       );
 
@@ -379,15 +370,14 @@ void main() {
     testWidgets('displays full book name for Song of Solomon', (tester) async {
       setNarrowScreen(tester);
       await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
+        createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
       );
       await tester.pumpAndSettle();
 
       // Touch 'Song' -> popup "Song of Solomon"
-      final gestureSong =
-          await tester.startGesture(tester.getCenter(find.text('Song')));
+      final gestureSong = await tester.startGesture(
+        tester.getCenter(find.text('Song')),
+      );
       await tester.pump();
 
       final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
@@ -404,54 +394,55 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('dragging across books updates popup and selects book on release',
-        (tester) async {
-      setNarrowScreen(tester);
+    testWidgets(
+      'dragging across books updates popup and selects book on release',
+      (tester) async {
+        setNarrowScreen(tester);
 
-      await tester.pumpWidget(
-        createTestApp(
-          BookChooser(onSelected: (_, _, [_]) {}),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestApp(BookChooser(onSelected: (_, _, [_]) {})),
+        );
+        await tester.pumpAndSettle();
 
-      // Start gesture on 'Gen'
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Gen')));
-      await tester.pump();
+        // Start gesture on 'Gen'
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Gen')),
+        );
+        await tester.pump();
 
-      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
-      expect(
-        find.descendant(of: popupFinder, matching: find.text('Genesis')),
-        findsOneWidget,
-      );
+        final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+        expect(
+          find.descendant(of: popupFinder, matching: find.text('Genesis')),
+          findsOneWidget,
+        );
 
-      // Drag to 'Exo'
-      await gesture.moveTo(tester.getCenter(find.text('Exo')));
-      await tester.pump();
+        // Drag to 'Exo'
+        await gesture.moveTo(tester.getCenter(find.text('Exo')));
+        await tester.pump();
 
-      expect(
-        find.descendant(of: popupFinder, matching: find.text('Exodus')),
-        findsOneWidget,
-      );
+        expect(
+          find.descendant(of: popupFinder, matching: find.text('Exodus')),
+          findsOneWidget,
+        );
 
-      // Drag to 'Lev'
-      await gesture.moveTo(tester.getCenter(find.text('Lev')));
-      await tester.pump();
+        // Drag to 'Lev'
+        await gesture.moveTo(tester.getCenter(find.text('Lev')));
+        await tester.pump();
 
-      expect(
-        find.descendant(of: popupFinder, matching: find.text('Leviticus')),
-        findsOneWidget,
-      );
+        expect(
+          find.descendant(of: popupFinder, matching: find.text('Leviticus')),
+          findsOneWidget,
+        );
 
-      // Release over 'Lev'
-      await gesture.up();
-      await tester.pumpAndSettle();
+        // Release over 'Lev'
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      // Popup dismissed and ChapterChooser opened for Leviticus (bookId 3)
-      expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
-      expect(find.byType(ChapterChooser), findsOneWidget);
-    });
+        // Popup dismissed and ChapterChooser opened for Leviticus (bookId 3)
+        expect(find.byKey(const ValueKey('book_chooser_popup')), findsNothing);
+        expect(find.byType(ChapterChooser), findsOneWidget);
+      },
+    );
 
     testWidgets('highlighted tile uses primary color theme', (tester) async {
       setNarrowScreen(tester);
@@ -459,16 +450,15 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: theme,
-          home: Scaffold(
-            body: BookChooser(onSelected: (_, _, [_]) {}),
-          ),
+          home: Scaffold(body: BookChooser(onSelected: (_, _, [_]) {})),
         ),
       );
       await tester.pumpAndSettle();
 
       // Touch down on 'Gen'
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Gen')),
+      );
       await tester.pump();
 
       // First BookItem should be highlighted with theme.colorScheme.primary
@@ -486,8 +476,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('dragging outside grid dismisses popup without selecting',
-        (tester) async {
+    testWidgets('dragging outside grid dismisses popup without selecting', (
+      tester,
+    ) async {
       setNarrowScreen(tester);
       int? selectedBookId;
 
@@ -503,8 +494,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Touch down on 'Gen'
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Gen')));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Gen')),
+      );
       await tester.pump();
 
       expect(find.byKey(const ValueKey('book_chooser_popup')), findsOneWidget);
@@ -526,44 +518,46 @@ void main() {
     });
 
     testWidgets(
-        'displays popup above the chosen book even for top row over the AppBar',
-        (tester) async {
-      setNarrowScreen(tester);
+      'displays popup above the chosen book even for top row over the AppBar',
+      (tester) async {
+        setNarrowScreen(tester);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(useMaterial3: true),
-          home: Scaffold(
-            appBar: AppBar(title: const Text('Choose a Book')),
-            body: BookChooser(onSelected: (_, _, [_]) {}),
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.light(useMaterial3: true),
+            home: Scaffold(
+              appBar: AppBar(title: const Text('Choose a Book')),
+              body: BookChooser(onSelected: (_, _, [_]) {}),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Touch down on 'Gen' in row 0
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Gen')));
-      await tester.pump();
+        // Touch down on 'Gen' in row 0
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Gen')),
+        );
+        await tester.pump();
 
-      final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
-      expect(popupFinder, findsOneWidget);
-      expect(
-        find.descendant(of: popupFinder, matching: find.text('Genesis')),
-        findsOneWidget,
-      );
+        final popupFinder = find.byKey(const ValueKey('book_chooser_popup'));
+        expect(popupFinder, findsOneWidget);
+        expect(
+          find.descendant(of: popupFinder, matching: find.text('Genesis')),
+          findsOneWidget,
+        );
 
-      final tileRect = tester.getRect(find.text('Gen'));
-      final popupRect = tester.getRect(popupFinder);
+        final tileRect = tester.getRect(find.text('Gen'));
+        final popupRect = tester.getRect(popupFinder);
 
-      // The popup bottom must be above the tile top (floating over the AppBar)
-      expect(popupRect.bottom, lessThan(tileRect.top));
+        // The popup bottom must be above the tile top (floating over the AppBar)
+        expect(popupRect.bottom, lessThan(tileRect.top));
 
-      // The popup top should be within the AppBar area (less than kToolbarHeight)
-      expect(popupRect.top, lessThan(kToolbarHeight));
+        // The popup top should be within the AppBar area (less than kToolbarHeight)
+        expect(popupRect.top, lessThan(kToolbarHeight));
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

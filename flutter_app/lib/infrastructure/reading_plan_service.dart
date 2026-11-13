@@ -12,7 +12,7 @@ class ReadingPlanService {
   final Map<String, ReadingPlan> _cachedPlans = {};
 
   ReadingPlanService({AnnotationDatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? getIt<AnnotationDatabaseHelper>();
+    : _dbHelper = dbHelper ?? getIt<AnnotationDatabaseHelper>();
 
   Future<void> init() async {
     final active = await _dbHelper.getActivePlanProgress();
@@ -110,8 +110,9 @@ class ReadingPlanService {
       final activePlan = getActivePlan();
       if (activePlan != null && dayNumber <= activePlan.days.length) {
         final planDay = activePlan.days[dayNumber - 1];
-        final allDone = planDay.readings
-            .every((r) => updatedReadings.contains('${dayNumber}_${r.id}'));
+        final allDone = planDay.readings.every(
+          (r) => updatedReadings.contains('${dayNumber}_${r.id}'),
+        );
         if (allDone) {
           updatedDays.add(dayNumber);
         }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:scripture/scripture.dart';
 
 enum HighlightColor {
@@ -212,10 +212,7 @@ class Note {
   }
 
   NoteMarker toNoteMarker() {
-    return NoteMarker(
-      id: id,
-      wordId: endWordId,
-    );
+    return NoteMarker(id: id, wordId: endWordId);
   }
 }
 
@@ -227,4 +224,3 @@ DateTime _parseDateTime(dynamic val) {
   }
   return DateTime.now();
 }
-

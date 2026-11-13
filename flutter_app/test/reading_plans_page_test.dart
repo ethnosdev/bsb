@@ -7,7 +7,7 @@ import 'package:bsb/ui/reading_plans/reading_plans_page.dart';
 import 'package:bsb/ui/reading_plans/widgets/plan_day_tile.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,7 +19,12 @@ class TrackingTabManager extends TabManager {
   int? openedVerse;
 
   @override
-  Future<void> openTab(int bookId, int chapter, [String? title, int? targetVerse]) async {
+  Future<void> openTab(
+    int bookId,
+    int chapter, [
+    String? title,
+    int? targetVerse,
+  ]) async {
     openedBookId = bookId;
     openedChapter = chapter;
     openedVerse = targetVerse;
@@ -54,32 +59,37 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('AppDrawer contains Reading Plans tile and navigates to ReadingPlansPage', (tester) async {
-    final scaffoldKey = GlobalKey<ScaffoldState>();
+  testWidgets(
+    'AppDrawer contains Reading Plans tile and navigates to ReadingPlansPage',
+    (tester) async {
+      final scaffoldKey = GlobalKey<ScaffoldState>();
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          key: scaffoldKey,
-          drawer: const AppDrawer(),
-          body: const Center(child: Text('Home')),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            key: scaffoldKey,
+            drawer: const AppDrawer(),
+            body: const Center(child: Text('Home')),
+          ),
         ),
-      ),
-    );
+      );
 
-    scaffoldKey.currentState!.openDrawer();
-    await tester.pumpAndSettle();
+      scaffoldKey.currentState!.openDrawer();
+      await tester.pumpAndSettle();
 
-    expect(find.text('Reading Plans'), findsOneWidget);
+      expect(find.text('Reading Plans'), findsOneWidget);
 
-    await tester.tap(find.text('Reading Plans'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Reading Plans'));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(ReadingPlansPage), findsOneWidget);
-    expect(find.text('Available Plans'), findsOneWidget);
-  });
+      expect(find.byType(ReadingPlansPage), findsOneWidget);
+      expect(find.text('Available Plans'), findsOneWidget);
+    },
+  );
 
-  testWidgets('Catalog view shows 3 tracks and starts Through the Bible plan', (tester) async {
+  testWidgets('Catalog view shows 3 tracks and starts Through the Bible plan', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -87,11 +97,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('Available Plans'), findsOneWidget);
@@ -116,14 +122,15 @@ void main() {
     expect(find.text('Next Up'), findsOneWidget);
   });
 
-  testWidgets('Checking off reading updates progress and marks day complete', (tester) async {
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
+  testWidgets('Checking off reading updates progress and marks day complete', (
+    tester,
+  ) async {
+    await planService.startOrResumePlan(
+      PlanTrack.throughTheBible,
+      PlanPace.finishInYear,
     );
+
+    await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('0 of 365 days completed'), findsOneWidget);
@@ -145,94 +152,104 @@ void main() {
     expect(find.text('1 of 365 days completed'), findsOneWidget);
   });
 
-  testWidgets('Tapping Read button invokes TabManager with correct book and chapter', (tester) async {
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+  testWidgets(
+    'Tapping Read button invokes TabManager with correct book and chapter',
+    (tester) async {
+      await planService.startOrResumePlan(
+        PlanTrack.throughTheBible,
+        PlanPace.finishInYear,
+      );
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
+      await tester.pumpAndSettle();
 
-    final readButtons = find.widgetWithText(TextButton, 'Read');
-    expect(readButtons, findsWidgets);
+      final readButtons = find.widgetWithText(TextButton, 'Read');
+      expect(readButtons, findsWidgets);
 
-    await tester.tap(readButtons.first);
-    await tester.pumpAndSettle();
+      await tester.tap(readButtons.first);
+      await tester.pumpAndSettle();
 
-    // Day 1 first reading is Genesis 1 -> bookId: 1, chapter: 1
-    expect(trackingTabManager.openedBookId, 1);
-    expect(trackingTabManager.openedChapter, 1);
-    expect(trackingTabManager.openedVerse, 1);
-  });
+      // Day 1 first reading is Genesis 1 -> bookId: 1, chapter: 1
+      expect(trackingTabManager.openedBookId, 1);
+      expect(trackingTabManager.openedChapter, 1);
+      expect(trackingTabManager.openedVerse, 1);
+    },
+  );
 
-  testWidgets('Tapping anywhere on Next Up card takes user directly to next unread chapter', (tester) async {
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+  testWidgets(
+    'Tapping anywhere on Next Up card takes user directly to next unread chapter',
+    (tester) async {
+      await planService.startOrResumePlan(
+        PlanTrack.throughTheBible,
+        PlanPace.finishInYear,
+      );
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
+      await tester.pumpAndSettle();
 
-    // Day 1 has Genesis 1, 2, 3, Matthew 1.
-    // Tap on the "Day 1" text in the Next Up card.
-    final day1Text = find.text('Day 1').first;
-    await tester.tap(day1Text);
-    await tester.pumpAndSettle();
+      // Day 1 has Genesis 1, 2, 3, Matthew 1.
+      // Tap on the "Day 1" text in the Next Up card.
+      final day1Text = find.text('Day 1').first;
+      await tester.tap(day1Text);
+      await tester.pumpAndSettle();
 
-    expect(trackingTabManager.openedBookId, 1);
-    expect(trackingTabManager.openedChapter, 1);
-    expect(trackingTabManager.openedVerse, 1);
-  });
+      expect(trackingTabManager.openedBookId, 1);
+      expect(trackingTabManager.openedChapter, 1);
+      expect(trackingTabManager.openedVerse, 1);
+    },
+  );
 
-  testWidgets('Tapping Next Up card when first reading is done opens second unread chapter', (tester) async {
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+  testWidgets(
+    'Tapping Next Up card when first reading is done opens second unread chapter',
+    (tester) async {
+      await planService.startOrResumePlan(
+        PlanTrack.throughTheBible,
+        PlanPace.finishInYear,
+      );
 
-    final plan = planService.getActivePlan()!;
-    final firstReading = plan.days.first.readings.first; // Genesis 1
-    await planService.toggleReadingComplete(1, firstReading);
+      final plan = planService.getActivePlan()!;
+      final firstReading = plan.days.first.readings.first; // Genesis 1
+      await planService.toggleReadingComplete(1, firstReading);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
+      await tester.pumpAndSettle();
 
-    // Tap on the Next Up card header
-    final day1Text = find.text('Day 1').first;
-    await tester.tap(day1Text);
-    await tester.pumpAndSettle();
+      // Tap on the Next Up card header
+      final day1Text = find.text('Day 1').first;
+      await tester.tap(day1Text);
+      await tester.pumpAndSettle();
 
-    // Second reading is Genesis 2 -> bookId: 1, chapter: 2
-    expect(trackingTabManager.openedBookId, 1);
-    expect(trackingTabManager.openedChapter, 2);
-    expect(trackingTabManager.openedVerse, 1);
-  });
+      // Second reading is Genesis 2 -> bookId: 1, chapter: 2
+      expect(trackingTabManager.openedBookId, 1);
+      expect(trackingTabManager.openedChapter, 2);
+      expect(trackingTabManager.openedVerse, 1);
+    },
+  );
 
-  testWidgets('Tapping checkbox on Next Up card toggles completion without navigating', (tester) async {
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+  testWidgets(
+    'Tapping checkbox on Next Up card toggles completion without navigating',
+    (tester) async {
+      await planService.startOrResumePlan(
+        PlanTrack.throughTheBible,
+        PlanPace.finishInYear,
+      );
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
+      await tester.pumpAndSettle();
 
-    final checkbox = find.byType(Checkbox).first;
-    await tester.tap(checkbox);
-    await tester.pumpAndSettle();
+      final checkbox = find.byType(Checkbox).first;
+      await tester.tap(checkbox);
+      await tester.pumpAndSettle();
 
-    // Checkbox tap should not open a chapter
-    expect(trackingTabManager.openedBookId, isNull);
-    expect(trackingTabManager.openedChapter, isNull);
-  });
+      // Checkbox tap should not open a chapter
+      expect(trackingTabManager.openedBookId, isNull);
+      expect(trackingTabManager.openedChapter, isNull);
+    },
+  );
 
-  testWidgets('Switching plan switches active view and preserves progress', (tester) async {
+  testWidgets('Switching plan switches active view and preserves progress', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -241,14 +258,13 @@ void main() {
     });
 
     // Start Through the Bible and mark day 1 complete
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+    await planService.startOrResumePlan(
+      PlanTrack.throughTheBible,
+      PlanPace.finishInYear,
+    );
     await planService.toggleDayComplete(1);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('1 of 365 days completed'), findsOneWidget);
@@ -286,15 +302,16 @@ void main() {
     expect(find.text('1 of 365 days completed'), findsOneWidget);
   });
 
-  testWidgets('Reset plan shows confirmation dialog and clears progress', (tester) async {
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+  testWidgets('Reset plan shows confirmation dialog and clears progress', (
+    tester,
+  ) async {
+    await planService.startOrResumePlan(
+      PlanTrack.throughTheBible,
+      PlanPace.finishInYear,
+    );
     await planService.toggleDayComplete(1);
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('1 of 365 days completed'), findsOneWidget);
@@ -317,7 +334,9 @@ void main() {
     expect(find.text('Available Plans'), findsOneWidget);
   });
 
-  testWidgets('Jump to current button jumps to current uncompleted day', (tester) async {
+  testWidgets('Jump to current button jumps to current uncompleted day', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -325,17 +344,16 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await planService.startOrResumePlan(PlanTrack.throughTheBible, PlanPace.finishInYear);
+    await planService.startOrResumePlan(
+      PlanTrack.throughTheBible,
+      PlanPace.finishInYear,
+    );
     // Mark days 1 through 10 complete, so Day 11 is the next uncompleted day
     for (int day = 1; day <= 10; day++) {
       await planService.toggleDayComplete(day);
     }
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('Jump to current'), findsOneWidget);
@@ -353,7 +371,9 @@ void main() {
     expect(day11TileInAllDays, findsOneWidget);
   });
 
-  testWidgets('Jump to current button jumps to Day 111 in Chronological plan', (tester) async {
+  testWidgets('Jump to current button jumps to Day 111 in Chronological plan', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -361,16 +381,15 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await planService.startOrResumePlan(PlanTrack.chronological, PlanPace.finishInYear);
+    await planService.startOrResumePlan(
+      PlanTrack.chronological,
+      PlanPace.finishInYear,
+    );
     for (int day = 1; day <= 110; day++) {
       await planService.toggleDayComplete(day);
     }
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: ReadingPlansPage(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ReadingPlansPage()));
     await tester.pumpAndSettle();
 
     final day111TileInAllDays = find.byWidgetPredicate(
@@ -384,5 +403,3 @@ void main() {
     expect(day111TileInAllDays, findsOneWidget);
   });
 }
-
-

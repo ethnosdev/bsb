@@ -1,6 +1,6 @@
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A pure Flutter color picker designed for reader theme customization.
 ///
@@ -44,8 +44,9 @@ class AppColorPicker extends StatefulWidget {
       ),
       builder: (sheetContext) {
         Color selectedColor = initialColor;
-        List<Color> currentRecentColors =
-            List<Color>.from(effectiveRecentColors);
+        List<Color> currentRecentColors = List<Color>.from(
+          effectiveRecentColors,
+        );
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
@@ -55,83 +56,83 @@ class AppColorPicker extends StatefulWidget {
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Handle and Header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(sheetContext).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          Expanded(
-                            child: Text(
-                              title,
-                              textAlign: TextAlign.center,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Handle and Header
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            Expanded(
+                              child: Text(
+                                title,
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                          ),
-                          FilledButton(
-                            onPressed: () async {
-                              if (getIt.isRegistered<UserSettings>()) {
-                                await getIt<UserSettings>()
-                                    .addCustomColorToHistory(selectedColor);
-                              }
-                              if (sheetContext.mounted) {
-                                Navigator.of(sheetContext).pop(selectedColor);
-                              }
-                            },
-                            child: const Text('Select'),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: AppColorPicker(
-                          initialColor: initialColor,
-                          title: title,
-                          recentColors: currentRecentColors,
-                          onClearRecentColors: () async {
-                            if (onClearRecentColors != null) {
-                              onClearRecentColors();
-                            } else if (getIt.isRegistered<UserSettings>()) {
-                              await getIt<UserSettings>()
-                                  .clearCustomColorHistory();
-                            }
-                            setSheetState(() {
-                              currentRecentColors.clear();
-                            });
-                          },
-                          onColorChanged: (c) {
-                            setSheetState(() {
-                              selectedColor = c;
-                            });
-                          },
+                            FilledButton(
+                              onPressed: () async {
+                                if (getIt.isRegistered<UserSettings>()) {
+                                  await getIt<UserSettings>()
+                                      .addCustomColorToHistory(selectedColor);
+                                }
+                                if (sheetContext.mounted) {
+                                  Navigator.of(sheetContext).pop(selectedColor);
+                                }
+                              },
+                              child: const Text('Select'),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      const Divider(height: 1),
+
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: AppColorPicker(
+                            initialColor: initialColor,
+                            title: title,
+                            recentColors: currentRecentColors,
+                            onClearRecentColors: () async {
+                              if (onClearRecentColors != null) {
+                                onClearRecentColors();
+                              } else if (getIt.isRegistered<UserSettings>()) {
+                                await getIt<UserSettings>()
+                                    .clearCustomColorHistory();
+                              }
+                              setSheetState(() {
+                                currentRecentColors.clear();
+                              });
+                            },
+                            onColorChanged: (c) {
+                              setSheetState(() {
+                                selectedColor = c;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      );
+            );
+          },
+        );
       },
     );
   }
@@ -347,10 +348,12 @@ class _AppColorPickerState extends State<AppColorPicker> {
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     trackHeight: 0,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 10),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 16),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 10,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 16,
+                    ),
                   ),
                   child: Slider(
                     value: _hsvColor.hue,

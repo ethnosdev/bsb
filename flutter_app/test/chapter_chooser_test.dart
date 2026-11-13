@@ -3,7 +3,7 @@ import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,9 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 Widget createTestApp(Widget child) {
   return MaterialApp(
     theme: ThemeData.light(useMaterial3: true),
-    home: Scaffold(
-      body: child,
-    ),
+    home: Scaffold(body: child),
   );
 }
 
@@ -21,12 +19,7 @@ void main() {
   group('ChapterChooser Widget Tests', () {
     testWidgets('displays book name from bookId or bookName', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          const ChapterChooser(
-            bookId: 1,
-            chapterCount: 50,
-          ),
-        ),
+        createTestApp(const ChapterChooser(bookId: 1, chapterCount: 50)),
       );
 
       expect(find.text('Genesis'), findsOneWidget);
@@ -34,10 +27,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          const ChapterChooser(
-            bookName: 'Exodus',
-            chapterCount: 40,
-          ),
+          const ChapterChooser(bookName: 'Exodus', chapterCount: 40),
         ),
       );
 
@@ -45,15 +35,11 @@ void main() {
       expect(find.text('Chapter (1–40)'), findsOneWidget);
     });
 
-    testWidgets('initial key states for 4-chapter book (e.g. Ruth)',
-        (tester) async {
+    testWidgets('initial key states for 4-chapter book (e.g. Ruth)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        createTestApp(
-          const ChapterChooser(
-            bookName: 'Ruth',
-            chapterCount: 4,
-          ),
-        ),
+        createTestApp(const ChapterChooser(bookName: 'Ruth', chapterCount: 4)),
       );
 
       // Keys 1..4 should be enabled
@@ -88,7 +74,9 @@ void main() {
       expect(goButton.onPressed, isNull);
     });
 
-    testWidgets('auto-navigates when digit fully disambiguates', (tester) async {
+    testWidgets('auto-navigates when digit fully disambiguates', (
+      tester,
+    ) async {
       int? selectedChapter;
       await tester.pumpWidget(
         createTestApp(
@@ -108,94 +96,97 @@ void main() {
     });
 
     testWidgets(
-        'typing prefix disables invalid keys and allows multi-digit disambiguation',
-        (tester) async {
-      int? selectedChapter;
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-            onChapterSelected: (c) => selectedChapter = c,
+      'typing prefix disables invalid keys and allows multi-digit disambiguation',
+      (tester) async {
+        int? selectedChapter;
+        await tester.pumpWidget(
+          createTestApp(
+            ChapterChooser(
+              bookName: 'Genesis',
+              chapterCount: 50,
+              onChapterSelected: (c) => selectedChapter = c,
+            ),
           ),
-        ),
-      );
-
-      // Tap 5 (Genesis has 50 chapters: 5 and 50 both start with 5)
-      await tester.tap(find.byKey(const ValueKey('keypad_5')));
-      await tester.pumpAndSettle();
-
-      // Has not navigated yet
-      expect(selectedChapter, isNull);
-      expect(find.text('Chapter 5'), findsOneWidget);
-
-      // Key 0 should be enabled (for chapter 50)
-      final zeroButton = tester.widget<FilledButton>(
-        find.byKey(const ValueKey('keypad_0')),
-      );
-      expect(zeroButton.onPressed, isNotNull);
-
-      // Keys 1..9 should be disabled (51..59 are invalid)
-      for (var d = 1; d <= 9; d++) {
-        final button = tester.widget<FilledButton>(
-          find.byKey(ValueKey('keypad_$d')),
         );
-        expect(button.onPressed, isNull,
-            reason: 'Key $d should be disabled after typing 5 in Genesis');
-      }
 
-      // Go and Delete should now be enabled
-      final goButton = tester.widget<FilledButton>(
-        find.byKey(const ValueKey('keypad_go')),
-      );
-      expect(goButton.onPressed, isNotNull);
+        // Tap 5 (Genesis has 50 chapters: 5 and 50 both start with 5)
+        await tester.tap(find.byKey(const ValueKey('keypad_5')));
+        await tester.pumpAndSettle();
 
-      final deleteButton = tester.widget<FilledButton>(
-        find.byKey(const ValueKey('keypad_delete')),
-      );
-      expect(deleteButton.onPressed, isNotNull);
+        // Has not navigated yet
+        expect(selectedChapter, isNull);
+        expect(find.text('Chapter 5'), findsOneWidget);
 
-      // Tap 0 -> immediately disambiguates to chapter 50
-      await tester.tap(find.byKey(const ValueKey('keypad_0')));
-      await tester.pumpAndSettle();
+        // Key 0 should be enabled (for chapter 50)
+        final zeroButton = tester.widget<FilledButton>(
+          find.byKey(const ValueKey('keypad_0')),
+        );
+        expect(zeroButton.onPressed, isNotNull);
 
-      expect(selectedChapter, equals(50));
-    });
+        // Keys 1..9 should be disabled (51..59 are invalid)
+        for (var d = 1; d <= 9; d++) {
+          final button = tester.widget<FilledButton>(
+            find.byKey(ValueKey('keypad_$d')),
+          );
+          expect(
+            button.onPressed,
+            isNull,
+            reason: 'Key $d should be disabled after typing 5 in Genesis',
+          );
+        }
 
-    testWidgets('Go button navigates to chapter before it is fully disambiguated',
-        (tester) async {
-      int? selectedChapter;
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-            onChapterSelected: (c) => selectedChapter = c,
+        // Go and Delete should now be enabled
+        final goButton = tester.widget<FilledButton>(
+          find.byKey(const ValueKey('keypad_go')),
+        );
+        expect(goButton.onPressed, isNotNull);
+
+        final deleteButton = tester.widget<FilledButton>(
+          find.byKey(const ValueKey('keypad_delete')),
+        );
+        expect(deleteButton.onPressed, isNotNull);
+
+        // Tap 0 -> immediately disambiguates to chapter 50
+        await tester.tap(find.byKey(const ValueKey('keypad_0')));
+        await tester.pumpAndSettle();
+
+        expect(selectedChapter, equals(50));
+      },
+    );
+
+    testWidgets(
+      'Go button navigates to chapter before it is fully disambiguated',
+      (tester) async {
+        int? selectedChapter;
+        await tester.pumpWidget(
+          createTestApp(
+            ChapterChooser(
+              bookName: 'Genesis',
+              chapterCount: 50,
+              onChapterSelected: (c) => selectedChapter = c,
+            ),
           ),
-        ),
-      );
+        );
 
-      // Tap 1 -> ambiguous (could be 1, 10-19)
-      await tester.tap(find.byKey(const ValueKey('keypad_1')));
-      await tester.pumpAndSettle();
+        // Tap 1 -> ambiguous (could be 1, 10-19)
+        await tester.tap(find.byKey(const ValueKey('keypad_1')));
+        await tester.pumpAndSettle();
 
-      expect(selectedChapter, isNull);
-      expect(find.text('Chapter 1'), findsOneWidget);
+        expect(selectedChapter, isNull);
+        expect(find.text('Chapter 1'), findsOneWidget);
 
-      // Tap Go button
-      await tester.tap(find.byKey(const ValueKey('keypad_go')));
-      await tester.pumpAndSettle();
+        // Tap Go button
+        await tester.tap(find.byKey(const ValueKey('keypad_go')));
+        await tester.pumpAndSettle();
 
-      expect(selectedChapter, equals(1));
-    });
+        expect(selectedChapter, equals(1));
+      },
+    );
 
     testWidgets('Delete button deletes typed digits', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          const ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-          ),
+          const ChapterChooser(bookName: 'Genesis', chapterCount: 50),
         ),
       );
 
@@ -285,8 +276,9 @@ void main() {
       expect(selectedChapter, equals(150));
     });
 
-    testWidgets('tapping background barrier dismisses with null',
-        (tester) async {
+    testWidgets('tapping background barrier dismisses with null', (
+      tester,
+    ) async {
       int? selectedChapter = 999;
       await tester.pumpWidget(
         createTestApp(
@@ -325,71 +317,74 @@ void main() {
     });
 
     testWidgets(
-        'Section Headings button opens dialog and selecting heading triggers onSectionSelected',
-        (tester) async {
-      int? selectedChapter;
-      String? selectedHeading;
+      'Section Headings button opens dialog and selecting heading triggers onSectionSelected',
+      (tester) async {
+        int? selectedChapter;
+        String? selectedHeading;
 
-      final testHeadings = [
-        const SectionHeading(
-          bookId: 1,
-          chapter: 1,
-          verse: 1,
-          text: 'The Creation',
-          format: 's1',
-        ),
-        const SectionHeading(
-          bookId: 1,
-          chapter: 3,
-          verse: 1,
-          text: "The Serpent's Deception",
-          format: 's1',
-        ),
-      ];
-
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
+        final testHeadings = [
+          const SectionHeading(
             bookId: 1,
-            chapterCount: 50,
-            headingsLoader: (bookId) async => testHeadings,
-            onChapterSelected: (c) => selectedChapter = c,
-            onSectionSelected: (c, h) {
-              selectedChapter = c;
-              selectedHeading = h;
-            },
+            chapter: 1,
+            verse: 1,
+            text: 'The Creation',
+            format: 's1',
           ),
-        ),
-      );
+          const SectionHeading(
+            bookId: 1,
+            chapter: 3,
+            verse: 1,
+            text: "The Serpent's Deception",
+            format: 's1',
+          ),
+        ];
 
-      expect(find.byKey(const ValueKey('keypad_sections')), findsOneWidget);
-      final iconCenter =
-          tester.getCenter(find.byKey(const ValueKey('keypad_sections')));
-      final bookCenter = tester.getCenter(find.text('Genesis'));
-      expect(iconCenter.dx, lessThan(bookCenter.dx));
-      expect((iconCenter.dy - bookCenter.dy).abs(), lessThan(15));
+        await tester.pumpWidget(
+          createTestApp(
+            ChapterChooser(
+              bookId: 1,
+              chapterCount: 50,
+              headingsLoader: (bookId) async => testHeadings,
+              onChapterSelected: (c) => selectedChapter = c,
+              onSectionSelected: (c, h) {
+                selectedChapter = c;
+                selectedHeading = h;
+              },
+            ),
+          ),
+        );
 
-      // Tap Section Headings button
-      await tester.tap(find.byKey(const ValueKey('keypad_sections')));
-      await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('keypad_sections')), findsOneWidget);
+        final iconCenter = tester.getCenter(
+          find.byKey(const ValueKey('keypad_sections')),
+        );
+        final bookCenter = tester.getCenter(find.text('Genesis'));
+        expect(iconCenter.dx, lessThan(bookCenter.dx));
+        expect((iconCenter.dy - bookCenter.dy).abs(), lessThan(15));
 
-      // Dialog opens
-      expect(find.text('Genesis Sections'), findsOneWidget);
-      expect(find.text('The Creation'), findsOneWidget);
-      expect(find.text('1:1'), findsOneWidget);
-      expect(find.text("The Serpent's Deception"), findsOneWidget);
-      expect(find.text('3:1'), findsOneWidget);
+        // Tap Section Headings button
+        await tester.tap(find.byKey(const ValueKey('keypad_sections')));
+        await tester.pumpAndSettle();
 
-      // Tap the second section heading
-      await tester.tap(find.text("The Serpent's Deception"));
-      await tester.pumpAndSettle();
+        // Dialog opens
+        expect(find.text('Genesis Sections'), findsOneWidget);
+        expect(find.text('The Creation'), findsOneWidget);
+        expect(find.text('1:1'), findsOneWidget);
+        expect(find.text("The Serpent's Deception"), findsOneWidget);
+        expect(find.text('3:1'), findsOneWidget);
 
-      expect(selectedChapter, equals(3));
-      expect(selectedHeading, equals("The Serpent's Deception"));
-    });
+        // Tap the second section heading
+        await tester.tap(find.text("The Serpent's Deception"));
+        await tester.pumpAndSettle();
 
-    testWidgets('Section Headings dialog handles empty state and dismissal',
-        (tester) async {
+        expect(selectedChapter, equals(3));
+        expect(selectedHeading, equals("The Serpent's Deception"));
+      },
+    );
+
+    testWidgets('Section Headings dialog handles empty state and dismissal', (
+      tester,
+    ) async {
       int? selectedChapter;
       String? selectedHeading;
 
@@ -430,12 +425,7 @@ void main() {
   group('GridChapterChooser Widget Tests', () {
     testWidgets('displays book name from bookId or bookName', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          const GridChapterChooser(
-            bookId: 1,
-            chapterCount: 50,
-          ),
-        ),
+        createTestApp(const GridChapterChooser(bookId: 1, chapterCount: 50)),
       );
 
       expect(find.text('Genesis'), findsOneWidget);
@@ -443,18 +433,16 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          const GridChapterChooser(
-            bookName: 'Exodus',
-            chapterCount: 40,
-          ),
+          const GridChapterChooser(bookName: 'Exodus', chapterCount: 40),
         ),
       );
 
       expect(find.text('Exodus'), findsOneWidget);
     });
 
-    testWidgets('section headings button opens dialog and invokes callback',
-        (tester) async {
+    testWidgets('section headings button opens dialog and invokes callback', (
+      tester,
+    ) async {
       int? selectedChapter;
       String? selectedHeading;
       final testHeadings = [
@@ -579,14 +567,12 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('defaults to KeypadChapterChooser when nothing registered',
-        (tester) async {
+    testWidgets('defaults to KeypadChapterChooser when nothing registered', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
-          const ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-          ),
+          const ChapterChooser(bookName: 'Genesis', chapterCount: 50),
         ),
       );
 
@@ -594,8 +580,9 @@ void main() {
       expect(find.byType(GridChapterChooser), findsNothing);
     });
 
-    testWidgets('renders GridChapterChooser when style override is grid',
-        (tester) async {
+    testWidgets('renders GridChapterChooser when style override is grid', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           const ChapterChooser(
@@ -610,8 +597,9 @@ void main() {
       expect(find.byType(KeypadChapterChooser), findsNothing);
     });
 
-    testWidgets('reacts to AppState.chapterChooserStyleNotifier changes',
-        (tester) async {
+    testWidgets('reacts to AppState.chapterChooserStyleNotifier changes', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({});
       final userSettings = UserSettings();
       await userSettings.init();
@@ -623,10 +611,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          const ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-          ),
+          const ChapterChooser(bookName: 'Genesis', chapterCount: 50),
         ),
       );
 
@@ -651,7 +636,9 @@ void main() {
   });
 
   group('GridVerseChooser Widget Tests', () {
-    testWidgets('displays book name and chapter number at the top', (tester) async {
+    testWidgets('displays book name and chapter number at the top', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           const GridVerseChooser(
@@ -667,30 +654,28 @@ void main() {
       expect(find.byKey(const ValueKey('keypad_sections')), findsNothing);
     });
 
-    testWidgets('displays "Psalm <chapter>" when bookName is Psalms or bookId is 19',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          const GridVerseChooser(
-            bookName: 'Psalms',
-            chapter: 119,
-            verseCount: 176,
+    testWidgets(
+      'displays "Psalm <chapter>" when bookName is Psalms or bookId is 19',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            const GridVerseChooser(
+              bookName: 'Psalms',
+              chapter: 119,
+              verseCount: 176,
+            ),
           ),
-        ),
-      );
-      expect(find.text('Psalm 119'), findsOneWidget);
+        );
+        expect(find.text('Psalm 119'), findsOneWidget);
 
-      await tester.pumpWidget(
-        createTestApp(
-          const GridVerseChooser(
-            bookId: 19,
-            chapter: 23,
-            verseCount: 6,
+        await tester.pumpWidget(
+          createTestApp(
+            const GridVerseChooser(bookId: 19, chapter: 23, verseCount: 6),
           ),
-        ),
-      );
-      expect(find.text('Psalm 23'), findsOneWidget);
-    });
+        );
+        expect(find.text('Psalm 23'), findsOneWidget);
+      },
+    );
 
     testWidgets('back button triggers onBackPressed callback', (tester) async {
       bool backPressed = false;
@@ -781,77 +766,81 @@ void main() {
     });
 
     testWidgets(
-        'when showVerseGrid is false, selecting chapter invokes onChapterSelected immediately',
-        (tester) async {
-      int? selectedChapter;
-      int? selectedVerse;
+      'when showVerseGrid is false, selecting chapter invokes onChapterSelected immediately',
+      (tester) async {
+        int? selectedChapter;
+        int? selectedVerse;
 
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-            showVerseGrid: false,
-            onChapterSelected: (c) => selectedChapter = c,
-            onVerseSelected: (c, v) {
-              selectedChapter = c;
-              selectedVerse = v;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            ChapterChooser(
+              bookName: 'Genesis',
+              chapterCount: 50,
+              showVerseGrid: false,
+              onChapterSelected: (c) => selectedChapter = c,
+              onVerseSelected: (c, v) {
+                selectedChapter = c;
+                selectedVerse = v;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      // Tap 6 in Genesis -> disambiguates to chapter 6 immediately
-      await tester.tap(find.byKey(const ValueKey('keypad_6')));
-      await tester.pumpAndSettle();
+        // Tap 6 in Genesis -> disambiguates to chapter 6 immediately
+        await tester.tap(find.byKey(const ValueKey('keypad_6')));
+        await tester.pumpAndSettle();
 
-      expect(selectedChapter, equals(6));
-      expect(selectedVerse, isNull);
-      expect(find.byType(GridVerseChooser), findsNothing);
-    });
+        expect(selectedChapter, equals(6));
+        expect(selectedVerse, isNull);
+        expect(find.byType(GridVerseChooser), findsNothing);
+      },
+    );
 
-    testWidgets('when showVerseGrid is true, selecting chapter opens GridVerseChooser',
-        (tester) async {
-      int? selectedChapter;
-      int? selectedVerse;
+    testWidgets(
+      'when showVerseGrid is true, selecting chapter opens GridVerseChooser',
+      (tester) async {
+        int? selectedChapter;
+        int? selectedVerse;
 
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
-            bookName: 'Genesis',
-            chapterCount: 50,
-            showVerseGrid: true,
-            onChapterSelected: (c) => selectedChapter = c,
-            onVerseSelected: (c, v) {
-              selectedChapter = c;
-              selectedVerse = v;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            ChapterChooser(
+              bookName: 'Genesis',
+              chapterCount: 50,
+              showVerseGrid: true,
+              onChapterSelected: (c) => selectedChapter = c,
+              onVerseSelected: (c, v) {
+                selectedChapter = c;
+                selectedVerse = v;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      // Tap 6 in Genesis -> instead of dismissing, opens verse grid
-      await tester.tap(find.byKey(const ValueKey('keypad_6')));
-      await tester.pumpAndSettle();
+        // Tap 6 in Genesis -> instead of dismissing, opens verse grid
+        await tester.tap(find.byKey(const ValueKey('keypad_6')));
+        await tester.pumpAndSettle();
 
-      expect(selectedChapter, isNull);
-      expect(find.byType(GridVerseChooser), findsOneWidget);
-      expect(find.text('Genesis 6'), findsOneWidget);
+        expect(selectedChapter, isNull);
+        expect(find.byType(GridVerseChooser), findsOneWidget);
+        expect(find.text('Genesis 6'), findsOneWidget);
 
-      // Tap top-left of verse grid -> verse 1
-      final gridFinder = find.byWidgetPredicate(
-        (w) => w.runtimeType.toString() == '_VerseGridWidget',
-      );
-      final topLeft = tester.getTopLeft(gridFinder);
-      await tester.tapAt(topLeft + const Offset(10, 10));
-      await tester.pumpAndSettle();
+        // Tap top-left of verse grid -> verse 1
+        final gridFinder = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_VerseGridWidget',
+        );
+        final topLeft = tester.getTopLeft(gridFinder);
+        await tester.tapAt(topLeft + const Offset(10, 10));
+        await tester.pumpAndSettle();
 
-      expect(selectedChapter, equals(6));
-      expect(selectedVerse, equals(1));
-    });
+        expect(selectedChapter, equals(6));
+        expect(selectedVerse, equals(1));
+      },
+    );
 
-    testWidgets('tapping title in GridVerseChooser navigates to verse 1',
-        (tester) async {
+    testWidgets('tapping title in GridVerseChooser navigates to verse 1', (
+      tester,
+    ) async {
       int? selectedChapter;
       int? selectedVerse;
 
@@ -881,8 +870,9 @@ void main() {
       expect(selectedVerse, equals(1));
     });
 
-    testWidgets('back button in GridVerseChooser returns to chapter chooser',
-        (tester) async {
+    testWidgets('back button in GridVerseChooser returns to chapter chooser', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           const ChapterChooser(
@@ -909,81 +899,86 @@ void main() {
       expect(find.byType(KeypadChapterChooser), findsOneWidget);
     });
 
-    testWidgets('single-chapter book with showVerseGrid directly displays verse chooser',
-        (tester) async {
-      int? selectedChapter;
-      int? selectedVerse;
+    testWidgets(
+      'single-chapter book with showVerseGrid directly displays verse chooser',
+      (tester) async {
+        int? selectedChapter;
+        int? selectedVerse;
 
-      await tester.pumpWidget(
-        createTestApp(
-          ChapterChooser(
-            bookName: 'Obadiah',
-            chapterCount: 1,
-            showVerseGrid: true,
-            onVerseSelected: (c, v) {
-              selectedChapter = c;
-              selectedVerse = v;
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            ChapterChooser(
+              bookName: 'Obadiah',
+              chapterCount: 1,
+              showVerseGrid: true,
+              onVerseSelected: (c, v) {
+                selectedChapter = c;
+                selectedVerse = v;
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(GridVerseChooser), findsOneWidget);
-      expect(find.text('Obadiah 1'), findsOneWidget);
+        expect(find.byType(GridVerseChooser), findsOneWidget);
+        expect(find.text('Obadiah 1'), findsOneWidget);
 
-      // Tap verse 1
-      final gridFinder = find.byWidgetPredicate(
-        (w) => w.runtimeType.toString() == '_VerseGridWidget',
-      );
-      final topLeft = tester.getTopLeft(gridFinder);
-      await tester.tapAt(topLeft + const Offset(10, 10));
-      await tester.pumpAndSettle();
+        // Tap verse 1
+        final gridFinder = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_VerseGridWidget',
+        );
+        final topLeft = tester.getTopLeft(gridFinder);
+        await tester.tapAt(topLeft + const Offset(10, 10));
+        await tester.pumpAndSettle();
 
-      expect(selectedChapter, equals(1));
-      expect(selectedVerse, equals(1));
-    });
+        expect(selectedChapter, equals(1));
+        expect(selectedVerse, equals(1));
+      },
+    );
 
-    testWidgets('initialChapter with showVerseGrid directly displays verse chooser for that chapter and back returns to chapters',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          const ChapterChooser(
-            bookName: 'Psalms',
-            chapterCount: 150,
-            initialChapter: 119,
-            showVerseGrid: true,
+    testWidgets(
+      'initialChapter with showVerseGrid directly displays verse chooser for that chapter and back returns to chapters',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            const ChapterChooser(
+              bookName: 'Psalms',
+              chapterCount: 150,
+              initialChapter: 119,
+              showVerseGrid: true,
+            ),
           ),
-        ),
-      );
+        );
 
-      // Directly on Psalm 119 verse grid
-      expect(find.byType(GridVerseChooser), findsOneWidget);
-      expect(find.text('Psalm 119'), findsOneWidget);
+        // Directly on Psalm 119 verse grid
+        expect(find.byType(GridVerseChooser), findsOneWidget);
+        expect(find.text('Psalm 119'), findsOneWidget);
 
-      // Tap back button returns to chapter chooser
-      await tester.tap(find.byKey(const ValueKey('verse_grid_back')));
-      await tester.pumpAndSettle();
+        // Tap back button returns to chapter chooser
+        await tester.tap(find.byKey(const ValueKey('verse_grid_back')));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(GridVerseChooser), findsNothing);
-      expect(find.byType(KeypadChapterChooser), findsOneWidget);
-    });
+        expect(find.byType(GridVerseChooser), findsNothing);
+        expect(find.byType(KeypadChapterChooser), findsOneWidget);
+      },
+    );
 
-    testWidgets('initialChapter with showVerseGrid false displays chapter chooser normally',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          const ChapterChooser(
-            bookName: 'Psalms',
-            chapterCount: 150,
-            initialChapter: 119,
-            showVerseGrid: false,
+    testWidgets(
+      'initialChapter with showVerseGrid false displays chapter chooser normally',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            const ChapterChooser(
+              bookName: 'Psalms',
+              chapterCount: 150,
+              initialChapter: 119,
+              showVerseGrid: false,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(GridVerseChooser), findsNothing);
-      expect(find.byType(KeypadChapterChooser), findsOneWidget);
-    });
+        expect(find.byType(GridVerseChooser), findsNothing);
+        expect(find.byType(KeypadChapterChooser), findsOneWidget);
+      },
+    );
   });
 }
-

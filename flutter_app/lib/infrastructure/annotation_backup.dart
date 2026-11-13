@@ -5,10 +5,7 @@ import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/infrastructure/reference.dart';
 
-enum AnnotationImportMode {
-  merge,
-  replace,
-}
+enum AnnotationImportMode { merge, replace }
 
 class AnnotationImportResult {
   final int highlightsImported;
@@ -66,9 +63,12 @@ class AnnotationBackup {
     DateTime exportedAt = DateTime.now();
     if (map['exported_at'] != null) {
       if (map['exported_at'] is String) {
-        exportedAt = DateTime.tryParse(map['exported_at'] as String) ?? DateTime.now();
+        exportedAt =
+            DateTime.tryParse(map['exported_at'] as String) ?? DateTime.now();
       } else if (map['exported_at'] is int) {
-        exportedAt = DateTime.fromMillisecondsSinceEpoch(map['exported_at'] as int);
+        exportedAt = DateTime.fromMillisecondsSinceEpoch(
+          map['exported_at'] as int,
+        );
       }
     }
 
@@ -118,7 +118,9 @@ class AnnotationBackup {
   factory AnnotationBackup.fromJson(String jsonString) {
     final dynamic decoded = json.decode(jsonString);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Invalid backup format: root must be a JSON object');
+      throw const FormatException(
+        'Invalid backup format: root must be a JSON object',
+      );
     }
     return AnnotationBackup.fromMap(decoded);
   }
@@ -187,7 +189,9 @@ class AnnotationBackup {
       buffer.writeln();
       for (final rp in readingPlans) {
         buffer.writeln('### ${rp.planId}');
-        buffer.writeln('- Completed Days: ${rp.completedDays.length} / ${rp.totalDays} (${(rp.progressPercentage * 100).toStringAsFixed(1)}%)');
+        buffer.writeln(
+          '- Completed Days: ${rp.completedDays.length} / ${rp.totalDays} (${(rp.progressPercentage * 100).toStringAsFixed(1)}%)',
+        );
         buffer.writeln('- Started: ${_formatDate(rp.startedAt)}');
         if (rp.lastReadAt != null) {
           buffer.writeln('- Last Read: ${_formatDate(rp.lastReadAt!)}');
@@ -201,8 +205,18 @@ class AnnotationBackup {
 
   static String _formatDate(DateTime dt) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }

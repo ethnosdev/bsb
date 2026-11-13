@@ -1,7 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AudioPlayerBottomBar extends StatelessWidget {
   final AudioPlaybackManager manager;
@@ -36,7 +36,8 @@ class AudioPlayerBottomBar extends StatelessWidget {
             StreamBuilder<PositionData>(
               stream: manager.positionDataStream,
               builder: (context, snapshot) {
-                final data = snapshot.data ??
+                final data =
+                    snapshot.data ??
                     const PositionData(
                       Duration.zero,
                       Duration.zero,
@@ -55,8 +56,9 @@ class AudioPlayerBottomBar extends StatelessWidget {
                     thumbRadius: 0.0,
                     progressBarColor: colorScheme.primary,
                     baseBarColor: colorScheme.onSurface.withValues(alpha: 0.1),
-                    bufferedBarColor:
-                        colorScheme.onSurface.withValues(alpha: 0.2),
+                    bufferedBarColor: colorScheme.onSurface.withValues(
+                      alpha: 0.2,
+                    ),
                   ),
                 );
               },
@@ -136,8 +138,7 @@ class AudioPlayerBottomBar extends StatelessWidget {
                               state?.processingState ??
                               AudioProcessingState.idle;
 
-                          if (processingState ==
-                                  AudioProcessingState.loading ||
+                          if (processingState == AudioProcessingState.loading ||
                               processingState ==
                                   AudioProcessingState.buffering) {
                             return const SizedBox(

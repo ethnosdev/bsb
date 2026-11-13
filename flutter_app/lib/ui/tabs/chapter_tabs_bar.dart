@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'bible_tab.dart';
 import 'chapter_chip.dart';
 import 'chapter_tabs_sheet.dart';
@@ -77,9 +78,9 @@ class _ChapterTabsBarState extends State<ChapterTabsBar>
       text: TextSpan(
         text: tab.label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              letterSpacing: 0.5,
-            ),
+          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          letterSpacing: 0.5,
+        ),
       ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
@@ -101,10 +102,8 @@ class _ChapterTabsBarState extends State<ChapterTabsBar>
     final textPainter = TextPainter(
       text: TextSpan(
         text: activeTab.label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
+        style: Theme.of(context).textTheme.labelMedium
+            ?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
       ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
@@ -113,10 +112,8 @@ class _ChapterTabsBarState extends State<ChapterTabsBar>
     final countPainter = TextPainter(
       text: TextSpan(
         text: '+$otherTabsCount',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 10.0,
-            ),
+        style: Theme.of(context).textTheme.labelSmall
+            ?.copyWith(fontWeight: FontWeight.bold, fontSize: 10.0),
       ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
@@ -232,7 +229,8 @@ class _ChapterTabsBarState extends State<ChapterTabsBar>
           );
 
           final spaceAfterTabs = constraints.maxWidth - totalWidth;
-          final hasTappableSpace = widget.onEmptySpaceTapped != null &&
+          final hasTappableSpace =
+              widget.onEmptySpaceTapped != null &&
               spaceAfterTabs > ChapterTabsBar.deadZoneWidth;
 
           if (!hasTappableSpace) {
@@ -280,7 +278,8 @@ class _ChapterTabsBarState extends State<ChapterTabsBar>
         );
 
         final spaceAfterComposite = constraints.maxWidth - compositeWidth;
-        final hasTappableSpace = widget.onEmptySpaceTapped != null &&
+        final hasTappableSpace =
+            widget.onEmptySpaceTapped != null &&
             spaceAfterComposite > ChapterTabsBar.deadZoneWidth;
 
         if (!hasTappableSpace) {

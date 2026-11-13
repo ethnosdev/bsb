@@ -11,7 +11,8 @@ void main() {
     });
 
     test('finds case-insensitive matches', () {
-      const text = 'Light shines in the darkness, and God called the light day.';
+      const text =
+          'Light shines in the darkness, and God called the light day.';
       final spans = BibleSearchService.computeMatchSpans(text, 'light');
       expect(spans.length, equals(2));
       expect(text.substring(spans[0].$1, spans[0].$2), equals('Light'));
@@ -19,7 +20,8 @@ void main() {
     });
 
     test('finds multi-word matches', () {
-      const text = 'Now faith, hope, and love remain—these three; but the greatest of these is love.';
+      const text =
+          'Now faith, hope, and love remain—these three; but the greatest of these is love.';
       final spans = BibleSearchService.computeMatchSpans(text, 'faith love');
       expect(spans.length, equals(3));
       expect(text.substring(spans[0].$1, spans[0].$2), equals('faith'));
@@ -29,21 +31,38 @@ void main() {
 
     test('finds exact quoted phrase matches', () {
       const text = 'In the beginning was the Word, and the Word was with God.';
-      final spans = BibleSearchService.computeMatchSpans(text, '"In the beginning"');
+      final spans = BibleSearchService.computeMatchSpans(
+        text,
+        '"In the beginning"',
+      );
       expect(spans, equals([(0, 16)]));
-      expect(text.substring(spans.first.$1, spans.first.$2), equals('In the beginning'));
+      expect(
+        text.substring(spans.first.$1, spans.first.$2),
+        equals('In the beginning'),
+      );
     });
 
     test('finds exact phrase match without quotes when isExact is true', () {
       const text = 'In the beginning was the Word, and the Word was with God.';
-      final spans = BibleSearchService.computeMatchSpans(text, 'In the beginning', isExact: true);
+      final spans = BibleSearchService.computeMatchSpans(
+        text,
+        'In the beginning',
+        isExact: true,
+      );
       expect(spans, equals([(0, 16)]));
-      expect(text.substring(spans.first.$1, spans.first.$2), equals('In the beginning'));
+      expect(
+        text.substring(spans.first.$1, spans.first.$2),
+        equals('In the beginning'),
+      );
     });
 
     test('exact match distinguishes whole word from words with suffix', () {
       const text = 'God is good and His godly people praise Him.';
-      final spans = BibleSearchService.computeMatchSpans(text, 'God', isExact: true);
+      final spans = BibleSearchService.computeMatchSpans(
+        text,
+        'God',
+        isExact: true,
+      );
       expect(spans, equals([(0, 3)]));
       expect(text.substring(spans.first.$1, spans.first.$2), equals('God'));
     });
@@ -52,9 +71,15 @@ void main() {
       const text = 'Jesus wept.';
       expect(BibleSearchService.computeMatchSpans(text, ''), isEmpty);
       expect(BibleSearchService.computeMatchSpans(text, '???'), isEmpty);
-      expect(BibleSearchService.computeMatchSpans(text, '???', isExact: true), isEmpty);
+      expect(
+        BibleSearchService.computeMatchSpans(text, '???', isExact: true),
+        isEmpty,
+      );
       expect(BibleSearchService.computeMatchSpans('', 'Jesus'), isEmpty);
-      expect(BibleSearchService.computeMatchSpans('', 'Jesus', isExact: true), isEmpty);
+      expect(
+        BibleSearchService.computeMatchSpans('', 'Jesus', isExact: true),
+        isEmpty,
+      );
     });
   });
 }

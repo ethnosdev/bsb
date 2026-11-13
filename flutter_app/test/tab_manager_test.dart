@@ -77,39 +77,45 @@ void main() {
 
       tabManager.updateActiveChapter(43, 3, "John's Testimony about Jesus", 22);
       expect(tabManager.activeTab?.label, 'JHN 3');
-      expect(tabManager.activeTab?.sectionHeading, "John's Testimony about Jesus");
+      expect(
+        tabManager.activeTab?.sectionHeading,
+        "John's Testimony about Jesus",
+      );
       expect(tabManager.activeTab?.targetVerse, 22);
     });
 
-    test('closeTab on active tab falls back to most recently visited tab (LRU)', () async {
-      await tabManager.init();
-      tabManager.openTab(1, 1); // GEN 1
-      tabManager.openTab(19, 23); // PSA 23
-      tabManager.openTab(45, 8); // ROM 8
+    test(
+      'closeTab on active tab falls back to most recently visited tab (LRU)',
+      () async {
+        await tabManager.init();
+        tabManager.openTab(1, 1); // GEN 1
+        tabManager.openTab(19, 23); // PSA 23
+        tabManager.openTab(45, 8); // ROM 8
 
-      // Visit order: GEN 1 -> PSA 23 -> ROM 8 (active)
-      // Switch to GEN 1
-      final gen1Id = tabManager.tabs[0].id;
-      tabManager.selectTab(gen1Id);
-      // Visit order: PSA 23 -> ROM 8 -> GEN 1 (active)
+        // Visit order: GEN 1 -> PSA 23 -> ROM 8 (active)
+        // Switch to GEN 1
+        final gen1Id = tabManager.tabs[0].id;
+        tabManager.selectTab(gen1Id);
+        // Visit order: PSA 23 -> ROM 8 -> GEN 1 (active)
 
-      // Close GEN 1 -> should fall back to ROM 8
-      tabManager.closeTab(gen1Id);
-      expect(tabManager.tabs.length, 2);
-      expect(tabManager.activeTab?.label, 'ROM 8');
+        // Close GEN 1 -> should fall back to ROM 8
+        tabManager.closeTab(gen1Id);
+        expect(tabManager.tabs.length, 2);
+        expect(tabManager.activeTab?.label, 'ROM 8');
 
-      // Close ROM 8 -> should fall back to PSA 23
-      final rom8Id = tabManager.tabs.firstWhere((t) => t.label == 'ROM 8').id;
-      tabManager.closeTab(rom8Id);
-      expect(tabManager.tabs.length, 1);
-      expect(tabManager.activeTab?.label, 'PSA 23');
+        // Close ROM 8 -> should fall back to PSA 23
+        final rom8Id = tabManager.tabs.firstWhere((t) => t.label == 'ROM 8').id;
+        tabManager.closeTab(rom8Id);
+        expect(tabManager.tabs.length, 1);
+        expect(tabManager.activeTab?.label, 'PSA 23');
 
-      // Close PSA 23 -> should be empty
-      final psa23Id = tabManager.tabs.first.id;
-      tabManager.closeTab(psa23Id);
-      expect(tabManager.tabs, isEmpty);
-      expect(tabManager.activeTab, isNull);
-    });
+        // Close PSA 23 -> should be empty
+        final psa23Id = tabManager.tabs.first.id;
+        tabManager.closeTab(psa23Id);
+        expect(tabManager.tabs, isEmpty);
+        expect(tabManager.activeTab, isNull);
+      },
+    );
 
     test('isAddingTab toggles correctly', () async {
       await tabManager.init();
@@ -150,10 +156,18 @@ void main() {
       tabManager.openTab(2, 1); // EXO 1
       tabManager.openTab(3, 1); // LEV 1
 
-      expect(tabManager.tabs.map((t) => t.label).toList(), ['GEN 1', 'EXO 1', 'LEV 1']);
+      expect(tabManager.tabs.map((t) => t.label).toList(), [
+        'GEN 1',
+        'EXO 1',
+        'LEV 1',
+      ]);
 
       tabManager.reorderTabs(0, 3);
-      expect(tabManager.tabs.map((t) => t.label).toList(), ['EXO 1', 'LEV 1', 'GEN 1']);
+      expect(tabManager.tabs.map((t) => t.label).toList(), [
+        'EXO 1',
+        'LEV 1',
+        'GEN 1',
+      ]);
     });
 
     test('reorderItem moves tab properly', () async {
@@ -162,15 +176,27 @@ void main() {
       tabManager.openTab(2, 1); // EXO 1
       tabManager.openTab(3, 1); // LEV 1
 
-      expect(tabManager.tabs.map((t) => t.label).toList(), ['GEN 1', 'EXO 1', 'LEV 1']);
+      expect(tabManager.tabs.map((t) => t.label).toList(), [
+        'GEN 1',
+        'EXO 1',
+        'LEV 1',
+      ]);
 
       // Move index 0 to index 2
       tabManager.reorderItem(0, 2);
-      expect(tabManager.tabs.map((t) => t.label).toList(), ['EXO 1', 'LEV 1', 'GEN 1']);
+      expect(tabManager.tabs.map((t) => t.label).toList(), [
+        'EXO 1',
+        'LEV 1',
+        'GEN 1',
+      ]);
 
       // Move index 2 back to index 0
       tabManager.reorderItem(2, 0);
-      expect(tabManager.tabs.map((t) => t.label).toList(), ['GEN 1', 'EXO 1', 'LEV 1']);
+      expect(tabManager.tabs.map((t) => t.label).toList(), [
+        'GEN 1',
+        'EXO 1',
+        'LEV 1',
+      ]);
     });
 
     test('openPlaylistTab adds playlist tab, focuses existing on duplicate, and updates title', () async {
@@ -195,7 +221,10 @@ void main() {
 
       // Updating playlist title directly
       tabManager.updatePlaylistTitle('p2', 'Grace & Peace');
-      expect(tabManager.tabs.firstWhere((t) => t.playlistId == 'p2').label, 'Grace & Peace');
+      expect(
+        tabManager.tabs.firstWhere((t) => t.playlistId == 'p2').label,
+        'Grace & Peace',
+      );
 
       // Closing playlist tab
       tabManager.closePlaylistTab('p1');

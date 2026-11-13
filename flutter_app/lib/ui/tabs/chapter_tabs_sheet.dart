@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'bible_tab.dart';
 import 'tab_manager.dart';
@@ -189,7 +189,8 @@ class ChapterTabsSheet extends StatelessWidget {
                                               fontWeight: FontWeight.bold,
                                               color: isActive
                                                   ? colorScheme.onPrimary
-                                                  : colorScheme.onSurfaceVariant,
+                                                  : colorScheme
+                                                        .onSurfaceVariant,
                                             ),
                                           ),
                                   ),

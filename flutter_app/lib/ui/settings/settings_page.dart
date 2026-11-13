@@ -4,7 +4,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/annotations/annotation_file_handler.dart';
 import 'package:bsb/ui/settings/theme/theme_selection_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

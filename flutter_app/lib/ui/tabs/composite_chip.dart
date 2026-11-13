@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'bible_tab.dart';
 
 /// The composite chip shown when tabs overflow. Supports:
@@ -102,7 +103,9 @@ class _CompositeChapterChipState extends State<CompositeChapterChip>
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6.0, vertical: 2.0),
+                        horizontal: 6.0,
+                        vertical: 2.0,
+                      ),
                       decoration: BoxDecoration(
                         color: colorScheme.primary,
                         borderRadius: BorderRadius.circular(10.0),

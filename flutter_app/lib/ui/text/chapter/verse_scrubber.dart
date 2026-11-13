@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class VerseScrubber extends StatefulWidget {
   const VerseScrubber({
@@ -126,9 +126,10 @@ class _VerseScrubberState extends State<VerseScrubber> {
 
     final barLocalY = localYInScrubber - barTop;
     final normalized = (barLocalY / barHeight).clamp(0.0, 1.0);
-    final targetIndex = (normalized * (widget.verses.length - 1))
-        .round()
-        .clamp(0, widget.verses.length - 1);
+    final targetIndex = (normalized * (widget.verses.length - 1)).round().clamp(
+      0,
+      widget.verses.length - 1,
+    );
     final selectedVerse = widget.verses[targetIndex];
 
     setState(() {
@@ -185,37 +186,44 @@ class _VerseScrubberState extends State<VerseScrubber> {
             topBound = topSafeArea + 12.0;
           } else {
             // Distraction-free: subtract the app bar height that Scaffold added to find actual status bar
-            final rawTopSafeArea =
-                (topSafeArea - kToolbarHeight).clamp(0.0, double.infinity);
+            final rawTopSafeArea = (topSafeArea - kToolbarHeight).clamp(
+              0.0,
+              double.infinity,
+            );
             topBound = rawTopSafeArea > 0 ? (rawTopSafeArea + 8.0) : 16.0;
           }
         } else {
           topBound = topSafeArea > 0 ? (topSafeArea + 8.0) : 16.0;
         }
 
-        final double bottomBound =
-            bottomSafeArea > 0 ? (bottomSafeArea + 8.0) : 16.0;
+        final double bottomBound = bottomSafeArea > 0
+            ? (bottomSafeArea + 8.0)
+            : 16.0;
 
         // For chapters with many verses, expand up to the full usable height of the screen
         // (strictly below the app bar and above the bottom safe area).
         // For shorter chapters, calculate proportional height centered within the usable area.
-        final double usableHeight =
-            (stackHeight - topBound - bottomBound).clamp(160.0, double.infinity);
+        final double usableHeight = (stackHeight - topBound - bottomBound)
+            .clamp(160.0, double.infinity);
         final double idealItemHeight = totalVerses <= 30 ? 20.0 : 16.0;
-        final double calculatedBarHeight =
-            (totalVerses * idealItemHeight).clamp(160.0, usableHeight);
+        final double calculatedBarHeight = (totalVerses * idealItemHeight)
+            .clamp(160.0, usableHeight);
         final double barTop =
             topBound + (usableHeight - calculatedBarHeight) / 2;
 
         const verticalPadding = 8.0;
-        final availableHeight =
-            (calculatedBarHeight - (verticalPadding * 2)).clamp(1.0, double.infinity);
+        final availableHeight = (calculatedBarHeight - (verticalPadding * 2))
+            .clamp(1.0, double.infinity);
 
         // A minimum height of 13.0dp per label guarantees crisp readability and breathing room.
-        final maxLabels =
-            (availableHeight / 13.0).floor().clamp(2, totalVerses);
-        final displayVerses =
-            VerseScrubber.computeDisplayVerses(widget.verses, maxLabels);
+        final maxLabels = (availableHeight / 13.0).floor().clamp(
+          2,
+          totalVerses,
+        );
+        final displayVerses = VerseScrubber.computeDisplayVerses(
+          widget.verses,
+          maxLabels,
+        );
 
         final slotHeight = availableHeight / displayVerses.length;
         final fontSize = (slotHeight * 0.75).clamp(8.0, 10.5);
@@ -225,7 +233,10 @@ class _VerseScrubberState extends State<VerseScrubber> {
         // Clamp the bubble strictly inside the visible stack bounds
         final clampedBubbleTop = (_touchY - (bubbleHeight / 2)).clamp(
           topBound,
-          (stackHeight - bottomBound - bubbleHeight).clamp(topBound, double.infinity),
+          (stackHeight - bottomBound - bubbleHeight).clamp(
+            topBound,
+            double.infinity,
+          ),
         );
 
         return Stack(
@@ -250,8 +261,9 @@ class _VerseScrubberState extends State<VerseScrubber> {
                       final scrubberBox =
                           context.findRenderObject() as RenderBox?;
                       if (scrubberBox != null && scrubberBox.hasSize) {
-                        final localPos =
-                            scrubberBox.globalToLocal(event.position);
+                        final localPos = scrubberBox.globalToLocal(
+                          event.position,
+                        );
                         setState(() {
                           _isDragging = true;
                         });
@@ -276,8 +288,9 @@ class _VerseScrubberState extends State<VerseScrubber> {
                         final scrubberBox =
                             context.findRenderObject() as RenderBox?;
                         if (scrubberBox != null && scrubberBox.hasSize) {
-                          final localPos =
-                              scrubberBox.globalToLocal(event.position);
+                          final localPos = scrubberBox.globalToLocal(
+                            event.position,
+                          );
                           _updateScrub(
                             localYInScrubber: localPos.dy,
                             barTop: barTop,
@@ -299,8 +312,9 @@ class _VerseScrubberState extends State<VerseScrubber> {
                           left: Radius.circular(16),
                         ),
                         border: Border.all(
-                          color: theme.colorScheme.outlineVariant
-                              .withValues(alpha: 0.35),
+                          color: theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.35,
+                          ),
                           width: 0.5,
                         ),
                         boxShadow: [
@@ -349,10 +363,14 @@ class _VerseScrubberState extends State<VerseScrubber> {
                   color: theme.colorScheme.primary,
                   child: Container(
                     key: const ValueKey('verse_scrubber_overlay_bubble'),
-                    constraints:
-                        const BoxConstraints(minWidth: 44, minHeight: bubbleHeight),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: bubbleHeight,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     alignment: Alignment.center,
                     child: Text(
                       '$_currentScrubbedVerse',
@@ -370,4 +388,3 @@ class _VerseScrubberState extends State<VerseScrubber> {
     );
   }
 }
-

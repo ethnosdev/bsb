@@ -1,6 +1,8 @@
 import 'dart:math';
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
+
 import 'annotation_backup.dart';
 import 'annotation_database.dart';
 import 'annotation_models.dart';
@@ -13,7 +15,7 @@ class AnnotationService {
   static const _uuid = Uuid();
 
   AnnotationService({AnnotationDatabaseHelper? dbHelper})
-      : _dbHelper = dbHelper ?? AnnotationDatabaseHelper();
+    : _dbHelper = dbHelper ?? AnnotationDatabaseHelper();
 
   void _notifyChange() {
     changeNotifier.value++;
@@ -23,7 +25,9 @@ class AnnotationService {
     return _dbHelper.getHighlightsForChapter(bookId, chapter);
   }
 
-  Future<List<Highlight>> getAllHighlights({String orderBy = 'updated_at DESC'}) {
+  Future<List<Highlight>> getAllHighlights({
+    String orderBy = 'updated_at DESC',
+  }) {
     return _dbHelper.getAllHighlights(orderBy: orderBy);
   }
 
@@ -69,8 +73,11 @@ class AnnotationService {
     int currentEnd = endWordId;
 
     final existing = await _dbHelper.getHighlightsForChapter(bookId, chapter);
-    final overlapping = existing.where((h) =>
-        h.startWordId <= currentEnd && h.endWordId >= currentStart).toList();
+    final overlapping = existing
+        .where(
+          (h) => h.startWordId <= currentEnd && h.endWordId >= currentStart,
+        )
+        .toList();
 
     for (final h in overlapping) {
       if (h.color == color) {
@@ -86,10 +93,7 @@ class AnnotationService {
         } else if (h.startWordId < currentStart && h.endWordId > currentEnd) {
           // New highlight is inside old highlight: split into two
           await _dbHelper.updateHighlight(
-            h.copyWith(
-              endWordId: currentStart - 1,
-              updatedAt: now,
-            ),
+            h.copyWith(endWordId: currentStart - 1, updatedAt: now),
           );
           await _dbHelper.insertHighlight(
             Highlight(
@@ -106,18 +110,12 @@ class AnnotationService {
         } else if (h.startWordId < currentStart && h.endWordId <= currentEnd) {
           // Overlaps the right tail of old highlight
           await _dbHelper.updateHighlight(
-            h.copyWith(
-              endWordId: currentStart - 1,
-              updatedAt: now,
-            ),
+            h.copyWith(endWordId: currentStart - 1, updatedAt: now),
           );
         } else if (h.startWordId >= currentStart && h.endWordId > currentEnd) {
           // Overlaps the left head of old highlight
           await _dbHelper.updateHighlight(
-            h.copyWith(
-              startWordId: currentEnd + 1,
-              updatedAt: now,
-            ),
+            h.copyWith(startWordId: currentEnd + 1, updatedAt: now),
           );
         }
       }
@@ -152,8 +150,9 @@ class AnnotationService {
   }) async {
     final now = DateTime.now();
     final existing = await _dbHelper.getHighlightsForChapter(bookId, chapter);
-    final overlapping = existing.where((h) =>
-        h.startWordId <= endWordId && h.endWordId >= startWordId).toList();
+    final overlapping = existing
+        .where((h) => h.startWordId <= endWordId && h.endWordId >= startWordId)
+        .toList();
 
     for (final h in overlapping) {
       if (startWordId <= h.startWordId && endWordId >= h.endWordId) {
@@ -162,10 +161,7 @@ class AnnotationService {
       } else if (h.startWordId < startWordId && h.endWordId > endWordId) {
         // Split into two
         await _dbHelper.updateHighlight(
-          h.copyWith(
-            endWordId: startWordId - 1,
-            updatedAt: now,
-          ),
+          h.copyWith(endWordId: startWordId - 1, updatedAt: now),
         );
         await _dbHelper.insertHighlight(
           Highlight(
@@ -181,17 +177,11 @@ class AnnotationService {
         );
       } else if (h.startWordId < startWordId && h.endWordId <= endWordId) {
         await _dbHelper.updateHighlight(
-          h.copyWith(
-            endWordId: startWordId - 1,
-            updatedAt: now,
-          ),
+          h.copyWith(endWordId: startWordId - 1, updatedAt: now),
         );
       } else if (h.startWordId >= startWordId && h.endWordId > endWordId) {
         await _dbHelper.updateHighlight(
-          h.copyWith(
-            startWordId: endWordId + 1,
-            updatedAt: now,
-          ),
+          h.copyWith(startWordId: endWordId + 1, updatedAt: now),
         );
       }
     }
@@ -380,12 +370,17 @@ class AnnotationService {
         readingPlansCount++;
       } else {
         final mergedDays = {...existing.completedDays, ...rp.completedDays};
-        final mergedReadings = {...existing.completedReadingIds, ...rp.completedReadingIds};
+        final mergedReadings = {
+          ...existing.completedReadingIds,
+          ...rp.completedReadingIds,
+        };
         final latestReadAt = (existing.lastReadAt == null)
             ? rp.lastReadAt
             : (rp.lastReadAt == null
-                ? existing.lastReadAt
-                : (rp.lastReadAt!.isAfter(existing.lastReadAt!) ? rp.lastReadAt : existing.lastReadAt));
+                  ? existing.lastReadAt
+                  : (rp.lastReadAt!.isAfter(existing.lastReadAt!)
+                        ? rp.lastReadAt
+                        : existing.lastReadAt));
         final merged = existing.copyWith(
           completedDays: mergedDays,
           completedReadingIds: mergedReadings,

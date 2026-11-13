@@ -5,7 +5,7 @@ import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/help.dart';
 import 'package:bsb/ui/settings/settings_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,98 +43,98 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('SettingsPage slider immediately updates AppState.textSizeNotifier', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: SettingsPage(),
-      ),
-    );
+  testWidgets(
+    'SettingsPage slider immediately updates AppState.textSizeNotifier',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: SettingsPage()));
 
-    expect(find.text('Text Size'), findsWidgets);
-    expect(find.text('20.0'), findsOneWidget);
+      expect(find.text('Text Size'), findsWidgets);
+      expect(find.text('20.0'), findsOneWidget);
 
-    // Open text size slider dialog
-    await tester.tap(find.text('Text Size').first);
-    await tester.pumpAndSettle();
+      // Open text size slider dialog
+      await tester.tap(find.text('Text Size').first);
+      await tester.pumpAndSettle();
 
-    expect(find.byType(Slider), findsOneWidget);
+      expect(find.byType(Slider), findsOneWidget);
 
-    // Move slider
-    final slider = find.byType(Slider);
-    await tester.drag(slider, const Offset(100, 0));
-    await tester.pumpAndSettle();
+      // Move slider
+      final slider = find.byType(Slider);
+      await tester.drag(slider, const Offset(100, 0));
+      await tester.pumpAndSettle();
 
-    // Verify AppState was updated immediately
-    expect(appState.textSizeNotifier.value, isNot(equals(20.0)));
-    expect(userSettings.textSize, equals(appState.textSizeNotifier.value));
-  });
+      // Verify AppState was updated immediately
+      expect(appState.textSizeNotifier.value, isNot(equals(20.0)));
+      expect(userSettings.textSize, equals(appState.textSizeNotifier.value));
+    },
+  );
 
-  testWidgets('AboutPage reactively scales text when AppState text size changes', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AboutPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'AboutPage reactively scales text when AppState text size changes',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: AboutPage()));
+      await tester.pumpAndSettle();
 
-    // Initial check: gratitude text style font size should be 20.0
-    final textFinder = find.text('Gratitude');
-    expect(textFinder, findsOneWidget);
-    Text textWidget = tester.widget<Text>(textFinder);
-    expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(20.0)));
+      // Initial check: gratitude text style font size should be 20.0
+      final textFinder = find.text('Gratitude');
+      expect(textFinder, findsOneWidget);
+      Text textWidget = tester.widget<Text>(textFinder);
+      expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(20.0)));
 
-    // Update text size via AppState
-    await appState.setTextSize(26.0);
-    await tester.pump();
+      // Update text size via AppState
+      await appState.setTextSize(26.0);
+      await tester.pump();
 
-    // Verify that AboutPage text updated immediately without rebuilding or re-navigating
-    textWidget = tester.widget<Text>(textFinder);
-    expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(26.0)));
-  });
+      // Verify that AboutPage text updated immediately without rebuilding or re-navigating
+      textWidget = tester.widget<Text>(textFinder);
+      expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(26.0)));
+    },
+  );
 
-  testWidgets('HelpPage reactively scales text when AppState text size changes', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: HelpPage(),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'HelpPage reactively scales text when AppState text size changes',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HelpPage()));
+      await tester.pumpAndSettle();
 
-    final titleFinder = find.text('Book selection');
-    expect(titleFinder, findsOneWidget);
-    Text textWidget = tester.widget<Text>(titleFinder);
-    expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(20.0)));
+      final titleFinder = find.text('Book selection');
+      expect(titleFinder, findsOneWidget);
+      Text textWidget = tester.widget<Text>(titleFinder);
+      expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(20.0)));
 
-    // Change text size to 14.0
-    await appState.setTextSize(14.0);
-    await tester.pump();
+      // Change text size to 14.0
+      await appState.setTextSize(14.0);
+      await tester.pump();
 
-    textWidget = tester.widget<Text>(titleFinder);
-    expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(14.0)));
-  });
+      textWidget = tester.widget<Text>(titleFinder);
+      expect(textWidget.style?.fontSize, equals(FontScale.infoTitle(14.0)));
+    },
+  );
 
-  testWidgets('AppState changes propagate to ValueListenableBuilder consumers', (tester) async {
-    double? observedSize;
+  testWidgets(
+    'AppState changes propagate to ValueListenableBuilder consumers',
+    (tester) async {
+      double? observedSize;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ValueListenableBuilder<double>(
-          valueListenable: appState.textSizeNotifier,
-          builder: (context, size, _) {
-            observedSize = size;
-            return Text('Current: $size');
-          },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ValueListenableBuilder<double>(
+            valueListenable: appState.textSizeNotifier,
+            builder: (context, size, _) {
+              observedSize = size;
+              return Text('Current: $size');
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(observedSize, equals(20.0));
-    expect(find.text('Current: 20.0'), findsOneWidget);
+      expect(observedSize, equals(20.0));
+      expect(find.text('Current: 20.0'), findsOneWidget);
 
-    await appState.setTextSize(28.0);
-    await tester.pump();
+      await appState.setTextSize(28.0);
+      await tester.pump();
 
-    expect(observedSize, equals(28.0));
-    expect(find.text('Current: 28.0'), findsOneWidget);
-  });
+      expect(observedSize, equals(28.0));
+      expect(find.text('Current: 28.0'), findsOneWidget);
+    },
+  );
 }

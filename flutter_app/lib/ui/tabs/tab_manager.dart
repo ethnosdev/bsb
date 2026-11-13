@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/foundation.dart';
+
 import 'bible_tab.dart';
 
 class TabManager extends ChangeNotifier {
@@ -196,7 +198,8 @@ class TabManager extends ChangeNotifier {
             break;
           }
         }
-        _activeTabId = nextActiveId ?? (_tabs.isNotEmpty ? _tabs.last.id : null);
+        _activeTabId =
+            nextActiveId ?? (_tabs.isNotEmpty ? _tabs.last.id : null);
       } else if (_tabs.isNotEmpty) {
         final newIndex = index.clamp(0, _tabs.length - 1);
         _activeTabId = _tabs[newIndex].id;

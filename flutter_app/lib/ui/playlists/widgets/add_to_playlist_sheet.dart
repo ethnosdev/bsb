@@ -5,7 +5,7 @@ import 'package:bsb/infrastructure/playlist_service.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AddToPlaylistSheet extends StatefulWidget {
   final Reference reference;
@@ -75,7 +75,8 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
   @override
   void initState() {
     super.initState();
-    _isTrimmed = widget.isTrimmed ??
+    _isTrimmed =
+        widget.isTrimmed ??
         (widget.startWordId != null || widget.endWordId != null);
 
     if (widget.playlistService != null) {
@@ -107,7 +108,8 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
     }
 
     try {
-      final db = widget.dbHelper ??
+      final db =
+          widget.dbHelper ??
           (getIt.isRegistered<DatabaseHelper>()
               ? getIt<DatabaseHelper>()
               : null);
@@ -117,8 +119,8 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
         if (words.isNotEmpty) {
           final minWordId = words.first.wordId;
           final maxWordId = words.last.wordId;
-          final trimmed = (widget.startWordId != null &&
-                  widget.startWordId != minWordId) ||
+          final trimmed =
+              (widget.startWordId != null && widget.startWordId != minWordId) ||
               (widget.endWordId != null && widget.endWordId != maxWordId);
           if (mounted) {
             setState(() {
@@ -244,8 +246,9 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
                 decoration: BoxDecoration(
-                  color:
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.4,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -289,7 +292,8 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                                 child: Text(
                                   'Trimmed',
                                   style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onTertiaryContainer,
+                                    color:
+                                        theme.colorScheme.onTertiaryContainer,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 10,
                                   ),
@@ -387,40 +391,39 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                       ),
                     )
                   : _playlists.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Text(
-                              'No playlists yet',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'No playlists yet',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _playlists.length,
-                          itemBuilder: (context, index) {
-                            final playlist = _playlists[index];
-                            final passageCount = playlist.passageCount;
-                            return ListTile(
-                              leading:
-                                  const Icon(Icons.playlist_play_rounded),
-                              title: Text(
-                                playlist.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                passageCount == 1
-                                    ? '1 passage'
-                                    : '$passageCount passages',
-                              ),
-                              onTap: () => _addToPlaylist(playlist),
-                            );
-                          },
                         ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _playlists.length,
+                      itemBuilder: (context, index) {
+                        final playlist = _playlists[index];
+                        final passageCount = playlist.passageCount;
+                        return ListTile(
+                          leading: const Icon(Icons.playlist_play_rounded),
+                          title: Text(
+                            playlist.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            passageCount == 1
+                                ? '1 passage'
+                                : '$passageCount passages',
+                          ),
+                          onTap: () => _addToPlaylist(playlist),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:uuid/uuid.dart';
@@ -34,15 +35,15 @@ class PlaylistItem {
     this.noteTitle,
     this.noteText,
     required this.orderIndex,
-  })  : id = id ?? const Uuid().v4(),
-        assert(
-          type != PlaylistItemType.reference || reference != null,
-          'Reference must not be null for reference item type',
-        ),
-        assert(
-          type != PlaylistItemType.note || (noteText != null),
-          'Note text must not be null for note item type',
-        );
+  }) : id = id ?? const Uuid().v4(),
+       assert(
+         type != PlaylistItemType.reference || reference != null,
+         'Reference must not be null for reference item type',
+       ),
+       assert(
+         type != PlaylistItemType.note || (noteText != null),
+         'Note text must not be null for note item type',
+       );
 
   factory PlaylistItem.reference({
     String? id,
@@ -102,13 +103,13 @@ class PlaylistItem {
       startWordId: clearTrim
           ? null
           : (identical(startWordId, _sentinel)
-              ? this.startWordId
-              : startWordId as int?),
+                ? this.startWordId
+                : startWordId as int?),
       endWordId: clearTrim
           ? null
           : (identical(endWordId, _sentinel)
-              ? this.endWordId
-              : endWordId as int?),
+                ? this.endWordId
+                : endWordId as int?),
       noteTitle: clearTitle ? null : (noteTitle ?? this.noteTitle),
       noteText: noteText ?? this.noteText,
       orderIndex: orderIndex ?? this.orderIndex,
@@ -133,9 +134,13 @@ class PlaylistItem {
   }
 
   factory PlaylistItem.fromMap(Map<String, dynamic> map) {
-    final type = PlaylistItemType.fromString(map['type'] as String? ?? 'reference');
+    final type = PlaylistItemType.fromString(
+      map['type'] as String? ?? 'reference',
+    );
     Reference? reference;
-    if (type == PlaylistItemType.reference && map['book_id'] != null && map['chapter'] != null) {
+    if (type == PlaylistItemType.reference &&
+        map['book_id'] != null &&
+        map['chapter'] != null) {
       final bookId = (map['book_id'] as num).toInt();
       final chapter = (map['chapter'] as num).toInt();
       final verse = (map['verse'] as num?)?.toInt();
@@ -177,8 +182,16 @@ class PlaylistItem {
           orderIndex == other.orderIndex;
 
   @override
-  int get hashCode =>
-      Object.hash(id, type, reference, startWordId, endWordId, noteTitle, noteText, orderIndex);
+  int get hashCode => Object.hash(
+    id,
+    type,
+    reference,
+    startWordId,
+    endWordId,
+    noteTitle,
+    noteText,
+    orderIndex,
+  );
 }
 
 class Playlist {
@@ -194,15 +207,15 @@ class Playlist {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<PlaylistItem>? items,
-  })  : id = id ?? const Uuid().v4(),
-        createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now(),
-        items = List.unmodifiable(
-          (items != null)
-              ? (List<PlaylistItem>.from(items)
-                ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex)))
-              : const <PlaylistItem>[],
-        );
+  }) : id = id ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now(),
+       items = List.unmodifiable(
+         (items != null)
+             ? (List<PlaylistItem>.from(items)
+                 ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex)))
+             : const <PlaylistItem>[],
+       );
 
   int get passageCount => items.where((i) => i.isReference).length;
   int get noteCount => items.where((i) => i.isNote).length;

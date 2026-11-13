@@ -5,7 +5,7 @@ import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/text/chapter/chapter_text.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scripture/scripture.dart';
 import 'package:scripture/scripture_core.dart';
@@ -20,8 +20,7 @@ class FakeFootnoteDbHelper implements DatabaseHelper {
     return [
       UsfmLine(
         bookChapterVerse: 41012011,
-        text:
-            r'and it is marvelous in our eyes’\f + \fr 12:11 \ft Psalm 118:22–23\f*?”',
+        text: r'and it is marvelous in our eyes’\f + \fr 12:11 \ft Psalm 118:22–23\f*?”',
         format: ParagraphFormat.q2,
       ),
     ];
@@ -33,7 +32,10 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<Highlight>> getHighlightsForChapter(int bookId, int chapter) async => [];
+  Future<List<Highlight>> getHighlightsForChapter(
+    int bookId,
+    int chapter,
+  ) async => [];
 
   @override
   Future<List<Note>> getNotesForChapter(int bookId, int chapter) async => [];
@@ -64,43 +66,40 @@ void main() {
     getIt.reset();
   });
 
-  testWidgets('ChapterText renders footnote marker immediately followed by punctuation with no space', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: ChapterText(
-            bookId: 41,
-            chapter: 12,
-          ),
+  testWidgets(
+    'ChapterText renders footnote marker immediately followed by punctuation with no space',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 41, chapter: 12)),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    // Verify FootnoteWidget exists
-    expect(find.byType(FootnoteWidget), findsOneWidget);
+      // Verify FootnoteWidget exists
+      expect(find.byType(FootnoteWidget), findsOneWidget);
 
-    // Verify TextAtomWidget contains eyes’, *, and ?” together
-    final atomFinder = find.ancestor(
-      of: find.byType(FootnoteWidget),
-      matching: find.byType(TextAtomWidget),
-    );
-    expect(atomFinder, findsOneWidget);
+      // Verify TextAtomWidget contains eyes’, *, and ?” together
+      final atomFinder = find.ancestor(
+        of: find.byType(FootnoteWidget),
+        matching: find.byType(TextAtomWidget),
+      );
+      expect(atomFinder, findsOneWidget);
 
-    final atom = tester.widget<TextAtomWidget>(atomFinder);
-    expect(atom.children.length, equals(3));
-    expect((atom.children[0] as WordWidget).text, equals('eyes’'));
-    expect((atom.children[1] as FootnoteWidget).marker, equals('*'));
-    expect((atom.children[2] as WordWidget).text, equals('?”'));
-  });
+      final atom = tester.widget<TextAtomWidget>(atomFinder);
+      expect(atom.children.length, equals(3));
+      expect((atom.children[0] as WordWidget).text, equals('eyes’'));
+      expect((atom.children[1] as FootnoteWidget).marker, equals('*'));
+      expect((atom.children[2] as WordWidget).text, equals('?”'));
+    },
+  );
 
   test('DatabaseHelper.getTextForRange does not insert space before trailing punctuation', () async {
     final db = TestDatabaseHelper([
       UsfmLine(
         bookChapterVerse: 41012011,
-        text:
-            r'and it is marvelous in our eyes’\f + \fr 12:11 \ft Psalm 118:22–23\f*?”',
+        text: r'and it is marvelous in our eyes’\f + \fr 12:11 \ft Psalm 118:22–23\f*?”',
         format: ParagraphFormat.q2,
       ),
     ]);

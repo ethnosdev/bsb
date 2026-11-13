@@ -16,7 +16,7 @@ import 'package:bsb/ui/search/search_manager.dart';
 import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:scripture/scripture.dart';

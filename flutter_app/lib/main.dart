@@ -6,7 +6,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/home/home.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

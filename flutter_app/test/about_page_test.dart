@@ -2,7 +2,7 @@ import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/about.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -51,10 +51,7 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
 
       // 2. BSB text
-      expect(
-        find.text('BSB text: 3rd printing (7-31-2026)'),
-        findsOneWidget,
-      );
+      expect(find.text('BSB text: 3rd printing (7-31-2026)'), findsOneWidget);
 
       // 3. App version
       expect(find.text('App version: 2.0.0'), findsOneWidget);
