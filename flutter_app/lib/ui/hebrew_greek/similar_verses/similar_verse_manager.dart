@@ -30,7 +30,8 @@ class SimilarVerseManager {
     exact: 0,
     strongs: 0,
   ));
-  final Map<(int, WordSearchMode, int), VerseDisplayContent> _contentCache = {};
+  final Map<(int, WordSearchMode, int, bool), VerseDisplayContent>
+  _contentCache = {};
 
   late OriginalWord word;
   int exactCount = 0;
@@ -110,6 +111,7 @@ class SimilarVerseManager {
       reference.packedVerse,
       searchModeNotifier.value,
       highlightColor.toARGB32(),
+      _dbHelper.useBritishSpelling,
     );
     final cached = _contentCache[key];
     if (cached != null) return cached;

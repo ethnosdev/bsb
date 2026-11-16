@@ -1,13 +1,15 @@
 import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/core/theme.dart';
+import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:material_ui/material_ui.dart';
 
 class AppState extends ChangeNotifier {
   final UserSettings userSettings;
+  final DatabaseHelper? dbHelper;
 
-  AppState({UserSettings? userSettings})
+  AppState({UserSettings? userSettings, this.dbHelper})
     : userSettings = userSettings ?? getIt<UserSettings>() {
     themeNotifier.addListener(notifyListeners);
     appThemeIdNotifier.addListener(notifyListeners);
@@ -19,8 +21,13 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.addListener(notifyListeners);
     verseChooserStyleNotifier.addListener(notifyListeners);
     wordsOfJesusInRedNotifier.addListener(notifyListeners);
+    useBritishSpellingNotifier.addListener(notifyListeners);
     keepScreenAwakeNotifier.addListener(notifyListeners);
   }
+
+  DatabaseHelper? get _effectiveDbHelper =>
+      dbHelper ??
+      (getIt.isRegistered<DatabaseHelper>() ? getIt<DatabaseHelper>() : null);
 
   final themeNotifier = ValueNotifier<ThemeMode>(ThemeMode.system);
   final appThemeIdNotifier = ValueNotifier<String>(
@@ -44,6 +51,7 @@ class AppState extends ChangeNotifier {
     VerseChooserStyle.sidebar,
   );
   final wordsOfJesusInRedNotifier = ValueNotifier<bool>(false);
+  final useBritishSpellingNotifier = ValueNotifier<bool>(false);
   final keepScreenAwakeNotifier = ValueNotifier<bool>(true);
 
   ThemeMode get themeMode => themeNotifier.value;
@@ -115,6 +123,7 @@ class AppState extends ChangeNotifier {
   bool get showVerseGrid => showVerseGridNotifier.value;
   VerseChooserStyle get verseChooserStyle => verseChooserStyleNotifier.value;
   bool get wordsOfJesusInRed => wordsOfJesusInRedNotifier.value;
+  bool get useBritishSpelling => useBritishSpellingNotifier.value;
   bool get keepScreenAwake => keepScreenAwakeNotifier.value;
 
   Future<void> init() async {
@@ -128,6 +137,9 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.value = userSettings.showVerseGrid;
     verseChooserStyleNotifier.value = userSettings.verseChooserStyle;
     wordsOfJesusInRedNotifier.value = userSettings.wordsOfJesusInRed;
+    final british = userSettings.useBritishSpelling;
+    _effectiveDbHelper?.setUseBritishSpelling(british);
+    useBritishSpellingNotifier.value = british;
     keepScreenAwakeNotifier.value = userSettings.keepScreenAwake;
   }
 
@@ -212,6 +224,12 @@ class AppState extends ChangeNotifier {
     await userSettings.setWordsOfJesusInRed(value);
   }
 
+  Future<void> setUseBritishSpelling(bool value) async {
+    _effectiveDbHelper?.setUseBritishSpelling(value);
+    useBritishSpellingNotifier.value = value;
+    await userSettings.setUseBritishSpelling(value);
+  }
+
   Future<void> setKeepScreenAwake(bool value) async {
     keepScreenAwakeNotifier.value = value;
     await userSettings.setKeepScreenAwake(value);
@@ -229,6 +247,7 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.removeListener(notifyListeners);
     verseChooserStyleNotifier.removeListener(notifyListeners);
     wordsOfJesusInRedNotifier.removeListener(notifyListeners);
+    useBritishSpellingNotifier.removeListener(notifyListeners);
     keepScreenAwakeNotifier.removeListener(notifyListeners);
     themeNotifier.dispose();
     appThemeIdNotifier.dispose();
@@ -240,6 +259,7 @@ class AppState extends ChangeNotifier {
     showVerseGridNotifier.dispose();
     verseChooserStyleNotifier.dispose();
     wordsOfJesusInRedNotifier.dispose();
+    useBritishSpellingNotifier.dispose();
     keepScreenAwakeNotifier.dispose();
     super.dispose();
   }

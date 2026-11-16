@@ -95,7 +95,17 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
         _onPlaylistServiceChanged,
       );
     }
+    _appState?.useBritishSpellingNotifier.addListener(_onLocalizationChanged);
     _initPlaylist();
+  }
+
+  void _onLocalizationChanged() {
+    if (!mounted) return;
+    setState(() {
+      _passageCache.clear();
+      _isLoading = true;
+    });
+    _loadPassages();
   }
 
   Future<void> _initPlaylist() async {
@@ -162,6 +172,9 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
         _onPlaylistServiceChanged,
       );
     }
+    _appState?.useBritishSpellingNotifier.removeListener(
+      _onLocalizationChanged,
+    );
     _selectionController.dispose();
     if (!widget.embedded && _isDistractionFree) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);

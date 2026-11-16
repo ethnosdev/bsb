@@ -15,6 +15,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeDatabaseHelper implements DatabaseHelper {
   @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
@@ -574,6 +580,12 @@ void main() {
 }
 
 class _TestUsfmDatabaseHelper implements DatabaseHelper {
+  @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 

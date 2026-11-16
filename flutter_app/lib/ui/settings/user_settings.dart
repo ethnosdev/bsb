@@ -252,6 +252,19 @@ class UserSettings {
     }
   }
 
+  static const _useBritishSpellingKey = 'useBritishSpelling';
+
+  bool get useBritishSpelling =>
+      _prefs.getBool(_useBritishSpellingKey) ?? false;
+
+  Future<void> setUseBritishSpelling(bool value) async {
+    if (!value) {
+      await _prefs.remove(_useBritishSpellingKey);
+    } else {
+      await _prefs.setBool(_useBritishSpellingKey, true);
+    }
+  }
+
   static const _keepScreenAwakeKey = 'keepScreenAwake';
 
   /// Whether to prevent the screen from turning off while reading chapter text.

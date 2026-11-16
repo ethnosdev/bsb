@@ -17,6 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeChapterScrollDbHelper implements DatabaseHelper {
   @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override

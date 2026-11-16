@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
+import 'package:bsb/infrastructure/bsb_text_localizer.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reading_plan_models.dart';
 import 'package:bsb/infrastructure/reading_plan_service.dart';
@@ -697,12 +698,12 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   bool _matchesHeading(String text, String target) {
-    final cleanText = text
+    final cleanText = BsbTextLocalizer.localizeHeading(text)
         .replaceAll(RegExp(r'[^\w\s]'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim()
         .toLowerCase();
-    final cleanTarget = target
+    final cleanTarget = BsbTextLocalizer.localizeHeading(target)
         .replaceAll(RegExp(r'[^\w\s]'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim()

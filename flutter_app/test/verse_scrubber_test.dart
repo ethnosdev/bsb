@@ -18,6 +18,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeTenVerseDbHelper implements DatabaseHelper {
   @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
@@ -35,6 +41,12 @@ class FakeTenVerseDbHelper implements DatabaseHelper {
 }
 
 class FakeThreeVerseDbHelper implements DatabaseHelper {
+  @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
@@ -54,6 +66,12 @@ class FakeThreeVerseDbHelper implements DatabaseHelper {
 
 class FakeFiveVerseShortDbHelper implements DatabaseHelper {
   @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
@@ -70,6 +88,12 @@ class FakeFiveVerseShortDbHelper implements DatabaseHelper {
 }
 
 class FakeFiveVerseLongDbHelper implements DatabaseHelper {
+  @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
@@ -88,6 +112,12 @@ class FakeFiveVerseLongDbHelper implements DatabaseHelper {
 }
 
 class FakeFootnoteDbHelper implements DatabaseHelper {
+  @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 

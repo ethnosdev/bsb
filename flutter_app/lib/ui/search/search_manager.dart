@@ -25,6 +25,7 @@ class SearchManager {
   List<SearchResult> _allResults = [];
   String _currentQuery = '';
   String get currentQuery => _currentQuery;
+  bool? _lastSearchUseBritishSpelling;
 
   double scrollOffset = 0.0;
   double bookFilterScrollOffset = 0.0;
@@ -32,6 +33,11 @@ class SearchManager {
 
   void init() {
     recentSearchesNotifier.value = _userSettings.recentSearches;
+    final trimmed = _currentQuery.trim();
+    if (trimmed.length >= 2 &&
+        _lastSearchUseBritishSpelling != _searchService.useBritishSpelling) {
+      _executeSearch(trimmed);
+    }
   }
 
   void selectBook(int? bookId) {
@@ -91,6 +97,7 @@ class SearchManager {
 
   Future<void> _executeSearch(String query) async {
     isLoadingNotifier.value = true;
+    final usedBritish = _searchService.useBritishSpelling;
     final results = await _searchService.searchVerses(
       query: query,
       isExact: isExactNotifier.value,
@@ -99,6 +106,7 @@ class SearchManager {
 
     // Only update if query hasn't changed while searching
     if (_currentQuery.trim() == query.trim()) {
+      _lastSearchUseBritishSpelling = usedBritish;
       _allResults = results;
 
       final counts = <int, int>{};
@@ -133,6 +141,7 @@ class SearchManager {
   void clearSearch() {
     _currentQuery = '';
     _allResults = [];
+    _lastSearchUseBritishSpelling = null;
     scrollOffset = 0.0;
     bookFilterScrollOffset = 0.0;
     isLoadingNotifier.value = false;

@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:bsb/infrastructure/bsb_text_localizer.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/search/search_models.dart';
 import 'package:bsb/infrastructure/section_heading.dart';
 import 'package:bsb/infrastructure/verse_element.dart';
 import 'package:bsb/infrastructure/word_cluster.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:scripture/scripture.dart';
@@ -18,6 +20,24 @@ class DatabaseHelper {
   static const _databaseName = "database.db";
   static const _databaseVersion = 31;
   late Database _database;
+  bool _useBritishSpelling = false;
+
+  bool get useBritishSpelling => _useBritishSpelling;
+
+  void setUseBritishSpelling(bool enabled) {
+    if (_useBritishSpelling == enabled) return;
+    _useBritishSpelling = enabled;
+    _chapterWordsCache.clear();
+  }
+
+  @visibleForTesting
+  void setDatabaseForTesting(Database db) {
+    _database = db;
+    _chapterWordsCache.clear();
+  }
+
+  @visibleForTesting
+  int get chapterWordsCacheLength => _chapterWordsCache.length;
 
   Future<void> init() async {
     var databasesPath = await getDatabasesPath();
@@ -74,9 +94,14 @@ class DatabaseHelper {
 
     return verses.map((verse) {
       final format = verse[Schema.colFormat] as String;
+      final packedVerse = verse[Schema.colReference] as int;
+      final rawText = verse[Schema.colText] as String;
+      final text = _useBritishSpelling
+          ? BsbTextLocalizer.localize(packedVerse, rawText)
+          : rawText;
       return UsfmLine(
-        bookChapterVerse: verse[Schema.colReference] as int,
-        text: verse[Schema.colText] as String,
+        bookChapterVerse: packedVerse,
+        text: text,
         format: ParagraphFormat.fromJson(format),
       );
     }).toList();
@@ -191,10 +216,13 @@ class DatabaseHelper {
       final tokenId = (row['token_id'] as int?) ?? 0;
       final originalId = (row['original_id'] as int?) ?? 0;
       final rawEnglish = row[Schema.ilColEnglish] as String;
-      final englishGloss = rawEnglish
+      final cleanedGloss = rawEnglish
           .replaceAll(htmlTagRegex, ' ')
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
+      final englishGloss = _useBritishSpelling
+          ? BsbTextLocalizer.localize(reference.packedVerse, cleanedGloss)
+          : cleanedGloss;
 
       return OriginalWord(
         id: tokenId,
@@ -346,9 +374,14 @@ class DatabaseHelper {
 
     return verses.map((verse) {
       final format = verse[Schema.colFormat] as String;
+      final packedVerse = verse[Schema.colReference] as int;
+      final rawText = verse[Schema.colText] as String;
+      final text = _useBritishSpelling
+          ? BsbTextLocalizer.localize(packedVerse, rawText)
+          : rawText;
       return UsfmLine(
-        bookChapterVerse: verse[Schema.colReference] as int,
-        text: verse[Schema.colText] as String,
+        bookChapterVerse: packedVerse,
+        text: text,
         format: ParagraphFormat.fromJson(format),
       );
     }).toList();
@@ -377,7 +410,10 @@ class DatabaseHelper {
     );
 
     return results.map((row) {
-      final headingText = row['heading_text'] as String;
+      final rawHeadingText = row['heading_text'] as String;
+      final headingText = _useBritishSpelling
+          ? BsbTextLocalizer.localizeHeading(rawHeadingText)
+          : rawHeadingText;
       final format = row['heading_format'] as String;
       final nextRef = row['next_ref'] as int?;
       final ref = row['ref'] as int;
@@ -445,6 +481,8 @@ class DatabaseHelper {
     log("Verse search table populated with ${verses.length} verses");
   }
 
+  static const Set<String> _ftsOperatorKeywords = {'AND', 'OR', 'NOT', 'NEAR'};
+
   static String _sanitizeFtsQuery(String query, {bool isExact = false}) {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return '';
@@ -481,6 +519,131 @@ class DatabaseHelper {
     return tokens.join(' AND ');
   }
 
+  static List<String> _expandPhraseToGroups(String rawPhrase) {
+    final clean = rawPhrase
+        .replaceAll('"', '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+    if (!RegExp(r'\w').hasMatch(clean)) return const [];
+
+    final rawWords = clean.split(RegExp(r'\s+'));
+    var didAnyExpand = false;
+    for (final rawWord in rawWords) {
+      for (final m in RegExp(r'\w+').allMatches(rawWord)) {
+        final w = m.group(0)!.toLowerCase();
+        final expanded = BsbTextLocalizer.expandFtsToken(w, isPrefix: false);
+        if (expanded.length != 1 || expanded.first != w) {
+          didAnyExpand = true;
+          break;
+        }
+      }
+      if (didAnyExpand) break;
+    }
+
+    if (!didAnyExpand) {
+      return ['"$clean"'];
+    }
+
+    final groups = <String>[];
+    for (final rawWord in rawWords) {
+      final parts = RegExp(r'\w+')
+          .allMatches(rawWord)
+          .map((m) => m.group(0)!)
+          .toList();
+      if (parts.isEmpty) continue;
+
+      if (parts.length == 1) {
+        final word = parts.first;
+        if (_ftsOperatorKeywords.contains(word.toUpperCase())) continue;
+        final terms = BsbTextLocalizer.expandFtsToken(
+          word.toLowerCase(),
+          isPrefix: false,
+        );
+        if (terms.isNotEmpty) {
+          groups.add(terms.join(' OR '));
+        }
+      } else if (parts.length == 2 && parts[1].length == 1) {
+        // Possessive such as "King's" or "God’s": prefix-match stem in FTS4
+        // so curly apostrophes indexed inside a single token still match.
+        final stem = parts.first;
+        if (_ftsOperatorKeywords.contains(stem.toUpperCase())) continue;
+        final terms = BsbTextLocalizer.expandFtsToken(
+          stem.toLowerCase(),
+          isPrefix: true,
+        );
+        if (terms.isNotEmpty) {
+          groups.add(terms.map((t) => '$t*').join(' OR '));
+        }
+      } else {
+        for (final part in parts) {
+          if (_ftsOperatorKeywords.contains(part.toUpperCase())) continue;
+          final terms = BsbTextLocalizer.expandFtsToken(
+            part.toLowerCase(),
+            isPrefix: true,
+          );
+          if (terms.isNotEmpty) {
+            groups.add(terms.map((t) => '$t*').join(' OR '));
+          }
+        }
+      }
+    }
+    return groups;
+  }
+
+  /// Builds parenthesis-free FTS4 `MATCH` clauses for [query].
+  @visibleForTesting
+  static List<String> buildFtsCandidateClauses(
+    String query, {
+    bool isExact = false,
+    bool useBritishSpelling = false,
+  }) {
+    if (!useBritishSpelling) {
+      final legacy = _sanitizeFtsQuery(query, isExact: isExact);
+      return legacy.isEmpty ? const [] : [legacy];
+    }
+
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+
+    if (isExact) {
+      var clean = trimmed;
+      if (clean.startsWith('"') && clean.endsWith('"') && clean.length >= 2) {
+        clean = clean.substring(1, clean.length - 1).trim();
+      }
+      return _expandPhraseToGroups(clean);
+    }
+
+    final groups = <String>[];
+    final tokenRegex = RegExp(r'"([^"]+)"|(\S+)');
+    for (final match in tokenRegex.allMatches(trimmed)) {
+      final quoted = match.group(1);
+      final unquoted = match.group(2);
+      if (quoted != null && quoted.trim().isNotEmpty) {
+        groups.addAll(_expandPhraseToGroups(quoted));
+      } else if (unquoted != null) {
+        final parts = RegExp(r'\w+')
+            .allMatches(unquoted)
+            .map((m) => m.group(0)!)
+            .toList();
+        if (parts.isEmpty) continue;
+        final targetParts = (parts.length == 2 && parts[1].length == 1)
+            ? [parts.first]
+            : parts;
+        for (final part in targetParts) {
+          if (_ftsOperatorKeywords.contains(part.toUpperCase())) continue;
+          final terms = BsbTextLocalizer.expandFtsToken(
+            part.toLowerCase(),
+            isPrefix: true,
+          );
+          if (terms.isNotEmpty) {
+            groups.add(terms.map((t) => '$t*').join(' OR '));
+          }
+        }
+      }
+    }
+    return groups;
+  }
+
   Future<List<SearchResult>> searchVerses({
     required String query,
     SearchScope scope = SearchScope.all,
@@ -489,22 +652,46 @@ class DatabaseHelper {
     bool isExact = false,
   }) async {
     await ensureSearchTableExists();
-    final cleanQuery = _sanitizeFtsQuery(query, isExact: isExact);
-    if (cleanQuery.isEmpty) return [];
+    final clauses = buildFtsCandidateClauses(
+      query,
+      isExact: isExact,
+      useBritishSpelling: _useBritishSpelling,
+    );
+    if (clauses.isEmpty) return [];
+
+    final useIntersect =
+        clauses.length > 1 && clauses.any((c) => c.contains(' OR '));
+    final List<Object?> args = [];
+    final String docIdSubquery;
+
+    if (!useIntersect) {
+      args.add(clauses.join(' AND '));
+      docIdSubquery =
+          'SELECT docid FROM ${Schema.verseSearchTable} '
+          'WHERE ${Schema.verseSearchTable} MATCH ?';
+    } else {
+      docIdSubquery = clauses
+          .map(
+            (_) =>
+                'SELECT docid FROM ${Schema.verseSearchTable} '
+                'WHERE ${Schema.verseSearchTable} MATCH ?',
+          )
+          .join(' INTERSECT ');
+      args.addAll(clauses);
+    }
 
     String scopeClause = '';
-    final List<Object?> args = [cleanQuery];
-
     switch (scope) {
       case SearchScope.all:
         break;
       case SearchScope.ot:
-        scopeClause = 'AND docid < 40000000';
+        scopeClause = 'AND b.${Schema.colReference} < 40000000';
       case SearchScope.nt:
-        scopeClause = 'AND docid >= 40000000';
+        scopeClause = 'AND b.${Schema.colReference} >= 40000000';
       case SearchScope.book:
         if (specificBookId != null) {
-          scopeClause = 'AND docid >= ? AND docid < ?';
+          scopeClause =
+              'AND b.${Schema.colReference} >= ? AND b.${Schema.colReference} < ?';
           args.add(specificBookId * 1000000);
           args.add((specificBookId + 1) * 1000000);
         }
@@ -521,9 +708,9 @@ class DatabaseHelper {
         SELECT b.${Schema.colReference}, group_concat(b.${Schema.colText}, ' ') as text
         FROM ${Schema.bibleTextTable} b
         WHERE b.${Schema.colReference} IN (
-          SELECT docid FROM ${Schema.verseSearchTable}
-          WHERE ${Schema.verseSearchTable} MATCH ? $scopeClause
+          $docIdSubquery
         )
+          $scopeClause
           AND b.${Schema.colFormat} NOT IN ('s1', 's2', 'r', 'd', 'ms', 'mr', 'b', 'qa')
         GROUP BY b.${Schema.colReference}
         ORDER BY b.${Schema.colReference} ASC
@@ -534,11 +721,16 @@ class DatabaseHelper {
         final refInt = row[Schema.colReference] as int;
         final rawText = row['text'] as String;
         final clean = cleanVerseText(rawText);
+        final localized = _useBritishSpelling
+            ? BsbTextLocalizer.localize(refInt, clean)
+            : clean;
         final ref = Reference.fromVerseId(packedInt: refInt);
-        return SearchResult(reference: ref, text: clean);
+        return SearchResult(reference: ref, text: localized);
       }).toList();
     } catch (e) {
-      log('Error during search: $e');
+      log(
+        'Error during search (useBritishSpelling=$_useBritishSpelling, clauses=$clauses): $e',
+      );
       return [];
     }
   }
@@ -555,6 +747,9 @@ class DatabaseHelper {
     if (results.isEmpty) return null;
     final rawText = results.map((r) => r[Schema.colText] as String).join(' ');
     final clean = cleanVerseText(rawText);
-    return clean.isEmpty ? null : clean;
+    if (clean.isEmpty) return null;
+    return _useBritishSpelling
+        ? BsbTextLocalizer.localize(reference, clean)
+        : clean;
   }
 }

@@ -21,6 +21,12 @@ class FakeSearchDatabaseHelper implements DatabaseHelper {
   bool? lastSearchedExact;
 
   @override
+  bool get useBritishSpelling => false;
+
+  @override
+  void setUseBritishSpelling(bool enabled) {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override

@@ -156,88 +156,31 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
                           final formattedReference = manager.formatReference(
                             reference,
                           );
-
-                          return FutureBuilder<VerseDisplayContent>(
-                            key: ValueKey(
-                              '${reference.packedVerse}_${manager.searchModeNotifier.value.name}',
-                            ),
-                            future: manager.getVerseContent(
-                              reference,
-                              theme.colorScheme.primary,
-                            ),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                      ConnectionState.done &&
-                                  snapshot.hasData) {
-                                final content = snapshot.data!;
-                                return ListTile(
-                                  title: Text(
-                                    formattedReference,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Padding(
-                                    padding: const EdgeInsets.only(top: 4.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text.rich(
-                                          content.english,
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                fontSize:
-                                                    FontScale.similarEnglish(
-                                                      baseTextSize,
-                                                    ),
-                                                height: 1.4,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text.rich(
-                                          content.original,
-                                          textDirection:
-                                              widget.word.language.isLTR
-                                              ? TextDirection.ltr
-                                              : TextDirection.rtl,
-                                          style: TextStyle(
-                                            fontFamily: fontFamily,
-                                            fontSize: FontScale.similarOriginal(
-                                              baseTextSize,
-                                              widget.word.language,
-                                            ),
-                                            height: 1.4,
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    final isExact =
-                                        manager.searchModeNotifier.value ==
-                                        WordSearchMode.exactForm;
-                                    showVerseReferenceModal(
-                                      context: context,
-                                      reference: reference,
-                                      initialStrongs: widget.word.strongsNumber,
-                                      initialOriginalId: isExact
-                                          ? widget.word.originalId
-                                          : null,
-                                      initialExactWord: isExact
-                                          ? widget.word.word
-                                          : null,
-                                      dbHelper: widget.dbHelper,
-                                    );
-                                  },
+                          if (getIt.isRegistered<AppState>()) {
+                            return ValueListenableBuilder<bool>(
+                              valueListenable:
+                                  getIt<AppState>().useBritishSpellingNotifier,
+                              builder: (context, useBritish, child) {
+                                return _buildVerseTile(
+                                  context: context,
+                                  reference: reference,
+                                  formattedReference: formattedReference,
+                                  theme: theme,
+                                  fontFamily: fontFamily,
+                                  baseTextSize: baseTextSize,
+                                  useBritish: useBritish,
                                 );
-                              } else {
-                                return const SizedBox(height: 80);
-                              }
-                            },
+                              },
+                            );
+                          }
+                          return _buildVerseTile(
+                            context: context,
+                            reference: reference,
+                            formattedReference: formattedReference,
+                            theme: theme,
+                            fontFamily: fontFamily,
+                            baseTextSize: baseTextSize,
+                            useBritish: widget.dbHelper?.useBritishSpelling ?? false,
                           );
                         },
                       );
@@ -249,6 +192,83 @@ class _SimilarVersesPageState extends State<SimilarVersesPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildVerseTile({
+    required BuildContext context,
+    required Reference reference,
+    required String formattedReference,
+    required ThemeData theme,
+    required String fontFamily,
+    required double baseTextSize,
+    required bool useBritish,
+  }) {
+    return FutureBuilder<VerseDisplayContent>(
+      key: ValueKey(
+        '${reference.packedVerse}_${manager.searchModeNotifier.value.name}_$useBritish',
+      ),
+      future: manager.getVerseContent(
+        reference,
+        theme.colorScheme.primary,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.hasData) {
+          final content = snapshot.data!;
+          return ListTile(
+            title: Text(
+              formattedReference,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    content.english,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: FontScale.similarEnglish(baseTextSize),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text.rich(
+                    content.original,
+                    textDirection: widget.word.language.isLTR
+                        ? TextDirection.ltr
+                        : TextDirection.rtl,
+                    style: TextStyle(
+                      fontFamily: fontFamily,
+                      fontSize: FontScale.similarOriginal(
+                        baseTextSize,
+                        widget.word.language,
+                      ),
+                      height: 1.4,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            onTap: () {
+              final isExact =
+                  manager.searchModeNotifier.value == WordSearchMode.exactForm;
+              showVerseReferenceModal(
+                context: context,
+                reference: reference,
+                initialStrongs: widget.word.strongsNumber,
+                initialOriginalId: isExact ? widget.word.originalId : null,
+                initialExactWord: isExact ? widget.word.word : null,
+                dbHelper: widget.dbHelper,
+              );
+            },
+          );
+        } else {
+          return const SizedBox(height: 80);
+        }
+      },
     );
   }
 }

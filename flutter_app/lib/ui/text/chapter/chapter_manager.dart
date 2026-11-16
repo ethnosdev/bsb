@@ -17,21 +17,35 @@ class ChapterManager {
   final textParagraphNotifier = ValueNotifier<List<UsfmLine>>([]);
   final highlightsNotifier = ValueNotifier<List<Highlight>>([]);
   final noteMarkersNotifier = ValueNotifier<List<NoteMarker>>([]);
+  AppState? _appState;
+  bool _disposed = false;
   int _currentBookId = 0;
   int _currentChapter = 0;
 
   ChapterManager() {
     _annotationService.changeNotifier.addListener(_onAnnotationsChanged);
+    _appState = getIt.isRegistered<AppState>() ? getIt<AppState>() : null;
+    _appState?.useBritishSpellingNotifier.addListener(_onLocalizationChanged);
   }
 
   void dispose() {
+    _disposed = true;
     _annotationService.changeNotifier.removeListener(_onAnnotationsChanged);
+    _appState?.useBritishSpellingNotifier.removeListener(
+      _onLocalizationChanged,
+    );
     textParagraphNotifier.dispose();
     highlightsNotifier.dispose();
     noteMarkersNotifier.dispose();
   }
 
+  void _onLocalizationChanged() {
+    if (_disposed || _currentBookId == 0 || _currentChapter == 0) return;
+    requestText(bookId: _currentBookId, chapter: _currentChapter);
+  }
+
   void _onAnnotationsChanged() {
+    if (_disposed) return;
     if (_currentBookId != 0 && _currentChapter != 0) {
       _loadAnnotations(_currentBookId, _currentChapter);
     }
@@ -39,9 +53,11 @@ class ChapterManager {
 
   Future<void> _loadAnnotations(int bookId, int chapter) async {
     final highlights = await _annotationService.getHighlights(bookId, chapter);
+    if (_disposed) return;
     highlightsNotifier.value = highlights;
 
     final notes = await _annotationService.getNotes(bookId, chapter);
+    if (_disposed) return;
     noteMarkersNotifier.value = notes.map((n) => n.toNoteMarker()).toList();
   }
 
@@ -52,7 +68,9 @@ class ChapterManager {
   Future<void> requestText({required int bookId, required int chapter}) async {
     _currentBookId = bookId;
     _currentChapter = chapter;
-    textParagraphNotifier.value = await _dbHelper.getChapter(bookId, chapter);
+    final lines = await _dbHelper.getChapter(bookId, chapter);
+    if (_disposed) return;
+    textParagraphNotifier.value = lines;
     await _loadAnnotations(bookId, chapter);
   }
 
