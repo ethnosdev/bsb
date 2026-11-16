@@ -1,3 +1,8 @@
+# 2.8.0 - 2026.11.16
+
+- Add a British English spelling option in Settings.
+- Fixed a bug in search.
+
 # 2.7.0 - 2026.10.26
 
 - Support deep linking to open chapters and verses from external apps via `bsb://bible/<bookId>/<chapter>[/<verse>]`.
