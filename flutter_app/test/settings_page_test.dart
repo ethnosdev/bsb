@@ -376,7 +376,7 @@ void main() {
     await tester.tap(find.text('Color Theme'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Reading Themes'), findsOneWidget);
+    expect(find.text('Preset Themes'), findsOneWidget);
   });
 
   testWidgets(

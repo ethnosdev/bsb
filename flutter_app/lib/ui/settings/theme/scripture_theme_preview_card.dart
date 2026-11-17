@@ -2,9 +2,10 @@ import 'package:bsb/app_state.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:scripture/scripture.dart';
 
 /// A realistic scripture reading preview card that renders real typography,
-/// verse numbers, headings, footnote marker, and text selection handles for any [ColorScheme].
+/// verse number, footnote marker, chapter tabs, and text selection handles for any [ColorScheme].
 class ScriptureThemePreviewCard extends StatelessWidget {
   final ColorScheme colorScheme;
   final bool? wordsOfJesusInRed;
@@ -108,6 +109,34 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Inactive Chapter Tab Chip
+                  Container(
+                    height: 36.0,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.6,
+                      ),
+                      borderRadius: BorderRadius.circular(18.0),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'JHN 3',
+                      style: TextStyle(
+                        fontFamily: 'Charis',
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.normal,
+                        color: colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                   const Spacer(),
                   Icon(Icons.add, size: 22, color: colorScheme.onSurface),
                   const SizedBox(width: 12),
@@ -116,120 +145,84 @@ class ScriptureThemePreviewCard extends StatelessWidget {
               ),
             ),
 
-            // Scripture Content (Matthew 8:1–3)
+            // Scripture Content (Matthew 8:3)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section Heading (same color as text)
-                  Text(
-                    'The Leper’s Prayer',
-                    style: TextStyle(
-                      fontFamily: 'Charis',
-                      fontWeight: FontWeight.bold,
-                      fontSize: textSize + 1.0,
-                      color: colorScheme.onSurface,
-                    ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontFamily: 'Charis',
+                    fontSize: textSize,
+                    height: 1.55,
+                    color: colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 10),
-
-                  // Matthew 8:1–3 Text
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontFamily: 'Charis',
-                        fontSize: textSize,
-                        height: 1.55,
-                        color: colorScheme.onSurface,
+                  children: [
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: VerseNumberWidget(
+                        number: '3',
+                        style: TextStyle(
+                          fontFamily: 'Charis',
+                          fontSize: textSize,
+                          color: resolvedVerseNumberColor,
+                        ),
+                        padding: const EdgeInsets.only(right: 4.0),
                       ),
-                      children: [
-                        // Verse 1
-                        TextSpan(
-                          text: '1 ',
-                          style: TextStyle(
-                            fontSize: textSize * 0.75,
-                            fontWeight: FontWeight.bold,
-                            color: resolvedVerseNumberColor,
-                          ),
-                        ),
-                        const TextSpan(
-                          text: 'When Jesus came down from the mountain, large crowds followed Him. ',
-                        ),
-                        // Verse 2
-                        TextSpan(
-                          text: '2 ',
-                          style: TextStyle(
-                            fontSize: textSize * 0.75,
-                            fontWeight: FontWeight.bold,
-                            color: resolvedVerseNumberColor,
-                          ),
-                        ),
-                        const TextSpan(text: 'Suddenly a leper'),
-                        // Footnote marker in accent color
-                        TextSpan(
-                          text: '*',
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: textSize * 0.85,
-                          ),
-                        ),
-                        const TextSpan(
-                          text: ' came and knelt before Him, saying, “Lord, if You are willing, You can make me clean.”\n\n',
-                        ),
-                        // Verse 3 (New paragraph)
-                        TextSpan(
-                          text: '3 ',
-                          style: TextStyle(
-                            fontSize: textSize * 0.75,
-                            fontWeight: FontWeight.bold,
-                            color: resolvedVerseNumberColor,
-                          ),
-                        ),
-                        const TextSpan(
-                          text: 'Jesus reached out His hand and touched the man. ',
-                        ),
-                        TextSpan(
-                          text: '“I am willing,”',
-                          style: TextStyle(
-                            color: showWordsInColor
-                                ? redWordsColor
-                                : colorScheme.onSurface,
-                          ),
-                        ),
-                        const TextSpan(text: ' He said. '),
-                        TextSpan(
-                          text: '“Be clean!”',
-                          style: TextStyle(
-                            color: showWordsInColor
-                                ? redWordsColor
-                                : colorScheme.onSurface,
-                          ),
-                        ),
-                        const TextSpan(text: ' And '),
-                        // Selected word "immediately" with selection handles
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: _SelectedWordWithHandles(
-                            word: 'immediately',
-                            style: TextStyle(
-                              fontFamily: 'Charis',
-                              fontSize: textSize,
-                              height: 1.25,
-                              color: colorScheme.onSurface,
-                            ),
-                            highlightColor: colorScheme.primary.withValues(
-                              alpha: 0.28,
-                            ),
-                            handleColor: colorScheme.primary,
-                          ),
-                        ),
-                        const TextSpan(text: ' his leprosy was cleansed.'),
-                      ],
                     ),
-                  ),
-                ],
+                    const TextSpan(
+                      text: 'Jesus reached out His hand and touched the man. ',
+                    ),
+                    TextSpan(
+                      text: '“I am willing,”',
+                      style: TextStyle(
+                        color: showWordsInColor
+                            ? redWordsColor
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    const TextSpan(text: ' He said. '),
+                    TextSpan(
+                      text: '“Be clean!”',
+                      style: TextStyle(
+                        color: showWordsInColor
+                            ? redWordsColor
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    const TextSpan(text: ' And '),
+                    // Selected word "immediately" with selection handles
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: _SelectedWordWithHandles(
+                        word: 'immediately',
+                        style: TextStyle(
+                          fontFamily: 'Charis',
+                          fontSize: textSize,
+                          height: 1.25,
+                          color: colorScheme.onSurface,
+                        ),
+                        highlightColor: colorScheme.primary.withValues(
+                          alpha: 0.28,
+                        ),
+                        handleColor: colorScheme.primary,
+                      ),
+                    ),
+                    const TextSpan(text: ' his leprosy was cleansed.'),
+                    // Footnote marker in accent color
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: FootnoteWidget(
+                        marker: '*',
+                        text: '',
+                        style: TextStyle(
+                          fontFamily: 'Charis',
+                          fontSize: textSize,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

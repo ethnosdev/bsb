@@ -6,20 +6,20 @@ import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('AppThemePreset Tests', () {
-    test('contains all 7 curated presets with Sepia Parchment first', () {
+    test('contains all 7 curated presets in expected order', () {
       expect(AppThemePreset.all.length, equals(7));
       expect(AppThemePreset.all.first.id, equals('sepia'));
       final ids = AppThemePreset.all.map((p) => p.id).toList();
       expect(
         ids,
-        containsAll([
+        equals([
           'sepia',
-          'paper',
-          'stone',
-          'purple',
           'charcoal',
           'oled',
+          'paper',
           'ocean',
+          'stone',
+          'purple',
         ]),
       );
     });

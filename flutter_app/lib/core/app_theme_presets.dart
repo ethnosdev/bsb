@@ -31,12 +31,12 @@ class AppThemePreset {
   /// Collection of curated reading themes.
   static final List<AppThemePreset> all = [
     _sepia,
-    _paper,
-    _stone,
-    _purple,
     _charcoal,
     _oled,
+    _paper,
     _ocean,
+    _stone,
+    _purple,
   ];
 
   /// Look up a preset by its ID. Falls back to default Sepia Parchment theme.

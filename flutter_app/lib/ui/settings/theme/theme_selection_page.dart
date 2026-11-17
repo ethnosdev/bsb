@@ -121,218 +121,116 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
             ],
           ),
           body: SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Column(
               children: [
-                // Mode Selector: disabled when Custom Theme is selected
-                SegmentedButton<ThemeMode>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment<ThemeMode>(
-                      value: ThemeMode.light,
-                      icon: Icon(Icons.light_mode_outlined),
-                      label: Text('Light'),
-                    ),
-                    ButtonSegment<ThemeMode>(
-                      value: ThemeMode.dark,
-                      icon: Icon(Icons.dark_mode_outlined),
-                      label: Text('Dark'),
-                    ),
-                  ],
-                  selected: {_draftMode},
-                  onSelectionChanged: _isCustomSelected
-                      ? null
-                      : (set) {
-                          setState(() {
-                            _draftMode = set.first;
-                          });
-                        },
-                ),
-                if (_isCustomSelected) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    'Custom theme uses a single color palette',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-
-                // Live Scripture Preview
-                ScriptureThemePreviewCard(
-                  colorScheme: previewScheme,
-                  wordsOfJesusInRed: _appState.wordsOfJesusInRed,
-                  wordsOfJesusColor: _isCustomSelected
-                      ? custom.wordsOfJesusColor
-                      : ScriptureTheme.defaultWordsOfJesusColor(
-                          previewScheme.brightness,
-                        ),
-                  verseNumberColor: _isCustomSelected
-                      ? custom.verseNumberColor
-                      : null,
-                  textSize: _appState.textSize,
-                ),
-                const SizedBox(height: 20),
-
-                // Section: Preset Themes
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    'Reading Themes',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Mode Selector: disabled when Custom Theme is selected
+                      SegmentedButton<ThemeMode>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment<ThemeMode>(
+                            value: ThemeMode.light,
+                            icon: Icon(Icons.light_mode_outlined),
+                            label: Text('Light'),
+                          ),
+                          ButtonSegment<ThemeMode>(
+                            value: ThemeMode.dark,
+                            icon: Icon(Icons.dark_mode_outlined),
+                            label: Text('Dark'),
+                          ),
+                        ],
+                        selected: {_draftMode},
+                        onSelectionChanged: _isCustomSelected
+                            ? null
+                            : (set) {
+                                setState(() {
+                                  _draftMode = set.first;
+                                });
+                              },
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Live Scripture Preview
+                      ScriptureThemePreviewCard(
+                        colorScheme: previewScheme,
+                        wordsOfJesusInRed: _appState.wordsOfJesusInRed,
+                        wordsOfJesusColor: _isCustomSelected
+                            ? custom.wordsOfJesusColor
+                            : ScriptureTheme.defaultWordsOfJesusColor(
+                                previewScheme.brightness,
+                              ),
+                        verseNumberColor: _isCustomSelected
+                            ? custom.verseNumberColor
+                            : null,
+                        textSize: _appState.textSize,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                    children: [
+                      // Section: Preset Themes
+                      _buildSectionHeader(context, 'Preset Themes'),
+                      const SizedBox(height: 4),
 
-                ...AppThemePreset.all.map((preset) {
-                  final isSelected = _draftThemeId == preset.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outlineVariant,
-                          width: isSelected ? 2.0 : 1.0,
-                        ),
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        leading: ThemeSwatchTrio.preset(preset),
-                        title: Text(
-                          preset.name,
-                          style: TextStyle(
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.w500,
-                          ),
-                        ),
-                        trailing: Icon(
-                          isSelected
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_unchecked,
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _draftThemeId = preset.id;
-                          });
-                        },
-                      ),
-                    ),
-                  );
-                }),
-
-                const SizedBox(height: 12),
-
-                // Section: Custom Theme
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    'Personalized Theme',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                      color: _isCustomSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outlineVariant,
-                      width: _isCustomSelected ? 2.0 : 1.0,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: ThemeSwatchTrio(
-                            firstColor: custom.backgroundColor,
-                            secondColor: custom.textColor,
-                            accentColor: custom.primaryColor,
-                          ),
-                          title: const Text(
-                            'Custom Theme',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          trailing: Icon(
-                            _isCustomSelected
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_unchecked,
-                            color: _isCustomSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                          ),
+                      ...AppThemePreset.all.map((preset) {
+                        return _buildThemeTile(
+                          context,
+                          leading: ThemeSwatchTrio.preset(preset),
+                          title: preset.name,
+                          isSelected: _draftThemeId == preset.id,
                           onTap: () {
                             setState(() {
-                              _draftThemeId = AppThemePreset.customPresetId;
+                              _draftThemeId = preset.id;
                             });
                           },
+                        );
+                      }),
+
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Divider(height: 1),
+                      ),
+
+                      // Section: Custom Theme
+                      _buildSectionHeader(context, 'Personalized Theme'),
+                      const SizedBox(height: 4),
+
+                      _buildThemeTile(
+                        context,
+                        leading: ThemeSwatchTrio(
+                          firstColor: custom.backgroundColor,
+                          secondColor: custom.textColor,
+                          accentColor: custom.primaryColor,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed: _openCustomThemeEditor,
-                                icon: const Icon(
-                                  Icons.palette_outlined,
-                                  size: 18,
-                                ),
-                                label: const Text('Customize Colors'),
-                              ),
-                            ],
+                        title: 'Custom Theme',
+                        isSelected: _isCustomSelected,
+                        onTap: () {
+                          setState(() {
+                            _draftThemeId = AppThemePreset.customPresetId;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: OutlinedButton.icon(
+                            onPressed: _openCustomThemeEditor,
+                            icon: const Icon(Icons.palette_outlined, size: 18),
+                            label: const Text('Customize Colors'),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Apply Theme Button
-                FilledButton.icon(
-                  onPressed: _hasChanges ? _applyTheme : null,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(
-                    _hasChanges ? 'Apply Theme' : 'Current Theme Applied',
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -340,6 +238,50 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeTile(
+    BuildContext context, {
+    required Widget leading,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListTile(
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -1),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      selected: isSelected,
+      selectedColor: colorScheme.onSurface,
+      selectedTileColor: colorScheme.primaryContainer.withValues(alpha: 0.35),
+      leading: leading,
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+        ),
+      ),
+      trailing: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      ),
+      onTap: onTap,
     );
   }
 }

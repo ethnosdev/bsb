@@ -239,75 +239,83 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: Column(
           children: [
-            // Live Scripture Preview Card (always shows Words of Jesus color)
-            ScriptureThemePreviewCard(
-              colorScheme: activeScheme,
-              wordsOfJesusInRed: true,
-              wordsOfJesusColor: _config.wordsOfJesusColor,
-              verseNumberColor: _config.verseNumberColor,
-              textSize: appState.textSize,
+            // Pinned Live Scripture Preview Card (always shows Words of Jesus color)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: ScriptureThemePreviewCard(
+                colorScheme: activeScheme,
+                wordsOfJesusInRed: true,
+                wordsOfJesusColor: _config.wordsOfJesusColor,
+                verseNumberColor: _config.verseNumberColor,
+                textSize: appState.textSize,
+              ),
             ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  // Inline cue + staged toggle when Words of Jesus in Color was off
+                  if (_initiallyHadWordsOfJesusOff) ...[
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: SwitchListTile(
+                        dense: true,
+                        title: const Text(
+                          'Show Words of Jesus in color while reading',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _wordsOfJesusInRed
+                              ? 'Will be enabled when you tap Apply'
+                              : 'Currently off in Settings (preview only)',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        value: _wordsOfJesusInRed,
+                        onChanged: (value) {
+                          setState(() {
+                            _wordsOfJesusInRed = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
-            // Inline cue + staged toggle when Words of Jesus in Color was off
-            if (_initiallyHadWordsOfJesusOff) ...[
-              const SizedBox(height: 12),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                ),
-                child: SwitchListTile(
-                  dense: true,
-                  title: const Text(
-                    'Show Words of Jesus in color while reading',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                  ),
-                  subtitle: Text(
-                    _wordsOfJesusInRed
-                        ? 'Will be enabled when you tap Apply'
-                        : 'Currently off in Settings (preview only)',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  value: _wordsOfJesusInRed,
-                  onChanged: (value) {
-                    setState(() {
-                      _wordsOfJesusInRed = value;
-                    });
-                  },
-                ),
-              ),
-            ],
-
-            // Readability Contrast Banners
-            if (isUnreadable) ...[
-              const SizedBox(height: 12),
-              _ContrastWarningBanner(
-                isError: true,
-                message:
-                    'Text and background colors are too close to read (${ratio.toStringAsFixed(1)}:1). Adjust Text or Background Color to apply.',
-                onGenerateMatching: () {
-                  setState(() {
-                    _config = CustomThemeConfig.harmonizeFromBackground(
-                      _config.backgroundColor,
-                    );
-                  });
-                },
-              ),
-            ] else if (isLowContrast) ...[
-              const SizedBox(height: 12),
-              _ContrastWarningBanner(
-                isError: false,
-                message:
-                    'Low contrast (${ratio.toStringAsFixed(1)}:1) — may be harder to read.',
-              ),
-            ],
-            const SizedBox(height: 16),
+                  // Readability Contrast Banners
+                  if (isUnreadable) ...[
+                    _ContrastWarningBanner(
+                      isError: true,
+                      message:
+                          'Text and background colors are too close to read (${ratio.toStringAsFixed(1)}:1). Adjust Text or Background Color to apply.',
+                      onGenerateMatching: () {
+                        setState(() {
+                          _config = CustomThemeConfig.harmonizeFromBackground(
+                            _config.backgroundColor,
+                          );
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (isLowContrast) ...[
+                    _ContrastWarningBanner(
+                      isError: false,
+                      message:
+                          'Low contrast (${ratio.toStringAsFixed(1)}:1) — may be harder to read.',
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
             // Start from a Preset Card
             Card(
@@ -423,6 +431,9 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
                       }
                     },
                   ),
+                ],
+              ),
+            ),
                 ],
               ),
             ),

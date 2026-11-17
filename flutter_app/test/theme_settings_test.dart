@@ -12,6 +12,7 @@ import 'package:bsb/ui/tabs/bible_tab.dart';
 import 'package:bsb/ui/tabs/chapter_chip.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:scripture/scripture.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -31,7 +32,7 @@ void main() {
   });
 
   testWidgets(
-    'ScriptureThemePreviewCard renders title, passage, and verseNumberColor',
+    'ScriptureThemePreviewCard renders MAT 8, inactive JHN 3, verse 3, footnote marker, and verseNumberColor',
     (tester) async {
       final scheme = AppThemePreset.findById('sepia').lightScheme;
       const customVerseColor = Color(0xFF1A5A96);
@@ -50,7 +51,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('MAT 8'), findsOneWidget);
-      expect(find.text('The Leper’s Prayer'), findsOneWidget);
+      expect(find.text('JHN 3'), findsOneWidget);
+      expect(find.text('The Leper’s Prayer'), findsNothing);
       expect(find.text('immediately'), findsOneWidget);
 
       expect(
@@ -58,20 +60,32 @@ void main() {
         findsOneWidget,
       );
 
-      final headerWidget = tester.widget<Text>(find.text('The Leper’s Prayer'));
-      expect(headerWidget.style?.color, equals(scheme.onSurface));
+      final verseWidget = tester.widget<VerseNumberWidget>(
+        find.byType(VerseNumberWidget),
+      );
+      expect(verseWidget.number, equals('3'));
+      expect(verseWidget.style.color, equals(customVerseColor));
+
+      final footnoteWidget = tester.widget<FootnoteWidget>(
+        find.byType(FootnoteWidget),
+      );
+      expect(footnoteWidget.marker, equals('*'));
+      expect(footnoteWidget.style.color, equals(scheme.primary));
 
       final richText = tester.widget<RichText>(
         find.byWidgetPredicate(
-          (w) => w is RichText && w.text.toPlainText().contains('1 When Jesus'),
+          (w) =>
+              w is RichText &&
+              w.text.toPlainText().contains('Jesus reached out'),
         ),
       );
-      final verseSpan = (richText.text as TextSpan).children!.first as TextSpan;
-      expect(verseSpan.style?.color, equals(customVerseColor));
+      final plainText = richText.text.toPlainText();
+      expect(plainText, isNot(contains('When Jesus came down')));
+      expect(plainText, isNot(contains('Suddenly a leper')));
     },
   );
 
-  testWidgets('ThemeSelectionPage renders all presets and custom theme card', (
+  testWidgets('ThemeSelectionPage renders compact borderless theme tiles', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 1800);
@@ -83,6 +97,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Color Theme'), findsOneWidget);
+    expect(find.byType(Card), findsNothing);
     expect(find.text('Sepia Parchment'), findsOneWidget);
     expect(find.text('Clean Paper'), findsOneWidget);
     expect(find.text('Quiet Sage'), findsOneWidget);
@@ -91,6 +106,16 @@ void main() {
     expect(find.text('OLED Pure Black'), findsOneWidget);
     expect(find.text('Midnight Ocean'), findsOneWidget);
     expect(find.text('Custom Theme'), findsOneWidget);
+
+    final sepiaTile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Sepia Parchment'),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(sepiaTile.dense, isTrue);
+    expect(sepiaTile.selected, isTrue);
+    expect(sepiaTile.selectedTileColor, isNotNull);
   });
 
   testWidgets('Selecting a preset and tapping Apply updates AppState', (
@@ -110,7 +135,8 @@ void main() {
     await tester.tap(find.text('Clean Paper'));
     await tester.pumpAndSettle();
 
-    final applyButton = find.widgetWithText(FilledButton, 'Apply Theme');
+    expect(find.text('Apply Theme'), findsNothing);
+    final applyButton = find.widgetWithText(TextButton, 'Apply');
     expect(applyButton, findsOneWidget);
     await tester.tap(applyButton);
     await tester.pumpAndSettle();
@@ -118,6 +144,59 @@ void main() {
     expect(appState.appThemeId, equals('paper'));
     expect(getIt<UserSettings>().appThemeId, equals('paper'));
   });
+
+  testWidgets(
+    'ThemeSelectionPage and CustomThemeEditorPage keep preview card pinned while scrolling content below',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const MaterialApp(home: ThemeSelectionPage()));
+      await tester.pumpAndSettle();
+
+      final initialPreviewTop = tester
+          .getTopLeft(find.byType(ScriptureThemePreviewCard))
+          .dy;
+      final initialToggleTop = tester
+          .getTopLeft(find.byType(SegmentedButton<ThemeMode>))
+          .dy;
+
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(find.byType(ScriptureThemePreviewCard)).dy,
+        equals(initialPreviewTop),
+      );
+      expect(
+        tester.getTopLeft(find.byType(SegmentedButton<ThemeMode>)).dy,
+        equals(initialToggleTop),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialConfig: CustomThemeConfig.defaultConfig(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final editorPreviewTop = tester
+          .getTopLeft(find.byType(ScriptureThemePreviewCard))
+          .dy;
+
+      await tester.drag(find.byType(ListView), const Offset(0, -250));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(find.byType(ScriptureThemePreviewCard)).dy,
+        equals(editorPreviewTop),
+      );
+    },
+  );
 
   testWidgets(
     'ThemeSelectionPage disables Light/Dark switch on Custom Theme and preserves UserSettings.themeMode',
@@ -141,14 +220,14 @@ void main() {
 
       expect(
         find.text('Custom theme uses a single color palette'),
-        findsOneWidget,
+        findsNothing,
       );
       final segButton = tester.widget<SegmentedButton<ThemeMode>>(
         find.byType(SegmentedButton<ThemeMode>),
       );
       expect(segButton.onSelectionChanged, isNull);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Apply Theme'));
+      await tester.tap(find.widgetWithText(TextButton, 'Apply'));
       await tester.pumpAndSettle();
 
       expect(appState.appThemeId, equals(AppThemePreset.customPresetId));
