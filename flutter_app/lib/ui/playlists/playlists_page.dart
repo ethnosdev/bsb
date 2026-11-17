@@ -235,7 +235,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                       'A playlist is an ordered collection of passages and notes for leading a study or reading topically.',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -266,7 +266,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                     subtitle: Text(
                       _formatDate(playlist.updatedAt),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     trailing: PopupMenuButton<String>(

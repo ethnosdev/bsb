@@ -316,7 +316,7 @@ class _PlaylistEditorPageState extends State<PlaylistEditorPage> {
                               'Add scripture passages and notes using the buttons below.',
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],

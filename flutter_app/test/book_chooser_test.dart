@@ -252,7 +252,7 @@ void main() {
     });
 
     testWidgets(
-      'uses subtle outlineVariant border in light mode and black in dark mode',
+      'uses subtle outlineVariant border in light and dark modes',
       (tester) async {
         final lightTheme = ThemeData.light(useMaterial3: true);
         await tester.pumpWidget(
@@ -295,7 +295,7 @@ void main() {
             darkContainerWidget.decoration as BoxDecoration;
         final darkBorder = darkBoxDecoration.border as Border;
 
-        expect(darkBorder.top.color, equals(Colors.black));
+        expect(darkBorder.top.color, equals(darkTheme.colorScheme.outlineVariant));
       },
     );
   });

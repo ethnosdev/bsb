@@ -9,7 +9,7 @@ MarkdownStyleSheet markdownStyleSheetFromTheme(ThemeData theme) {
   final bodyMedium = theme.textTheme.bodyMedium;
   final bodyFontSize = bodyMedium?.fontSize ?? 14.0;
   return MarkdownStyleSheet(
-    a: const TextStyle(color: Colors.blue),
+    a: TextStyle(color: theme.colorScheme.primary),
     p: bodyMedium,
     pPadding: EdgeInsets.zero,
     code: bodyMedium?.copyWith(

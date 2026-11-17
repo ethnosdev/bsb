@@ -721,9 +721,7 @@ class _BookItemState extends State<BookItem> {
   Widget build(BuildContext context) {
     final displayTitle = _getDisplayTitle(context);
     final theme = Theme.of(context);
-    final borderColor = theme.brightness == Brightness.light
-        ? theme.colorScheme.outlineVariant
-        : Colors.black;
+    final borderColor = theme.colorScheme.outlineVariant;
 
     final backgroundColor = widget.isHighlighted
         ? theme.colorScheme.primary
