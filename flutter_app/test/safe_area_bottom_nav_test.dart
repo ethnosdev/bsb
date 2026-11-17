@@ -277,7 +277,7 @@ void main() {
     });
 
     testWidgets(
-      'AppColorPicker.show respects bottom safe area insets and protects brightness slider',
+      'AppColorPicker.show respects bottom safe area insets and protects bottom controls',
       (tester) async {
         const bottomInset = 48.0;
         const screenHeight = 600.0;
@@ -328,11 +328,12 @@ void main() {
         expect(safeArea.top, isFalse);
         expect(safeArea.bottom, isTrue);
 
-        final brightnessFinder = find.text('Brightness');
-        expect(brightnessFinder, findsOneWidget);
+        final recentFinder = find.text('Recent Colors');
+        expect(recentFinder, findsOneWidget);
 
-        final brightnessBottom = tester.getBottomRight(brightnessFinder).dy;
-        expect(brightnessBottom, lessThanOrEqualTo(screenHeight - bottomInset));
+        final sheetFinder = find.byType(SingleChildScrollView);
+        final sheetBottom = tester.getBottomRight(sheetFinder).dy;
+        expect(sheetBottom, lessThanOrEqualTo(screenHeight - bottomInset));
       },
     );
   });

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:bsb/app_state.dart';
+import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
@@ -326,6 +327,42 @@ void main() {
 
       expect(appState.themeMode, equals(ThemeMode.system));
       expect(find.text('Match device settings'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'SettingsPage disables Light-Dark Mode with note when Custom Theme is active and restores it on preset',
+    (tester) async {
+      final appState = getIt<AppState>();
+      await appState.setThemeMode(ThemeMode.dark);
+      await appState.applyThemeSelection(
+        themeId: AppThemePreset.customPresetId,
+        customConfig: CustomThemeConfig.defaultConfig(),
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: SettingsPage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Disabled for custom theme'), findsOneWidget);
+      final lightDarkTile = tester.widget<ListTile>(
+        find.ancestor(
+          of: find.text('Light-Dark Mode'),
+          matching: find.byType(ListTile),
+        ),
+      );
+      expect(lightDarkTile.enabled, isFalse);
+
+      // Tapping disabled tile does not open dialog
+      await tester.tap(find.text('Light-Dark Mode'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+
+      // Switching back to preset restores saved Light-Dark Mode
+      await appState.applyThemeSelection(themeId: 'sepia');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Disabled for custom theme'), findsNothing);
+      expect(find.text('Dark'), findsOneWidget);
     },
   );
 

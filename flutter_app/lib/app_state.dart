@@ -13,8 +13,7 @@ class AppState extends ChangeNotifier {
     : userSettings = userSettings ?? getIt<UserSettings>() {
     themeNotifier.addListener(notifyListeners);
     appThemeIdNotifier.addListener(notifyListeners);
-    customThemeLightNotifier.addListener(notifyListeners);
-    customThemeDarkNotifier.addListener(notifyListeners);
+    customThemeNotifier.addListener(notifyListeners);
     textSizeNotifier.addListener(notifyListeners);
     bookChooserStyleNotifier.addListener(notifyListeners);
     chapterChooserStyleNotifier.addListener(notifyListeners);
@@ -33,11 +32,8 @@ class AppState extends ChangeNotifier {
   final appThemeIdNotifier = ValueNotifier<String>(
     AppThemePreset.defaultPresetId,
   );
-  final customThemeLightNotifier = ValueNotifier<CustomThemeConfig>(
-    CustomThemeConfig.defaultLight(),
-  );
-  final customThemeDarkNotifier = ValueNotifier<CustomThemeConfig>(
-    CustomThemeConfig.defaultDark(),
+  final customThemeNotifier = ValueNotifier<CustomThemeConfig>(
+    CustomThemeConfig.defaultConfig(),
   );
   final textSizeNotifier = ValueNotifier<double>(FontScale.defaultBaseSize);
   final bookChooserStyleNotifier = ValueNotifier<BookChooserStyle>(
@@ -57,63 +53,37 @@ class AppState extends ChangeNotifier {
   ThemeMode get themeMode => themeNotifier.value;
   String get appThemeId => appThemeIdNotifier.value;
   bool get isCustomTheme => appThemeId == AppThemePreset.customPresetId;
-  CustomThemeConfig get customThemeLight => customThemeLightNotifier.value;
-  CustomThemeConfig get customThemeDark => customThemeDarkNotifier.value;
+  CustomThemeConfig get customTheme => customThemeNotifier.value;
   AppThemePreset get currentThemePreset => AppThemePreset.findById(appThemeId);
 
+  ThemeData get _customThemeData => MaterialTheme.buildTheme(
+    colorScheme: customTheme.toColorScheme(),
+    wordsOfJesusColor: customTheme.wordsOfJesusColor,
+    verseNumberColor: customTheme.verseNumberColor,
+  );
+
   ThemeData get lightThemeData {
-    final colorScheme = isCustomTheme
-        ? customThemeLight.toColorScheme()
-        : currentThemePreset.lightScheme;
-    final wordsColor = getWordsOfJesusColor(Brightness.light);
+    if (isCustomTheme) return _customThemeData;
     return MaterialTheme.buildTheme(
-      colorScheme: colorScheme,
-      wordsOfJesusColor: wordsColor,
+      colorScheme: currentThemePreset.lightScheme,
+      wordsOfJesusColor: getWordsOfJesusColor(Brightness.light),
     );
   }
 
   ThemeData get darkThemeData {
-    final colorScheme = isCustomTheme
-        ? customThemeDark.toColorScheme()
-        : currentThemePreset.darkScheme;
-    final wordsColor = getWordsOfJesusColor(Brightness.dark);
+    if (isCustomTheme) return _customThemeData;
     return MaterialTheme.buildTheme(
-      colorScheme: colorScheme,
-      wordsOfJesusColor: wordsColor,
+      colorScheme: currentThemePreset.darkScheme,
+      wordsOfJesusColor: getWordsOfJesusColor(Brightness.dark),
     );
   }
 
   /// Returns the effective color for the Words of Jesus based on the current theme and brightness.
-  /// For all preset themes, the words of Jesus are always shown in standard red;
-  /// only for custom themes can the color be changed.
   Color getWordsOfJesusColor(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    if (!isCustomTheme) {
-      return isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
+    if (isCustomTheme) {
+      return customTheme.wordsOfJesusColor;
     }
-    final customColor = isDark
-        ? (customThemeDark.wordsOfJesusColor ??
-              (customThemeLight.wordsOfJesusColor != null
-                  ? Color.lerp(
-                      customThemeLight.wordsOfJesusColor,
-                      Colors.white,
-                      0.3,
-                    )
-                  : null))
-        : (customThemeLight.wordsOfJesusColor ??
-              (customThemeDark.wordsOfJesusColor != null
-                  ? Color.lerp(
-                      customThemeDark.wordsOfJesusColor,
-                      Colors.black,
-                      0.3,
-                    )
-                  : null));
-
-    if (customColor != null) {
-      return customColor;
-    }
-
-    return isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
+    return ScriptureTheme.defaultWordsOfJesusColor(brightness);
   }
 
   double get textSize => textSizeNotifier.value;
@@ -126,11 +96,21 @@ class AppState extends ChangeNotifier {
   bool get useBritishSpelling => useBritishSpellingNotifier.value;
   bool get keepScreenAwake => keepScreenAwakeNotifier.value;
 
-  Future<void> init() async {
+  Brightness _safePlatformBrightness() {
+    try {
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    } catch (_) {
+      return Brightness.light;
+    }
+  }
+
+  Future<void> init({Brightness? platformBrightness}) async {
+    await userSettings.migrateCustomThemeIfNeeded(
+      platformBrightness: platformBrightness ?? _safePlatformBrightness(),
+    );
     themeNotifier.value = userSettings.themeMode;
     appThemeIdNotifier.value = userSettings.appThemeId;
-    customThemeLightNotifier.value = userSettings.customThemeLight;
-    customThemeDarkNotifier.value = userSettings.customThemeDark;
+    customThemeNotifier.value = userSettings.customTheme;
     textSizeNotifier.value = userSettings.textSize;
     bookChooserStyleNotifier.value = userSettings.bookChooserStyle;
     chapterChooserStyleNotifier.value = userSettings.chapterChooserStyle;
@@ -153,29 +133,19 @@ class AppState extends ChangeNotifier {
     await userSettings.setAppThemeId(id);
   }
 
-  Future<void> setCustomThemeLight(CustomThemeConfig config) async {
-    customThemeLightNotifier.value = config;
-    await userSettings.setCustomThemeLight(config);
-  }
-
-  Future<void> setCustomThemeDark(CustomThemeConfig config) async {
-    customThemeDarkNotifier.value = config;
-    await userSettings.setCustomThemeDark(config);
+  Future<void> setCustomTheme(CustomThemeConfig config) async {
+    customThemeNotifier.value = config;
+    await userSettings.setCustomTheme(config);
   }
 
   Future<void> applyThemeSelection({
     required String themeId,
-    CustomThemeConfig? lightConfig,
-    CustomThemeConfig? darkConfig,
+    CustomThemeConfig? customConfig,
     ThemeMode? mode,
   }) async {
-    if (lightConfig != null) {
-      customThemeLightNotifier.value = lightConfig;
-      await userSettings.setCustomThemeLight(lightConfig);
-    }
-    if (darkConfig != null) {
-      customThemeDarkNotifier.value = darkConfig;
-      await userSettings.setCustomThemeDark(darkConfig);
+    if (customConfig != null) {
+      customThemeNotifier.value = customConfig;
+      await userSettings.setCustomTheme(customConfig);
     }
     if (mode != null) {
       themeNotifier.value = mode;
@@ -239,8 +209,7 @@ class AppState extends ChangeNotifier {
   void dispose() {
     themeNotifier.removeListener(notifyListeners);
     appThemeIdNotifier.removeListener(notifyListeners);
-    customThemeLightNotifier.removeListener(notifyListeners);
-    customThemeDarkNotifier.removeListener(notifyListeners);
+    customThemeNotifier.removeListener(notifyListeners);
     textSizeNotifier.removeListener(notifyListeners);
     bookChooserStyleNotifier.removeListener(notifyListeners);
     chapterChooserStyleNotifier.removeListener(notifyListeners);
@@ -251,8 +220,7 @@ class AppState extends ChangeNotifier {
     keepScreenAwakeNotifier.removeListener(notifyListeners);
     themeNotifier.dispose();
     appThemeIdNotifier.dispose();
-    customThemeLightNotifier.dispose();
-    customThemeDarkNotifier.dispose();
+    customThemeNotifier.dispose();
     textSizeNotifier.dispose();
     bookChooserStyleNotifier.dispose();
     chapterChooserStyleNotifier.dispose();

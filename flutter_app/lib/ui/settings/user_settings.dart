@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:bsb/core/theme.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,28 +49,71 @@ class UserSettings {
     }
   }
 
-  static const _customThemeLightKey = 'customThemeLight';
+  static const _customThemeKey = 'customTheme';
+  static const _legacyCustomThemeLightKey = 'customThemeLight';
+  static const _legacyCustomThemeDarkKey = 'customThemeDark';
 
-  CustomThemeConfig get customThemeLight {
-    final raw = _prefs.getString(_customThemeLightKey);
-    if (raw == null) return CustomThemeConfig.defaultLight();
-    return CustomThemeConfig.fromJsonString(raw, isDarkFallback: false);
+  CustomThemeConfig get customTheme {
+    final raw = _prefs.getString(_customThemeKey);
+    if (raw == null) return CustomThemeConfig.defaultConfig();
+    return CustomThemeConfig.fromJsonString(raw);
   }
 
-  Future<void> setCustomThemeLight(CustomThemeConfig config) async {
-    await _prefs.setString(_customThemeLightKey, config.toJsonString());
+  Future<void> setCustomTheme(CustomThemeConfig config) async {
+    await _prefs.setString(_customThemeKey, config.toJsonString());
   }
 
-  static const _customThemeDarkKey = 'customThemeDark';
+  bool get hasSavedCustomTheme => _prefs.containsKey(_customThemeKey);
 
-  CustomThemeConfig get customThemeDark {
-    final raw = _prefs.getString(_customThemeDarkKey);
-    if (raw == null) return CustomThemeConfig.defaultDark();
-    return CustomThemeConfig.fromJsonString(raw, isDarkFallback: true);
+  /// One-time migration from legacy paired light/dark custom theme keys into
+  /// the single `customTheme` key.
+  Future<void> migrateCustomThemeIfNeeded({
+    Brightness platformBrightness = Brightness.light,
+  }) async {
+    if (_prefs.containsKey(_customThemeKey)) return;
+
+    final lightRaw = _prefs.getString(_legacyCustomThemeLightKey);
+    final darkRaw = _prefs.getString(_legacyCustomThemeDarkKey);
+    if (lightRaw == null && darkRaw == null) return;
+
+    late final String chosenRaw;
+    if (lightRaw != null && darkRaw == null) {
+      chosenRaw = lightRaw;
+    } else if (darkRaw != null && lightRaw == null) {
+      chosenRaw = darkRaw;
+    } else {
+      switch (themeMode) {
+        case ThemeMode.dark:
+          chosenRaw = darkRaw!;
+        case ThemeMode.light:
+          chosenRaw = lightRaw!;
+        case ThemeMode.system:
+          final lightCustomized = _isLegacySideCustomized(lightRaw!);
+          final darkCustomized = _isLegacySideCustomized(darkRaw!);
+          if (lightCustomized != darkCustomized) {
+            chosenRaw = lightCustomized ? lightRaw : darkRaw;
+          } else {
+            chosenRaw = platformBrightness == Brightness.dark
+                ? darkRaw
+                : lightRaw;
+          }
+      }
+    }
+
+    final migrated = CustomThemeConfig.fromJsonString(chosenRaw);
+    await setCustomTheme(migrated);
+    await _prefs.remove(_legacyCustomThemeLightKey);
+    await _prefs.remove(_legacyCustomThemeDarkKey);
   }
 
-  Future<void> setCustomThemeDark(CustomThemeConfig config) async {
-    await _prefs.setString(_customThemeDarkKey, config.toJsonString());
+  bool _isLegacySideCustomized(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return false;
+      return decoded['isBackgroundAutoDerived'] != true;
+    } catch (_) {
+      return false;
+    }
   }
 
   static const _customColorHistoryKey = 'customColorHistory';
@@ -92,29 +137,10 @@ class UserSettings {
       list.removeRange(20, list.length);
     }
     await _prefs.setStringList(_customColorHistoryKey, list);
-    await _prefs.setInt(_lastSelectedCustomColorKey, color.toARGB32());
   }
-
-  static const _lastSelectedCustomColorKey = 'lastSelectedCustomColor';
-
-  Color? get lastSelectedCustomColor {
-    final val = _prefs.getInt(_lastSelectedCustomColorKey);
-    if (val != null) return Color(val);
-    if (customColorHistory.isNotEmpty) return customColorHistory.first;
-    return null;
-  }
-
-  Future<void> setLastSelectedCustomColor(Color color) async {
-    await _prefs.setInt(_lastSelectedCustomColorKey, color.toARGB32());
-  }
-
-  bool get hasSavedCustomTheme =>
-      _prefs.containsKey(_customThemeLightKey) ||
-      _prefs.containsKey(_customThemeDarkKey);
 
   Future<void> clearCustomColorHistory() async {
     await _prefs.remove(_customColorHistoryKey);
-    await _prefs.remove(_lastSelectedCustomColorKey);
   }
 
   static const _showInterlinearEnglishKey = 'showInterlinearEnglish';

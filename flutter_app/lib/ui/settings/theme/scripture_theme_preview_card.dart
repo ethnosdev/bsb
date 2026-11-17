@@ -1,4 +1,5 @@
 import 'package:bsb/app_state.dart';
+import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,6 +9,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
   final ColorScheme colorScheme;
   final bool? wordsOfJesusInRed;
   final Color? wordsOfJesusColor;
+  final Color? verseNumberColor;
   final double textSize;
   final String title;
 
@@ -16,6 +18,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
     required this.colorScheme,
     this.wordsOfJesusInRed,
     this.wordsOfJesusColor,
+    this.verseNumberColor,
     this.textSize = 15.0,
     this.title = 'MAT 8',
   });
@@ -28,7 +31,9 @@ class ScriptureThemePreviewCard extends StatelessWidget {
         wordsOfJesusInRed ?? appState?.wordsOfJesusInRed ?? true;
     final redWordsColor =
         wordsOfJesusColor ??
-        (isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C));
+        ScriptureTheme.defaultWordsOfJesusColor(colorScheme.brightness);
+    final resolvedVerseNumberColor =
+        verseNumberColor ?? colorScheme.onSurfaceVariant;
 
     return IgnorePointer(
       child: Container(
@@ -145,7 +150,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: textSize * 0.75,
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurfaceVariant,
+                            color: resolvedVerseNumberColor,
                           ),
                         ),
                         const TextSpan(
@@ -157,7 +162,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: textSize * 0.75,
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurfaceVariant,
+                            color: resolvedVerseNumberColor,
                           ),
                         ),
                         const TextSpan(text: 'Suddenly a leper'),
@@ -179,7 +184,7 @@ class ScriptureThemePreviewCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: textSize * 0.75,
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurfaceVariant,
+                            color: resolvedVerseNumberColor,
                           ),
                         ),
                         const TextSpan(

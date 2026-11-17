@@ -350,9 +350,10 @@ class MaterialTheme {
     ),
     extensions: [
       ScriptureTheme(
-        wordsOfJesusColor: colorScheme.brightness == Brightness.dark
-            ? const Color(0xFFFF8A80)
-            : const Color(0xFFB71C1C),
+        wordsOfJesusColor: ScriptureTheme.defaultWordsOfJesusColor(
+          colorScheme.brightness,
+        ),
+        verseNumberColor: colorScheme.onSurfaceVariant,
       ),
     ],
     scaffoldBackgroundColor: colorScheme.surface,
@@ -363,12 +364,13 @@ class MaterialTheme {
     required ColorScheme colorScheme,
     String fontFamily = 'Charis',
     Color? wordsOfJesusColor,
+    Color? verseNumberColor,
   }) {
     final effectiveWordsOfJesusColor =
         wordsOfJesusColor ??
-        (colorScheme.brightness == Brightness.dark
-            ? const Color(0xFFFF8A80)
-            : const Color(0xFFB71C1C));
+        ScriptureTheme.defaultWordsOfJesusColor(colorScheme.brightness);
+    final effectiveVerseNumberColor =
+        verseNumberColor ?? colorScheme.onSurfaceVariant;
 
     final baseTextTheme = colorScheme.brightness == Brightness.dark
         ? ThemeData.dark().textTheme
@@ -385,7 +387,10 @@ class MaterialTheme {
       colorScheme: colorScheme,
       textTheme: textTheme,
       extensions: [
-        ScriptureTheme(wordsOfJesusColor: effectiveWordsOfJesusColor),
+        ScriptureTheme(
+          wordsOfJesusColor: effectiveWordsOfJesusColor,
+          verseNumberColor: effectiveVerseNumberColor,
+        ),
       ],
       scaffoldBackgroundColor: colorScheme.surface,
       canvasColor: colorScheme.surface,
@@ -440,17 +445,30 @@ class ColorFamily {
   final Color onColorContainer;
 }
 
-/// Theme extension for scripture-specific custom styling, such as Words of Jesus color.
+/// Theme extension for scripture-specific custom styling, such as Words of Jesus
+/// and verse number colors.
 @immutable
 class ScriptureTheme extends ThemeExtension<ScriptureTheme> {
   final Color wordsOfJesusColor;
+  final Color verseNumberColor;
 
-  const ScriptureTheme({required this.wordsOfJesusColor});
+  const ScriptureTheme({
+    required this.wordsOfJesusColor,
+    this.verseNumberColor = const Color(0xFF534538),
+  });
+
+  /// Standard red / soft-coral color used for Words of Jesus when not customized.
+  static Color defaultWordsOfJesusColor(Brightness brightness) {
+    return brightness == Brightness.dark
+        ? const Color(0xFFFF8A80)
+        : const Color(0xFFB71C1C);
+  }
 
   @override
-  ScriptureTheme copyWith({Color? wordsOfJesusColor}) {
+  ScriptureTheme copyWith({Color? wordsOfJesusColor, Color? verseNumberColor}) {
     return ScriptureTheme(
       wordsOfJesusColor: wordsOfJesusColor ?? this.wordsOfJesusColor,
+      verseNumberColor: verseNumberColor ?? this.verseNumberColor,
     );
   }
 
@@ -461,6 +479,9 @@ class ScriptureTheme extends ThemeExtension<ScriptureTheme> {
       wordsOfJesusColor:
           Color.lerp(wordsOfJesusColor, other.wordsOfJesusColor, t) ??
           wordsOfJesusColor,
+      verseNumberColor:
+          Color.lerp(verseNumberColor, other.verseNumberColor, t) ??
+          verseNumberColor,
     );
   }
 
@@ -469,8 +490,9 @@ class ScriptureTheme extends ThemeExtension<ScriptureTheme> {
       identical(this, other) ||
       other is ScriptureTheme &&
           runtimeType == other.runtimeType &&
-          wordsOfJesusColor == other.wordsOfJesusColor;
+          wordsOfJesusColor == other.wordsOfJesusColor &&
+          verseNumberColor == other.verseNumberColor;
 
   @override
-  int get hashCode => wordsOfJesusColor.hashCode;
+  int get hashCode => Object.hash(wordsOfJesusColor, verseNumberColor);
 }

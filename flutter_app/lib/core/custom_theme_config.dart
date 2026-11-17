@@ -1,177 +1,150 @@
 import 'dart:convert';
 
+import 'package:bsb/core/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Configuration for a custom user-defined theme.
-///
-/// If only [backgroundColor] is specified, all other colors are automatically
-/// derived with high-contrast, harmonious values to ensure readability.
+/// Configuration for a single-palette custom user-defined theme.
 class CustomThemeConfig {
   final Color backgroundColor;
-  final Color? textColor;
-  final Color? primaryColor;
-  final Color? surfaceContainerColor;
-  final Color? secondaryTextColor;
-  final Color? outlineColor;
-  final Color? wordsOfJesusColor;
-  final bool isBackgroundAutoDerived;
+  final Color textColor;
+  final Color wordsOfJesusColor;
+  final Color verseNumberColor;
+  final Color primaryColor;
+  final String? basePresetId;
+  final bool? basePresetIsDark;
 
   const CustomThemeConfig({
     required this.backgroundColor,
-    this.textColor,
-    this.primaryColor,
-    this.surfaceContainerColor,
-    this.secondaryTextColor,
-    this.outlineColor,
-    this.wordsOfJesusColor,
-    this.isBackgroundAutoDerived = false,
+    required this.textColor,
+    required this.wordsOfJesusColor,
+    required this.verseNumberColor,
+    required this.primaryColor,
+    this.basePresetId,
+    this.basePresetIsDark,
   });
 
-  /// Default light custom theme.
-  factory CustomThemeConfig.defaultLight() {
-    return const CustomThemeConfig(
-      backgroundColor: Color(0xFFF7F1E5),
-      isBackgroundAutoDerived: false,
+  /// Default custom theme seeded from the default reading preset.
+  factory CustomThemeConfig.defaultConfig() {
+    return CustomThemeConfig.fromPreset(
+      AppThemePreset.findById(AppThemePreset.defaultPresetId),
+      isDark: false,
     );
   }
 
-  /// Default dark custom theme.
-  factory CustomThemeConfig.defaultDark() {
-    return const CustomThemeConfig(
-      backgroundColor: Color(0xFF1E1813),
-      isBackgroundAutoDerived: true,
+  /// Creates a custom theme config initialized from a Material [ColorScheme].
+  factory CustomThemeConfig.fromColorScheme(
+    ColorScheme scheme, {
+    Color? wordsOfJesusColor,
+    String? basePresetId,
+    bool? basePresetIsDark,
+  }) {
+    return CustomThemeConfig(
+      backgroundColor: scheme.surface,
+      textColor: scheme.onSurface,
+      wordsOfJesusColor:
+          wordsOfJesusColor ??
+          ScriptureTheme.defaultWordsOfJesusColor(scheme.brightness),
+      verseNumberColor: scheme.onSurfaceVariant,
+      primaryColor: scheme.primary,
+      basePresetId: basePresetId,
+      basePresetIsDark: basePresetIsDark,
     );
   }
 
-  /// Whether this theme represents a dark palette based on background luminance.
-  bool get isDark => backgroundColor.computeLuminance() <= 0.45;
+  /// Creates a custom theme config initialized from a [preset] in Light or Dark mode.
+  factory CustomThemeConfig.fromPreset(
+    AppThemePreset preset, {
+    required bool isDark,
+  }) {
+    final scheme = isDark ? preset.darkScheme : preset.lightScheme;
+    return CustomThemeConfig.fromColorScheme(
+      scheme,
+      basePresetId: preset.id,
+      basePresetIsDark: isDark,
+    );
+  }
 
-  /// Harmonizes both Light and Dark custom theme configurations from a chosen background color.
-  /// Selects a tasteful, high-contrast accent color matching the background temperature.
-  static (CustomThemeConfig light, CustomThemeConfig dark)
-  harmonizeFromBackground(Color bg) {
-    final isDark = bg.computeLuminance() <= 0.45;
+  /// Whether this theme represents a dark palette based on Flutter's brightness estimate.
+  bool get isDark =>
+      ThemeData.estimateBrightnessForColor(backgroundColor) == Brightness.dark;
 
-    if (isDark) {
-      final darkConfig = CustomThemeConfig(
-        backgroundColor: bg,
-        isBackgroundAutoDerived: false,
-      );
-      // Derive inverted light background carrying the same hue/temperature
-      final lightBg = Color.lerp(bg, Colors.white, 0.93)!;
-      final lightConfig = CustomThemeConfig(
-        backgroundColor: lightBg,
-        isBackgroundAutoDerived: true,
-      );
-      return (lightConfig, darkConfig);
-    } else {
-      final lightConfig = CustomThemeConfig(
-        backgroundColor: bg,
-        isBackgroundAutoDerived: false,
-      );
-      // Derive inverted dark background carrying the same hue/temperature
-      final darkBg = Color.lerp(bg, Colors.black, 0.88)!;
-      final darkConfig = CustomThemeConfig(
-        backgroundColor: darkBg,
-        isBackgroundAutoDerived: true,
-      );
-      return (lightConfig, darkConfig);
+  /// Generates a complete, high-contrast palette harmonized from [bg].
+  static CustomThemeConfig harmonizeFromBackground(Color bg) {
+    final dark = ThemeData.estimateBrightnessForColor(bg) == Brightness.dark;
+
+    Color text = Color.lerp(
+      dark ? const Color(0xFFE8E8EC) : const Color(0xFF1B1B1F),
+      bg,
+      0.05,
+    )!;
+    if (calculateContrastRatio(text, bg) < 4.5) {
+      final whiteContrast = calculateContrastRatio(Colors.white, bg);
+      final blackContrast = calculateContrastRatio(Colors.black, bg);
+      text = whiteContrast >= blackContrast ? Colors.white : Colors.black;
     }
+
+    Color wordsOfJesus = ScriptureTheme.defaultWordsOfJesusColor(
+      dark ? Brightness.dark : Brightness.light,
+    );
+    if (calculateContrastRatio(wordsOfJesus, bg) < 3.0) {
+      final target = dark ? Colors.white : Colors.black;
+      for (int i = 1; i <= 10; i++) {
+        final candidate = Color.lerp(wordsOfJesus, target, i * 0.1)!;
+        if (calculateContrastRatio(candidate, bg) >= 3.5) {
+          wordsOfJesus = candidate;
+          break;
+        }
+      }
+    }
+
+    final verseNumber = Color.lerp(text, bg, 0.38)!;
+
+    final (lightAccent, darkAccent) = _deriveAccentPair(HSVColor.fromColor(bg));
+    Color accent = dark ? darkAccent : lightAccent;
+    if (calculateContrastRatio(accent, bg) < 3.0) {
+      final target = dark ? Colors.white : Colors.black;
+      for (int i = 1; i <= 10; i++) {
+        final candidate = Color.lerp(accent, target, i * 0.1)!;
+        if (calculateContrastRatio(candidate, bg) >= 3.0) {
+          accent = candidate;
+          break;
+        }
+      }
+    }
+
+    return CustomThemeConfig(
+      backgroundColor: bg,
+      textColor: text,
+      wordsOfJesusColor: wordsOfJesus,
+      verseNumberColor: verseNumber,
+      primaryColor: accent,
+    );
   }
 
   static (Color light, Color dark) _deriveAccentPair(HSVColor hsv) {
-    // If neutral / low saturation (grayscale / pure paper tone)
     if (hsv.saturation < 0.05) {
-      return (
-        const Color(0xFF1A5A96),
-        const Color(0xFFE5B869),
-      ); // Navy & Candle Gold
+      return (const Color(0xFF1A5A96), const Color(0xFFE5B869));
     }
 
     final hue = hsv.hue;
-    // Warm / Sepia / Orange / Yellow (15° to 70°)
     if (hue >= 15 && hue < 70) {
-      return (
-        const Color(0xFF865328),
-        const Color(0xFFFFB68C),
-      ); // Terracotta & Peach Gold
+      return (const Color(0xFF865328), const Color(0xFFFFB68C));
     }
-    // Green / Sage (70° to 165°)
     if (hue >= 70 && hue < 165) {
-      return (
-        const Color(0xFF386646),
-        const Color(0xFF9FD0AA),
-      ); // Forest & Mint Sage
+      return (const Color(0xFF386646), const Color(0xFF9FD0AA));
     }
-    // Blue / Cyan / Teal (165° to 255°)
     if (hue >= 165 && hue < 255) {
-      return (
-        const Color(0xFF1A5A96),
-        const Color(0xFF88C9FA),
-      ); // Navy & Sky Cyan
+      return (const Color(0xFF1A5A96), const Color(0xFF88C9FA));
     }
-    // Purple / Violet (255° to 330°)
     if (hue >= 255 && hue < 330) {
-      return (
-        const Color(0xFF6B5778),
-        const Color(0xFFD6BEE4),
-      ); // Royal Plum & Lavender
+      return (const Color(0xFF6B5778), const Color(0xFFD6BEE4));
     }
-    // Red / Crimson (330° to 360° or 0° to 15°)
-    return (
-      const Color(0xFF8D3C3C),
-      const Color(0xFFFF9E9E),
-    ); // Burgundy & Coral Rose
+    return (const Color(0xFF8D3C3C), const Color(0xFFFF9E9E));
   }
 
-  /// Effective text color, derived if not explicitly customized.
-  Color get effectiveTextColor {
-    if (textColor != null) return textColor!;
-    return isDark
-        ? Color.lerp(const Color(0xFFE8E8EC), backgroundColor, 0.05)!
-        : Color.lerp(const Color(0xFF1B1B1F), backgroundColor, 0.05)!;
-  }
-
-  /// Effective primary accent color, derived if not explicitly customized.
-  Color get effectivePrimaryColor {
-    if (primaryColor != null) return primaryColor!;
-    final (lightAccent, darkAccent) = _deriveAccentPair(
-      HSVColor.fromColor(backgroundColor),
-    );
-    return isDark ? darkAccent : lightAccent;
-  }
-
-  /// Effective card and container surface color.
-  Color get effectiveSurfaceContainer {
-    if (surfaceContainerColor != null) return surfaceContainerColor!;
-    return isDark
-        ? Color.lerp(backgroundColor, Colors.white, 0.12)!
-        : Color.lerp(backgroundColor, Colors.black, 0.08)!;
-  }
-
-  /// Effective secondary text color (e.g. verse numbers and section subtitles).
-  Color get effectiveSecondaryTextColor {
-    if (secondaryTextColor != null) return secondaryTextColor!;
-    return Color.lerp(effectiveTextColor, backgroundColor, 0.38)!;
-  }
-
-  /// Effective outline and divider color.
-  Color get effectiveOutline {
-    if (outlineColor != null) return outlineColor!;
-    return isDark
-        ? Color.lerp(backgroundColor, Colors.white, 0.18)!
-        : Color.lerp(backgroundColor, Colors.black, 0.15)!;
-  }
-
-  /// Effective color for words of Jesus, derived if not explicitly customized.
-  Color get effectiveWordsOfJesusColor {
-    if (wordsOfJesusColor != null) return wordsOfJesusColor!;
-    return isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C);
-  }
-
-  /// Contrast ratio between effective text and background using W3C WCAG formula.
+  /// Contrast ratio between [textColor] and [backgroundColor] using W3C WCAG formula.
   double get contrastRatio =>
-      calculateContrastRatio(effectiveTextColor, backgroundColor);
+      calculateContrastRatio(textColor, backgroundColor);
 
   /// Calculates the W3C WCAG 2.1 contrast ratio between two colors (1.0 to 21.0).
   static double calculateContrastRatio(Color c1, Color c2) {
@@ -183,29 +156,107 @@ class CustomThemeConfig {
   }
 
   /// Converts this configuration to a complete Material 3 [ColorScheme].
+  ///
+  /// When [basePresetId] matches a preset of the same brightness, its full
+  /// tonal palette is preserved and only groups whose source slot changed are
+  /// overridden.
   ColorScheme toColorScheme() {
+    final derived = _buildDerivedColorScheme();
+    if (basePresetId == null) return derived;
+
+    final preset = AppThemePreset.all
+        .where((p) => p.id == basePresetId)
+        .firstOrNull;
+    if (preset == null) return derived;
+
+    final baseScheme = (basePresetIsDark ?? isDark)
+        ? preset.darkScheme
+        : preset.lightScheme;
+    if (isDark != (baseScheme.brightness == Brightness.dark)) {
+      return derived;
+    }
+
+    final bgChanged =
+        backgroundColor.toARGB32() != baseScheme.surface.toARGB32();
+    final textChanged = textColor.toARGB32() != baseScheme.onSurface.toARGB32();
+    final primaryChanged =
+        primaryColor.toARGB32() != baseScheme.primary.toARGB32();
+
+    return baseScheme.copyWith(
+      primary: primaryChanged ? derived.primary : null,
+      surfaceTint: primaryChanged ? derived.surfaceTint : null,
+      onPrimary: primaryChanged ? derived.onPrimary : null,
+      primaryContainer: primaryChanged ? derived.primaryContainer : null,
+      onPrimaryContainer: primaryChanged ? derived.onPrimaryContainer : null,
+      secondary: primaryChanged ? derived.secondary : null,
+      onSecondary: primaryChanged ? derived.onSecondary : null,
+      tertiary: primaryChanged ? derived.tertiary : null,
+      onTertiary: primaryChanged ? derived.onTertiary : null,
+      inversePrimary: primaryChanged ? derived.inversePrimary : null,
+      surface: bgChanged ? derived.surface : null,
+      surfaceDim: bgChanged ? derived.surfaceDim : null,
+      surfaceBright: bgChanged ? derived.surfaceBright : null,
+      surfaceContainerLowest: bgChanged ? derived.surfaceContainerLowest : null,
+      surfaceContainerLow: bgChanged ? derived.surfaceContainerLow : null,
+      surfaceContainer: bgChanged ? derived.surfaceContainer : null,
+      surfaceContainerHigh: bgChanged ? derived.surfaceContainerHigh : null,
+      surfaceContainerHighest: bgChanged
+          ? derived.surfaceContainerHighest
+          : null,
+      secondaryContainer: bgChanged ? derived.secondaryContainer : null,
+      tertiaryContainer: bgChanged ? derived.tertiaryContainer : null,
+      outline: bgChanged ? derived.outline : null,
+      outlineVariant: bgChanged ? derived.outlineVariant : null,
+      onSurface: textChanged ? derived.onSurface : null,
+      inverseSurface: textChanged ? derived.inverseSurface : null,
+      onSecondaryContainer: textChanged ? derived.onSecondaryContainer : null,
+      onTertiaryContainer: textChanged ? derived.onTertiaryContainer : null,
+      onSurfaceVariant: (bgChanged || textChanged)
+          ? derived.onSurfaceVariant
+          : null,
+    );
+  }
+
+  ColorScheme _buildDerivedColorScheme() {
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    final primary = effectivePrimaryColor;
-    final onPrimary = primary.computeLuminance() > 0.5
-        ? Colors.black
-        : Colors.white;
+    final primary = primaryColor;
+    final onPrimary =
+        ThemeData.estimateBrightnessForColor(primary) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
     final surface = backgroundColor;
-    final onSurface = effectiveTextColor;
-    final onSurfaceVariant = effectiveSecondaryTextColor;
-    final surfaceContainer = effectiveSurfaceContainer;
-    final outline = effectiveOutline;
+    final onSurface = textColor;
+
+    Color onSurfaceVariant = Color.lerp(onSurface, surface, 0.30)!;
+    if (calculateContrastRatio(onSurfaceVariant, surface) < 3.0) {
+      onSurfaceVariant = onSurface;
+    }
+
+    final surfaceContainer = isDark
+        ? Color.lerp(surface, Colors.white, 0.12)!
+        : Color.lerp(surface, Colors.black, 0.08)!;
+    final outline = isDark
+        ? Color.lerp(surface, Colors.white, 0.18)!
+        : Color.lerp(surface, Colors.black, 0.15)!;
+    final primaryContainer = isDark
+        ? Color.lerp(surface, primary, 0.35)!
+        : Color.lerp(surface, primary, 0.15)!;
+    final onPrimaryContainer =
+        ThemeData.estimateBrightnessForColor(primaryContainer) ==
+            Brightness.dark
+        ? Colors.white
+        : Colors.black;
+    final inversePrimary = isDark
+        ? Color.lerp(primary, Colors.black, 0.4)!
+        : Color.lerp(primary, Colors.white, 0.4)!;
 
     return ColorScheme(
       brightness: brightness,
       primary: primary,
       surfaceTint: primary,
       onPrimary: onPrimary,
-      primaryContainer: isDark
-          ? Color.lerp(surface, primary, 0.35)!
-          : Color.lerp(surface, primary, 0.15)!,
-      onPrimaryContainer: isDark
-          ? const Color(0xFFFFF0E6)
-          : const Color(0xFF2E1500),
+      primaryContainer: primaryContainer,
+      onPrimaryContainer: onPrimaryContainer,
       secondary: primary,
       onSecondary: onPrimary,
       secondaryContainer: surfaceContainer,
@@ -230,9 +281,7 @@ class CustomThemeConfig {
       shadow: Colors.black,
       scrim: Colors.black,
       inverseSurface: onSurface,
-      inversePrimary: isDark
-          ? const Color(0xFF88521C)
-          : const Color(0xFFFFB67A),
+      inversePrimary: inversePrimary,
       surfaceDim: isDark
           ? Color.lerp(surface, Colors.black, 0.1)!
           : Color.lerp(surface, Colors.black, 0.03)!,
@@ -258,96 +307,75 @@ class CustomThemeConfig {
   CustomThemeConfig copyWith({
     Color? backgroundColor,
     Color? textColor,
-    bool clearTextColor = false,
-    Color? primaryColor,
-    bool clearPrimaryColor = false,
-    Color? surfaceContainerColor,
-    bool clearSurfaceContainerColor = false,
-    Color? secondaryTextColor,
-    bool clearSecondaryTextColor = false,
-    Color? outlineColor,
-    bool clearOutlineColor = false,
     Color? wordsOfJesusColor,
-    bool clearWordsOfJesusColor = false,
-    bool? isBackgroundAutoDerived,
+    Color? verseNumberColor,
+    Color? primaryColor,
+    String? basePresetId,
+    bool? basePresetIsDark,
+    bool clearBasePreset = false,
   }) {
     return CustomThemeConfig(
       backgroundColor: backgroundColor ?? this.backgroundColor,
-      textColor: clearTextColor ? null : (textColor ?? this.textColor),
-      primaryColor: clearPrimaryColor
+      textColor: textColor ?? this.textColor,
+      wordsOfJesusColor: wordsOfJesusColor ?? this.wordsOfJesusColor,
+      verseNumberColor: verseNumberColor ?? this.verseNumberColor,
+      primaryColor: primaryColor ?? this.primaryColor,
+      basePresetId: clearBasePreset ? null : (basePresetId ?? this.basePresetId),
+      basePresetIsDark: clearBasePreset
           ? null
-          : (primaryColor ?? this.primaryColor),
-      surfaceContainerColor: clearSurfaceContainerColor
-          ? null
-          : (surfaceContainerColor ?? this.surfaceContainerColor),
-      secondaryTextColor: clearSecondaryTextColor
-          ? null
-          : (secondaryTextColor ?? this.secondaryTextColor),
-      outlineColor: clearOutlineColor
-          ? null
-          : (outlineColor ?? this.outlineColor),
-      wordsOfJesusColor: clearWordsOfJesusColor
-          ? null
-          : (wordsOfJesusColor ?? this.wordsOfJesusColor),
-      isBackgroundAutoDerived:
-          isBackgroundAutoDerived ?? this.isBackgroundAutoDerived,
+          : (basePresetIsDark ?? this.basePresetIsDark),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'backgroundColor': backgroundColor.toARGB32(),
-      if (textColor != null) 'textColor': textColor!.toARGB32(),
-      if (primaryColor != null) 'primaryColor': primaryColor!.toARGB32(),
-      if (surfaceContainerColor != null)
-        'surfaceContainerColor': surfaceContainerColor!.toARGB32(),
-      if (secondaryTextColor != null)
-        'secondaryTextColor': secondaryTextColor!.toARGB32(),
-      if (outlineColor != null) 'outlineColor': outlineColor!.toARGB32(),
-      if (wordsOfJesusColor != null)
-        'wordsOfJesusColor': wordsOfJesusColor!.toARGB32(),
-      if (isBackgroundAutoDerived) 'isBackgroundAutoDerived': true,
+      'textColor': textColor.toARGB32(),
+      'wordsOfJesusColor': wordsOfJesusColor.toARGB32(),
+      'verseNumberColor': verseNumberColor.toARGB32(),
+      'primaryColor': primaryColor.toARGB32(),
+      if (basePresetId != null) 'basePresetId': basePresetId,
+      if (basePresetIsDark != null) 'basePresetIsDark': basePresetIsDark,
     };
   }
 
   String toJsonString() => jsonEncode(toMap());
 
   factory CustomThemeConfig.fromMap(Map<String, dynamic> map) {
+    final bg = Color(map['backgroundColor'] as int);
+    final fallback = CustomThemeConfig.harmonizeFromBackground(bg);
+
+    final text = map['textColor'] != null
+        ? Color(map['textColor'] as int)
+        : fallback.textColor;
+    final wordsOfJesus = map['wordsOfJesusColor'] != null
+        ? Color(map['wordsOfJesusColor'] as int)
+        : fallback.wordsOfJesusColor;
+    final verseNumberRaw = map['verseNumberColor'] ?? map['secondaryTextColor'];
+    final verseNumber = verseNumberRaw != null
+        ? Color(verseNumberRaw as int)
+        : Color.lerp(text, bg, 0.38)!;
+    final primary = map['primaryColor'] != null
+        ? Color(map['primaryColor'] as int)
+        : fallback.primaryColor;
+
     return CustomThemeConfig(
-      backgroundColor: Color(map['backgroundColor'] as int),
-      textColor: map['textColor'] != null
-          ? Color(map['textColor'] as int)
-          : null,
-      primaryColor: map['primaryColor'] != null
-          ? Color(map['primaryColor'] as int)
-          : null,
-      surfaceContainerColor: map['surfaceContainerColor'] != null
-          ? Color(map['surfaceContainerColor'] as int)
-          : null,
-      secondaryTextColor: map['secondaryTextColor'] != null
-          ? Color(map['secondaryTextColor'] as int)
-          : null,
-      outlineColor: map['outlineColor'] != null
-          ? Color(map['outlineColor'] as int)
-          : null,
-      wordsOfJesusColor: map['wordsOfJesusColor'] != null
-          ? Color(map['wordsOfJesusColor'] as int)
-          : null,
-      isBackgroundAutoDerived: map['isBackgroundAutoDerived'] as bool? ?? false,
+      backgroundColor: bg,
+      textColor: text,
+      wordsOfJesusColor: wordsOfJesus,
+      verseNumberColor: verseNumber,
+      primaryColor: primary,
+      basePresetId: map['basePresetId'] as String?,
+      basePresetIsDark: map['basePresetIsDark'] as bool?,
     );
   }
 
-  factory CustomThemeConfig.fromJsonString(
-    String jsonStr, {
-    required bool isDarkFallback,
-  }) {
+  factory CustomThemeConfig.fromJsonString(String jsonStr) {
     try {
       final map = jsonDecode(jsonStr) as Map<String, dynamic>;
       return CustomThemeConfig.fromMap(map);
     } catch (_) {
-      return isDarkFallback
-          ? CustomThemeConfig.defaultDark()
-          : CustomThemeConfig.defaultLight();
+      return CustomThemeConfig.defaultConfig();
     }
   }
 
@@ -357,26 +385,21 @@ class CustomThemeConfig {
       other is CustomThemeConfig &&
           runtimeType == other.runtimeType &&
           backgroundColor.toARGB32() == other.backgroundColor.toARGB32() &&
-          textColor?.toARGB32() == other.textColor?.toARGB32() &&
-          primaryColor?.toARGB32() == other.primaryColor?.toARGB32() &&
-          surfaceContainerColor?.toARGB32() ==
-              other.surfaceContainerColor?.toARGB32() &&
-          secondaryTextColor?.toARGB32() ==
-              other.secondaryTextColor?.toARGB32() &&
-          outlineColor?.toARGB32() == other.outlineColor?.toARGB32() &&
-          wordsOfJesusColor?.toARGB32() ==
-              other.wordsOfJesusColor?.toARGB32() &&
-          isBackgroundAutoDerived == other.isBackgroundAutoDerived;
+          textColor.toARGB32() == other.textColor.toARGB32() &&
+          wordsOfJesusColor.toARGB32() == other.wordsOfJesusColor.toARGB32() &&
+          verseNumberColor.toARGB32() == other.verseNumberColor.toARGB32() &&
+          primaryColor.toARGB32() == other.primaryColor.toARGB32() &&
+          basePresetId == other.basePresetId &&
+          basePresetIsDark == other.basePresetIsDark;
 
   @override
   int get hashCode => Object.hash(
     backgroundColor.toARGB32(),
-    textColor?.toARGB32(),
-    primaryColor?.toARGB32(),
-    surfaceContainerColor?.toARGB32(),
-    secondaryTextColor?.toARGB32(),
-    outlineColor?.toARGB32(),
-    wordsOfJesusColor?.toARGB32(),
-    isBackgroundAutoDerived,
+    textColor.toARGB32(),
+    wordsOfJesusColor.toARGB32(),
+    verseNumberColor.toARGB32(),
+    primaryColor.toARGB32(),
+    basePresetId,
+    basePresetIsDark,
   );
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
-import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/bsb_text_localizer.dart';
 import 'package:bsb/infrastructure/database.dart';
@@ -11,6 +10,7 @@ import 'package:bsb/infrastructure/reading_plan_service.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/shared/scripture_paragraph_style.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:bsb/ui/text/annotation_disambiguation_sheet.dart';
 import 'package:bsb/ui/text/chapter/chapter_manager.dart';
@@ -22,7 +22,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart' show BoxParentData;
 import 'package:database_builder/database_builder.dart';
 import 'package:scripture/scripture.dart';
-import 'package:scripture/scripture_core.dart';
 
 class ChapterText extends StatefulWidget {
   const ChapterText({
@@ -973,55 +972,20 @@ class _ChapterTextState extends State<ChapterText>
                                                   wordId,
                                                 );
                                               },
-                                              styleBuilder: (format) {
-                                                final base =
-                                                    UsfmParagraphStyle.usfmDefaults(
-                                                      format:
-                                                          format ==
-                                                              ParagraphFormat.p
-                                                          ? ParagraphFormat.m
-                                                          : format,
-                                                      baseStyle:
-                                                          Theme.of(context)
-                                                              .textTheme
-                                                              .bodyMedium!
-                                                              .copyWith(
-                                                                fontSize:
-                                                                    currentTextSize,
-                                                              ),
-                                                    );
-                                                if (wordsOfJesusInRed) {
-                                                  final isDark =
-                                                      brightness ==
-                                                      Brightness.dark;
-                                                  final defaultRed = isDark
-                                                      ? const Color(0xFFFF8A80)
-                                                      : const Color(0xFFB71C1C);
-                                                  final redColor =
-                                                      Theme.of(context)
-                                                          .extension<
-                                                            ScriptureTheme
-                                                          >()
-                                                          ?.wordsOfJesusColor ??
-                                                      (getIt
-                                                              .isRegistered<
-                                                                AppState
-                                                              >()
-                                                          ? getIt<AppState>()
-                                                                .getWordsOfJesusColor(
-                                                                  brightness,
-                                                                )
-                                                          : defaultRed);
-                                                  return base.copyWith(
-                                                    wordsOfJesusStyle: base
-                                                        .textStyle
+                                              styleBuilder: (format) =>
+                                                  buildScriptureParagraphStyle(
+                                                    context,
+                                                    format: format,
+                                                    baseStyle: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium!
                                                         .copyWith(
-                                                          color: redColor,
+                                                          fontSize:
+                                                              currentTextSize,
                                                         ),
-                                                  );
-                                                }
-                                                return base;
-                                              },
+                                                    wordsOfJesusInRed:
+                                                        wordsOfJesusInRed,
+                                                  ),
                                             ),
                                             _buildReadingPlanButton(),
                                           ],
@@ -1257,40 +1221,15 @@ class _ChapterTextState extends State<ChapterText>
                       selectionColor: Theme.of(context).colorScheme.primary
                           .withValues(alpha: 0.3),
                       onFootnoteTapped: _onFootnoteTapped,
-                      styleBuilder: (format) {
-                        final base = UsfmParagraphStyle.usfmDefaults(
-                          format: format == ParagraphFormat.p
-                              ? ParagraphFormat.m
-                              : format,
-                          baseStyle: Theme.of(context).textTheme.bodyMedium!
-                              .copyWith(fontSize: manager.textSize),
-                        );
-                        final isRed = getIt.isRegistered<AppState>()
+                      styleBuilder: (format) => buildScriptureParagraphStyle(
+                        context,
+                        format: format,
+                        baseStyle: Theme.of(context).textTheme.bodyMedium!
+                            .copyWith(fontSize: manager.textSize),
+                        wordsOfJesusInRed: getIt.isRegistered<AppState>()
                             ? getIt<AppState>().wordsOfJesusInRedNotifier.value
-                            : false;
-                        if (isRed) {
-                          final brightness = Theme.of(context).brightness;
-                          final isDark = brightness == Brightness.dark;
-                          final defaultRed = isDark
-                              ? const Color(0xFFFF8A80)
-                              : const Color(0xFFB71C1C);
-                          final redColor =
-                              Theme.of(context)
-                                  .extension<ScriptureTheme>()
-                                  ?.wordsOfJesusColor ??
-                              (getIt.isRegistered<AppState>()
-                                  ? getIt<AppState>().getWordsOfJesusColor(
-                                      brightness,
-                                    )
-                                  : defaultRed);
-                          return base.copyWith(
-                            wordsOfJesusStyle: base.textStyle.copyWith(
-                              color: redColor,
-                            ),
-                          );
-                        }
-                        return base;
-                      },
+                            : false,
+                      ),
                       showHeadings: false,
                       showVerseNumbers: false,
                     ),

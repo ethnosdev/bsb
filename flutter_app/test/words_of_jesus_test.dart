@@ -142,6 +142,36 @@ void main() {
   );
 
   testWidgets(
+    'ChapterText renders verse numbers using ScriptureTheme.verseNumberColor independently from onSurfaceVariant',
+    (tester) async {
+      const customVerseColor = Color(0xFF1A5A96);
+      await appState.applyThemeSelection(
+        themeId: AppThemePreset.customPresetId,
+        customConfig: CustomThemeConfig.defaultConfig().copyWith(
+          verseNumberColor: customVerseColor,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: appState.lightThemeData,
+          home: const Scaffold(body: ChapterText(bookId: 40, chapter: 5)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final verseFinder = find.byType(VerseNumberWidget);
+      expect(verseFinder, findsOneWidget);
+      final verseWidget = tester.widget<VerseNumberWidget>(verseFinder);
+      expect(verseWidget.style.color, equals(customVerseColor));
+      expect(
+        appState.lightThemeData.colorScheme.onSurfaceVariant,
+        isNot(equals(customVerseColor)),
+      );
+    },
+  );
+
+  testWidgets(
     'Words of Jesus are styled in soft coral when setting is enabled in Dark Mode',
     (tester) async {
       await appState.setWordsOfJesusInRed(true);
@@ -221,9 +251,8 @@ void main() {
       await appState.setWordsOfJesusInRed(true);
       await appState.applyThemeSelection(
         themeId: AppThemePreset.customPresetId,
-        lightConfig: const CustomThemeConfig(
-          backgroundColor: Color(0xFFF7F1E5),
-          wordsOfJesusColor: Color(0xFF9C27B0), // Custom Purple
+        customConfig: CustomThemeConfig.defaultConfig().copyWith(
+          wordsOfJesusColor: const Color(0xFF9C27B0), // Custom Purple
         ),
       );
 
@@ -313,9 +342,8 @@ void main() {
       await appState.setWordsOfJesusInRed(true);
       await appState.applyThemeSelection(
         themeId: AppThemePreset.customPresetId,
-        lightConfig: const CustomThemeConfig(
-          backgroundColor: Color(0xFFF7F1E5),
-          wordsOfJesusColor: Color(0xFF1E88E5), // Blue
+        customConfig: CustomThemeConfig.defaultConfig().copyWith(
+          wordsOfJesusColor: const Color(0xFF1E88E5), // Blue
         ),
       );
 

@@ -44,9 +44,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 ListTile(
+                  enabled: !appState.isCustomTheme,
                   title: const Text('Light-Dark Mode'),
                   subtitle: Text(
-                    appState.themeMode == ThemeMode.light
+                    appState.isCustomTheme
+                        ? 'Disabled for custom theme'
+                        : appState.themeMode == ThemeMode.light
                         ? 'Light'
                         : appState.themeMode == ThemeMode.dark
                         ? 'Dark'
@@ -58,80 +61,91 @@ class _SettingsPageState extends State<SettingsPage> {
                         : appState.themeMode == ThemeMode.dark
                         ? Icons.dark_mode
                         : Icons.smartphone,
+                    color: appState.isCustomTheme
+                        ? Theme.of(context).disabledColor
+                        : null,
                   ),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        insetPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 24,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 16,
-                        ),
-                        content: SegmentedButton<ThemeMode>(
-                          style: SegmentedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 8,
-                            ),
-                          ),
-                          showSelectedIcon: false,
-                          segments: const [
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.light,
-                              label: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.light_mode),
-                                    SizedBox(height: 4),
-                                    Text('Light'),
-                                  ],
+                  onTap: appState.isCustomTheme
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              insetPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 24,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 16,
+                              ),
+                              content: SegmentedButton<ThemeMode>(
+                                style: SegmentedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 8,
+                                  ),
                                 ),
+                                showSelectedIcon: false,
+                                segments: const [
+                                  ButtonSegment<ThemeMode>(
+                                    value: ThemeMode.light,
+                                    label: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.light_mode),
+                                          SizedBox(height: 4),
+                                          Text('Light'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  ButtonSegment<ThemeMode>(
+                                    value: ThemeMode.system,
+                                    label: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.smartphone),
+                                          SizedBox(height: 4),
+                                          Text('Device'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  ButtonSegment<ThemeMode>(
+                                    value: ThemeMode.dark,
+                                    label: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.dark_mode),
+                                          SizedBox(height: 4),
+                                          Text('Dark'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                selected: {appState.themeMode},
+                                onSelectionChanged: (Set<ThemeMode> selection) {
+                                  appState.setThemeMode(selection.first);
+                                  Navigator.of(context).pop();
+                                },
                               ),
                             ),
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.system,
-                              label: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.smartphone),
-                                    SizedBox(height: 4),
-                                    Text('Device'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.dark,
-                              label: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.dark_mode),
-                                    SizedBox(height: 4),
-                                    Text('Dark'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                          selected: {appState.themeMode},
-                          onSelectionChanged: (Set<ThemeMode> selection) {
-                            appState.setThemeMode(selection.first);
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                      ),
-                    );
-                  },
+                          );
+                        },
                 ),
                 ListTile(
                   title: const Text('Color Theme'),

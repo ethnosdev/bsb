@@ -1,9 +1,10 @@
 import 'package:bsb/app_state.dart';
-import 'package:bsb/core/app_theme_presets.dart';
-import 'package:bsb/core/custom_theme_config.dart';
+import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/theme/custom_theme_editor_page.dart';
 import 'package:bsb/ui/settings/theme/scripture_theme_preview_card.dart';
+import 'package:bsb/ui/settings/theme/theme_swatch_trio.dart';
+import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The theme selection screen featuring a live scripture preview,
@@ -19,8 +20,6 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
   late final AppState _appState;
   late String _draftThemeId;
   late ThemeMode _draftMode;
-  late CustomThemeConfig _customLight;
-  late CustomThemeConfig _customDark;
 
   @override
   void initState() {
@@ -35,17 +34,14 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
         : _appState.themeMode == ThemeMode.light
         ? ThemeMode.light
         : (isSystemDark ? ThemeMode.dark : ThemeMode.light);
-    _customLight = _appState.customThemeLight;
-    _customDark = _appState.customThemeDark;
   }
 
   bool get _resolveIsDark => _draftMode == ThemeMode.dark;
+  bool get _isCustomSelected => _draftThemeId == AppThemePreset.customPresetId;
 
-  ColorScheme _resolvePreviewScheme(BuildContext context) {
-    if (_draftThemeId == AppThemePreset.customPresetId) {
-      return _resolveIsDark
-          ? _customDark.toColorScheme()
-          : _customLight.toColorScheme();
+  ColorScheme _resolvePreviewScheme() {
+    if (_isCustomSelected) {
+      return _appState.customTheme.toColorScheme();
     }
     final preset = AppThemePreset.findById(_draftThemeId);
     return _resolveIsDark ? preset.darkScheme : preset.lightScheme;
@@ -53,17 +49,18 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
 
   bool get _hasChanges =>
       _draftThemeId != _appState.appThemeId ||
-      (_appState.themeMode != ThemeMode.system &&
-          _draftMode != _appState.themeMode) ||
-      _customLight != _appState.customThemeLight ||
-      _customDark != _appState.customThemeDark;
+      (!_isCustomSelected &&
+          _appState.themeMode != ThemeMode.system &&
+          _draftMode != _appState.themeMode);
 
   Future<void> _applyTheme() async {
+    final modeToApply =
+        (_isCustomSelected || _appState.themeMode == ThemeMode.system)
+        ? null
+        : _draftMode;
     await _appState.applyThemeSelection(
       themeId: _draftThemeId,
-      mode: _appState.themeMode == ThemeMode.system ? null : _draftMode,
-      lightConfig: _customLight,
-      darkConfig: _customDark,
+      mode: modeToApply,
     );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -77,31 +74,28 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
   }
 
   Future<void> _openCustomThemeEditor() async {
-    final currentScheme = _resolvePreviewScheme(context);
+    final userSettings = getIt.isRegistered<UserSettings>()
+        ? getIt<UserSettings>()
+        : null;
+    final hasSavedCustom = userSettings?.hasSavedCustomTheme ?? false;
+
+    final initialConfig = (hasSavedCustom || _isCustomSelected)
+        ? _appState.customTheme
+        : CustomThemeConfig.fromPreset(
+            AppThemePreset.findById(_draftThemeId),
+            isDark: _resolveIsDark,
+          );
+
     final applied = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (context) => CustomThemeEditorPage(
-          initialLightConfig: _customLight,
-          initialDarkConfig: _customDark,
-          initialIsDark: _resolveIsDark,
-          currentThemeBackgroundColor: currentScheme.surface,
-        ),
+        builder: (context) =>
+            CustomThemeEditorPage(initialConfig: initialConfig),
       ),
     );
 
     if (applied == true && mounted) {
       setState(() {
         _draftThemeId = AppThemePreset.customPresetId;
-        _customLight = _appState.customThemeLight;
-        _customDark = _appState.customThemeDark;
-        if (_appState.themeMode != ThemeMode.system) {
-          _draftMode = _appState.themeMode;
-        } else {
-          final isDark =
-              WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-              Brightness.dark;
-          _draftMode = isDark ? ThemeMode.dark : ThemeMode.light;
-        }
       });
     }
   }
@@ -111,7 +105,8 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
     return ListenableBuilder(
       listenable: _appState,
       builder: (context, _) {
-        final previewScheme = _resolvePreviewScheme(context);
+        final previewScheme = _resolvePreviewScheme();
+        final custom = _appState.customTheme;
 
         return Scaffold(
           appBar: AppBar(
@@ -129,7 +124,7 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-                // Mode Selector: Light / Dark only
+                // Mode Selector: disabled when Custom Theme is selected
                 SegmentedButton<ThemeMode>(
                   showSelectedIcon: false,
                   segments: const [
@@ -145,42 +140,38 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                     ),
                   ],
                   selected: {_draftMode},
-                  onSelectionChanged: (set) {
-                    setState(() {
-                      _draftMode = set.first;
-                    });
-                  },
+                  onSelectionChanged: _isCustomSelected
+                      ? null
+                      : (set) {
+                          setState(() {
+                            _draftMode = set.first;
+                          });
+                        },
                 ),
+                if (_isCustomSelected) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Custom theme uses a single color palette',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
 
                 // Live Scripture Preview
                 ScriptureThemePreviewCard(
                   colorScheme: previewScheme,
                   wordsOfJesusInRed: _appState.wordsOfJesusInRed,
-                  wordsOfJesusColor:
-                      _draftThemeId == AppThemePreset.customPresetId
-                      ? (_resolveIsDark
-                            ? (_customDark.wordsOfJesusColor ??
-                                  (_customLight.wordsOfJesusColor != null
-                                      ? Color.lerp(
-                                          _customLight.wordsOfJesusColor,
-                                          Colors.white,
-                                          0.3,
-                                        )
-                                      : null) ??
-                                  _customDark.effectiveWordsOfJesusColor)
-                            : (_customLight.wordsOfJesusColor ??
-                                  (_customDark.wordsOfJesusColor != null
-                                      ? Color.lerp(
-                                          _customDark.wordsOfJesusColor,
-                                          Colors.black,
-                                          0.3,
-                                        )
-                                      : null) ??
-                                  _customLight.effectiveWordsOfJesusColor))
-                      : (_resolveIsDark
-                            ? const Color(0xFFFF8A80)
-                            : const Color(0xFFB71C1C)),
+                  wordsOfJesusColor: _isCustomSelected
+                      ? custom.wordsOfJesusColor
+                      : ScriptureTheme.defaultWordsOfJesusColor(
+                          previewScheme.brightness,
+                        ),
+                  verseNumberColor: _isCustomSelected
+                      ? custom.verseNumberColor
+                      : null,
                   textSize: _appState.textSize,
                 ),
                 const SizedBox(height: 20),
@@ -221,11 +212,7 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                           horizontal: 16,
                           vertical: 4,
                         ),
-                        leading: _buildSwatchTrio(
-                          lightBg: preset.previewLightBackground,
-                          darkBg: preset.previewDarkBackground,
-                          accent: preset.previewAccent,
-                        ),
+                        leading: ThemeSwatchTrio.preset(preset),
                         title: Text(
                           preset.name,
                           style: TextStyle(
@@ -275,12 +262,10 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
-                      color: _draftThemeId == AppThemePreset.customPresetId
+                      color: _isCustomSelected
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.outlineVariant,
-                      width: _draftThemeId == AppThemePreset.customPresetId
-                          ? 2.0
-                          : 1.0,
+                      width: _isCustomSelected ? 2.0 : 1.0,
                     ),
                   ),
                   child: Padding(
@@ -288,21 +273,20 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                     child: Column(
                       children: [
                         ListTile(
-                          leading: _buildSwatchTrio(
-                            lightBg: _customLight.backgroundColor,
-                            darkBg: _customDark.backgroundColor,
-                            accent: _customLight.effectivePrimaryColor,
+                          leading: ThemeSwatchTrio(
+                            firstColor: custom.backgroundColor,
+                            secondColor: custom.textColor,
+                            accentColor: custom.primaryColor,
                           ),
                           title: const Text(
                             'Custom Theme',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           trailing: Icon(
-                            _draftThemeId == AppThemePreset.customPresetId
+                            _isCustomSelected
                                 ? Icons.radio_button_checked
                                 : Icons.radio_button_unchecked,
-                            color:
-                                _draftThemeId == AppThemePreset.customPresetId
+                            color: _isCustomSelected
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context)
                                       .colorScheme
@@ -356,29 +340,6 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSwatchTrio({
-    required Color lightBg,
-    required Color darkBg,
-    required Color accent,
-  }) {
-    return Container(
-      width: 48,
-      height: 32,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade400, width: 1),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        children: [
-          Expanded(child: Container(color: lightBg)),
-          Expanded(child: Container(color: darkBg)),
-          Container(width: 8, color: accent),
-        ],
-      ),
     );
   }
 }

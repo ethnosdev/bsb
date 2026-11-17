@@ -2,7 +2,6 @@ import 'dart:developer';
 
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_scale.dart';
-import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
@@ -11,6 +10,7 @@ import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/playlists/playlist_editor_page.dart';
 import 'package:bsb/ui/playlists/widgets/passage_trim_helper.dart';
 import 'package:bsb/ui/shared/markdown_style.dart';
+import 'package:bsb/ui/shared/scripture_paragraph_style.dart';
 import 'package:bsb/ui/shared/zoom_wrapper.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:material_ui/material_ui.dart';
@@ -261,13 +261,6 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
   Widget build(BuildContext context) {
     final appState = _appState;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final defaultRed = isDark
-        ? const Color(0xFFFF8A80)
-        : const Color(0xFFB71C1C);
-    final redColor =
-        theme.extension<ScriptureTheme>()?.wordsOfJesusColor ??
-        (appState?.getWordsOfJesusColor(theme.brightness) ?? defaultRed);
     final topPadding = _maxTopInset + kToolbarHeight + 16.0;
     final double baseTextSize =
         appState?.textSizeNotifier.value ?? FontScale.defaultBaseSize;
@@ -303,7 +296,6 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
                     item: item,
                     textSize: currentTextSize,
                     isRed: isRed,
-                    redColor: redColor,
                   );
                 } else {
                   return _buildNoteView(context, item, currentTextSize);
@@ -393,7 +385,6 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
     required PlaylistItem item,
     required double textSize,
     required bool isRed,
-    required Color redColor,
   }) {
     final theme = Theme.of(context);
     final ref = item.reference!;
@@ -455,23 +446,15 @@ class _PlaylistPresentationPageState extends State<PlaylistPresentationPage> {
               showVerseNumbers: true,
               onTapWhitespace: toggleDistraction,
               onWordTapped: (_) => toggleDistraction?.call(),
-              styleBuilder: (format) {
-                final base = UsfmParagraphStyle.usfmDefaults(
-                  format: format == ParagraphFormat.p
-                      ? ParagraphFormat.m
-                      : format,
-                  baseStyle: theme.textTheme.bodyMedium!.copyWith(
-                    fontSize: textSize,
-                    height: 1.5,
-                  ),
-                );
-                if (isRed) {
-                  return base.copyWith(
-                    wordsOfJesusStyle: base.textStyle.copyWith(color: redColor),
-                  );
-                }
-                return base;
-              },
+              styleBuilder: (format) => buildScriptureParagraphStyle(
+                context,
+                format: format,
+                baseStyle: theme.textTheme.bodyMedium!.copyWith(
+                  fontSize: textSize,
+                  height: 1.5,
+                ),
+                wordsOfJesusInRed: isRed,
+              ),
             ),
         ],
       ),
