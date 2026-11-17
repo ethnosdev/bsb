@@ -529,13 +529,50 @@ void main() {
     await tester.tap(find.text('Play'));
     await tester.pumpAndSettle();
 
-    expect(fakeAudio.playedFromVerse, (19, 23, 4));
+    expect(fakeAudio.playedSelection, Reference(bookId: 19, chapter: 23, verse: 4));
+    expect(controller.hasSelection, isFalse);
+  });
+
+  testWidgets('Selecting Play with multiple verses sends full range to playSelection', (
+    tester,
+  ) async {
+    final fakeAudio = _FakePlayAudioManager();
+    getIt.registerSingleton<AudioPlaybackManager>(fakeAudio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: TextScreen(
+            bookId: 19,
+            chapter: 23,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final chapterText = tester.widget<ChapterText>(find.byType(ChapterText).first);
+    final controller = ScriptureSelectionController();
+    controller.selectRange(19023002001, 19023004005); // Psalm 23:2-4
+    chapterText.onSelectionChanged!(controller);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Play'));
+    await tester.pumpAndSettle();
+
+    expect(
+      fakeAudio.playedSelection,
+      Reference(bookId: 19, chapter: 23, verse: 2, endVerse: 4),
+    );
     expect(controller.hasSelection, isFalse);
   });
 }
 
 class _FakePlayAudioManager implements AudioPlaybackManager {
   (int, int, int)? playedFromVerse;
+  Reference? playedSelection;
 
   @override
   final ValueNotifier<bool> isPlayerVisible = ValueNotifier<bool>(false);
@@ -552,6 +589,11 @@ class _FakePlayAudioManager implements AudioPlaybackManager {
   @override
   Future<void> playFromVerse(int bookId, int chapter, int verse) async {
     playedFromVerse = (bookId, chapter, verse);
+  }
+
+  @override
+  Future<void> playSelection(Reference reference) async {
+    playedSelection = reference;
   }
 
   @override

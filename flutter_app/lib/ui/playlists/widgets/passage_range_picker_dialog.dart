@@ -34,6 +34,7 @@ class PassageRangePickerDialog extends StatefulWidget {
   final int? initialEndWordId;
   final DatabaseHelper? dbHelper;
   final VoidCallback? onDelete;
+  final String? confirmButtonText;
 
   const PassageRangePickerDialog({
     super.key,
@@ -42,6 +43,7 @@ class PassageRangePickerDialog extends StatefulWidget {
     this.initialEndWordId,
     this.dbHelper,
     this.onDelete,
+    this.confirmButtonText,
   });
 
   static Future<PassageRangePickerResult?> show(
@@ -51,6 +53,7 @@ class PassageRangePickerDialog extends StatefulWidget {
     int? initialEndWordId,
     DatabaseHelper? dbHelper,
     VoidCallback? onDelete,
+    String? confirmButtonText,
   }) {
     return showDialog<PassageRangePickerResult>(
       context: context,
@@ -60,6 +63,7 @@ class PassageRangePickerDialog extends StatefulWidget {
         initialEndWordId: initialEndWordId,
         dbHelper: dbHelper,
         onDelete: onDelete,
+        confirmButtonText: confirmButtonText,
       ),
     );
   }
@@ -563,9 +567,10 @@ class _PassageRangePickerDialogState extends State<PassageRangePickerDialog> {
                             );
                           },
                     child: Text(
-                      widget.initialReference == null
-                          ? 'Add to Playlist'
-                          : 'Save Reference',
+                      widget.confirmButtonText ??
+                          (widget.initialReference == null
+                              ? 'Add to Playlist'
+                              : 'Save Reference'),
                     ),
                   ),
                 ],

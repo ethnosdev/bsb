@@ -6,6 +6,8 @@
 - Added live verse references in the mini player, expanded player, and lock-screen notification.
 - Added "Play" to the verse selection More menu to start audio from a selected verse.
 - Replaced ±10s buttons in the expanded player with Previous/Next Verse controls, and added a Repeat Verse play mode.
+- Added a `1.0x (with N second pause)` playback speed option with configurable pause duration between verses (default 5 seconds) and silent audio keep-alive for lock-screen memorization.
+- Added a Repeat Passage play mode supporting single-chapter and cross-chapter verse ranges, replaced Play Mode tap-cycling with a popup bottom sheet picker, and updated selection More → Play to auto-enable Repeat Verse (1 verse) or Repeat Passage (2+ verses).
 
 # 2.8.0 - 2026.11.16
 

@@ -4,6 +4,7 @@ import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/audio/verse_timings.dart';
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
@@ -50,6 +51,13 @@ class MockAudioPlayer extends AudioPlayer {
     currentSpeed = speed;
   }
 
+  LoopMode currentLoopMode = LoopMode.off;
+
+  @override
+  Future<void> setLoopMode(LoopMode mode) async {
+    currentLoopMode = mode;
+  }
+
   @override
   Duration get position => currentPosition;
 
@@ -72,15 +80,31 @@ class MockAudioPlayer extends AudioPlayer {
     return currentDuration;
   }
 
+  bool holdPlayFutureUntilPaused = false;
+  Completer<void>? _playCompleter;
+
+  void _completePendingPlay() {
+    if (_playCompleter != null && !_playCompleter!.isCompleted) {
+      _playCompleter!.complete();
+    }
+    _playCompleter = null;
+  }
+
   @override
   Future<void> play() async {
     isPlaying = true;
     playerStateController.add(PlayerState(true, ProcessingState.ready));
+    if (holdPlayFutureUntilPaused) {
+      _completePendingPlay();
+      _playCompleter = Completer<void>();
+      return _playCompleter!.future;
+    }
   }
 
   @override
   Future<void> pause() async {
     isPlaying = false;
+    _completePendingPlay();
     playerStateController.add(PlayerState(false, ProcessingState.ready));
   }
 
@@ -95,6 +119,7 @@ class MockAudioPlayer extends AudioPlayer {
   @override
   Future<void> stop() async {
     isPlaying = false;
+    _completePendingPlay();
   }
 
   void emitPosition(Duration pos) {
@@ -108,6 +133,7 @@ class MockAudioPlayer extends AudioPlayer {
 
   @override
   Future<void> dispose() async {
+    _completePendingPlay();
     await positionController.close();
     await playerStateController.close();
     await eventController.close();
@@ -139,8 +165,26 @@ void main() {
     ],
   );
 
+  const john11Timings = ChapterTimings(
+    bookId: 43,
+    chapter: 11,
+    verses: [
+      VerseTiming(
+        verse: 1,
+        start: Duration(milliseconds: 4000),
+        end: Duration(milliseconds: 10000),
+      ),
+      VerseTiming(
+        verse: 2,
+        start: Duration(milliseconds: 10000),
+        end: Duration(milliseconds: 15000),
+      ),
+    ],
+  );
+
   late UserSettings userSettings;
   late MockAudioPlayer mockPlayer;
+  late MockAudioPlayer mockSilencePlayer;
   late BsbAudioHandler audioHandler;
   late AudioPlaybackManager manager;
 
@@ -150,10 +194,13 @@ void main() {
     await userSettings.init();
 
     mockPlayer = MockAudioPlayer();
+    mockSilencePlayer = MockAudioPlayer();
     audioHandler = BsbAudioHandler(
       player: mockPlayer,
+      silencePlayer: mockSilencePlayer,
       timingsLoader: (bookId, chapter) async {
         if (bookId == 43 && chapter == 10) return john10Timings;
+        if (bookId == 43 && chapter == 11) return john11Timings;
         return ChapterTimings.empty(bookId, chapter);
       },
     );
@@ -362,6 +409,206 @@ void main() {
       expect(audioHandler.currentBookId, 43);
       expect(audioHandler.currentChapter, 10);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 16690));
+      expect(mockPlayer.isPlaying, isTrue);
+    });
+
+    test('pauseBetweenVerses persists, enforces 1.0x speed, and clears on normal speed', () async {
+      await manager.setSpeed(1.5);
+      expect(manager.pauseBetweenVersesEnabledNotifier.value, isFalse);
+
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 8);
+      expect(manager.pauseBetweenVersesEnabledNotifier.value, isTrue);
+      expect(manager.pauseBetweenVersesSecondsNotifier.value, 8);
+      expect(manager.speedNotifier.value, 1.0);
+      expect(mockPlayer.currentSpeed, 1.0);
+      expect(userSettings.audioPauseBetweenVersesEnabled, isTrue);
+      expect(userSettings.audioPauseBetweenVersesSeconds, 8);
+
+      // Clamping checks
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 120);
+      expect(userSettings.audioPauseBetweenVersesSeconds, kMaxVersePauseSeconds);
+
+      // Selecting standard speed disables pauseBetweenVerses
+      await manager.setSpeed(1.25);
+      expect(manager.pauseBetweenVersesEnabledNotifier.value, isFalse);
+      expect(userSettings.audioPauseBetweenVersesEnabled, isFalse);
+      expect(mockPlayer.currentSpeed, 1.25);
+    });
+
+    test('pauseBetweenVerses plays verse 1 immediately, pauses with silence after v1, and resumes at v2', () async {
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 2);
+      await audioHandler.playChapter(43, 10);
+      expect(mockPlayer.isPlaying, isTrue);
+
+      // Enter verse 1, then cross verse 1 end boundary (12950 ms)
+      mockPlayer.emitPosition(const Duration(milliseconds: 6000));
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.versePauseStateNotifier.value.isPaused, isFalse);
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+
+      // Main player paused & pre-seeked to verse 2 start; silence player plays; UI stays "playing"
+      expect(mockPlayer.isPlaying, isFalse);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+      expect(mockSilencePlayer.isPlaying, isTrue);
+      expect(mockSilencePlayer.currentLoopMode, LoopMode.one);
+      expect(audioHandler.playbackState.value.playing, isTrue);
+      expect(manager.versePauseStateNotifier.value.isPaused, isTrue);
+      expect(manager.versePauseStateNotifier.value.remainingSeconds, 2);
+      expect(manager.currentVerseNotifier.value, 2);
+      expect(audioHandler.mediaItem.value?.artist, 'Next: Verse 2 (2s)');
+
+      // After >2s countdown finishes, silence pauses and main player resumes at verse 2 start
+      await Future<void>.delayed(const Duration(milliseconds: 2200));
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+      expect(manager.versePauseStateNotifier.value.isPaused, isFalse);
+      expect(audioHandler.mediaItem.value?.artist, 'Verse 2');
+    });
+
+    test('pausing manually during between-verse pause cancels silence and parks at upcoming verse', () async {
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 5);
+      await audioHandler.playChapter(43, 10);
+      mockPlayer.emitPosition(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(audioHandler.isInVersePause, isTrue);
+      expect(mockSilencePlayer.isPlaying, isTrue);
+
+      await manager.pause();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(audioHandler.isInVersePause, isFalse);
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(mockPlayer.isPlaying, isFalse);
+      expect(audioHandler.playbackState.value.playing, isFalse);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+    });
+
+    test('repeatPassage loops single-chapter and cross-chapter passages cleanly', () async {
+      // Single-chapter: John 10:1-2
+      final singlePassage = Reference(
+        bookId: 43,
+        chapter: 10,
+        verse: 1,
+        endVerse: 2,
+      );
+      await manager.setRepeatPassage(singlePassage);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(manager.playModeNotifier.value, AudioPlayMode.repeatPassage);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700)); // v1 start, skipping announcement
+      expect(userSettings.audioRepeatPassage, singlePassage);
+
+      // Move into v2, then pass v2 end (16690ms) -> loops to v1 start (4700ms)
+      mockPlayer.emitPosition(const Duration(milliseconds: 13500));
+      mockPlayer.emitPosition(const Duration(milliseconds: 16800));
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+
+      // Cross-chapter: John 10:2-11:1
+      final crossPassage = Reference(
+        bookId: 43,
+        chapter: 10,
+        verse: 2,
+        endChapter: 11,
+        endVerse: 1,
+      );
+      await manager.setRepeatPassage(crossPassage, forceRestart: true);
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+
+      // Advance into last verse (John 10:3, ends at 24830ms) and finish -> moves to John 11:1 start (4000ms)
+      mockPlayer.emitPosition(const Duration(milliseconds: 17000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 25000));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(audioHandler.currentChapter, 11);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4000));
+
+      // Finish John 11:1 -> loops back to John 10:2 start (12950ms)
+      mockPlayer.emitPosition(const Duration(milliseconds: 10100));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(audioHandler.currentChapter, 10);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+
+      // Chapter Skip exits Repeat Passage back to Continuous
+      await manager.skipToNext();
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
+      expect(audioHandler.currentChapter, 11);
+      expect(userSettings.audioPlayMode, 'continuous');
+    });
+
+    test('playSelection enables repeatVerse for 1 verse and repeatPassage for 2+ verses', () async {
+      await manager.playSelection(Reference(bookId: 43, chapter: 10, verse: 2));
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.playModeNotifier.value, AudioPlayMode.repeatVerse);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+
+      final multi = Reference(bookId: 43, chapter: 10, verse: 1, endVerse: 2);
+      await manager.playSelection(multi);
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.playModeNotifier.value, AudioPlayMode.repeatPassage);
+      expect(manager.repeatPassageNotifier.value, multi);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+    });
+
+    test('UserSettings validates and round-trips repeatPassage including corrupt fallback', () async {
+      final cross = Reference(
+        bookId: 43,
+        chapter: 10,
+        verse: 2,
+        endChapter: 11,
+        endVerse: 1,
+      );
+      await userSettings.setAudioRepeatPassage(cross);
+      expect(userSettings.audioRepeatPassage, cross);
+
+      final wholeChapters = Reference(
+        bookId: 43,
+        chapter: 10,
+        endChapter: 11,
+      );
+      await userSettings.setAudioRepeatPassage(wholeChapters);
+      expect(userSettings.audioRepeatPassage, wholeChapters);
+
+      // Corrupt out-of-range book returns null cleanly
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('audioRepeatPassageStartVerse', 99001001);
+      expect(userSettings.audioRepeatPassage, isNull);
+    });
+
+    test('pauseBetweenVerses works with just_audio play() future contract and avoids boundary double-pause', () async {
+      mockPlayer.holdPlayFutureUntilPaused = true;
+      mockSilencePlayer.holdPlayFutureUntilPaused = true;
+
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 1);
+      await audioHandler.playChapter(43, 10);
+      expect(mockPlayer.isPlaying, isTrue);
+
+      // Enter verse 1, then cross end boundary (12950 ms)
+      mockPlayer.emitPosition(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(mockPlayer.isPlaying, isFalse);
+      expect(mockSilencePlayer.isPlaying, isTrue);
+      expect(audioHandler.isInVersePause, isTrue);
+
+      // Countdown finishes even when silencePlayer.play() never resolved on its own
+      await Future<void>.delayed(const Duration(milliseconds: 1150));
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(audioHandler.isInVersePause, isFalse);
+
+      // Simulate MP3 frame alignment landing 15ms before boundary right after resume -> no second pause
+      mockPlayer.emitPosition(const Duration(milliseconds: 12935));
+      mockPlayer.emitPosition(const Duration(milliseconds: 12960));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(audioHandler.isInVersePause, isFalse);
       expect(mockPlayer.isPlaying, isTrue);
     });
   });

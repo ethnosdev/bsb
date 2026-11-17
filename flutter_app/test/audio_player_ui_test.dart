@@ -8,6 +8,7 @@ import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/database.dart';
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
 import 'package:bsb/ui/audio/audio_player_bottom_bar.dart';
@@ -34,6 +35,9 @@ class FakeDatabaseHelper implements DatabaseHelper {
   @override
   Future<List<UsfmLine>> getChapter(int bookId, int chapter) async =>
       chapterLines;
+
+  @override
+  Future<List<UsfmLine>> getRange(Reference reference) async => [];
 }
 
 class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
@@ -85,8 +89,24 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   final ValueNotifier<double> speedNotifier = ValueNotifier<double>(1.0);
 
   @override
+  final ValueNotifier<bool> pauseBetweenVersesEnabledNotifier =
+      ValueNotifier<bool>(false);
+
+  @override
+  final ValueNotifier<int> pauseBetweenVersesSecondsNotifier =
+      ValueNotifier<int>(kDefaultVersePauseSeconds);
+
+  @override
+  final ValueNotifier<VersePauseState> versePauseStateNotifier =
+      ValueNotifier<VersePauseState>(VersePauseState.idle);
+
+  @override
   final ValueNotifier<AudioPlayMode> playModeNotifier =
       ValueNotifier<AudioPlayMode>(AudioPlayMode.continuous);
+
+  @override
+  final ValueNotifier<Reference?> repeatPassageNotifier =
+      ValueNotifier<Reference?>(null);
 
   @override
   final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
@@ -265,6 +285,24 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   Future<void> setSpeed(double speed) async {
     speedNotifier.value = speed;
+    pauseBetweenVersesEnabledNotifier.value = false;
+  }
+
+  @override
+  Future<void> setPauseBetweenVerses({
+    required bool enabled,
+    int? seconds,
+  }) async {
+    if (seconds != null) {
+      pauseBetweenVersesSecondsNotifier.value = seconds.clamp(
+        kMinVersePauseSeconds,
+        kMaxVersePauseSeconds,
+      );
+    }
+    pauseBetweenVersesEnabledNotifier.value = enabled;
+    if (enabled) {
+      speedNotifier.value = 1.0;
+    }
   }
 
   @override
@@ -273,12 +311,29 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   }
 
   @override
+  Future<void> setRepeatPassage(
+    Reference passage, {
+    bool playImmediately = true,
+    bool forceRestart = false,
+  }) async {
+    repeatPassageNotifier.value = passage;
+    playModeNotifier.value = AudioPlayMode.repeatPassage;
+  }
+
+  @override
+  Future<void> playSelection(Reference reference) async {}
+
+  @override
   void cyclePlayMode() {
     final nextMode = switch (playModeNotifier.value) {
       AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
       AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
       AudioPlayMode.stopAfterChapter => AudioPlayMode.repeatVerse,
-      AudioPlayMode.repeatVerse => AudioPlayMode.continuous,
+      AudioPlayMode.repeatVerse =>
+        repeatPassageNotifier.value != null
+            ? AudioPlayMode.repeatPassage
+            : AudioPlayMode.continuous,
+      AudioPlayMode.repeatPassage => AudioPlayMode.continuous,
     };
     setPlayMode(nextMode);
   }
@@ -304,7 +359,11 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
     isPlayerVisible.dispose();
     playbackErrorNotifier.dispose();
     speedNotifier.dispose();
+    pauseBetweenVersesEnabledNotifier.dispose();
+    pauseBetweenVersesSecondsNotifier.dispose();
+    versePauseStateNotifier.dispose();
     playModeNotifier.dispose();
+    repeatPassageNotifier.dispose();
     sleepTimerOptionNotifier.dispose();
     sleepTimerRemainingNotifier.dispose();
     syncTextNotifier.dispose();
@@ -534,20 +593,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Genesis 1:14'), findsNWidgets(2));
 
-      // Verify Play Mode button cycles through all 4 modes including Repeat Verse
+      // Verify Play Mode button opens Repeat Mode popup list instead of cycling
       expect(find.text('Continuous'), findsOneWidget);
       await tester.tap(find.text('Continuous'));
       await tester.pumpAndSettle();
-      expect(audioManager.playModeNotifier.value, AudioPlayMode.repeatChapter);
+      expect(find.text('Repeat Mode'), findsOneWidget);
+      expect(find.text('Repeat Chapter'), findsOneWidget);
+      expect(find.text('1 Chapter'), findsOneWidget);
+      expect(find.text('Repeat Verse'), findsOneWidget);
+      expect(find.text('Repeat Passage'), findsOneWidget);
 
-      await tester.tap(find.text('Repeat Chapter'));
-      await tester.pumpAndSettle();
-      expect(
-        audioManager.playModeNotifier.value,
-        AudioPlayMode.stopAfterChapter,
-      );
-
-      await tester.tap(find.text('1 Chapter'));
+      await tester.tap(find.text('Repeat Verse'));
       await tester.pumpAndSettle();
       expect(audioManager.playModeNotifier.value, AudioPlayMode.repeatVerse);
       expect(find.text('Repeat Verse'), findsOneWidget);
@@ -705,6 +761,146 @@ void main() {
       await tester.pumpAndSettle();
       usfm = tester.widget<UsfmWidget>(find.byType(UsfmWidget));
       expect(usfm.highlights, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'Speed picker inline pause-between-verses updates seconds and chip label',
+    (tester) async {
+      tabManager.openTab(1, 1);
+      audioManager.isPlayerVisible.value = true;
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Genesis 1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open Speed picker
+      await tester.tap(find.text('1.0x'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1.0x (with 5 second pause)'), findsOneWidget);
+      await tester.tap(find.text('1.0x (with 5 second pause)'));
+      await tester.pumpAndSettle();
+
+      expect(audioManager.pauseBetweenVersesEnabledNotifier.value, isTrue);
+      expect(audioManager.pauseBetweenVersesSecondsNotifier.value, 5);
+      expect(find.text('Pause duration:'), findsOneWidget);
+
+      // Select 8s preset chip and increment to 9s
+      await tester.tap(find.widgetWithText(ChoiceChip, '8s'));
+      await tester.pumpAndSettle();
+      expect(audioManager.pauseBetweenVersesSecondsNotifier.value, 8);
+      expect(find.text('1.0x (with 8 second pause)'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('verse_pause_increment')));
+      await tester.pumpAndSettle();
+      expect(audioManager.pauseBetweenVersesSecondsNotifier.value, 9);
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.text('1.0x (9s)'), findsOneWidget);
+
+      // Switching back to standard speed turns pause off
+      await tester.tap(find.text('1.0x (9s)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1.5x'));
+      await tester.pumpAndSettle();
+      expect(audioManager.pauseBetweenVersesEnabledNotifier.value, isFalse);
+      expect(audioManager.speedNotifier.value, 1.5);
+    },
+  );
+
+  testWidgets(
+    'Countdown status text appears in mini player and expanded sheet during verse pause',
+    (tester) async {
+      tabManager.openTab(1, 1);
+      audioManager.isPlayerVisible.value = true;
+      audioManager.currentVerseNotifier.value = 2;
+      audioManager.versePauseStateNotifier.value = const VersePauseState(
+        isPaused: true,
+        remainingSeconds: 4,
+        totalSeconds: 5,
+        nextBookId: 1,
+        nextChapter: 1,
+        nextVerse: 2,
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Next verse in 4s...'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Genesis 1:2'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AudioPlayerModalSheet),
+          matching: find.text('Next verse in 4s...'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'Repeat Passage shows compact range on chip and opens PassageRangePickerDialog on edit',
+    (tester) async {
+      tabManager.openTab(1, 1);
+      audioManager.isPlayerVisible.value = true;
+      audioManager.repeatPassageNotifier.value = Reference(
+        bookId: 45,
+        chapter: 8,
+        verse: 31,
+        endVerse: 39,
+      );
+      audioManager.playModeNotifier.value = AudioPlayMode.repeatPassage;
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Genesis 1'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('ROM 8:31–39'), findsOneWidget);
+      await tester.tap(find.text('ROM 8:31–39'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Repeat Mode'), findsOneWidget);
+      expect(find.text('Romans 8:31–39'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('edit_repeat_passage_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit Scripture Passage'), findsOneWidget);
+      expect(find.text('Repeat Passage'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
     },
   );
 }

@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:bsb/core/theme.dart';
+import 'package:bsb/infrastructure/audio/audio_models.dart';
+import 'package:bsb/infrastructure/reference.dart';
+import 'package:database_builder/database_builder.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -306,7 +309,14 @@ class UserSettings {
   }
 
   static const _audioSpeedKey = 'audioSpeed';
+  static const _audioPauseBetweenVersesEnabledKey =
+      'audioPauseBetweenVersesEnabled';
+  static const _audioPauseBetweenVersesSecondsKey =
+      'audioPauseBetweenVersesSeconds';
   static const _audioPlayModeKey = 'audioPlayMode';
+  static const _audioRepeatPassageStartVerseKey =
+      'audioRepeatPassageStartVerse';
+  static const _audioRepeatPassageEndVerseKey = 'audioRepeatPassageEndVerse';
   static const _audioSyncTextKey = 'audioSyncText';
   static const _lastAudioBookIdKey = 'lastAudioBookId';
   static const _lastAudioChapterKey = 'lastAudioChapter';
@@ -316,10 +326,103 @@ class UserSettings {
   Future<void> setAudioSpeed(double speed) =>
       _prefs.setDouble(_audioSpeedKey, speed);
 
+  bool get audioPauseBetweenVersesEnabled =>
+      _prefs.getBool(_audioPauseBetweenVersesEnabledKey) ?? false;
+  Future<void> setAudioPauseBetweenVersesEnabled(bool enabled) =>
+      _prefs.setBool(_audioPauseBetweenVersesEnabledKey, enabled);
+
+  int get audioPauseBetweenVersesSeconds {
+    final stored =
+        _prefs.getInt(_audioPauseBetweenVersesSecondsKey) ??
+        kDefaultVersePauseSeconds;
+    return stored.clamp(kMinVersePauseSeconds, kMaxVersePauseSeconds);
+  }
+
+  Future<void> setAudioPauseBetweenVersesSeconds(int seconds) => _prefs.setInt(
+    _audioPauseBetweenVersesSecondsKey,
+    seconds.clamp(kMinVersePauseSeconds, kMaxVersePauseSeconds),
+  );
+
   String get audioPlayMode =>
       _prefs.getString(_audioPlayModeKey) ?? 'continuous';
   Future<void> setAudioPlayMode(String mode) =>
       _prefs.setString(_audioPlayModeKey, mode);
+
+  Reference? get audioRepeatPassage {
+    final start = _prefs.getInt(_audioRepeatPassageStartVerseKey);
+    if (start == null || start <= 0) return null;
+    final end = _prefs.getInt(_audioRepeatPassageEndVerseKey);
+
+    const bookMultiplier = 1000000;
+    const chapterMultiplier = 1000;
+    final bookId = start ~/ bookMultiplier;
+    final chapter = (start % bookMultiplier) ~/ chapterMultiplier;
+    final rawStartVerse = start % chapterMultiplier;
+    final maxChapters = bookIdToChapterCountMap[bookId];
+    if (maxChapters == null || chapter < 1 || chapter > maxChapters) {
+      return null;
+    }
+
+    int? endChapter;
+    int? endVerse;
+    if (end != null) {
+      final endBookId = end ~/ bookMultiplier;
+      final parsedEndChapter = (end % bookMultiplier) ~/ chapterMultiplier;
+      final parsedEndVerse = end % chapterMultiplier;
+      if (endBookId != bookId ||
+          parsedEndChapter < chapter ||
+          parsedEndChapter > maxChapters) {
+        return null;
+      }
+      if (parsedEndChapter > chapter) {
+        endChapter = parsedEndChapter;
+      }
+      if (rawStartVerse == 0) {
+        if (parsedEndVerse != 999 && parsedEndVerse > 0) {
+          endVerse = parsedEndVerse;
+        }
+      } else {
+        final effectiveEndVerse = parsedEndVerse == 999 ? null : parsedEndVerse;
+        if (endChapter == null &&
+            effectiveEndVerse != null &&
+            effectiveEndVerse < rawStartVerse) {
+          return null;
+        }
+        if (endChapter != null ||
+            (effectiveEndVerse != null && effectiveEndVerse > rawStartVerse)) {
+          endVerse = effectiveEndVerse;
+        }
+      }
+    }
+
+    final startVerse = rawStartVerse == 0 ? null : rawStartVerse;
+    if (startVerse == null && endVerse != null) {
+      return null;
+    }
+
+    return Reference(
+      bookId: bookId,
+      chapter: chapter,
+      verse: startVerse,
+      endChapter: endChapter,
+      endVerse: endVerse,
+    );
+  }
+
+  Future<void> setAudioRepeatPassage(Reference? passage) async {
+    if (passage == null) {
+      await _prefs.remove(_audioRepeatPassageStartVerseKey);
+      await _prefs.remove(_audioRepeatPassageEndVerseKey);
+      return;
+    }
+    await _prefs.setInt(_audioRepeatPassageStartVerseKey, passage.packedVerse);
+    final packedEnd = passage.packedEndVerse;
+    if (packedEnd != null) {
+      await _prefs.setInt(_audioRepeatPassageEndVerseKey, packedEnd);
+    } else {
+      await _prefs.remove(_audioRepeatPassageEndVerseKey);
+    }
+  }
 
   bool get audioSyncText => _prefs.getBool(_audioSyncTextKey) ?? true;
   Future<void> setAudioSyncText(bool value) =>

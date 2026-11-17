@@ -768,11 +768,7 @@ class _TextScreenState extends State<TextScreen>
     if (selected == 'play') {
       if (getIt.isRegistered<AudioPlaybackManager>()) {
         unawaited(
-          getIt<AudioPlaybackManager>().playFromVerse(
-            reference.bookId,
-            reference.chapter,
-            reference.verse ?? 1,
-          ),
+          getIt<AudioPlaybackManager>().playSelection(reference),
         );
       }
       return true;

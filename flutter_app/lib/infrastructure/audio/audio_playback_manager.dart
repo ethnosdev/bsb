@@ -5,6 +5,7 @@ import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_url_resolver.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/audio/verse_timings.dart';
+import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/foundation.dart';
@@ -27,7 +28,12 @@ class AudioPlaybackManager {
     null,
   );
   final ValueNotifier<double> speedNotifier;
+  final ValueNotifier<bool> pauseBetweenVersesEnabledNotifier;
+  final ValueNotifier<int> pauseBetweenVersesSecondsNotifier;
+  final ValueNotifier<VersePauseState> versePauseStateNotifier =
+      ValueNotifier<VersePauseState>(VersePauseState.idle);
   final ValueNotifier<AudioPlayMode> playModeNotifier;
+  final ValueNotifier<Reference?> repeatPassageNotifier;
   final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
       ValueNotifier<SleepTimerOption>(SleepTimerOption.off);
   final ValueNotifier<Duration?> sleepTimerRemainingNotifier =
@@ -39,6 +45,7 @@ class AudioPlaybackManager {
   StreamSubscription<MediaItem?>? _mediaItemSub;
   StreamSubscription<Duration>? _positionSaveSub;
   StreamSubscription<int?>? _verseSub;
+  StreamSubscription<VersePauseState>? _versePauseSub;
 
   int? _lastNotifiedBookId;
   int? _lastNotifiedChapter;
@@ -55,38 +62,62 @@ class AudioPlaybackManager {
     return null;
   }
 
+  static UserSettings? _resolveInitialSettings(UserSettings? userSettings) {
+    if (userSettings != null) return userSettings;
+    if (getIt.isRegistered<UserSettings>()) {
+      return getIt<UserSettings>();
+    }
+    return null;
+  }
+
   AudioPlaybackManager({required this.audioHandler, this.userSettings})
     : speedNotifier = ValueNotifier<double>(
-        (userSettings ??
-                    (getIt.isRegistered<UserSettings>()
-                        ? getIt<UserSettings>()
-                        : null))
-                ?.audioSpeed ??
-            1.0,
+        _resolveInitialSettings(userSettings)?.audioSpeed ?? 1.0,
+      ),
+      pauseBetweenVersesEnabledNotifier = ValueNotifier<bool>(
+        _resolveInitialSettings(userSettings)?.audioPauseBetweenVersesEnabled ??
+            false,
+      ),
+      pauseBetweenVersesSecondsNotifier = ValueNotifier<int>(
+        _resolveInitialSettings(userSettings)?.audioPauseBetweenVersesSeconds ??
+            kDefaultVersePauseSeconds,
       ),
       playModeNotifier = ValueNotifier<AudioPlayMode>(
         AudioPlayMode.fromString(
-          (userSettings ??
-                  (getIt.isRegistered<UserSettings>()
-                      ? getIt<UserSettings>()
-                      : null))
-              ?.audioPlayMode,
+          _resolveInitialSettings(userSettings)?.audioPlayMode,
         ),
       ),
+      repeatPassageNotifier = ValueNotifier<Reference?>(
+        _resolveInitialSettings(userSettings)?.audioRepeatPassage,
+      ),
       syncTextNotifier = ValueNotifier<bool>(
-        (userSettings ??
-                    (getIt.isRegistered<UserSettings>()
-                        ? getIt<UserSettings>()
-                        : null))
-                ?.audioSyncText ??
-            true,
+        _resolveInitialSettings(userSettings)?.audioSyncText ?? true,
       ) {
-    audioHandler.setSpeed(speedNotifier.value);
+    if (playModeNotifier.value == AudioPlayMode.repeatPassage &&
+        repeatPassageNotifier.value == null) {
+      playModeNotifier.value = AudioPlayMode.continuous;
+    }
+
+    audioHandler.repeatPassage = repeatPassageNotifier.value;
     audioHandler.playMode = playModeNotifier.value;
+    if (pauseBetweenVersesEnabledNotifier.value) {
+      speedNotifier.value = 1.0;
+      audioHandler.setSpeed(1.0);
+    } else {
+      audioHandler.setSpeed(speedNotifier.value);
+    }
+    audioHandler.setPauseBetweenVerses(
+      enabled: pauseBetweenVersesEnabledNotifier.value,
+      seconds: pauseBetweenVersesSecondsNotifier.value,
+    );
 
     audioHandler.onSleepTimerFired = () {
       sleepTimerOptionNotifier.value = SleepTimerOption.off;
       sleepTimerRemainingNotifier.value = null;
+    };
+    audioHandler.onPlayModeChanged = (mode) {
+      playModeNotifier.value = mode;
+      _effectiveSettings?.setAudioPlayMode(mode.toStorageString());
     };
 
     _mediaItemSub = audioHandler.mediaItem.listen((item) {
@@ -109,6 +140,10 @@ class AudioPlaybackManager {
 
     _verseSub = audioHandler.currentVerseStream.listen((verse) {
       currentVerseNotifier.value = verse;
+    });
+
+    _versePauseSub = audioHandler.versePauseStateStream.listen((pauseState) {
+      versePauseStateNotifier.value = pauseState;
     });
 
     _positionSaveSub = audioHandler.player.positionStream
@@ -159,7 +194,7 @@ class AudioPlaybackManager {
 
     try {
       if (currentBook == bookId && currentChap == chapter) {
-        if (audioHandler.player.playing) {
+        if (audioHandler.player.playing || audioHandler.isInVersePause) {
           return;
         } else {
           await audioHandler.play();
@@ -255,8 +290,37 @@ class AudioPlaybackManager {
 
   Future<void> setSpeed(double speed) async {
     speedNotifier.value = speed;
+    pauseBetweenVersesEnabledNotifier.value = false;
+    await audioHandler.setPauseBetweenVerses(enabled: false);
     await audioHandler.setSpeed(speed);
+    await _effectiveSettings?.setAudioPauseBetweenVersesEnabled(false);
     await _effectiveSettings?.setAudioSpeed(speed);
+  }
+
+  Future<void> setPauseBetweenVerses({
+    required bool enabled,
+    int? seconds,
+  }) async {
+    final clampedSeconds = seconds?.clamp(
+      kMinVersePauseSeconds,
+      kMaxVersePauseSeconds,
+    );
+    if (clampedSeconds != null) {
+      pauseBetweenVersesSecondsNotifier.value = clampedSeconds;
+      await _effectiveSettings?.setAudioPauseBetweenVersesSeconds(
+        clampedSeconds,
+      );
+    }
+    pauseBetweenVersesEnabledNotifier.value = enabled;
+    if (enabled) {
+      speedNotifier.value = 1.0;
+      await _effectiveSettings?.setAudioSpeed(1.0);
+    }
+    await _effectiveSettings?.setAudioPauseBetweenVersesEnabled(enabled);
+    await audioHandler.setPauseBetweenVerses(
+      enabled: enabled,
+      seconds: clampedSeconds,
+    );
   }
 
   void setPlayMode(AudioPlayMode mode) {
@@ -265,12 +329,99 @@ class AudioPlaybackManager {
     _effectiveSettings?.setAudioPlayMode(mode.toStorageString());
   }
 
+  bool _isCurrentlyWithinPassage(Reference passage) {
+    final bookId = audioHandler.currentBookId;
+    final chapter = audioHandler.currentChapter;
+    if (bookId != passage.bookId || chapter == null) return false;
+    final endChapter = passage.endChapter ?? passage.chapter;
+    if (chapter < passage.chapter || chapter > endChapter) return false;
+
+    final verse = currentVerseNotifier.value;
+    if (verse == null) return false;
+    if (chapter == passage.chapter &&
+        passage.verse != null &&
+        verse < passage.verse!) {
+      return false;
+    }
+    if (chapter == endChapter &&
+        passage.endVerse != null &&
+        verse > passage.endVerse!) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> setRepeatPassage(
+    Reference passage, {
+    bool playImmediately = true,
+    bool forceRestart = false,
+  }) async {
+    repeatPassageNotifier.value = passage;
+    audioHandler.repeatPassage = passage;
+    await _effectiveSettings?.setAudioRepeatPassage(passage);
+    setPlayMode(AudioPlayMode.repeatPassage);
+
+    if (playImmediately &&
+        (forceRestart || !_isCurrentlyWithinPassage(passage))) {
+      isPlayerVisible.value = true;
+      playbackErrorNotifier.value = null;
+      try {
+        await audioHandler.playPassageStart(passage);
+      } catch (e) {
+        playbackErrorNotifier.value =
+            'Unable to play audio. Check internet connection.';
+      }
+    }
+  }
+
+  /// Plays [reference] from reader text selection:
+  /// - 1 verse -> Repeat Verse
+  /// - 2+ verses (or multi-chapter) -> Repeat Passage
+  /// - Whole single chapter -> Repeat Chapter
+  Future<void> playSelection(Reference reference) async {
+    final verse = reference.verse;
+    final endChapter = reference.endChapter;
+    final endVerse = reference.endVerse;
+
+    if (verse == null) {
+      if (endChapter != null && endChapter > reference.chapter) {
+        await setRepeatPassage(
+          reference,
+          playImmediately: true,
+          forceRestart: true,
+        );
+      } else {
+        setPlayMode(AudioPlayMode.repeatChapter);
+        await playFromVerse(reference.bookId, reference.chapter, 1);
+      }
+      return;
+    }
+
+    final isMultiVerse =
+        (endChapter != null && endChapter > reference.chapter) ||
+        (endVerse != null && endVerse > verse);
+    if (isMultiVerse) {
+      await setRepeatPassage(
+        reference,
+        playImmediately: true,
+        forceRestart: true,
+      );
+    } else {
+      setPlayMode(AudioPlayMode.repeatVerse);
+      await playFromVerse(reference.bookId, reference.chapter, verse);
+    }
+  }
+
   void cyclePlayMode() {
     final nextMode = switch (playModeNotifier.value) {
       AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
       AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
       AudioPlayMode.stopAfterChapter => AudioPlayMode.repeatVerse,
-      AudioPlayMode.repeatVerse => AudioPlayMode.continuous,
+      AudioPlayMode.repeatVerse =>
+        repeatPassageNotifier.value != null
+            ? AudioPlayMode.repeatPassage
+            : AudioPlayMode.continuous,
+      AudioPlayMode.repeatPassage => AudioPlayMode.continuous,
     };
     setPlayMode(nextMode);
   }
@@ -346,10 +497,15 @@ class AudioPlaybackManager {
     _mediaItemSub?.cancel();
     _positionSaveSub?.cancel();
     _verseSub?.cancel();
+    _versePauseSub?.cancel();
     isPlayerVisible.dispose();
     playbackErrorNotifier.dispose();
     speedNotifier.dispose();
+    pauseBetweenVersesEnabledNotifier.dispose();
+    pauseBetweenVersesSecondsNotifier.dispose();
+    versePauseStateNotifier.dispose();
     playModeNotifier.dispose();
+    repeatPassageNotifier.dispose();
     sleepTimerOptionNotifier.dispose();
     sleepTimerRemainingNotifier.dispose();
     syncTextNotifier.dispose();

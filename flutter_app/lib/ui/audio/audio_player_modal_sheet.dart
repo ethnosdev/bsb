@@ -2,6 +2,8 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
+import 'package:bsb/infrastructure/reference.dart';
+import 'package:bsb/ui/playlists/widgets/passage_range_picker_dialog.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the expanded full-featured audio player bottom sheet.
@@ -42,52 +44,316 @@ class AudioPlayerModalSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        final currentSpeed = manager.speedNotifier.value;
+      builder: (sheetContext) {
         return SafeArea(
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 12),
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    'Playback Speed',
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ...kAudioSpeedOptions.map((speed) {
-                  final isSelected = (speed - currentSpeed).abs() < 0.01;
-                  return ListTile(
-                    title: Text('${speed}x${speed == 1.0 ? ' (Normal)' : ''}'),
-                    leading: Icon(
-                      isSelected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    selected: isSelected,
-                    onTap: () {
-                      manager.setSpeed(speed);
-                      Navigator.pop(context);
-                    },
-                  );
-                }),
-                const SizedBox(height: 12),
-              ],
+            child: ValueListenableBuilder<double>(
+              valueListenable: manager.speedNotifier,
+              builder: (context, currentSpeed, _) {
+                return ValueListenableBuilder<bool>(
+                  valueListenable: manager.pauseBetweenVersesEnabledNotifier,
+                  builder: (context, pauseEnabled, _) {
+                    return ValueListenableBuilder<int>(
+                      valueListenable:
+                          manager.pauseBetweenVersesSecondsNotifier,
+                      builder: (context, pauseSeconds, _) {
+                        final colorScheme = Theme.of(context).colorScheme;
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 12),
+                            Container(
+                              width: 36,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.3,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                'Playback Speed',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            ...kAudioSpeedOptions.map((speed) {
+                              final isSelected =
+                                  !pauseEnabled &&
+                                  (speed - currentSpeed).abs() < 0.01;
+                              return ListTile(
+                                title: Text(
+                                  '${speed}x${speed == 1.0 ? ' (Normal)' : ''}',
+                                ),
+                                leading: Icon(
+                                  isSelected
+                                      ? Icons.radio_button_checked
+                                      : Icons.radio_button_unchecked,
+                                  color: isSelected
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant,
+                                ),
+                                selected: isSelected,
+                                onTap: () {
+                                  manager.setSpeed(speed);
+                                  Navigator.pop(sheetContext);
+                                },
+                              );
+                            }),
+                            ListTile(
+                              title: Text(
+                                '1.0x (with $pauseSeconds second pause)',
+                              ),
+                              leading: Icon(
+                                pauseEnabled
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                                color: pauseEnabled
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              selected: pauseEnabled,
+                              onTap: () {
+                                manager.setPauseBetweenVerses(enabled: true);
+                              },
+                            ),
+                            if (pauseEnabled)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  0,
+                                  16,
+                                  8,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Text('Pause duration:'),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          key: const ValueKey(
+                                            'verse_pause_decrement',
+                                          ),
+                                          icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                          ),
+                                          tooltip: 'Decrease pause',
+                                          onPressed:
+                                              pauseSeconds >
+                                                  kMinVersePauseSeconds
+                                              ? () => manager
+                                                    .setPauseBetweenVerses(
+                                                      enabled: true,
+                                                      seconds: pauseSeconds - 1,
+                                                    )
+                                              : null,
+                                        ),
+                                        Text(
+                                          '${pauseSeconds}s',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        IconButton(
+                                          key: const ValueKey(
+                                            'verse_pause_increment',
+                                          ),
+                                          icon: const Icon(
+                                            Icons.add_circle_outline,
+                                          ),
+                                          tooltip: 'Increase pause',
+                                          onPressed:
+                                              pauseSeconds <
+                                                  kMaxVersePauseSeconds
+                                              ? () => manager
+                                                    .setPauseBetweenVerses(
+                                                      enabled: true,
+                                                      seconds: pauseSeconds + 1,
+                                                    )
+                                              : null,
+                                        ),
+                                        const Spacer(),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(sheetContext),
+                                          child: const Text('Done'),
+                                        ),
+                                      ],
+                                    ),
+                                    Wrap(
+                                      spacing: 8,
+                                      children: kVersePausePresetSeconds.map((
+                                        secs,
+                                      ) {
+                                        return ChoiceChip(
+                                          label: Text('${secs}s'),
+                                          selected: pauseSeconds == secs,
+                                          onSelected: (_) {
+                                            manager.setPauseBetweenVerses(
+                                              enabled: true,
+                                              seconds: secs,
+                                            );
+                                          },
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 12),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickRepeatPassage(BuildContext context) async {
+    Reference? initialRef = manager.repeatPassageNotifier.value;
+    if (initialRef == null) {
+      final bookId = manager.audioHandler.currentBookId;
+      final chapter = manager.audioHandler.currentChapter;
+      if (bookId != null && chapter != null) {
+        initialRef = Reference(
+          bookId: bookId,
+          chapter: chapter,
+          verse: manager.currentVerseNotifier.value ?? 1,
+        );
+      }
+    }
+
+    final result = await PassageRangePickerDialog.show(
+      context,
+      initialReference: initialRef,
+      confirmButtonText: 'Repeat Passage',
+    );
+    if (result != null) {
+      await manager.setRepeatPassage(
+        result.reference,
+        playImmediately: true,
+        forceRestart: true,
+      );
+    }
+  }
+
+  void _showPlayModePicker(BuildContext context) {
+    final parentContext = context;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: ValueListenableBuilder<AudioPlayMode>(
+              valueListenable: manager.playModeNotifier,
+              builder: (context, currentMode, _) {
+                return ValueListenableBuilder<Reference?>(
+                  valueListenable: manager.repeatPassageNotifier,
+                  builder: (context, repeatPassage, _) {
+                    final colorScheme = Theme.of(context).colorScheme;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 12),
+                        Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.3,
+                            ),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            'Repeat Mode',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        ...AudioPlayMode.values.map((mode) {
+                          final isSelected = mode == currentMode;
+                          final isPassageMode =
+                              mode == AudioPlayMode.repeatPassage;
+                          return ListTile(
+                            title: Text(mode.label),
+                            subtitle: isPassageMode
+                                ? Text(
+                                    repeatPassage?.toString() ??
+                                        'Choose a range of verses',
+                                  )
+                                : null,
+                            leading: Icon(
+                              isSelected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              color: isSelected
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                            trailing: isPassageMode && repeatPassage != null
+                                ? IconButton(
+                                    key: const ValueKey(
+                                      'edit_repeat_passage_button',
+                                    ),
+                                    icon: const Icon(Icons.edit_outlined),
+                                    tooltip: 'Edit passage range',
+                                    onPressed: () {
+                                      Navigator.pop(sheetContext);
+                                      _pickRepeatPassage(parentContext);
+                                    },
+                                  )
+                                : Icon(
+                                    mode.icon,
+                                    size: 20,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            selected: isSelected,
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              if (isPassageMode) {
+                                if (repeatPassage == null ||
+                                    currentMode ==
+                                        AudioPlayMode.repeatPassage) {
+                                  _pickRepeatPassage(parentContext);
+                                } else {
+                                  manager.setRepeatPassage(
+                                    repeatPassage,
+                                    playImmediately: true,
+                                  );
+                                }
+                              } else {
+                                manager.setPlayMode(mode);
+                              }
+                            },
+                          );
+                        }),
+                        const SizedBox(height: 12),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
           ),
         );
@@ -292,6 +558,26 @@ class AudioPlayerModalSheet extends StatelessWidget {
                             ),
                             textAlign: TextAlign.center,
                           ),
+                          ValueListenableBuilder<VersePauseState>(
+                            valueListenable: manager.versePauseStateNotifier,
+                            builder: (context, pauseState, _) {
+                              final status = pauseState.statusText;
+                              if (status == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 6.0),
+                                child: Text(
+                                  status,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -453,17 +739,37 @@ class AudioPlayerModalSheet extends StatelessWidget {
                           ValueListenableBuilder<double>(
                             valueListenable: manager.speedNotifier,
                             builder: (context, speed, _) {
-                              return OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                                icon: const Icon(Icons.speed, size: 16),
-                                label: Text('${speed}x'),
-                                onPressed: () => _showSpeedPicker(context),
+                              return ValueListenableBuilder<bool>(
+                                valueListenable:
+                                    manager.pauseBetweenVersesEnabledNotifier,
+                                builder: (context, pauseEnabled, _) {
+                                  return ValueListenableBuilder<int>(
+                                    valueListenable: manager
+                                        .pauseBetweenVersesSecondsNotifier,
+                                    builder: (context, pauseSeconds, _) {
+                                      return OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          visualDensity: VisualDensity.compact,
+                                          foregroundColor: pauseEnabled
+                                              ? colorScheme.primary
+                                              : null,
+                                        ),
+                                        icon: const Icon(Icons.speed, size: 16),
+                                        label: Text(
+                                          pauseEnabled
+                                              ? '1.0x (${pauseSeconds}s)'
+                                              : '${speed}x',
+                                        ),
+                                        onPressed: () =>
+                                            _showSpeedPicker(context),
+                                      );
+                                    },
+                                  );
+                                },
                               );
                             },
                           ),
@@ -518,17 +824,35 @@ class AudioPlayerModalSheet extends StatelessWidget {
                           ValueListenableBuilder<AudioPlayMode>(
                             valueListenable: manager.playModeNotifier,
                             builder: (context, mode, _) {
-                              return OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                                icon: Icon(mode.icon, size: 16),
-                                label: Text(mode.label),
-                                onPressed: manager.cyclePlayMode,
+                              return ValueListenableBuilder<Reference?>(
+                                valueListenable: manager.repeatPassageNotifier,
+                                builder: (context, repeatPassage, _) {
+                                  final isPassageActive =
+                                      mode == AudioPlayMode.repeatPassage &&
+                                      repeatPassage != null;
+                                  final label = isPassageActive
+                                      ? formatCompactPassageReference(
+                                          repeatPassage,
+                                        )
+                                      : mode.label;
+                                  return OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      foregroundColor:
+                                          mode == AudioPlayMode.repeatPassage
+                                          ? colorScheme.primary
+                                          : null,
+                                    ),
+                                    icon: Icon(mode.icon, size: 16),
+                                    label: Text(label),
+                                    onPressed: () =>
+                                        _showPlayModePicker(context),
+                                  );
+                                },
                               );
                             },
                           ),

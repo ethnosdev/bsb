@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -97,23 +98,50 @@ class AudioPlayerBottomBar extends StatelessWidget {
                             child: Row(
                               children: [
                                 Flexible(
-                                  child: ValueListenableBuilder<int?>(
-                                    valueListenable:
-                                        manager.currentVerseNotifier,
-                                    builder: (context, verse, _) {
-                                      return Text(
-                                        manager.formatDisplayTitle(
-                                          mediaItem,
-                                          verse,
-                                        ),
-                                        style: theme.textTheme.titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ValueListenableBuilder<int?>(
+                                        valueListenable:
+                                            manager.currentVerseNotifier,
+                                        builder: (context, verse, _) {
+                                          return Text(
+                                            manager.formatDisplayTitle(
+                                              mediaItem,
+                                              verse,
                                             ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      );
-                                    },
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          );
+                                        },
+                                      ),
+                                      ValueListenableBuilder<VersePauseState>(
+                                        valueListenable:
+                                            manager.versePauseStateNotifier,
+                                        builder: (context, pauseState, _) {
+                                          final status = pauseState.statusText;
+                                          if (status == null) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          return Text(
+                                            status,
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: colorScheme.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          );
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(width: 4),
