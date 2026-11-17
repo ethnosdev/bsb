@@ -1,5 +1,8 @@
-# 2.8.0 - 2026.11.16
+# 2.8.0 - 2026.11.17
 
+- Redesign custom theme editor with a 5-color palette, preset starter, and 2D color picker.
+- Pin a compact live scripture preview in Color Theme and Custom Theme Editor with scrollable options below.
+- Update Color Theme ordering and styling, and apply theme colors to markdown links, playlist subtitles, and dark-mode book chooser borders.
 - Add a British English spelling option in Settings.
 - Fixed a bug in search.
 
