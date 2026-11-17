@@ -76,7 +76,6 @@ class AudioPlayerBottomBar extends StatelessWidget {
                 stream: manager.mediaItemStream,
                 builder: (context, mediaSnapshot) {
                   final mediaItem = mediaSnapshot.data;
-                  final title = mediaItem?.title ?? 'Audio Player';
                   final bookId = mediaItem?.extras?['bookId'] as int?;
                   final chapter = mediaItem?.extras?['chapter'] as int?;
 
@@ -98,13 +97,23 @@ class AudioPlayerBottomBar extends StatelessWidget {
                             child: Row(
                               children: [
                                 Flexible(
-                                  child: Text(
-                                    title,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: ValueListenableBuilder<int?>(
+                                    valueListenable:
+                                        manager.currentVerseNotifier,
+                                    builder: (context, verse, _) {
+                                      return Text(
+                                        manager.formatDisplayTitle(
+                                          mediaItem,
+                                          verse,
+                                        ),
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      );
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 4),

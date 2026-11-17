@@ -6,7 +6,9 @@ import 'package:sqlite3/sqlite3.dart';
 import 'schema.dart';
 
 class DatabaseHelper {
-  final String _databaseName = "database.db";
+  DatabaseHelper({this.databaseName = 'database.db'});
+
+  final String databaseName;
   late Database _database;
 
   // Prepared statements
@@ -17,11 +19,12 @@ class DatabaseHelper {
   late PreparedStatement _insertInterlinearStmt;
   late PreparedStatement _insertVerseSearchStmt;
   late PreparedStatement _insertLexiconStmt;
+  late PreparedStatement _insertAudioTimingStmt;
 
   Database get database => _database;
 
   void init() {
-    _database = sqlite3.open(_databaseName);
+    _database = sqlite3.open(databaseName);
     _createTables();
     _prepareStatements();
   }
@@ -34,6 +37,7 @@ class DatabaseHelper {
     _database.execute(Schema.createInterlinearTable);
     _database.execute(Schema.createVerseSearchTable);
     _database.execute(Schema.createLexiconEntryTable);
+    _database.execute(Schema.createAudioTimingsTable);
   }
 
   void _prepareStatements() {
@@ -44,6 +48,7 @@ class DatabaseHelper {
     _insertInterlinearStmt = _database.prepare(Schema.insertInterlinear);
     _insertVerseSearchStmt = _database.prepare(Schema.insertVerseSearch);
     _insertLexiconStmt = _database.prepare(Schema.insertLexiconEntry);
+    _insertAudioTimingStmt = _database.prepare(Schema.insertAudioTiming);
   }
 
   void beginTransaction() {
@@ -55,9 +60,9 @@ class DatabaseHelper {
   }
 
   void deleteDatabase() {
-    final file = File(_databaseName);
+    final file = File(databaseName);
     if (file.existsSync()) {
-      print('Deleting database file: $_databaseName');
+      print('Deleting database file: $databaseName');
       file.deleteSync();
     }
   }
@@ -150,7 +155,16 @@ class DatabaseHelper {
     _insertInterlinearStmt.close();
     _insertVerseSearchStmt.close();
     _insertLexiconStmt.close();
+    _insertAudioTimingStmt.close();
     _database.close();
+  }
+
+  void insertAudioTiming({
+    required int reference,
+    required int startMs,
+    required int endMs,
+  }) {
+    _insertAudioTimingStmt.execute([reference, startMs, endMs]);
   }
 
   void insertVerseSearch({

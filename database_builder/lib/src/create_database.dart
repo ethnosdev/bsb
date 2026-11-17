@@ -1,3 +1,4 @@
+import 'package:database_builder/src/audio_timings_table.dart';
 import 'package:database_builder/src/bsb_table.dart';
 import 'package:database_builder/src/database_helper.dart';
 import 'package:database_builder/src/interlinear_table.dart';
@@ -15,6 +16,9 @@ Future<void> createDatabase() async {
 
   print('Creating BSB Table');
   await createBsbTable(dbHelper);
+
+  print('Creating Audio Timings Table');
+  await createAudioTimingsTable(dbHelper);
 
   print('Creating Verse Search Table');
   await createVerseSearchTable(dbHelper);

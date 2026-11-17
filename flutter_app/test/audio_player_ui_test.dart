@@ -6,6 +6,7 @@ import 'package:bsb/infrastructure/annotation_service.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
+import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/infrastructure/search/bible_search_service.dart';
@@ -16,18 +17,23 @@ import 'package:bsb/ui/search/search_manager.dart';
 import 'package:bsb/ui/search/search_page.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:bsb/ui/tabs/tab_manager.dart';
+import 'package:bsb/ui/text/chapter/chapter_text.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:scripture/scripture.dart';
+import 'package:scripture/scripture_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeDatabaseHelper implements DatabaseHelper {
+  List<UsfmLine> chapterLines = const [];
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async => [];
+  Future<List<UsfmLine>> getChapter(int bookId, int chapter) async =>
+      chapterLines;
 }
 
 class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
@@ -45,6 +51,12 @@ class FakeAnnotationDbHelper implements AnnotationDatabaseHelper {
 }
 
 class FakeBsbAudioHandler implements BsbAudioHandler {
+  @override
+  int? currentBookId = 1;
+
+  @override
+  int? currentChapter = 1;
+
   @override
   final BehaviorSubject<MediaItem?> mediaItem =
       BehaviorSubject<MediaItem?>.seeded(
@@ -88,6 +100,12 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   final ValueNotifier<bool> syncTextNotifier = ValueNotifier<bool>(true);
 
   @override
+  final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
+
+  @override
+  ChapterTimings? get currentTimings => null;
+
+  @override
   void Function(int bookId, int chapter)? onChapterChanged;
 
   @override
@@ -128,6 +146,11 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   bool stopCalled = false;
   bool forward10Called = false;
   bool backward10Called = false;
+  bool nextVerseCalled = false;
+  bool prevVerseCalled = false;
+  bool hasNextVerseValue = true;
+  bool hasPrevVerseValue = true;
+  (int, int, int)? playedFromVerse;
   Duration? seekPosition;
 
   final _fakeHandler = FakeBsbAudioHandler();
@@ -143,6 +166,19 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
 
   @override
   Stream<PositionData> get positionDataStream => positionDataSubject.stream;
+
+  @override
+  String formatDisplayTitle(MediaItem? item, int? verse) {
+    final title = item?.title ?? 'Audio Player';
+    if (verse == null) return title;
+    return '$title:$verse';
+  }
+
+  @override
+  Future<void> playFromVerse(int bookId, int chapter, int verse) async {
+    playedFromVerse = (bookId, chapter, verse);
+    isPlayerVisible.value = true;
+  }
 
   @override
   Future<void> playOrToggleChapter(int bookId, int chapter) async {
@@ -205,6 +241,22 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   Future<void> skipToPrevious() async {}
 
   @override
+  Future<void> skipToNextVerse() async {
+    nextVerseCalled = true;
+  }
+
+  @override
+  Future<void> skipToPreviousVerse() async {
+    prevVerseCalled = true;
+  }
+
+  @override
+  bool hasNextVerse(Duration position) => hasNextVerseValue;
+
+  @override
+  bool hasPreviousVerse(Duration position) => hasPrevVerseValue;
+
+  @override
   Future<void> closePlayer() async {
     stopCalled = true;
     isPlayerVisible.value = false;
@@ -225,7 +277,8 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
     final nextMode = switch (playModeNotifier.value) {
       AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
       AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
-      AudioPlayMode.stopAfterChapter => AudioPlayMode.continuous,
+      AudioPlayMode.stopAfterChapter => AudioPlayMode.repeatVerse,
+      AudioPlayMode.repeatVerse => AudioPlayMode.continuous,
     };
     setPlayMode(nextMode);
   }
@@ -255,6 +308,7 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
     sleepTimerOptionNotifier.dispose();
     sleepTimerRemainingNotifier.dispose();
     syncTextNotifier.dispose();
+    currentVerseNotifier.dispose();
     playbackStateSubject.close();
     mediaItemSubject.close();
     positionDataSubject.close();
@@ -461,23 +515,42 @@ void main() {
       expect(find.text('Audio Player'), findsOneWidget);
       expect(find.text('Bob Souer'), findsOneWidget);
 
-      // Verify seek -10s and +10s buttons
-      final rewindButton = find.byTooltip('Rewind 10 seconds');
-      final forwardButton = find.byTooltip('Forward 10 seconds');
-      expect(rewindButton, findsOneWidget);
-      expect(forwardButton, findsOneWidget);
+      // Verify Previous Verse and Next Verse buttons (replacing ±10s)
+      final prevVerseButton = find.byTooltip('Previous Verse');
+      final nextVerseButton = find.byTooltip('Next Verse');
+      expect(prevVerseButton, findsOneWidget);
+      expect(nextVerseButton, findsOneWidget);
+      expect(find.byTooltip('Rewind 10 seconds'), findsNothing);
+      expect(find.byTooltip('Forward 10 seconds'), findsNothing);
 
-      await tester.tap(rewindButton);
-      expect(audioManager.backward10Called, isTrue);
+      await tester.tap(prevVerseButton);
+      expect(audioManager.prevVerseCalled, isTrue);
 
-      await tester.tap(forwardButton);
-      expect(audioManager.forward10Called, isTrue);
+      await tester.tap(nextVerseButton);
+      expect(audioManager.nextVerseCalled, isTrue);
 
-      // Verify Play Mode button cycles mode
+      // Verify live verse reference updates in both bottom bar and expanded sheet
+      audioManager.currentVerseNotifier.value = 14;
+      await tester.pumpAndSettle();
+      expect(find.text('Genesis 1:14'), findsNWidgets(2));
+
+      // Verify Play Mode button cycles through all 4 modes including Repeat Verse
       expect(find.text('Continuous'), findsOneWidget);
       await tester.tap(find.text('Continuous'));
       await tester.pumpAndSettle();
       expect(audioManager.playModeNotifier.value, AudioPlayMode.repeatChapter);
+
+      await tester.tap(find.text('Repeat Chapter'));
+      await tester.pumpAndSettle();
+      expect(
+        audioManager.playModeNotifier.value,
+        AudioPlayMode.stopAfterChapter,
+      );
+
+      await tester.tap(find.text('1 Chapter'));
+      await tester.pumpAndSettle();
+      expect(audioManager.playModeNotifier.value, AudioPlayMode.repeatVerse);
+      expect(find.text('Repeat Verse'), findsOneWidget);
 
       // Verify Speed picker
       expect(find.text('1.0x'), findsOneWidget);
@@ -574,6 +647,64 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(audioManager.speedNotifier.value, 2.0);
+    },
+  );
+
+  testWidgets(
+    'ChapterText highlights current audio verse only when chapter matches and player is visible',
+    (tester) async {
+      final db = getIt<DatabaseHelper>() as FakeDatabaseHelper;
+      db.chapterLines = [
+        UsfmLine(
+          bookChapterVerse: 1001001,
+          text: 'In the beginning',
+          format: ParagraphFormat.p,
+        ),
+        UsfmLine(
+          bookChapterVerse: 1001002,
+          text: 'Now the earth was formless',
+          format: ParagraphFormat.p,
+        ),
+      ];
+
+      audioManager.isPlayerVisible.value = true;
+      audioManager.currentVerseNotifier.value = 2;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      UsfmWidget usfm = tester.widget<UsfmWidget>(find.byType(UsfmWidget));
+      expect(usfm.highlights.length, 1);
+      expect(usfm.highlights.first.startId, 1001002000);
+      expect(usfm.highlights.first.endId, 1001002999);
+
+      // Hidden during announcement (currentVerse == null)
+      audioManager.currentVerseNotifier.value = null;
+      await tester.pumpAndSettle();
+      usfm = tester.widget<UsfmWidget>(find.byType(UsfmWidget));
+      expect(usfm.highlights, isEmpty);
+
+      // Hidden when player is closed
+      audioManager.currentVerseNotifier.value = 2;
+      audioManager.isPlayerVisible.value = false;
+      await tester.pumpAndSettle();
+      usfm = tester.widget<UsfmWidget>(find.byType(UsfmWidget));
+      expect(usfm.highlights, isEmpty);
+
+      // Hidden when displayed chapter does not match loaded audio chapter
+      audioManager.isPlayerVisible.value = true;
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 2)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      usfm = tester.widget<UsfmWidget>(find.byType(UsfmWidget));
+      expect(usfm.highlights, isEmpty);
     },
   );
 }

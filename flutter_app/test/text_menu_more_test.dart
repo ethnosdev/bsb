@@ -1,7 +1,9 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_database.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
 import 'package:bsb/infrastructure/annotation_service.dart';
+import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/playlist_models.dart';
 import 'package:bsb/infrastructure/playlist_service.dart';
@@ -142,7 +144,8 @@ void main() {
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
 
-      // Verify popup menu shows Compare Translations, Cross Reference, Add to Playlist, and Memorize
+      // Verify popup menu shows Play, Compare Translations, Cross Reference, Add to Playlist, and Memorize
+      expect(find.text('Play'), findsOneWidget);
       expect(find.text('Compare Translations'), findsOneWidget);
       expect(find.text('Cross Reference'), findsOneWidget);
       expect(find.text('Add to Playlist'), findsOneWidget);
@@ -496,4 +499,61 @@ void main() {
       expect(item.endWordId, endWordId);
     },
   );
+
+  testWidgets('Selecting Play starts audio from selected verse and clears selection', (
+    tester,
+  ) async {
+    final fakeAudio = _FakePlayAudioManager();
+    getIt.registerSingleton<AudioPlaybackManager>(fakeAudio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: TextScreen(
+            bookId: 19,
+            chapter: 23,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final chapterText = tester.widget<ChapterText>(find.byType(ChapterText).first);
+    final controller = ScriptureSelectionController();
+    controller.selectWord(19023004001); // Psalm 23:4
+    chapterText.onSelectionChanged!(controller);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Play'));
+    await tester.pumpAndSettle();
+
+    expect(fakeAudio.playedFromVerse, (19, 23, 4));
+    expect(controller.hasSelection, isFalse);
+  });
+}
+
+class _FakePlayAudioManager implements AudioPlaybackManager {
+  (int, int, int)? playedFromVerse;
+
+  @override
+  final ValueNotifier<bool> isPlayerVisible = ValueNotifier<bool>(false);
+
+  @override
+  final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
+
+  @override
+  final ValueNotifier<bool> syncTextNotifier = ValueNotifier<bool>(true);
+
+  @override
+  Stream<MediaItem?> get mediaItemStream => const Stream.empty();
+
+  @override
+  Future<void> playFromVerse(int bookId, int chapter, int verse) async {
+    playedFromVerse = (bookId, chapter, verse);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

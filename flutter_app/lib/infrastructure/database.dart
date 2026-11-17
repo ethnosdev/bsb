@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/bsb_text_localizer.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/search/search_models.dart';
@@ -18,7 +19,7 @@ import 'package:database_builder/database_builder.dart';
 
 class DatabaseHelper {
   static const _databaseName = "database.db";
-  static const _databaseVersion = 31;
+  static const _databaseVersion = 32;
   late Database _database;
   bool _useBritishSpelling = false;
 
@@ -162,6 +163,36 @@ class DatabaseHelper {
     final int upperBound =
         bookId * bookMultiplier + (chapter + 1) * chapterMultiplier;
     return (lowerBound, upperBound);
+  }
+
+  /// Queries per-verse audio timings for [bookId] and [chapter].
+  Future<ChapterTimings> getChapterTimings(int bookId, int chapter) async {
+    final (lowerBound, upperBound) = _chapterBounds(bookId, chapter);
+    final rows = await _database.query(
+      Schema.audioTimingsTable,
+      columns: [
+        Schema.atColReference,
+        Schema.atColStartMs,
+        Schema.atColEndMs,
+      ],
+      where: '${Schema.atColReference} >= ? AND ${Schema.atColReference} < ?',
+      whereArgs: [lowerBound, upperBound],
+      orderBy: '${Schema.atColReference} ASC',
+    );
+    if (rows.isEmpty) {
+      return ChapterTimings.empty(bookId, chapter);
+    }
+    final verses = rows.map((row) {
+      final ref = row[Schema.atColReference] as int;
+      final startMs = row[Schema.atColStartMs] as int;
+      final endMs = row[Schema.atColEndMs] as int;
+      return VerseTiming(
+        verse: ref % 1000,
+        start: Duration(milliseconds: startMs),
+        end: Duration(milliseconds: endMs),
+      );
+    }).toList();
+    return ChapterTimings(bookId: bookId, chapter: chapter, verses: verses);
   }
 
   Future<int> getVerseCount(int bookId, int chapter) async {

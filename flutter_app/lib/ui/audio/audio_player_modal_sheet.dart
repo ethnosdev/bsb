@@ -177,7 +177,6 @@ class AudioPlayerModalSheet extends StatelessWidget {
               stream: manager.mediaItemStream,
               builder: (context, mediaSnapshot) {
                 final mediaItem = mediaSnapshot.data;
-                final title = mediaItem?.title ?? 'Audio Player';
                 final bookId = mediaItem?.extras?['bookId'] as int?;
                 final chapter = mediaItem?.extras?['chapter'] as int?;
 
@@ -272,13 +271,18 @@ class AudioPlayerModalSheet extends StatelessWidget {
                             color: colorScheme.primary,
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            title,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                            textAlign: TextAlign.center,
+                          ValueListenableBuilder<int?>(
+                            valueListenable: manager.currentVerseNotifier,
+                            builder: (context, verse, _) {
+                              return Text(
+                                manager.formatDisplayTitle(mediaItem, verse),
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              );
+                            },
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -332,93 +336,109 @@ class AudioPlayerModalSheet extends StatelessWidget {
 
                     const SizedBox(height: 8),
 
-                    // Primary Control Cluster: Prev, -10s, Play/Pause, +10s, Next
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Skip Previous Chapter
-                        IconButton(
-                          icon: const Icon(Icons.skip_previous),
-                          tooltip: 'Previous Chapter',
-                          iconSize: 32,
-                          onPressed: hasPrev ? manager.skipToPrevious : null,
-                        ),
+                    // Primary Control Cluster: Prev Ch, Prev Verse, Play/Pause, Next Verse, Next Ch
+                    StreamBuilder<PositionData>(
+                      stream: manager.positionDataStream,
+                      builder: (context, posSnapshot) {
+                        final pos =
+                            posSnapshot.data?.position ?? Duration.zero;
+                        final hasPrevVerse = manager.hasPreviousVerse(pos);
+                        final hasNextVerse = manager.hasNextVerse(pos);
 
-                        // Seek -10s
-                        IconButton(
-                          icon: const Icon(Icons.replay_10),
-                          tooltip: 'Rewind 10 seconds',
-                          iconSize: 32,
-                          onPressed: manager.seekBackward10,
-                        ),
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Skip Previous Chapter
+                            IconButton(
+                              icon: const Icon(Icons.skip_previous),
+                              tooltip: 'Previous Chapter',
+                              iconSize: 32,
+                              onPressed: hasPrev ? manager.skipToPrevious : null,
+                            ),
 
-                        // Large Circular Play / Pause
-                        StreamBuilder<PlaybackState>(
-                          stream: manager.playbackStateStream,
-                          builder: (context, stateSnapshot) {
-                            final state = stateSnapshot.data;
-                            final playing = state?.playing ?? false;
-                            final processingState =
-                                state?.processingState ??
-                                AudioProcessingState.idle;
+                            // Previous Verse
+                            IconButton(
+                              icon: const Icon(Icons.fast_rewind),
+                              tooltip: 'Previous Verse',
+                              iconSize: 32,
+                              onPressed: hasPrevVerse
+                                  ? manager.skipToPreviousVerse
+                                  : null,
+                            ),
 
-                            final isLoading =
-                                processingState ==
-                                    AudioProcessingState.loading ||
-                                processingState ==
-                                    AudioProcessingState.buffering;
+                            // Large Circular Play / Pause
+                            StreamBuilder<PlaybackState>(
+                              stream: manager.playbackStateStream,
+                              builder: (context, stateSnapshot) {
+                                final state = stateSnapshot.data;
+                                final playing = state?.playing ?? false;
+                                final processingState =
+                                    state?.processingState ??
+                                    AudioProcessingState.idle;
 
-                            return Material(
-                              elevation: 4,
-                              shape: const CircleBorder(),
-                              color: colorScheme.primary,
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: isLoading
-                                    ? null
-                                    : (playing ? manager.pause : manager.play),
-                                child: Container(
-                                  width: 64,
-                                  height: 64,
-                                  alignment: Alignment.center,
-                                  child: isLoading
-                                      ? SizedBox(
-                                          width: 28,
-                                          height: 28,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 3,
-                                            color: colorScheme.onPrimary,
-                                          ),
-                                        )
-                                      : Icon(
-                                          playing
-                                              ? Icons.pause
-                                              : Icons.play_arrow,
-                                          size: 38,
-                                          color: colorScheme.onPrimary,
-                                        ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                final isLoading =
+                                    processingState ==
+                                        AudioProcessingState.loading ||
+                                    processingState ==
+                                        AudioProcessingState.buffering;
 
-                        // Seek +10s
-                        IconButton(
-                          icon: const Icon(Icons.forward_10),
-                          tooltip: 'Forward 10 seconds',
-                          iconSize: 32,
-                          onPressed: manager.seekForward10,
-                        ),
+                                return Material(
+                                  elevation: 4,
+                                  shape: const CircleBorder(),
+                                  color: colorScheme.primary,
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: isLoading
+                                        ? null
+                                        : (playing
+                                              ? manager.pause
+                                              : manager.play),
+                                    child: Container(
+                                      width: 64,
+                                      height: 64,
+                                      alignment: Alignment.center,
+                                      child: isLoading
+                                          ? SizedBox(
+                                              width: 28,
+                                              height: 28,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 3,
+                                                color: colorScheme.onPrimary,
+                                              ),
+                                            )
+                                          : Icon(
+                                              playing
+                                                  ? Icons.pause
+                                                  : Icons.play_arrow,
+                                              size: 38,
+                                              color: colorScheme.onPrimary,
+                                            ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
 
-                        // Skip Next Chapter
-                        IconButton(
-                          icon: const Icon(Icons.skip_next),
-                          tooltip: 'Next Chapter',
-                          iconSize: 32,
-                          onPressed: hasNext ? manager.skipToNext : null,
-                        ),
-                      ],
+                            // Next Verse
+                            IconButton(
+                              icon: const Icon(Icons.fast_forward),
+                              tooltip: 'Next Verse',
+                              iconSize: 32,
+                              onPressed: hasNextVerse
+                                  ? manager.skipToNextVerse
+                                  : null,
+                            ),
+
+                            // Skip Next Chapter
+                            IconButton(
+                              icon: const Icon(Icons.skip_next),
+                              tooltip: 'Next Chapter',
+                              iconSize: 32,
+                              onPressed: hasNext ? manager.skipToNext : null,
+                            ),
+                          ],
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 16),

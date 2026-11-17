@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/annotation_models.dart';
+import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/bsb_text_localizer.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reading_plan_models.dart';
@@ -81,6 +83,16 @@ class _ChapterTextState extends State<ChapterText>
   Timer? _verseScrubberTimer;
   Timer? _sectionScrollTimer;
   Timer? _verseScrollTimer;
+
+  AudioPlaybackManager? _audioManager;
+  StreamSubscription<MediaItem?>? _audioMediaSub;
+  MediaItem? _audioMediaItem;
+  int? _lastAutoScrolledVerse;
+  bool _isAutoScrollPaused = false;
+  DateTime? _lastManualScrollTime;
+  bool _isUserDragging = false;
+  bool _isCurrentVerseOffScreen = false;
+  bool _audioScrollScheduled = false;
   bool _hasInitiallyShownScrubber = false;
 
   @override
@@ -224,6 +236,8 @@ class _ChapterTextState extends State<ChapterText>
     widget.activePageIndexListenable?.addListener(_handleActivePageChange);
     widget.showScrubberNotifier?.addListener(_handleShowScrubberRequest);
     widget.zoomStartNotifier?.addListener(_handleZoomStart);
+    _scrollController.addListener(_onScrollPositionChanged);
+    _attachAudioListeners();
     manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     _selectionController.addListener(_handleSelectionChange);
     if (widget.targetSection != null) {
@@ -291,6 +305,10 @@ class _ChapterTextState extends State<ChapterText>
       _isVerseScrubberVisible = false;
       _verseAtZoomStart = null;
       _lastRenderedTextSize = null;
+      _lastAutoScrolledVerse = null;
+      _isAutoScrollPaused = false;
+      _lastManualScrollTime = null;
+      _isCurrentVerseOffScreen = false;
       _verseScrubberTimer?.cancel();
       manager.requestText(bookId: widget.bookId, chapter: widget.chapter);
     }
@@ -319,6 +337,8 @@ class _ChapterTextState extends State<ChapterText>
     _verseScrubberTimer?.cancel();
     _sectionScrollTimer?.cancel();
     _verseScrollTimer?.cancel();
+    _detachAudioListeners();
+    _scrollController.removeListener(_onScrollPositionChanged);
     widget.showScrubberNotifier?.removeListener(_handleShowScrubberRequest);
     widget.zoomStartNotifier?.removeListener(_handleZoomStart);
     widget.activePageIndexListenable?.removeListener(_handleActivePageChange);
@@ -667,6 +687,252 @@ class _ChapterTextState extends State<ChapterText>
     return true;
   }
 
+  void _attachAudioListeners() {
+    if (!getIt.isRegistered<AudioPlaybackManager>()) return;
+    _audioManager = getIt<AudioPlaybackManager>();
+    _audioManager!.isPlayerVisible.addListener(_onAudioStateChanged);
+    _audioManager!.currentVerseNotifier.addListener(_onAudioStateChanged);
+    _audioManager!.syncTextNotifier.addListener(_onAudioStateChanged);
+    _audioMediaSub = _audioManager!.mediaItemStream.listen((item) {
+      _audioMediaItem = item;
+      _onAudioStateChanged();
+    });
+  }
+
+  void _detachAudioListeners() {
+    _audioMediaSub?.cancel();
+    _audioMediaSub = null;
+    _audioManager?.isPlayerVisible.removeListener(_onAudioStateChanged);
+    _audioManager?.currentVerseNotifier.removeListener(_onAudioStateChanged);
+    _audioManager?.syncTextNotifier.removeListener(_onAudioStateChanged);
+    _audioManager = null;
+  }
+
+  (int?, int?) _loadedAudioChapter() {
+    final handler = _audioManager?.audioHandler;
+    final bookId =
+        handler?.currentBookId ?? (_audioMediaItem?.extras?['bookId'] as int?);
+    final chapter =
+        handler?.currentChapter ??
+        (_audioMediaItem?.extras?['chapter'] as int?);
+    return (bookId, chapter);
+  }
+
+  int? _activeAudioVerse() {
+    final manager = _audioManager;
+    if (manager == null || !manager.isPlayerVisible.value) return null;
+    final (bookId, chapter) = _loadedAudioChapter();
+    if (bookId != widget.bookId || chapter != widget.chapter) return null;
+    return manager.currentVerseNotifier.value;
+  }
+
+  void _onAudioStateChanged() {
+    if (!mounted) return;
+    final activeVerse = _activeAudioVerse();
+
+    if (activeVerse == null) {
+      _lastAutoScrolledVerse = null;
+      _isCurrentVerseOffScreen = false;
+      setState(() {});
+      return;
+    }
+
+    if (_isActive &&
+        (_audioManager?.syncTextNotifier.value ?? false) &&
+        activeVerse > 0) {
+      if (activeVerse != _lastAutoScrolledVerse) {
+        if (_isAutoScrollPaused &&
+            _lastManualScrollTime != null &&
+            DateTime.now().difference(_lastManualScrollTime!) >=
+                const Duration(seconds: 10)) {
+          _isAutoScrollPaused = false;
+          _lastManualScrollTime = null;
+          _isCurrentVerseOffScreen = false;
+        }
+        if (!_isAutoScrollPaused) {
+          _scheduleAudioAutoScroll(activeVerse);
+        } else {
+          _scheduleOffScreenCheck(activeVerse);
+        }
+      } else if (_isAutoScrollPaused) {
+        _scheduleOffScreenCheck(activeVerse);
+      }
+    } else {
+      _isCurrentVerseOffScreen = false;
+    }
+
+    setState(() {});
+  }
+
+  void _pauseAutoScrollForManualInteraction() {
+    if (_activeAudioVerse() == null ||
+        !(_audioManager?.syncTextNotifier.value ?? false)) {
+      return;
+    }
+    _lastManualScrollTime = DateTime.now();
+    if (!_isAutoScrollPaused) {
+      setState(() {
+        _isAutoScrollPaused = true;
+      });
+    }
+    final activeVerse = _activeAudioVerse();
+    if (activeVerse != null) {
+      _updateCurrentVerseOffScreen(activeVerse);
+    }
+  }
+
+  void _onScrollPositionChanged() {
+    if (!_isAutoScrollPaused) return;
+    final activeVerse = _activeAudioVerse();
+    if (activeVerse == null) return;
+    _updateCurrentVerseOffScreen(activeVerse);
+  }
+
+  void _scheduleOffScreenCheck(int verse) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updateCurrentVerseOffScreen(verse);
+      }
+    });
+  }
+
+  void _updateCurrentVerseOffScreen(int verse) {
+    if (!_scrollController.hasClients ||
+        !_scrollController.position.hasContentDimensions) {
+      return;
+    }
+    final passage = _findRenderPassage();
+    if (passage == null || !passage.hasSize) return;
+    final bounds = _getVerseVerticalBounds(passage, verse);
+    if (bounds == null) return;
+    final offScreen = _isVerseOutsideViewport(bounds.$1, bounds.$2);
+    if (offScreen != _isCurrentVerseOffScreen && mounted) {
+      setState(() {
+        _isCurrentVerseOffScreen = offScreen;
+      });
+    }
+  }
+
+  void _scheduleAudioAutoScroll(int verse, {bool force = false}) {
+    if (_audioScrollScheduled && !force) return;
+    _audioScrollScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _audioScrollScheduled = false;
+      if (!mounted) return;
+      final current = _activeAudioVerse();
+      if (current == null) return;
+      _autoScrollToVerseIfNeeded(current, force: force);
+    });
+  }
+
+  (double, double)? _getVerseVerticalBounds(RenderPassage passage, int verse) {
+    final passageOffset = _getPassageOffsetInColumn(passage);
+    final targetVerseStr = verse.toString();
+    final expectedPackedRef =
+        widget.bookId * 1000000 + widget.chapter * 1000 + verse;
+
+    double? minTop;
+    double? maxBottom;
+
+    void recordBounds(double top, double bottom) {
+      minTop = (minTop == null || top < minTop!) ? top : minTop;
+      maxBottom = (maxBottom == null || bottom > maxBottom!)
+          ? bottom
+          : maxBottom;
+    }
+
+    RenderBox? child = passage.firstChild;
+    while (child != null) {
+      if (child is RenderParagraph) {
+        final pData = child.parentData as PassageParentData;
+        final paragraphTop = passageOffset + pData.offset.dy;
+
+        RenderBox? elem = child.firstChild;
+        while (elem != null) {
+          final elemData = elem.parentData as ParagraphParentData;
+          bool matches = false;
+          if (elem is RenderVerseNumber && elem.number == targetVerseStr) {
+            matches = true;
+          } else if (elem is RenderWord &&
+              elem.id ~/ 1000 == expectedPackedRef) {
+            matches = true;
+          } else if (elem is RenderTextAtom) {
+            RenderBox? atomChild = elem.firstChild;
+            while (atomChild != null) {
+              if (atomChild is RenderWord &&
+                  atomChild.id ~/ 1000 == expectedPackedRef) {
+                matches = true;
+                break;
+              }
+              atomChild =
+                  (atomChild.parentData as TextAtomParentData).nextSibling;
+            }
+          }
+
+          if (matches) {
+            final top = paragraphTop + elemData.offset.dy;
+            final bottom = top + elem.size.height;
+            recordBounds(top, bottom);
+          }
+          elem = elemData.nextSibling;
+        }
+      }
+      child = (child.parentData as PassageParentData).nextSibling;
+    }
+
+    if (minTop == null || maxBottom == null) return null;
+    return (minTop!, maxBottom!);
+  }
+
+  bool _isVerseOutsideViewport(double verseTop, double verseBottom) {
+    final scrollOffset = _scrollController.offset;
+    final viewportHeight = _scrollController.position.viewportDimension;
+    final visibleTop = scrollOffset + _topPadding;
+    final visibleBottom = scrollOffset + viewportHeight;
+    return verseTop < visibleTop + 8.0 || verseBottom > visibleBottom - 24.0;
+  }
+
+  void _autoScrollToVerseIfNeeded(int verse, {bool force = false}) {
+    if (!_scrollController.hasClients ||
+        !_scrollController.position.hasContentDimensions) {
+      return;
+    }
+    final passage = _findRenderPassage();
+    if (passage == null || !passage.hasSize) return;
+
+    final bounds = _getVerseVerticalBounds(passage, verse);
+    if (bounds == null) return;
+
+    _lastAutoScrolledVerse = verse;
+    if (!force && !_isVerseOutsideViewport(bounds.$1, bounds.$2)) {
+      return;
+    }
+
+    final viewportHeight = _scrollController.position.viewportDimension;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final targetOffset =
+        (bounds.$1 - _topPadding - (viewportHeight - _topPadding) * 0.28).clamp(
+          0.0,
+          maxScroll,
+        );
+    _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _jumpToCurrentAudioVerse() {
+    final activeVerse = _activeAudioVerse();
+    if (activeVerse == null) return;
+    setState(() {
+      _isAutoScrollPaused = false;
+      _lastManualScrollTime = null;
+      _isCurrentVerseOffScreen = false;
+    });
+    _autoScrollToVerseIfNeeded(activeVerse, force: true);
+  }
+
   void _scheduleRestoreVerseAfterResize(int? verse, [int attempt = 0]) {
     if (verse == null || !_isActive) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -884,9 +1150,38 @@ class _ChapterTextState extends State<ChapterText>
                 return ValueListenableBuilder<List<Highlight>>(
                   valueListenable: manager.highlightsNotifier,
                   builder: (context, rawHighlights, child) {
-                    final highlights = rawHighlights
-                        .map((h) => h.toHighlightRange(brightness))
-                        .toList();
+                    final activeAudioVerse = _activeAudioVerse();
+                    if (verseLines.isNotEmpty &&
+                        _isActive &&
+                        widget.targetVerse == null &&
+                        activeAudioVerse != null &&
+                        activeAudioVerse > 0 &&
+                        (_audioManager?.syncTextNotifier.value ?? false) &&
+                        !_isAutoScrollPaused &&
+                        _lastAutoScrolledVerse != activeAudioVerse) {
+                      _scheduleAudioAutoScroll(activeAudioVerse);
+                    }
+
+                    final highlights = <HighlightRange>[
+                      if (activeAudioVerse != null && activeAudioVerse > 0)
+                        HighlightRange(
+                          startId:
+                              (widget.bookId * 1000000 +
+                                  widget.chapter * 1000 +
+                                  activeAudioVerse) *
+                              1000,
+                          endId:
+                              (widget.bookId * 1000000 +
+                                  widget.chapter * 1000 +
+                                  activeAudioVerse) *
+                              1000 +
+                              999,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.12),
+                        ),
+                      ...rawHighlights.map((h) => h.toHighlightRange(brightness)),
+                    ];
                     return ValueListenableBuilder<List<NoteMarker>>(
                       valueListenable: manager.noteMarkersNotifier,
                       builder: (context, noteMarkers, child) {
@@ -897,10 +1192,21 @@ class _ChapterTextState extends State<ChapterText>
                                 onNotification: (notification) {
                                   if (notification is ScrollStartNotification &&
                                       notification.dragDetails != null) {
+                                    _isUserDragging = true;
+                                    _pauseAutoScrollForManualInteraction();
                                     if (_isVerseScrubberVisible &&
                                         !_isScrubbing) {
                                       _hideVerseScrubber();
                                     }
+                                  } else if (notification
+                                          is ScrollUpdateNotification &&
+                                      notification.dragDetails != null) {
+                                    _lastManualScrollTime = DateTime.now();
+                                  } else if (notification
+                                          is ScrollEndNotification &&
+                                      _isUserDragging) {
+                                    _isUserDragging = false;
+                                    _lastManualScrollTime = DateTime.now();
                                   }
                                   return false;
                                 },
@@ -996,6 +1302,30 @@ class _ChapterTextState extends State<ChapterText>
                                 ),
                               ),
                               _buildVerseScrubberOverlay(sortedVerses),
+                              if (_isActive &&
+                                  _isAutoScrollPaused &&
+                                  _isCurrentVerseOffScreen &&
+                                  (_audioManager?.syncTextNotifier.value ??
+                                      false) &&
+                                  activeAudioVerse != null &&
+                                  activeAudioVerse > 0)
+                                Positioned(
+                                  bottom: 16.0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: ActionChip(
+                                      avatar: const Icon(
+                                        Icons.my_location,
+                                        size: 16,
+                                      ),
+                                      label: Text(
+                                        'Jump to verse $activeAudioVerse',
+                                      ),
+                                      onPressed: _jumpToCurrentAudioVerse,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         );

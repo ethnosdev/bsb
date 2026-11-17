@@ -3,7 +3,8 @@ import 'package:material_ui/material_ui.dart';
 enum AudioPlayMode {
   continuous('Continuous', Icons.repeat),
   repeatChapter('Repeat Chapter', Icons.repeat_one),
-  stopAfterChapter('1 Chapter', Icons.stop_circle_outlined);
+  stopAfterChapter('1 Chapter', Icons.stop_circle_outlined),
+  repeatVerse('Repeat Verse', Icons.replay);
 
   final String label;
   final IconData icon;
@@ -16,6 +17,8 @@ enum AudioPlayMode {
         return AudioPlayMode.repeatChapter;
       case 'stopAfterChapter':
         return AudioPlayMode.stopAfterChapter;
+      case 'repeatVerse':
+        return AudioPlayMode.repeatVerse;
       case 'continuous':
       default:
         return AudioPlayMode.continuous;
@@ -28,6 +31,8 @@ enum AudioPlayMode {
         return 'repeatChapter';
       case AudioPlayMode.stopAfterChapter:
         return 'stopAfterChapter';
+      case AudioPlayMode.repeatVerse:
+        return 'repeatVerse';
       case AudioPlayMode.continuous:
         return 'continuous';
     }

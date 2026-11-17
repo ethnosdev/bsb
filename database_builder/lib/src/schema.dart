@@ -176,4 +176,25 @@ class Schema {
   static const String insertEnglish = '''
     INSERT INTO $englishTable ($engColWord) VALUES (?)
   ''';
+
+  // Audio timings table
+  static const String audioTimingsTable = "audio_timings";
+
+  static const String atColReference = 'reference';
+  static const String atColStartMs = 'start_ms';
+  static const String atColEndMs = 'end_ms';
+
+  static const String createAudioTimingsTable = '''
+  CREATE TABLE IF NOT EXISTS $audioTimingsTable (
+    $atColReference INTEGER PRIMARY KEY,
+    $atColStartMs INTEGER NOT NULL,
+    $atColEndMs INTEGER NOT NULL
+  )
+  ''';
+
+  static const String insertAudioTiming = '''
+    INSERT INTO $audioTimingsTable (
+      $atColReference, $atColStartMs, $atColEndMs
+    ) VALUES (?, ?, ?)
+  ''';
 }

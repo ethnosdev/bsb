@@ -4,6 +4,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_url_resolver.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
+import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter/foundation.dart';
@@ -32,12 +33,19 @@ class AudioPlaybackManager {
   final ValueNotifier<Duration?> sleepTimerRemainingNotifier =
       ValueNotifier<Duration?>(null);
   final ValueNotifier<bool> syncTextNotifier;
+  final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
 
   Timer? _sleepCountdownTimer;
   StreamSubscription<MediaItem?>? _mediaItemSub;
   StreamSubscription<Duration>? _positionSaveSub;
+  StreamSubscription<int?>? _verseSub;
+
+  int? _lastNotifiedBookId;
+  int? _lastNotifiedChapter;
 
   void Function(int bookId, int chapter)? onChapterChanged;
+
+  ChapterTimings? get currentTimings => audioHandler.currentTimings;
 
   UserSettings? get _effectiveSettings {
     if (userSettings != null) return userSettings;
@@ -82,15 +90,25 @@ class AudioPlaybackManager {
     };
 
     _mediaItemSub = audioHandler.mediaItem.listen((item) {
-      if (item != null) {
-        final bookId = item.extras?['bookId'] as int?;
-        final chapter = item.extras?['chapter'] as int?;
-        if (bookId != null && chapter != null) {
-          if (syncTextNotifier.value) {
-            onChapterChanged?.call(bookId, chapter);
-          }
-        }
+      if (item == null) return;
+      final bookId = item.extras?['bookId'] as int?;
+      final chapter = item.extras?['chapter'] as int?;
+      if (bookId == null || chapter == null) return;
+
+      // De-duplicate on (bookId, chapter) because MediaItem also updates when
+      // the live verse artist label changes every few seconds.
+      if (bookId == _lastNotifiedBookId && chapter == _lastNotifiedChapter) {
+        return;
       }
+      _lastNotifiedBookId = bookId;
+      _lastNotifiedChapter = chapter;
+      if (syncTextNotifier.value) {
+        onChapterChanged?.call(bookId, chapter);
+      }
+    });
+
+    _verseSub = audioHandler.currentVerseStream.listen((verse) {
+      currentVerseNotifier.value = verse;
     });
 
     _positionSaveSub = audioHandler.player.positionStream
@@ -122,6 +140,14 @@ class AudioPlaybackManager {
         (position, buffered, duration) =>
             PositionData(position, buffered, duration ?? Duration.zero),
       );
+
+  /// Formats the display reference for the mini player and expanded sheet
+  /// (e.g. "John 10:14", or "John 10" during the chapter announcement).
+  String formatDisplayTitle(MediaItem? item, int? verse) {
+    final title = item?.title ?? 'Audio Player';
+    if (verse == null) return title;
+    return '$title:$verse';
+  }
 
   /// Starts or resumes playing the given chapter and ensures player bar is visible.
   Future<void> playOrToggleChapter(int bookId, int chapter) async {
@@ -164,6 +190,18 @@ class AudioPlaybackManager {
     }
   }
 
+  /// Starts playback from [verse] in [bookId] and [chapter].
+  Future<void> playFromVerse(int bookId, int chapter, int verse) async {
+    isPlayerVisible.value = true;
+    playbackErrorNotifier.value = null;
+    try {
+      await audioHandler.playFromVerse(bookId, chapter, verse);
+    } catch (e) {
+      playbackErrorNotifier.value =
+          'Unable to play audio. Check internet connection.';
+    }
+  }
+
   Future<void> play() async {
     isPlayerVisible.value = true;
     await audioHandler.play();
@@ -194,8 +232,23 @@ class AudioPlaybackManager {
     await audioHandler.skipToPrevious();
   }
 
+  Future<void> skipToNextVerse() async {
+    await audioHandler.skipToNextVerse();
+  }
+
+  Future<void> skipToPreviousVerse() async {
+    await audioHandler.skipToPreviousVerse();
+  }
+
+  bool hasNextVerse(Duration position) => audioHandler.hasNextVerse(position);
+
+  bool hasPreviousVerse(Duration position) =>
+      audioHandler.hasPreviousVerse(position);
+
   Future<void> closePlayer() async {
     isPlayerVisible.value = false;
+    _lastNotifiedBookId = null;
+    _lastNotifiedChapter = null;
     _saveCurrentState();
     await audioHandler.stop();
   }
@@ -216,7 +269,8 @@ class AudioPlaybackManager {
     final nextMode = switch (playModeNotifier.value) {
       AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
       AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
-      AudioPlayMode.stopAfterChapter => AudioPlayMode.continuous,
+      AudioPlayMode.stopAfterChapter => AudioPlayMode.repeatVerse,
+      AudioPlayMode.repeatVerse => AudioPlayMode.continuous,
     };
     setPlayMode(nextMode);
   }
@@ -270,6 +324,8 @@ class AudioPlaybackManager {
       final bookId = audioHandler.currentBookId;
       final chap = audioHandler.currentChapter;
       if (bookId != null && chap != null) {
+        _lastNotifiedBookId = bookId;
+        _lastNotifiedChapter = chap;
         onChapterChanged?.call(bookId, chap);
       }
     }
@@ -289,6 +345,7 @@ class AudioPlaybackManager {
     _sleepCountdownTimer?.cancel();
     _mediaItemSub?.cancel();
     _positionSaveSub?.cancel();
+    _verseSub?.cancel();
     isPlayerVisible.dispose();
     playbackErrorNotifier.dispose();
     speedNotifier.dispose();
@@ -296,5 +353,6 @@ class AudioPlaybackManager {
     sleepTimerOptionNotifier.dispose();
     sleepTimerRemainingNotifier.dispose();
     syncTextNotifier.dispose();
+    currentVerseNotifier.dispose();
   }
 }

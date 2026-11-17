@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
+import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
@@ -11,6 +14,33 @@ class MockAudioPlayer extends AudioPlayer {
   Duration currentPosition = Duration.zero;
   Duration? currentDuration = const Duration(minutes: 5);
   bool isPlaying = false;
+  int setAudioSourceCalls = 0;
+  Duration? lastInitialPosition;
+
+  final StreamController<Duration> positionController =
+      StreamController<Duration>.broadcast();
+  final StreamController<PlayerState> playerStateController =
+      StreamController<PlayerState>.broadcast();
+  final StreamController<PlaybackEvent> eventController =
+      StreamController<PlaybackEvent>.broadcast();
+
+  @override
+  Stream<Duration> get positionStream => positionController.stream;
+
+  @override
+  Stream<Duration> get bufferedPositionStream => Stream.value(Duration.zero);
+
+  @override
+  Stream<Duration?> get durationStream => Stream.value(currentDuration);
+
+  @override
+  Stream<PlayerState> get playerStateStream => playerStateController.stream;
+
+  @override
+  Stream<PlaybackEvent> get playbackEventStream => eventController.stream;
+
+  @override
+  ProcessingState get processingState => ProcessingState.ready;
 
   @override
   double get speed => currentSpeed;
@@ -30,19 +60,35 @@ class MockAudioPlayer extends AudioPlayer {
   bool get playing => isPlaying;
 
   @override
+  Future<Duration?> setAudioSource(
+    AudioSource source, {
+    int? initialIndex,
+    Duration? initialPosition,
+    bool preload = true,
+  }) async {
+    setAudioSourceCalls++;
+    lastInitialPosition = initialPosition;
+    currentPosition = initialPosition ?? Duration.zero;
+    return currentDuration;
+  }
+
+  @override
   Future<void> play() async {
     isPlaying = true;
+    playerStateController.add(PlayerState(true, ProcessingState.ready));
   }
 
   @override
   Future<void> pause() async {
     isPlaying = false;
+    playerStateController.add(PlayerState(false, ProcessingState.ready));
   }
 
   @override
   Future<void> seek(Duration? position, {int? index}) async {
     if (position != null) {
       currentPosition = position;
+      positionController.add(position);
     }
   }
 
@@ -50,10 +96,48 @@ class MockAudioPlayer extends AudioPlayer {
   Future<void> stop() async {
     isPlaying = false;
   }
+
+  void emitPosition(Duration pos) {
+    currentPosition = pos;
+    positionController.add(pos);
+  }
+
+  void emitCompleted() {
+    playerStateController.add(PlayerState(false, ProcessingState.completed));
+  }
+
+  @override
+  Future<void> dispose() async {
+    await positionController.close();
+    await playerStateController.close();
+    await eventController.close();
+  }
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  const john10Timings = ChapterTimings(
+    bookId: 43,
+    chapter: 10,
+    verses: [
+      VerseTiming(
+        verse: 1,
+        start: Duration(milliseconds: 4700),
+        end: Duration(milliseconds: 12950),
+      ),
+      VerseTiming(
+        verse: 2,
+        start: Duration(milliseconds: 12950),
+        end: Duration(milliseconds: 16690),
+      ),
+      VerseTiming(
+        verse: 3,
+        start: Duration(milliseconds: 16690),
+        end: Duration(milliseconds: 24830),
+      ),
+    ],
+  );
 
   late UserSettings userSettings;
   late MockAudioPlayer mockPlayer;
@@ -66,15 +150,22 @@ void main() {
     await userSettings.init();
 
     mockPlayer = MockAudioPlayer();
-    audioHandler = BsbAudioHandler(player: mockPlayer);
+    audioHandler = BsbAudioHandler(
+      player: mockPlayer,
+      timingsLoader: (bookId, chapter) async {
+        if (bookId == 43 && chapter == 10) return john10Timings;
+        return ChapterTimings.empty(bookId, chapter);
+      },
+    );
     manager = AudioPlaybackManager(
       audioHandler: audioHandler,
       userSettings: userSettings,
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     manager.dispose();
+    await audioHandler.dispose();
   });
 
   group('AudioPlaybackManager logic', () {
@@ -95,7 +186,7 @@ void main() {
       },
     );
 
-    test('setPlayMode and cyclePlayMode cycle properly and persist', () {
+    test('setPlayMode and cyclePlayMode cycle through all 4 modes and persist', () {
       expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
 
       manager.cyclePlayMode();
@@ -107,6 +198,12 @@ void main() {
       expect(manager.playModeNotifier.value, AudioPlayMode.stopAfterChapter);
       expect(audioHandler.playMode, AudioPlayMode.stopAfterChapter);
       expect(userSettings.audioPlayMode, 'stopAfterChapter');
+
+      manager.cyclePlayMode();
+      expect(manager.playModeNotifier.value, AudioPlayMode.repeatVerse);
+      expect(audioHandler.playMode, AudioPlayMode.repeatVerse);
+      expect(userSettings.audioPlayMode, 'repeatVerse');
+      expect(AudioPlayMode.fromString('repeatVerse'), AudioPlayMode.repeatVerse);
 
       manager.cyclePlayMode();
       expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
@@ -172,6 +269,100 @@ void main() {
       mockPlayer.currentPosition = const Duration(minutes: 4, seconds: 55);
       await manager.seekForward10();
       expect(mockPlayer.currentPosition, const Duration(minutes: 5));
+    });
+
+    test('playFromVerse starts verse 1 at 0:00 and verse N at start_ms, reusing loaded chapter', () async {
+      await manager.playFromVerse(43, 10, 1);
+      expect(mockPlayer.setAudioSourceCalls, 1);
+      expect(mockPlayer.lastInitialPosition, Duration.zero);
+      expect(manager.isPlayerVisible.value, isTrue);
+
+      // Same chapter: seeks directly without calling setAudioSource again
+      await manager.playFromVerse(43, 10, 2);
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.setAudioSourceCalls, 1);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+      expect(manager.currentVerseNotifier.value, 2);
+
+      // Different chapter: calls setAudioSource again
+      await manager.playFromVerse(1, 1, 1);
+      expect(mockPlayer.setAudioSourceCalls, 2);
+      expect(mockPlayer.lastInitialPosition, Duration.zero);
+    });
+
+    test('skipToNextVerse and skipToPreviousVerse respect timings and 2-second rule', () async {
+      await audioHandler.playChapter(43, 10);
+      expect(manager.currentVerseNotifier.value, isNull); // announcement
+
+      // Announcement -> Next Verse goes to verse 1 start
+      await manager.skipToNextVerse();
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+      expect(manager.currentVerseNotifier.value, 1);
+
+      // Verse 1 -> Next Verse goes to verse 2 start
+      await manager.skipToNextVerse();
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+      expect(manager.currentVerseNotifier.value, 2);
+
+      // > 2s into verse 2 -> Previous restarts verse 2
+      mockPlayer.emitPosition(const Duration(milliseconds: 15500));
+      await manager.skipToPreviousVerse();
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+
+      // <= 2s into verse 2 -> Previous goes to verse 1
+      await manager.skipToPreviousVerse();
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+    });
+
+    test('MediaItem artist updates on verse change do not re-trigger onChapterChanged', () async {
+      int chapterNotifications = 0;
+      manager.onChapterChanged = (b, c) {
+        chapterNotifications++;
+      };
+
+      await audioHandler.playChapter(43, 10);
+      await Future<void>.delayed(Duration.zero);
+      expect(chapterNotifications, 1);
+      expect(audioHandler.mediaItem.value?.title, 'John 10');
+      expect(audioHandler.mediaItem.value?.artist, isNull);
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 5000));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.mediaItem.value?.artist, 'Verse 1');
+      expect(chapterNotifications, 1);
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 13500));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.mediaItem.value?.artist, 'Verse 2');
+      expect(chapterNotifications, 1);
+
+      // Back to announcement clears artist without firing onChapterChanged
+      mockPlayer.emitPosition(const Duration(milliseconds: 1000));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.mediaItem.value?.artist, isNull);
+      expect(chapterNotifications, 1);
+    });
+
+    test('repeatVerse loops back to verse start_ms (skipping announcement for v1) and loops last verse on completion', () async {
+      await audioHandler.playChapter(43, 10);
+      manager.setPlayMode(AudioPlayMode.repeatVerse);
+
+      // Move into verse 1, then past verse 1 end -> loops back to v1 start_ms (4.7s), not 0:00
+      await manager.seek(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+
+      // Seek to last verse (v3) and emit completed -> seeks back to v3 start_ms (16.69s) and stays on John 10
+      await manager.seek(const Duration(milliseconds: 18000));
+      mockPlayer.emitCompleted();
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.currentBookId, 43);
+      expect(audioHandler.currentChapter, 10);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 16690));
+      expect(mockPlayer.isPlaying, isTrue);
     });
   });
 }

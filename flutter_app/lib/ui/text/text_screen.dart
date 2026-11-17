@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:bsb/app_state.dart';
 import 'package:bsb/core/font_family.dart';
 import 'package:bsb/core/font_scale.dart';
+import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/ui/hebrew_greek/hebrew_greek_screen.dart';
 import 'package:bsb/ui/home/chapter_chooser.dart';
@@ -745,6 +748,7 @@ class _TextScreenState extends State<TextScreen>
       context: context,
       position: position,
       items: const [
+        PopupMenuItem<String>(value: 'play', child: Text('Play')),
         PopupMenuItem<String>(
           value: 'compare',
           child: Text('Compare Translations'),
@@ -761,7 +765,18 @@ class _TextScreenState extends State<TextScreen>
       ],
     );
 
-    if (selected == 'compare') {
+    if (selected == 'play') {
+      if (getIt.isRegistered<AudioPlaybackManager>()) {
+        unawaited(
+          getIt<AudioPlaybackManager>().playFromVerse(
+            reference.bookId,
+            reference.chapter,
+            reference.verse ?? 1,
+          ),
+        );
+      }
+      return true;
+    } else if (selected == 'compare') {
       _handleCompare(reference);
       return true;
     } else if (selected == 'cross_reference') {

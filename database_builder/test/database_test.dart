@@ -27,6 +27,7 @@ void main() {
         tables,
         containsAll([
           Schema.bibleTextTable,
+          Schema.audioTimingsTable,
           Schema.interlinearTable,
           Schema.originalLanguageTable,
           Schema.englishTable,
@@ -40,6 +41,7 @@ void main() {
           db.select('SELECT count(*) as c FROM $table;').first['c'] as int;
 
       expect(count(Schema.bibleTextTable), greaterThan(68000));
+      expect(count(Schema.audioTimingsTable), equals(kTotalCanonicalVerses));
       expect(count(Schema.interlinearTable), greaterThan(440000));
       expect(count(Schema.originalLanguageTable), greaterThan(130000));
       expect(count(Schema.englishTable), greaterThan(100000));

@@ -1,8 +1,11 @@
 # 2.9.0 - 2026.11.17
 
-- Redesign custom theme editor with a 5-color palette, preset starter, and 2D color picker.
-- Pin a compact live scripture preview in Color Theme and Custom Theme Editor with scrollable options below.
-- Update Color Theme ordering and styling, and apply theme colors to markdown links, playlist subtitles, and dark-mode book chooser borders.
+- Redesigned the theme chooser and custom theme editor.
+- Added bundled per-verse audio timings (`audio_timings` table) for Souer audio playback.
+- Highlight the verse currently being read and auto-scroll to follow playback when Sync Text is enabled (with manual-scroll pause and a "Jump to verse" chip).
+- Added live verse references in the mini player, expanded player, and lock-screen notification.
+- Added "Play" to the verse selection More menu to start audio from a selected verse.
+- Replaced ±10s buttons in the expanded player with Previous/Next Verse controls, and added a Repeat Verse play mode.
 
 # 2.8.0 - 2026.11.16
 
