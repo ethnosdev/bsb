@@ -14,9 +14,9 @@ enum AudioPlayContext {
 }
 
 enum AudioRepeatBehavior {
-  continueOn('Continue', Icons.double_arrow),
-  stop('Stop', Icons.stop_circle_outlined),
-  repeat('Repeat', Icons.repeat);
+  stop('Stop after', Icons.repeat_one),
+  repeat('Repeat', Icons.repeat),
+  continueOn('Continue after', Icons.arrow_right_alt);
 
   final String label;
   final IconData icon;
@@ -108,19 +108,5 @@ const int kDefaultVersePauseSeconds = 5;
 const int kMinVersePauseSeconds = 1;
 const int kMaxVersePauseSeconds = 60;
 const List<int> kVersePausePresetSeconds = [3, 5, 8, 10, 15];
-
-enum SleepTimerOption {
-  off('Off', null),
-  endOfChapter('End of chapter', null),
-  fifteenMinutes('15 minutes', Duration(minutes: 15)),
-  thirtyMinutes('30 minutes', Duration(minutes: 30)),
-  fortyFiveMinutes('45 minutes', Duration(minutes: 45)),
-  sixtyMinutes('60 minutes', Duration(minutes: 60));
-
-  final String label;
-  final Duration? duration;
-
-  const SleepTimerOption(this.label, this.duration);
-}
 
 const List<double> kAudioSpeedOptions = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];

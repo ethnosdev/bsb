@@ -116,14 +116,6 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   final ValueNotifier<int?> lockedVerseNotifier = ValueNotifier<int?>(null);
 
   @override
-  final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
-      ValueNotifier<SleepTimerOption>(SleepTimerOption.off);
-
-  @override
-  final ValueNotifier<Duration?> sleepTimerRemainingNotifier =
-      ValueNotifier<Duration?>(null);
-
-  @override
   final ValueNotifier<String?> audioTabIdNotifier = ValueNotifier<String?>(
     null,
   );
@@ -131,8 +123,10 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
 
+  ChapterTimings? fakeTimings;
+
   @override
-  ChapterTimings? get currentTimings => null;
+  ChapterTimings? get currentTimings => fakeTimings;
 
   @override
   void Function(int bookId, int chapter)? onChapterChanged;
@@ -173,8 +167,6 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   bool playCalled = false;
   bool pauseCalled = false;
   bool stopCalled = false;
-  bool forward10Called = false;
-  bool backward10Called = false;
   bool nextVerseCalled = false;
   bool prevVerseCalled = false;
   bool hasNextVerseValue = true;
@@ -199,7 +191,10 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
 
   @override
   String formatDisplayTitle(MediaItem? item, int? verse) {
-    final title = item?.title ?? 'Audio Player';
+    final title =
+        (item?.extras?['chapterTitle'] as String?) ??
+        item?.title ??
+        'Audio Player';
     if (verse == null) return title;
     return '$title:$verse';
   }
@@ -272,23 +267,10 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   Future<void> seek(Duration position) async {
     seekPosition = position;
+    if (fakeTimings != null) {
+      currentVerseNotifier.value = fakeTimings!.verseAt(position);
+    }
   }
-
-  @override
-  Future<void> seekForward10() async {
-    forward10Called = true;
-  }
-
-  @override
-  Future<void> seekBackward10() async {
-    backward10Called = true;
-  }
-
-  @override
-  Future<void> skipToNext() async {}
-
-  @override
-  Future<void> skipToPrevious() async {}
 
   @override
   Future<void> skipToNextVerse() async {
@@ -315,7 +297,6 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   @override
   Future<void> setSpeed(double speed) async {
     speedNotifier.value = speed;
-    pauseBetweenVersesEnabledNotifier.value = false;
   }
 
   @override
@@ -330,9 +311,6 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
       );
     }
     pauseBetweenVersesEnabledNotifier.value = enabled;
-    if (enabled) {
-      speedNotifier.value = 1.0;
-    }
   }
 
   @override
@@ -354,17 +332,6 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   Future<void> playSelection(Reference reference) async {}
 
   @override
-  void setSleepTimer(SleepTimerOption option) {
-    sleepTimerOptionNotifier.value = option;
-  }
-
-  @override
-  bool hasNextChapter(int? bookId, int? chapter) => true;
-
-  @override
-  bool hasPreviousChapter(int? bookId, int? chapter) => true;
-
-  @override
   void dispose() {
     isPlayerVisible.dispose();
     playbackErrorNotifier.dispose();
@@ -376,8 +343,6 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
     repeatBehaviorNotifier.dispose();
     activeRangeNotifier.dispose();
     lockedVerseNotifier.dispose();
-    sleepTimerOptionNotifier.dispose();
-    sleepTimerRemainingNotifier.dispose();
     audioTabIdNotifier.dispose();
     currentVerseNotifier.dispose();
     playbackStateSubject.close();
@@ -581,13 +546,16 @@ void main() {
       await tester.tap(miniPlayerTitle);
       await tester.pumpAndSettle();
 
-      // Verify AudioPlayerModalSheet is displayed without legacy header/footer chrome
+      // Verify AudioPlayerModalSheet has no legacy chrome, large card, narrator, or chapter buttons
       expect(find.byType(AudioPlayerModalSheet), findsOneWidget);
       expect(find.text('Audio Player'), findsNothing);
       expect(find.text('Go to Chapter'), findsNothing);
       expect(find.byTooltip('Collapse'), findsNothing);
       expect(find.byTooltip('Sync text with audio (Enabled)'), findsNothing);
-      expect(find.text('Bob Souer'), findsOneWidget);
+      expect(find.text('Bob Souer'), findsNothing);
+      expect(find.byIcon(Icons.headphones_rounded), findsNothing);
+      expect(find.byTooltip('Previous Chapter'), findsNothing);
+      expect(find.byTooltip('Next Chapter'), findsNothing);
 
       // Verify Previous Verse and Next Verse buttons (replacing ±10s)
       final prevVerseButton = find.descendant(
@@ -609,31 +577,63 @@ void main() {
       await tester.tap(nextVerseButton);
       expect(audioManager.nextVerseCalled, isTrue);
 
-      // Verify live verse reference updates in both bottom bar and expanded sheet
+      // Verify Speed text button is left of Previous Verse and Pause button is right of Next Verse
+      final speedButton = find.byKey(const ValueKey('audio_speed_button'));
+      final versePauseButton = find.byKey(
+        const ValueKey('audio_verse_pause_button'),
+      );
+      expect(speedButton, findsOneWidget);
+      expect(versePauseButton, findsOneWidget);
+      expect(
+        tester.getCenter(speedButton).dx,
+        lessThan(tester.getCenter(prevVerseButton).dx),
+      );
+      expect(
+        tester.getCenter(versePauseButton).dx,
+        greaterThan(tester.getCenter(nextVerseButton).dx),
+      );
+
+      // Verify full reference updates in both bottom bar and expanded sheet
       audioManager.currentVerseNotifier.value = 14;
       await tester.pumpAndSettle();
       expect(find.text('Genesis 1:14'), findsNWidgets(2));
 
-      // Verify Context and Repeat chips open popup bottom sheets (no Range when unset)
+      // Verify Repeat and Context buttons open popup bottom sheets (no Range when unset,
+      // and Continue after button renders without an icon; options omit subtitles)
+      expect(find.text('Continue after'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('audio_repeat_chip')),
+          matching: find.byIcon(Icons.arrow_right_alt),
+        ),
+        findsNothing,
+      );
       expect(find.text('Chapter'), findsOneWidget);
-      expect(find.text('Continue'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('audio_context_chip')));
       await tester.pumpAndSettle();
       expect(find.text('Context'), findsOneWidget);
-      expect(find.text('Full chapter'), findsOneWidget);
+      expect(find.text('Full chapter'), findsNothing);
       expect(find.text('Range'), findsNothing);
       expect(find.text('Verse'), findsOneWidget);
-      expect(find.text('Verse 14'), findsOneWidget);
+      expect(find.text('Verse 14'), findsNothing);
 
       await tester.tap(find.text('Verse'));
       await tester.pumpAndSettle();
       expect(audioManager.playContextNotifier.value, AudioPlayContext.verse);
-      expect(find.text('Verse 14'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('audio_context_chip')),
+          matching: find.text('Verse'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const ValueKey('audio_repeat_chip')));
       await tester.pumpAndSettle();
-      expect(find.text('Stop after Verse 14'), findsOneWidget);
-      expect(find.text('Repeat Verse 14'), findsOneWidget);
+      expect(find.text('Stop after'), findsOneWidget);
+      expect(find.byIcon(Icons.repeat_one), findsOneWidget);
+      expect(find.text('Stop after Verse 14'), findsNothing);
+      expect(find.text('Repeat Verse 14'), findsNothing);
       await tester.tap(find.text('Repeat'));
       await tester.pumpAndSettle();
       expect(
@@ -642,25 +642,95 @@ void main() {
       );
       expect(find.text('Repeat'), findsOneWidget);
 
-      // Verify Speed picker
+      // Verify Speed picker (independent from verse pause)
       expect(find.text('1.0x'), findsOneWidget);
-      await tester.tap(find.text('1.0x'));
+      expect(find.text('0s'), findsOneWidget);
+      await tester.tap(speedButton);
       await tester.pumpAndSettle();
       expect(find.text('Playback Speed'), findsOneWidget);
       await tester.tap(find.text('1.5x'));
       await tester.pumpAndSettle();
       expect(audioManager.speedNotifier.value, 1.5);
+      expect(find.text('Sleep'), findsNothing);
+    },
+  );
 
-      // Verify Sleep timer picker
-      expect(find.text('Sleep'), findsOneWidget);
-      await tester.tap(find.text('Sleep'));
+  testWidgets(
+    'AudioPlayerModalSheet updates displayed verse while moving scrubber and on seek',
+    (tester) async {
+      audioManager.fakeTimings = const ChapterTimings(
+        bookId: 1,
+        chapter: 1,
+        verses: [
+          VerseTiming(
+            verse: 1,
+            start: Duration(seconds: 3),
+            end: Duration(minutes: 1),
+          ),
+          VerseTiming(
+            verse: 2,
+            start: Duration(minutes: 1),
+            end: Duration(minutes: 2),
+          ),
+          VerseTiming(
+            verse: 3,
+            start: Duration(minutes: 2),
+            end: Duration(minutes: 3),
+          ),
+        ],
+      );
+      audioManager.currentVerseNotifier.value = 1;
+      tabManager.openTab(1, 1);
+      audioManager.isPlayerVisible.value = true;
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
       await tester.pumpAndSettle();
-      expect(find.text('Sleep Timer'), findsOneWidget);
-      await tester.tap(find.text('15 minutes'));
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Genesis 1:1'),
+        ),
+      );
       await tester.pumpAndSettle();
+
       expect(
-        audioManager.sleepTimerOptionNotifier.value,
-        SleepTimerOption.fifteenMinutes,
+        find.descendant(
+          of: find.byType(AudioPlayerModalSheet),
+          matching: find.text('Genesis 1:1'),
+        ),
+        findsOneWidget,
+      );
+
+      final modalProgressBar = find.descendant(
+        of: find.byType(AudioPlayerModalSheet),
+        matching: find.byType(ProgressBar),
+      );
+      final rect = tester.getRect(modalProgressBar);
+      // Drag across scrubber toward the right side (~2m30s -> Genesis 1:3)
+      final gesture = await tester.startGesture(rect.center);
+      await tester.pump();
+      await gesture.moveTo(Offset(rect.right - 40, rect.center.dy));
+      await tester.pump();
+
+      expect(
+        find.descendant(
+          of: find.byType(AudioPlayerModalSheet),
+          matching: find.text('Genesis 1:3'),
+        ),
+        findsOneWidget,
+      );
+
+      // Releasing seeks and keeps Genesis 1:3 displayed
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(audioManager.seekPosition, isNotNull);
+      expect(
+        find.descendant(
+          of: find.byType(AudioPlayerModalSheet),
+          matching: find.text('Genesis 1:3'),
+        ),
+        findsOneWidget,
       );
     },
   );
@@ -686,7 +756,7 @@ void main() {
   });
 
   testWidgets(
-    'Playback speed picker renders list options like sleep timer and fits narrow screens',
+    'Playback speed picker renders list options and fits narrow screens',
     (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -786,7 +856,7 @@ void main() {
   );
 
   testWidgets(
-    'Speed picker inline pause-between-verses updates seconds and chip label',
+    'Pause-after-verse picker works independently from playback speed',
     (tester) async {
       tabManager.openTab(1, 1);
       audioManager.isPlayerVisible.value = true;
@@ -802,23 +872,28 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Open Speed picker
-      await tester.tap(find.text('1.0x'));
+      // Change speed to 1.5x first
+      await tester.tap(find.byKey(const ValueKey('audio_speed_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1.5x'));
+      await tester.pumpAndSettle();
+      expect(audioManager.speedNotifier.value, 1.5);
+
+      // Open Pause After Verse picker via "0s" button
+      expect(find.text('0s'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('audio_verse_pause_button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('1.0x (with 5 second pause)'), findsOneWidget);
-      await tester.tap(find.text('1.0x (with 5 second pause)'));
-      await tester.pumpAndSettle();
-
-      expect(audioManager.pauseBetweenVersesEnabledNotifier.value, isTrue);
-      expect(audioManager.pauseBetweenVersesSecondsNotifier.value, 5);
+      expect(find.text('Pause After Verse'), findsOneWidget);
+      expect(find.text('Off (0s)'), findsOneWidget);
       expect(find.text('Pause duration:'), findsOneWidget);
 
       // Select 8s preset chip and increment to 9s
       await tester.tap(find.widgetWithText(ChoiceChip, '8s'));
       await tester.pumpAndSettle();
+      expect(audioManager.pauseBetweenVersesEnabledNotifier.value, isTrue);
       expect(audioManager.pauseBetweenVersesSecondsNotifier.value, 8);
-      expect(find.text('1.0x (with 8 second pause)'), findsOneWidget);
+      expect(find.text('Pause for 8s'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('verse_pause_increment')));
       await tester.pumpAndSettle();
@@ -826,23 +901,29 @@ void main() {
 
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
-      expect(find.text('1.0x (9s)'), findsOneWidget);
+      expect(find.text('9s'), findsOneWidget);
+      expect(find.text('1.5x'), findsOneWidget);
+      expect(audioManager.speedNotifier.value, 1.5);
 
-      // Switching back to standard speed turns pause off
-      await tester.tap(find.text('1.0x (9s)'));
+      // Selecting Off (0s) turns pause off while keeping speed at 1.5x
+      await tester.tap(find.byKey(const ValueKey('audio_verse_pause_button')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('1.5x'));
+      await tester.tap(find.text('Off (0s)'));
       await tester.pumpAndSettle();
       expect(audioManager.pauseBetweenVersesEnabledNotifier.value, isFalse);
       expect(audioManager.speedNotifier.value, 1.5);
+      expect(find.text('0s'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'Countdown status text appears in mini player and expanded sheet during verse pause',
+    'Verse pause countdown shows in parentheses on mini player and on pause button in expanded sheet',
     (tester) async {
       tabManager.openTab(1, 1);
       audioManager.isPlayerVisible.value = true;
+      audioManager.speedNotifier.value = 1.5;
+      audioManager.pauseBetweenVersesEnabledNotifier.value = true;
+      audioManager.pauseBetweenVersesSecondsNotifier.value = 5;
       audioManager.currentVerseNotifier.value = 2;
       audioManager.versePauseStateNotifier.value = const VersePauseState(
         isPaused: true,
@@ -856,10 +937,11 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: HomePage()));
       await tester.pumpAndSettle();
 
+      expect(find.text('Next verse in 4s...'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AudioPlayerBottomBar),
-          matching: find.text('Next verse in 4s...'),
+          matching: find.text('Genesis 1:2 (4s)'),
         ),
         findsOneWidget,
       );
@@ -867,15 +949,61 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byType(AudioPlayerBottomBar),
-          matching: find.text('Genesis 1:2'),
+          matching: find.text('Genesis 1:2 (4s)'),
         ),
       );
       await tester.pumpAndSettle();
 
+      // Expanded sheet shows full reference without parentheses, countdown on Pause button,
+      // and matching neutral foreground color for Speed and Pause buttons.
       expect(
         find.descendant(
           of: find.byType(AudioPlayerModalSheet),
-          matching: find.text('Next verse in 4s...'),
+          matching: find.text('Genesis 1:2'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('audio_verse_pause_button')),
+          matching: find.text('4s'),
+        ),
+        findsOneWidget,
+      );
+
+      final speedBtn = tester.widget<TextButton>(
+        find.byKey(const ValueKey('audio_speed_button')),
+      );
+      final pauseBtn = tester.widget<TextButton>(
+        find.byKey(const ValueKey('audio_verse_pause_button')),
+      );
+      final prevBtn = tester.widget<IconButton>(
+        find.descendant(
+          of: find.byType(AudioPlayerModalSheet),
+          matching: find.widgetWithIcon(IconButton, Icons.fast_rewind),
+        ),
+      );
+      final expectedColor = Theme.of(
+        tester.element(find.byType(AudioPlayerModalSheet)),
+      ).colorScheme.onSurfaceVariant;
+      expect(speedBtn.style?.foregroundColor?.resolve({}), expectedColor);
+      expect(pauseBtn.style?.foregroundColor?.resolve({}), expectedColor);
+      expect(prevBtn.style?.foregroundColor?.resolve({}), isNull);
+
+      // Clearing verse pause returns mini player to plain reference and pause button to 5s
+      audioManager.versePauseStateNotifier.value = VersePauseState.idle;
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Genesis 1:2'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('audio_verse_pause_button')),
+          matching: find.text('5s'),
         ),
         findsOneWidget,
       );
@@ -908,28 +1036,35 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ROM 8:31–39'), findsOneWidget);
-      expect(find.text('Stop'), findsOneWidget);
+      expect(find.text('Stop after'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('audio_repeat_chip')),
+          matching: find.byIcon(Icons.repeat_one),
+        ),
+        findsNothing,
+      );
 
-      // Opening Context sheet shows Chapter, Range (with subtitle), and Verse
+      // Opening Context sheet shows Chapter, active range title without subtitle, and Verse
       await tester.tap(find.byKey(const ValueKey('audio_context_chip')));
       await tester.pumpAndSettle();
       expect(find.text('Context'), findsOneWidget);
-      expect(find.text('Range'), findsOneWidget);
       expect(find.text('Romans 8:31–39'), findsOneWidget);
+      expect(find.text('Range'), findsNothing);
       await tester.tap(find.text('Chapter'));
       await tester.pumpAndSettle();
       expect(audioManager.playContextNotifier.value, AudioPlayContext.chapter);
 
-      // Switch back to Range and verify Repeat sheet dynamic labels
+      // Switch back to Range and verify Repeat sheet renders cleanly without subtitles
       await tester.tap(find.byKey(const ValueKey('audio_context_chip')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Range'));
+      await tester.tap(find.text('Romans 8:31–39'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('audio_repeat_chip')));
       await tester.pumpAndSettle();
-      expect(find.text('Stop after ROM 8:31–39'), findsOneWidget);
-      expect(find.text('Repeat ROM 8:31–39'), findsOneWidget);
+      expect(find.text('Stop after ROM 8:31–39'), findsNothing);
+      expect(find.text('Repeat ROM 8:31–39'), findsNothing);
       await tester.tap(find.text('Repeat'));
       await tester.pumpAndSettle();
       expect(

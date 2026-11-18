@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
-import 'package:bsb/infrastructure/audio/audio_url_resolver.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
 import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/reference.dart';
@@ -40,16 +39,11 @@ class AudioPlaybackManager {
       ValueNotifier<Reference?>(null);
   final ValueNotifier<int?> lockedVerseNotifier = ValueNotifier<int?>(null);
   AudioRepeatBehavior _chapterRepeatPreference;
-  final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
-      ValueNotifier<SleepTimerOption>(SleepTimerOption.off);
-  final ValueNotifier<Duration?> sleepTimerRemainingNotifier =
-      ValueNotifier<Duration?>(null);
   final ValueNotifier<String?> audioTabIdNotifier = ValueNotifier<String?>(
     null,
   );
   final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
 
-  Timer? _sleepCountdownTimer;
   StreamSubscription<MediaItem?>? _mediaItemSub;
   StreamSubscription<Duration>? _positionSaveSub;
   StreamSubscription<int?>? _verseSub;
@@ -101,26 +95,30 @@ class AudioPlaybackManager {
     audioHandler.defaultChapterRepeat = _chapterRepeatPreference;
     audioHandler.setPlayContext(AudioPlayContext.chapter);
     audioHandler.setRepeatBehavior(_chapterRepeatPreference);
-    if (pauseBetweenVersesEnabledNotifier.value) {
-      speedNotifier.value = 1.0;
-      audioHandler.setSpeed(1.0);
-    } else {
-      audioHandler.setSpeed(speedNotifier.value);
-    }
+    audioHandler.setSpeed(speedNotifier.value);
     audioHandler.setPauseBetweenVerses(
       enabled: pauseBetweenVersesEnabledNotifier.value,
       seconds: pauseBetweenVersesSecondsNotifier.value,
     );
 
-    audioHandler.onSleepTimerFired = () {
-      sleepTimerOptionNotifier.value = SleepTimerOption.off;
-      sleepTimerRemainingNotifier.value = null;
-    };
     audioHandler.onModeChanged = (context, repeat, range, lockedVerse) {
       playContextNotifier.value = context;
       repeatBehaviorNotifier.value = repeat;
       activeRangeNotifier.value = range;
       lockedVerseNotifier.value = lockedVerse;
+    };
+    audioHandler.onSpeedChanged = (speed) {
+      if ((speedNotifier.value - speed).abs() > 0.001) {
+        speedNotifier.value = speed;
+        _effectiveSettings?.setAudioSpeed(speed);
+      }
+    };
+    audioHandler.onPaused = () => _saveCurrentState();
+    audioHandler.onStopped = () {
+      if (isPlayerVisible.value) {
+        _saveCurrentState();
+      }
+      _clearPlayerUiState();
     };
 
     _mediaItemSub = audioHandler.mediaItem.listen((item) {
@@ -130,7 +128,7 @@ class AudioPlaybackManager {
       if (bookId == null || chapter == null) return;
 
       // De-duplicate on (bookId, chapter) because MediaItem also updates when
-      // the live verse artist label changes every few seconds.
+      // the live verse/countdown title changes every few seconds.
       if (bookId == _lastNotifiedBookId && chapter == _lastNotifiedChapter) {
         return;
       }
@@ -180,7 +178,10 @@ class AudioPlaybackManager {
   /// Formats the display reference for the mini player and expanded sheet
   /// (e.g. "John 10:14", or "John 10" during the chapter announcement).
   String formatDisplayTitle(MediaItem? item, int? verse) {
-    final title = item?.title ?? 'Audio Player';
+    final title =
+        (item?.extras?['chapterTitle'] as String?) ??
+        item?.title ??
+        'Audio Player';
     if (verse == null) return title;
     return '$title:$verse';
   }
@@ -307,22 +308,6 @@ class AudioPlaybackManager {
     await audioHandler.seek(position);
   }
 
-  Future<void> seekForward10() async {
-    await audioHandler.fastForward();
-  }
-
-  Future<void> seekBackward10() async {
-    await audioHandler.rewind();
-  }
-
-  Future<void> skipToNext() async {
-    await audioHandler.skipToNext();
-  }
-
-  Future<void> skipToPrevious() async {
-    await audioHandler.skipToPrevious();
-  }
-
   Future<void> skipToNextVerse() async {
     await audioHandler.skipToNextVerse();
   }
@@ -336,21 +321,22 @@ class AudioPlaybackManager {
   bool hasPreviousVerse(Duration position) =>
       audioHandler.hasPreviousVerse(position);
 
-  Future<void> closePlayer() async {
+  void _clearPlayerUiState() {
     isPlayerVisible.value = false;
     audioTabIdNotifier.value = null;
     _lastNotifiedBookId = null;
     _lastNotifiedChapter = null;
+  }
+
+  Future<void> closePlayer() async {
+    _clearPlayerUiState();
     _saveCurrentState();
     await audioHandler.stop();
   }
 
   Future<void> setSpeed(double speed) async {
     speedNotifier.value = speed;
-    pauseBetweenVersesEnabledNotifier.value = false;
-    await audioHandler.setPauseBetweenVerses(enabled: false);
     await audioHandler.setSpeed(speed);
-    await _effectiveSettings?.setAudioPauseBetweenVersesEnabled(false);
     await _effectiveSettings?.setAudioSpeed(speed);
   }
 
@@ -369,10 +355,6 @@ class AudioPlaybackManager {
       );
     }
     pauseBetweenVersesEnabledNotifier.value = enabled;
-    if (enabled) {
-      speedNotifier.value = 1.0;
-      await _effectiveSettings?.setAudioSpeed(1.0);
-    }
     await _effectiveSettings?.setAudioPauseBetweenVersesEnabled(enabled);
     await audioHandler.setPauseBetweenVerses(
       enabled: enabled,
@@ -501,60 +483,7 @@ class AudioPlaybackManager {
     }
   }
 
-  void setSleepTimer(SleepTimerOption option) {
-    _sleepCountdownTimer?.cancel();
-    _sleepCountdownTimer = null;
-
-    if (option == SleepTimerOption.off) {
-      audioHandler.stopAtEndOfChapter = false;
-      sleepTimerOptionNotifier.value = SleepTimerOption.off;
-      sleepTimerRemainingNotifier.value = null;
-      return;
-    }
-
-    if (option == SleepTimerOption.endOfChapter) {
-      audioHandler.stopAtEndOfChapter = true;
-      sleepTimerOptionNotifier.value = SleepTimerOption.endOfChapter;
-      sleepTimerRemainingNotifier.value = null;
-      return;
-    }
-
-    final duration = option.duration;
-    if (duration != null) {
-      audioHandler.stopAtEndOfChapter = false;
-      sleepTimerOptionNotifier.value = option;
-      sleepTimerRemainingNotifier.value = duration;
-
-      _sleepCountdownTimer = Timer.periodic(const Duration(seconds: 1), (
-        timer,
-      ) {
-        final current = sleepTimerRemainingNotifier.value;
-        if (current == null || current.inSeconds <= 1) {
-          timer.cancel();
-          _sleepCountdownTimer = null;
-          sleepTimerOptionNotifier.value = SleepTimerOption.off;
-          sleepTimerRemainingNotifier.value = null;
-          pause();
-        } else {
-          sleepTimerRemainingNotifier.value =
-              current - const Duration(seconds: 1);
-        }
-      });
-    }
-  }
-
-  bool hasNextChapter(int? bookId, int? chapter) {
-    if (bookId == null || chapter == null) return false;
-    return const AudioUrlResolver().getNextChapter(bookId, chapter) != null;
-  }
-
-  bool hasPreviousChapter(int? bookId, int? chapter) {
-    if (bookId == null || chapter == null) return false;
-    return const AudioUrlResolver().getPreviousChapter(bookId, chapter) != null;
-  }
-
   void dispose() {
-    _sleepCountdownTimer?.cancel();
     _mediaItemSub?.cancel();
     _positionSaveSub?.cancel();
     _verseSub?.cancel();
@@ -569,8 +498,6 @@ class AudioPlaybackManager {
     repeatBehaviorNotifier.dispose();
     activeRangeNotifier.dispose();
     lockedVerseNotifier.dispose();
-    sleepTimerOptionNotifier.dispose();
-    sleepTimerRemainingNotifier.dispose();
     audioTabIdNotifier.dispose();
     currentVerseNotifier.dispose();
   }

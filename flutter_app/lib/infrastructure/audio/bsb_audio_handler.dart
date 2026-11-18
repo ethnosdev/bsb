@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
@@ -8,8 +9,9 @@ import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/database.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 
 typedef ChapterTimingsLoader =
@@ -37,6 +39,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
   final AudioUrlResolver _urlResolver;
   final ChapterTimingsLoader? timingsLoader;
+  final Future<Uri?> Function()? artworkUriLoader;
+  Uri? _cachedArtUri;
 
   int? _currentBookId;
   int? _currentChapter;
@@ -48,8 +52,6 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   bool _pauseBetweenVersesEnabled = false;
   int _pauseBetweenVersesSeconds = kDefaultVersePauseSeconds;
 
-  bool stopAtEndOfChapter = false;
-  VoidCallback? onSleepTimerFired;
   void Function(
     AudioPlayContext context,
     AudioRepeatBehavior repeat,
@@ -57,6 +59,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     int? lockedVerse,
   )?
   onModeChanged;
+  void Function(double speed)? onSpeedChanged;
+  VoidCallback? onPaused;
+  VoidCallback? onStopped;
 
   int? _lockedVerse;
   VerseTiming? _expectedActiveVerse;
@@ -126,6 +131,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     this.silencePlayer,
     AudioUrlResolver? urlResolver,
     this.timingsLoader,
+    this.artworkUriLoader,
   }) : _player = player ?? AudioPlayer(),
        _urlResolver = urlResolver ?? const AudioUrlResolver() {
     _init();
@@ -152,19 +158,6 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> _handleAudioCompleted() async {
-    if (stopAtEndOfChapter) {
-      stopAtEndOfChapter = false;
-      onSleepTimerFired?.call();
-      final target = _playContext == AudioPlayContext.verse
-          ? _resolveLastVerseStart()
-          : (_playContext == AudioPlayContext.range && activeRange != null)
-          ? (_resolveRangeStartTarget()?.seekPosition ?? Duration.zero)
-          : Duration.zero;
-      await pause();
-      await seek(target);
-      return;
-    }
-
     final timings = _currentTimings;
     switch (_playContext) {
       case AudioPlayContext.verse:
@@ -413,25 +406,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     }
     _pauseBetweenVersesEnabled = enabled;
     if (enabled) {
-      if (_player.speed != 1.0) {
-        await _player.setSpeed(1.0);
-      }
-      if (_isInVersePause) {
-        final currentState = _versePauseStateSubject.value;
-        final clamped = currentState.remainingSeconds.clamp(
-          1,
-          _pauseBetweenVersesSeconds,
-        );
-        _versePauseStateSubject.add(
-          VersePauseState(
-            isPaused: true,
-            remainingSeconds: clamped,
-            totalSeconds: _pauseBetweenVersesSeconds,
-            nextBookId: currentState.nextBookId,
-            nextChapter: currentState.nextChapter,
-            nextVerse: currentState.nextVerse,
-          ),
-        );
+      final target = _pendingPauseTarget;
+      if (_isInVersePause && seconds != null && target != null) {
+        _startVersePauseCountdown(_pauseBetweenVersesSeconds, target);
       }
     } else if (_isInVersePause) {
       await _cancelVersePause(resumePlayer: true);
@@ -488,7 +465,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
     if (verse != _currentVerseSubject.value) {
       _currentVerseSubject.add(verse);
-      _updateMediaItemArtist(verse);
+      _updateMediaItemTitle(verse: verse);
     }
 
     if (_isLoopSeeking || timings == null || timings.isEmpty) {
@@ -608,15 +585,6 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       // 1. Verse context boundary
       if (_playContext == AudioPlayContext.verse) {
-        if (stopAtEndOfChapter) {
-          stopAtEndOfChapter = false;
-          onSleepTimerFired?.call();
-          await _player.pause();
-          await _player.seek(endedVerse.start);
-          _syncVerseAfterSeek(endedVerse.start);
-          _broadcastState();
-          return;
-        }
         switch (_repeatBehavior) {
           case AudioRepeatBehavior.stop:
             await _player.pause();
@@ -667,14 +635,6 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
         if (_isAtFinalRangeBoundary(endedVerse, timings)) {
           final startTarget = _resolveRangeStartTarget();
-          if (stopAtEndOfChapter) {
-            stopAtEndOfChapter = false;
-            onSleepTimerFired?.call();
-            if (startTarget != null) {
-              await _jumpToTargetPaused(startTarget);
-            }
-            return;
-          }
           switch (_repeatBehavior) {
             case AudioRepeatBehavior.stop:
               if (startTarget != null) {
@@ -720,16 +680,11 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
       // Reached end of the last verse of the chapter
       if (!_pauseBetweenVersesEnabled) {
-        // Without verse-pause, let ProcessingState.completed finish the audio naturally,
-        // unless we jumped here because sleep timer stopped at chapter end.
+        // Without verse-pause, let ProcessingState.completed finish the audio naturally.
         return;
       }
 
-      if (stopAtEndOfChapter || _repeatBehavior == AudioRepeatBehavior.stop) {
-        if (stopAtEndOfChapter) {
-          stopAtEndOfChapter = false;
-          onSleepTimerFired?.call();
-        }
+      if (_repeatBehavior == AudioRepeatBehavior.stop) {
         await _player.pause();
         await _player.seek(Duration.zero);
         _syncVerseAfterSeek(Duration.zero);
@@ -774,7 +729,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
         verse != null ? _currentTimings?.timingFor(verse) : null;
     if (verse != _currentVerseSubject.value) {
       _currentVerseSubject.add(verse);
-      _updateMediaItemArtist(verse);
+      _updateMediaItemTitle(verse: verse);
     }
   }
 
@@ -871,8 +826,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
           targetVerse: initialTarget.verse,
           seekPositionHint: initialTarget.seekPosition,
           autoPlay: false,
-          overrideArtistText:
-              _formatPauseArtist(initialTarget.verse, totalSeconds),
+          pauseRemainingSeconds: totalSeconds,
         );
       }
     } catch (_) {
@@ -888,6 +842,19 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     // Re-check in case playback was cancelled while loading silence audio.
     if (!_isInVersePause) return;
 
+    _startVersePauseCountdown(_pauseBetweenVersesSeconds, initialTarget);
+  }
+
+  void _startVersePauseCountdown(int totalSeconds, _VersePauseTarget target) {
+    _versePauseTimer?.cancel();
+    _versePauseTimer = null;
+
+    _emitPauseCountdownState(
+      remainingSeconds: totalSeconds,
+      totalSeconds: totalSeconds,
+      target: target,
+    );
+
     var remaining = totalSeconds;
     _versePauseTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_isInVersePause) {
@@ -900,21 +867,26 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
         _versePauseTimer = null;
         unawaited(_finishVersePause());
       } else {
-        final target = _pendingPauseTarget ?? initialTarget;
+        final activeTarget = _pendingPauseTarget ?? target;
         _emitPauseCountdownState(
           remainingSeconds: remaining,
           totalSeconds: totalSeconds,
-          target: target,
+          target: activeTarget,
         );
       }
     });
   }
 
-  String _formatPauseArtist(int? verse, int remainingSeconds) {
-    if (verse != null) {
-      return 'Next: Verse $verse (${remainingSeconds}s)';
+  String _formatMediaTitle(
+    String chapterTitle, {
+    int? verse,
+    int? pauseRemainingSeconds,
+  }) {
+    final base = verse != null ? '$chapterTitle:$verse' : chapterTitle;
+    if (pauseRemainingSeconds != null) {
+      return '$base (${pauseRemainingSeconds}s)';
     }
-    return 'Next chapter (${remainingSeconds}s)';
+    return base;
   }
 
   void _emitPauseCountdownState({
@@ -933,9 +905,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
         nextVerse: target.verse,
       ),
     );
-    _updateMediaItemArtist(
-      target.verse,
-      customArtist: _formatPauseArtist(target.verse, remainingSeconds),
+    _updateMediaItemTitle(
+      verse: target.verse,
+      pauseRemainingSeconds: remainingSeconds,
     );
   }
 
@@ -949,10 +921,10 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
     if (target != null && target.verse != null) {
       _currentVerseSubject.add(target.verse);
-      _updateMediaItemArtist(target.verse);
+      _updateMediaItemTitle(verse: target.verse);
       _expectedActiveVerse = _currentTimings?.timingFor(target.verse!);
     } else {
-      _updateMediaItemArtist(_currentVerseSubject.value);
+      _updateMediaItemTitle(verse: _currentVerseSubject.value);
     }
 
     _playFireAndForget(_player);
@@ -974,10 +946,10 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
     if (target != null && target.verse != null) {
       _currentVerseSubject.add(target.verse);
-      _updateMediaItemArtist(target.verse);
+      _updateMediaItemTitle(verse: target.verse);
       _expectedActiveVerse = _currentTimings?.timingFor(target.verse!);
     } else {
-      _updateMediaItemArtist(_currentVerseSubject.value);
+      _updateMediaItemTitle(verse: _currentVerseSubject.value);
     }
 
     if (resumePlayer) {
@@ -987,19 +959,47 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     _broadcastState();
   }
 
-  void _updateMediaItemArtist(int? verse, {String? customArtist}) {
+  Future<Uri?> _resolveArtworkUri() async {
+    if (_cachedArtUri != null) return _cachedArtUri;
+    try {
+      if (artworkUriLoader != null) {
+        _cachedArtUri = await artworkUriLoader!();
+        return _cachedArtUri;
+      }
+      final dir = await getApplicationSupportDirectory();
+      final file = File('${dir.path}/bsb_audio_art.png');
+      if (!await file.exists()) {
+        final bytes = await rootBundle.load('assets/images/logo.png');
+        await file.writeAsBytes(
+          bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+          flush: true,
+        );
+      }
+      _cachedArtUri = Uri.file(file.path);
+      return _cachedArtUri;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _updateMediaItemTitle({int? verse, int? pauseRemainingSeconds}) {
     final current = mediaItem.value;
     if (current == null) return;
-    final newArtist = customArtist ?? (verse != null ? 'Verse $verse' : null);
-    if (current.artist == newArtist) return;
-    // Construct a fresh MediaItem so setting artist back to null during the
-    // chapter announcement clears the previous verse label.
+    final chapterTitle =
+        (current.extras?['chapterTitle'] as String?) ?? current.title;
+    final newTitle = _formatMediaTitle(
+      chapterTitle,
+      verse: verse,
+      pauseRemainingSeconds: pauseRemainingSeconds,
+    );
+    if (current.title == newTitle) return;
     mediaItem.add(
       MediaItem(
         id: current.id,
         album: current.album,
-        title: current.title,
-        artist: newArtist,
+        title: newTitle,
+        artist: current.artist,
+        artUri: current.artUri,
         duration: current.duration,
         extras: current.extras,
       ),
@@ -1016,18 +1016,14 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       playbackState.value.copyWith(
         controls: [
           MediaControl.skipToPrevious,
-          MediaControl.rewind,
           if (playing) MediaControl.pause else MediaControl.play,
-          MediaControl.fastForward,
           MediaControl.skipToNext,
         ],
         systemActions: const {
           MediaAction.seek,
-          MediaAction.seekForward,
-          MediaAction.seekBackward,
           MediaAction.setSpeed,
         },
-        androidCompactActionIndices: const [0, 2, 4],
+        androidCompactActionIndices: const [0, 1, 2],
         processingState: const {
           ProcessingState.idle: AudioProcessingState.idle,
           ProcessingState.loading: AudioProcessingState.loading,
@@ -1089,7 +1085,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     Duration seekPositionHint = Duration.zero,
     ChapterTimings? preloadedTimings,
     required bool autoPlay,
-    String? overrideArtistText,
+    int? pauseRemainingSeconds,
   }) async {
     _currentBookId = bookId;
     _currentChapter = chapter;
@@ -1101,6 +1097,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     final timings = preloadedTimings ?? await _loadTimings(bookId, chapter);
     if (_currentBookId != bookId || _currentChapter != chapter) return;
     _currentTimings = timings;
+
+    final artUri = await _resolveArtworkUri();
+    if (_currentBookId != bookId || _currentChapter != chapter) return;
 
     var startPos = seekPositionHint;
     if (startPos == Duration.zero &&
@@ -1120,16 +1119,23 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     }
 
     final url = _urlResolver.getChapterUrl(bookId, chapter);
-    final title = _urlResolver.getChapterTitle(bookId, chapter);
+    final chapterTitle = _urlResolver.getChapterTitle(bookId, chapter);
 
     final item = MediaItem(
       id: url,
       album: 'Berean Standard Bible',
-      title: title,
-      artist:
-          overrideArtistText ??
-          (initialVerse != null ? 'Verse $initialVerse' : null),
-      extras: {'bookId': bookId, 'chapter': chapter},
+      title: _formatMediaTitle(
+        chapterTitle,
+        verse: initialVerse,
+        pauseRemainingSeconds: pauseRemainingSeconds,
+      ),
+      artist: 'Berean Standard Bible',
+      artUri: artUri,
+      extras: {
+        'bookId': bookId,
+        'chapter': chapter,
+        'chapterTitle': chapterTitle,
+      },
     );
     mediaItem.add(item);
 
@@ -1305,6 +1311,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     await _player.pause();
     _syncVerseBoundaryTimer(playing: false);
     _broadcastState();
+    onPaused?.call();
   }
 
   @override
@@ -1314,86 +1321,35 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       _lockedVerse = _resolveLoopVerse(position);
       _notifyModeChanged();
     }
+    _syncVerseAfterSeek(position);
     await _player.seek(position);
     _syncVerseAfterSeek(position);
     _onPositionUpdated(position);
     _broadcastState();
   }
 
-  /// Seeks relative to current playback position (e.g. +10s or -10s).
-  Future<void> seekRelative(Duration offset) async {
-    final current = _player.position;
-    final total = _player.duration ?? Duration.zero;
-    var target = current + offset;
-    if (target < Duration.zero) target = Duration.zero;
-    if (total > Duration.zero && target > total) target = total;
-    await seek(target);
-  }
-
-  @override
-  Future<void> fastForward() => seekRelative(const Duration(seconds: 10));
-
-  @override
-  Future<void> rewind() => seekRelative(const Duration(seconds: -10));
-
   @override
   Future<void> setSpeed(double speed) async {
-    await _player.setSpeed(speed);
+    final sanitized = speed <= 0 ? 1.0 : speed;
+    await _player.setSpeed(sanitized);
     _broadcastState();
+    onSpeedChanged?.call(sanitized);
   }
 
   @override
   Future<void> stop() async {
     await _cancelVersePause(resumePlayer: false);
     _syncVerseBoundaryTimer(playing: false);
+    onStopped?.call();
     await _player.stop();
     await super.stop();
   }
 
-  void _resetToChapterContextForSkip() {
-    if (_playContext != AudioPlayContext.chapter || activeRange != null) {
-      _playContext = AudioPlayContext.chapter;
-      activeRange = null;
-      _lockedVerse = null;
-      _repeatBehavior = defaultChapterRepeat;
-      _syncVerseBoundaryTimer();
-      _notifyModeChanged();
-    }
-  }
+  @override
+  Future<void> skipToNext() => skipToNextVerse();
 
   @override
-  Future<void> skipToNext() async {
-    if (_currentBookId == null || _currentChapter == null) return;
-    await _cancelVersePause(resumePlayer: false);
-    _resetToChapterContextForSkip();
-    final next = _urlResolver.getNextChapter(_currentBookId!, _currentChapter!);
-    if (next != null) {
-      await playChapter(next.$1, next.$2);
-    } else {
-      await stop();
-    }
-  }
-
-  @override
-  Future<void> skipToPrevious() async {
-    if (_currentBookId == null || _currentChapter == null) return;
-    await _cancelVersePause(resumePlayer: false);
-    // If we've played for more than 3 seconds, replay from start of current chapter
-    if (_player.position > const Duration(seconds: 3)) {
-      await seek(Duration.zero);
-      return;
-    }
-    final prev = _urlResolver.getPreviousChapter(
-      _currentBookId!,
-      _currentChapter!,
-    );
-    if (prev != null) {
-      _resetToChapterContextForSkip();
-      await playChapter(prev.$1, prev.$2);
-    } else {
-      await seek(Duration.zero);
-    }
-  }
+  Future<void> skipToPrevious() => skipToPreviousVerse();
 
   @override
   Future<void> onTaskRemoved() async {

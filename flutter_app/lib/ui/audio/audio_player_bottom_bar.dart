@@ -93,20 +93,27 @@ class AudioPlayerBottomBar extends StatelessWidget {
                             child: Row(
                               children: [
                                 Flexible(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ValueListenableBuilder<int?>(
+                                  child: ValueListenableBuilder<int?>(
+                                    valueListenable:
+                                        manager.currentVerseNotifier,
+                                    builder: (context, verse, _) {
+                                      return ValueListenableBuilder<
+                                        VersePauseState
+                                      >(
                                         valueListenable:
-                                            manager.currentVerseNotifier,
-                                        builder: (context, verse, _) {
+                                            manager.versePauseStateNotifier,
+                                        builder: (context, pauseState, _) {
+                                          final title = manager
+                                              .formatDisplayTitle(
+                                                mediaItem,
+                                                verse,
+                                              );
+                                          final displayTitle =
+                                              pauseState.isPaused
+                                              ? '$title (${pauseState.remainingSeconds}s)'
+                                              : title;
                                           return Text(
-                                            manager.formatDisplayTitle(
-                                              mediaItem,
-                                              verse,
-                                            ),
+                                            displayTitle,
                                             style: theme.textTheme.titleSmall
                                                 ?.copyWith(
                                                   fontWeight: FontWeight.bold,
@@ -115,28 +122,8 @@ class AudioPlayerBottomBar extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                           );
                                         },
-                                      ),
-                                      ValueListenableBuilder<VersePauseState>(
-                                        valueListenable:
-                                            manager.versePauseStateNotifier,
-                                        builder: (context, pauseState, _) {
-                                          final status = pauseState.statusText;
-                                          if (status == null) {
-                                            return const SizedBox.shrink();
-                                          }
-                                          return Text(
-                                            status,
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(
-                                                  color: colorScheme.primary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          );
-                                        },
-                                      ),
-                                    ],
+                                      );
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 4),
