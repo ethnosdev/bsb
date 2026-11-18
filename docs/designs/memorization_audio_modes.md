@@ -66,9 +66,11 @@ Together, these two axes cover all 7 natural behaviors:
   - Context sheet shows `Chapter`, `Range` (only when a session range is active), and `Verse`.
   - Repeat Mode sheet shows `Continue`, `Stop`, and `Repeat` with dynamic unit descriptions (e.g., `Stop after Verse 14`, `Repeat ROM 8:31–39`).
   - Countdown banner (`Next verse in Ns...`) displays in both the expanded sheet and [`AudioPlayerBottomBar`](../../flutter_app/lib/ui/audio/audio_player_bottom_bar.dart).
-- **Tab-Bound Automatic Syncing ([`HomePage`](../../flutter_app/lib/ui/home/home.dart), [`TabManager`](../../flutter_app/lib/ui/tabs/tab_manager.dart), [`ChapterText`](../../flutter_app/lib/ui/text/chapter/chapter_text.dart)):**
+- [`AudioPlayerBottomBar`](../../flutter_app/lib/ui/audio/audio_player_bottom_bar.dart):
+  - Displays **Previous Verse** / **Next Verse** (`Icons.fast_rewind` / `Icons.fast_forward`) controls alongside Play/Pause and Close, enabled via `hasPreviousVerse` / `hasNextVerse` within the active chapter or range.
+- **Tab-Bound Automatic Syncing ([`HomePage`](../../flutter_app/lib/ui/home/home.dart), [`TabManager`](../../flutter_app/lib/ui/tabs/tab_manager.dart)):**
   - Removed the manual Sync Text toggle (`syncTextNotifier` / `_audioSyncTextKey`); syncing follows playback automatically.
   - Tracks `audioTabIdNotifier` so chapter advances update only the tab where audio was started (leaving additional open tabs undisturbed), and closing that tab stops/closes the audio player.
-  - Navigating away inside the audio-playing tab pauses chapter syncing and displays a floating **`Return to chapter N`** (or **`Return to <Book> N`**) `ActionChip` that returns the tab and re-enables syncing.
+  - Navigating to another chapter inside the audio-playing tab keeps the player 1-to-1 synced with that tab (playing immediately if playing/paused between verses, or cueing paused if paused) and resets Context to `Chapter` with the saved chapter repeat preference.
 - [`TextScreen`](../../flutter_app/lib/ui/text/text_screen.dart):
   - Selection `More` → `Play` calls `AudioPlaybackManager.playSelection(reference)`.

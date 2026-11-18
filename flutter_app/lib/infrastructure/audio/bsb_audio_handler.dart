@@ -1060,6 +1060,28 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 
+  /// Loads [bookId] and [chapter] for tab chapter navigation, starting
+  /// playback if currently playing (or in a verse pause) or cueing paused.
+  Future<void> navigateToChapter(
+    int bookId,
+    int chapter, {
+    int? targetVerse,
+  }) async {
+    final wasPlaying = _player.playing || _isInVersePause;
+    await _cancelVersePause(resumePlayer: false);
+    final timings = await _loadTimings(bookId, chapter);
+    final initialPosition = (targetVerse != null && targetVerse > 1)
+        ? (timings.timingFor(targetVerse)?.start ?? Duration.zero)
+        : Duration.zero;
+    await _prepareChapterInPlayer(
+      bookId,
+      chapter,
+      seekPositionHint: initialPosition,
+      preloadedTimings: timings,
+      autoPlay: wasPlaying,
+    );
+  }
+
   Future<void> _prepareChapterInPlayer(
     int bookId,
     int chapter, {
@@ -1123,6 +1145,12 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       if (autoPlay) {
         _playFireAndForget(_player);
         _syncVerseBoundaryTimer(playing: true);
+      } else {
+        if (_player.playing) {
+          await _player.pause();
+        }
+        _syncVerseBoundaryTimer(playing: false);
+        _broadcastState();
       }
     } catch (e) {
       playbackState.add(

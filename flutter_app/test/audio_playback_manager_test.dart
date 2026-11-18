@@ -634,5 +634,41 @@ void main() {
       expect(audioHandler.isInVersePause, isFalse);
       expect(mockPlayer.isPlaying, isTrue);
     });
+
+    test('navigateTabToChapter plays when playing, cues paused when paused, and resets Context to Chapter', () async {
+      // Save chapter repeat preference = repeat, then enter a Range + Stop session
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
+      await manager.playSelection(
+        Reference(bookId: 43, chapter: 10, verse: 2, endChapter: 10, endVerse: 3),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.playContextNotifier.value, AudioPlayContext.range);
+      expect(manager.repeatBehaviorNotifier.value, AudioRepeatBehavior.stop);
+      expect(mockPlayer.isPlaying, isTrue);
+
+      // Navigating while playing auto-plays the new chapter and restores Chapter + repeat
+      await manager.navigateTabToChapter(43, 11);
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.currentBookId, 43);
+      expect(audioHandler.currentChapter, 11);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.currentPosition, Duration.zero);
+      expect(manager.playContextNotifier.value, AudioPlayContext.chapter);
+      expect(manager.activeRangeNotifier.value, isNull);
+      expect(manager.repeatBehaviorNotifier.value, AudioRepeatBehavior.repeat);
+
+      // Pause playback, then navigate to chapter 10 at verse 2 -> cues paused at verse 2 start
+      await manager.pause();
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.isPlaying, isFalse);
+
+      await manager.navigateTabToChapter(43, 10, targetVerse: 2);
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.currentBookId, 43);
+      expect(audioHandler.currentChapter, 10);
+      expect(mockPlayer.isPlaying, isFalse);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+      expect(manager.currentVerseNotifier.value, 2);
+    });
   });
 }

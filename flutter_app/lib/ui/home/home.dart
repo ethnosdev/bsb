@@ -146,12 +146,12 @@ class _HomePageState extends State<HomePage> {
 
     final audioTab = _tabManager.tabById(audioTabId);
     if (audioTab == null || audioTab.isPlaylist) return;
+    if (audioTab.bookId == bookId && audioTab.chapter == chapter) return;
 
     final isOnSyncedChapter =
         prevBook == null ||
         prevChapter == null ||
-        (audioTab.bookId == prevBook && audioTab.chapter == prevChapter) ||
-        (audioTab.bookId == bookId && audioTab.chapter == chapter);
+        (audioTab.bookId == prevBook && audioTab.chapter == prevChapter);
     if (isOnSyncedChapter) {
       _tabManager.updateTabChapter(audioTabId, bookId, chapter);
     }
@@ -541,12 +541,36 @@ class _HomePageState extends State<HomePage> {
                           isDistractionFree: _isDistractionFree,
                           onChapterChanged:
                               (bookId, chapter, [sectionHeading, targetVerse]) {
+                                final tabId = activeTab.id;
                                 _tabManager.updateActiveChapter(
                                   bookId,
                                   chapter,
                                   sectionHeading,
                                   targetVerse,
                                 );
+                                if (audioManager != null &&
+                                    audioManager.isPlayerVisible.value &&
+                                    audioManager.audioTabIdNotifier.value ==
+                                        tabId) {
+                                  final currentAudioBook =
+                                      _syncedAudioBookId ??
+                                      audioManager.audioHandler.currentBookId;
+                                  final currentAudioChapter =
+                                      _syncedAudioChapter ??
+                                      audioManager.audioHandler.currentChapter;
+                                  if (bookId != currentAudioBook ||
+                                      chapter != currentAudioChapter) {
+                                    _syncedAudioBookId = bookId;
+                                    _syncedAudioChapter = chapter;
+                                    unawaited(
+                                      audioManager.navigateTabToChapter(
+                                        bookId,
+                                        chapter,
+                                        targetVerse: targetVerse,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                         ),
                       ),

@@ -194,6 +194,13 @@ class AudioPlaybackManager {
     }
   }
 
+  void _resetToChapterContext() {
+    activeRangeNotifier.value = null;
+    audioHandler.activeRange = null;
+    audioHandler.setPlayContext(AudioPlayContext.chapter);
+    audioHandler.setRepeatBehavior(_chapterRepeatPreference);
+  }
+
   /// Starts or resumes playing the given chapter and ensures player bar is visible.
   Future<void> playOrToggleChapter(int bookId, int chapter) async {
     _bindActiveTabIfAvailable();
@@ -217,10 +224,7 @@ class AudioPlaybackManager {
 
       // Starting playback from the app bar enters Chapter context and restores
       // the saved chapter-level Repeat preference.
-      activeRangeNotifier.value = null;
-      audioHandler.activeRange = null;
-      audioHandler.setPlayContext(AudioPlayContext.chapter);
-      audioHandler.setRepeatBehavior(_chapterRepeatPreference);
+      _resetToChapterContext();
 
       if (currentBook == bookId && currentChap == chapter) {
         await audioHandler.playChapter(bookId, chapter);
@@ -257,6 +261,32 @@ class AudioPlaybackManager {
     playbackErrorNotifier.value = null;
     try {
       await audioHandler.playFromVerse(bookId, chapter, verse);
+    } catch (e) {
+      playbackErrorNotifier.value =
+          'Unable to play audio. Check internet connection.';
+    }
+  }
+
+  /// Syncs audio to [bookId] and [chapter] when the audio tab navigates chapters.
+  ///
+  /// Resets session Context/Range/Verse state back to Chapter mode with the saved
+  /// chapter Repeat preference, then plays if active or cues paused otherwise.
+  Future<void> navigateTabToChapter(
+    int bookId,
+    int chapter, {
+    int? targetVerse,
+  }) async {
+    if (!isPlayerVisible.value) return;
+    playbackErrorNotifier.value = null;
+
+    _resetToChapterContext();
+
+    try {
+      await audioHandler.navigateToChapter(
+        bookId,
+        chapter,
+        targetVerse: targetVerse,
+      );
     } catch (e) {
       playbackErrorNotifier.value =
           'Unable to play audio. Check internet connection.';

@@ -692,7 +692,6 @@ class _ChapterTextState extends State<ChapterText>
     _audioManager = getIt<AudioPlaybackManager>();
     _audioManager!.isPlayerVisible.addListener(_onAudioStateChanged);
     _audioManager!.currentVerseNotifier.addListener(_onAudioStateChanged);
-    _audioManager!.audioTabIdNotifier.addListener(_onAudioStateChanged);
     _audioMediaSub = _audioManager!.mediaItemStream.listen((item) {
       _audioMediaItem = item;
       _onAudioStateChanged();
@@ -704,7 +703,6 @@ class _ChapterTextState extends State<ChapterText>
     _audioMediaSub = null;
     _audioManager?.isPlayerVisible.removeListener(_onAudioStateChanged);
     _audioManager?.currentVerseNotifier.removeListener(_onAudioStateChanged);
-    _audioManager?.audioTabIdNotifier.removeListener(_onAudioStateChanged);
     _audioManager = null;
   }
 
@@ -726,37 +724,14 @@ class _ChapterTextState extends State<ChapterText>
     return manager.currentVerseNotifier.value;
   }
 
-  (int, int)? _returnToChapterTarget() {
-    final manager = _audioManager;
-    if (!_isActive || manager == null || !manager.isPlayerVisible.value) {
-      return null;
-    }
-    final (bookId, chapter) = _loadedAudioChapter();
-    if (bookId == null || chapter == null) return null;
-    if (bookId == widget.bookId && chapter == widget.chapter) return null;
-
-    if (getIt.isRegistered<TabManager>()) {
-      final tabManager = getIt<TabManager>();
-      final audioTabId = manager.audioTabIdNotifier.value;
-      if (audioTabId != null && tabManager.activeTabId != audioTabId) {
-        return null;
-      }
-    }
-    return (bookId, chapter);
-  }
-
-  void _returnToPlayingChapter(int bookId, int chapter) {
-    if (!getIt.isRegistered<TabManager>()) return;
-    final verse = _audioManager?.currentVerseNotifier.value;
-    getIt<TabManager>().updateActiveChapter(bookId, chapter, null, verse);
-  }
-
   void _onAudioStateChanged() {
     if (!mounted) return;
     final activeVerse = _activeAudioVerse();
 
     if (activeVerse == null) {
       _lastAutoScrolledVerse = null;
+      _isAutoScrollPaused = false;
+      _lastManualScrollTime = null;
       _isCurrentVerseOffScreen = false;
       setState(() {});
       return;
@@ -808,6 +783,33 @@ class _ChapterTextState extends State<ChapterText>
     final activeVerse = _activeAudioVerse();
     if (activeVerse == null) return;
     _updateCurrentVerseOffScreen(activeVerse);
+  }
+
+  void _syncAutoScrollPauseAfterManualScroll() {
+    if (!mounted || !_isAutoScrollPaused) return;
+    final activeVerse = _activeAudioVerse();
+    if (activeVerse == null ||
+        !_scrollController.hasClients ||
+        !_scrollController.position.hasContentDimensions) {
+      return;
+    }
+    final passage = _findRenderPassage();
+    if (passage == null || !passage.hasSize) return;
+    final bounds = _getVerseVerticalBounds(passage, activeVerse);
+    if (bounds == null) return;
+
+    final offScreen = _isVerseOutsideViewport(bounds.$1, bounds.$2);
+    if (!offScreen) {
+      setState(() {
+        _isAutoScrollPaused = false;
+        _lastManualScrollTime = null;
+        _isCurrentVerseOffScreen = false;
+      });
+    } else if (_isCurrentVerseOffScreen != true) {
+      setState(() {
+        _isCurrentVerseOffScreen = true;
+      });
+    }
   }
 
   void _scheduleOffScreenCheck(int verse) {
@@ -930,13 +932,12 @@ class _ChapterTextState extends State<ChapterText>
       return;
     }
 
-    final viewportHeight = _scrollController.position.viewportDimension;
     final maxScroll = _scrollController.position.maxScrollExtent;
-    final targetOffset =
-        (bounds.$1 - _topPadding - (viewportHeight - _topPadding) * 0.28).clamp(
-          0.0,
-          maxScroll,
-        );
+    const double topMargin = 16.0;
+    final targetOffset = (bounds.$1 - _topPadding - topMargin).clamp(
+      0.0,
+      maxScroll,
+    );
     _scrollController.animateTo(
       targetOffset,
       duration: const Duration(milliseconds: 350),
@@ -1224,10 +1225,13 @@ class _ChapterTextState extends State<ChapterText>
                                       notification.dragDetails != null) {
                                     _lastManualScrollTime = DateTime.now();
                                   } else if (notification
-                                          is ScrollEndNotification &&
-                                      _isUserDragging) {
-                                    _isUserDragging = false;
-                                    _lastManualScrollTime = DateTime.now();
+                                      is ScrollEndNotification) {
+                                    if (_isUserDragging ||
+                                        _isAutoScrollPaused) {
+                                      _isUserDragging = false;
+                                      _lastManualScrollTime = DateTime.now();
+                                      _syncAutoScrollPauseAfterManualScroll();
+                                    }
                                   }
                                   return false;
                                 },
@@ -1342,30 +1346,6 @@ class _ChapterTextState extends State<ChapterText>
                                         'Jump to verse $activeAudioVerse',
                                       ),
                                       onPressed: _jumpToCurrentAudioVerse,
-                                    ),
-                                  ),
-                                )
-                              else if (_returnToChapterTarget()
-                                  case final target?)
-                                Positioned(
-                                  bottom: 16.0,
-                                  left: 0,
-                                  right: 0,
-                                  child: Center(
-                                    child: ActionChip(
-                                      avatar: const Icon(
-                                        Icons.my_location,
-                                        size: 16,
-                                      ),
-                                      label: Text(
-                                        target.$1 == widget.bookId
-                                            ? 'Return to chapter ${target.$2}'
-                                            : 'Return to ${bookIdToFullNameMap[target.$1] ?? 'chapter'} ${target.$2}',
-                                      ),
-                                      onPressed: () => _returnToPlayingChapter(
-                                        target.$1,
-                                        target.$2,
-                                      ),
                                     ),
                                   ),
                                 ),

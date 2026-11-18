@@ -180,6 +180,7 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   bool hasNextVerseValue = true;
   bool hasPrevVerseValue = true;
   (int, int, int)? playedFromVerse;
+  final List<(int, int, int?)> navigatedTabChapters = [];
   Duration? seekPosition;
 
   final _fakeHandler = FakeBsbAudioHandler();
@@ -207,6 +208,26 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   Future<void> playFromVerse(int bookId, int chapter, int verse) async {
     playedFromVerse = (bookId, chapter, verse);
     isPlayerVisible.value = true;
+  }
+
+  @override
+  Future<void> navigateTabToChapter(
+    int bookId,
+    int chapter, {
+    int? targetVerse,
+  }) async {
+    navigatedTabChapters.add((bookId, chapter, targetVerse));
+    _fakeHandler.currentBookId = bookId;
+    _fakeHandler.currentChapter = chapter;
+    currentVerseNotifier.value = targetVerse;
+    mediaItemSubject.add(
+      MediaItem(
+        id: 'url_${bookId}_$chapter',
+        album: 'Berean Standard Bible',
+        title: 'Genesis $chapter',
+        extras: {'bookId': bookId, 'chapter': chapter},
+      ),
+    );
   }
 
   @override
@@ -569,8 +590,14 @@ void main() {
       expect(find.text('Bob Souer'), findsOneWidget);
 
       // Verify Previous Verse and Next Verse buttons (replacing ±10s)
-      final prevVerseButton = find.byTooltip('Previous Verse');
-      final nextVerseButton = find.byTooltip('Next Verse');
+      final prevVerseButton = find.descendant(
+        of: find.byType(AudioPlayerModalSheet),
+        matching: find.byTooltip('Previous Verse'),
+      );
+      final nextVerseButton = find.descendant(
+        of: find.byType(AudioPlayerModalSheet),
+        matching: find.byTooltip('Next Verse'),
+      );
       expect(prevVerseButton, findsOneWidget);
       expect(nextVerseButton, findsOneWidget);
       expect(find.byTooltip('Rewind 10 seconds'), findsNothing);
@@ -947,9 +974,42 @@ void main() {
   );
 
   testWidgets(
-    'Navigating away inside audio tab pauses auto-sync and shows Return to chapter chip',
+    'AudioPlayerBottomBar uses Previous Verse and Next Verse controls',
     (tester) async {
-      tabManager.openTab(1, 1); // Gen 1
+      tabManager.openTab(1, 1);
+      audioManager.isPlayerVisible.value = true;
+      audioManager.hasPrevVerseValue = true;
+      audioManager.hasNextVerseValue = true;
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      final prevVerseFinder = find.descendant(
+        of: find.byType(AudioPlayerBottomBar),
+        matching: find.byTooltip('Previous Verse'),
+      );
+      final nextVerseFinder = find.descendant(
+        of: find.byType(AudioPlayerBottomBar),
+        matching: find.byTooltip('Next Verse'),
+      );
+      expect(prevVerseFinder, findsOneWidget);
+      expect(nextVerseFinder, findsOneWidget);
+      expect(find.byTooltip('Previous Chapter'), findsNothing);
+      expect(find.byTooltip('Next Chapter'), findsNothing);
+
+      await tester.tap(prevVerseFinder);
+      await tester.tap(nextVerseFinder);
+      await tester.pumpAndSettle();
+
+      expect(audioManager.prevVerseCalled, isTrue);
+      expect(audioManager.nextVerseCalled, isTrue);
+    },
+  );
+
+  testWidgets(
+    'Navigating chapters in audio tab syncs player without Return chip, leaving other tabs untouched',
+    (tester) async {
+      tabManager.openTab(1, 1); // Tab 1: Gen 1
       final tab1Id = tabManager.activeTab!.id;
       audioManager.audioTabIdNotifier.value = tab1Id;
       audioManager.isPlayerVisible.value = true;
@@ -963,57 +1023,201 @@ void main() {
           extras: {'bookId': 1, 'chapter': 1},
         ),
       );
+      audioManager.playbackStateSubject.add(
+        PlaybackState(
+          controls: const [MediaControl.pause],
+          playing: true,
+          processingState: AudioProcessingState.ready,
+        ),
+      );
 
       await tester.pumpWidget(const MaterialApp(home: HomePage()));
       await tester.pumpAndSettle();
 
-      // Initial audio chapter event registers Genesis 1 as synced chapter
       audioManager.onChapterChanged?.call(1, 1);
       await tester.pumpAndSettle();
 
-      // User navigates Tab 1 to Genesis 5 in same book
-      tabManager.updateActiveChapter(1, 5);
+      // Swipe in Tab 1 to Genesis 2 -> syncs player without any Return chip
+      await tester.fling(find.byType(PageView), const Offset(-400, 0), 800);
       await tester.pumpAndSettle();
-      expect(find.text('Return to chapter 1'), findsOneWidget);
 
-      // Audio advances to Genesis 2 in background -> Tab 1 stays on Gen 5, chip updates to chapter 2
-      audioManager._fakeHandler.currentBookId = 1;
-      audioManager._fakeHandler.currentChapter = 2;
-      audioManager.currentVerseNotifier.value = 3;
-      audioManager.mediaItemSubject.add(
-        const MediaItem(
-          id: 'gen2',
-          album: 'Berean Standard Bible',
-          title: 'Genesis 2',
-          extras: {'bookId': 1, 'chapter': 2},
+      expect(tabManager.activeTab?.chapter, 2);
+      expect(audioManager.navigatedTabChapters, [(1, 2, null)]);
+      expect(find.textContaining('Return to'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AudioPlayerBottomBar),
+          matching: find.text('Genesis 2'),
+        ),
+        findsOneWidget,
+      );
+
+      // Pause audio, then swipe back to Genesis 1 ->
+      // player cues Genesis 1 while staying paused
+      audioManager.playbackStateSubject.add(
+        PlaybackState(
+          controls: const [MediaControl.play],
+          playing: false,
+          processingState: AudioProcessingState.ready,
         ),
       );
-      audioManager.onChapterChanged?.call(1, 2);
+      await tester.fling(find.byType(PageView), const Offset(400, 0), 800);
       await tester.pumpAndSettle();
 
-      expect(tabManager.activeTab?.bookId, 1);
-      expect(tabManager.activeTab?.chapter, 5);
-      expect(find.text('Return to chapter 2'), findsOneWidget);
+      expect(audioManager.navigatedTabChapters.last, (1, 1, null));
+      expect(
+        audioManager.playbackStateSubject.value.playing,
+        isFalse,
+      );
+      expect(find.textContaining('Return to'), findsNothing);
 
-      // Opening a second tab does NOT show Return chip on Tab 2
-      tabManager.openTab(45, 8);
+      // Opening a second tab and browsing to Matthew 5 leaves Tab 1's audio untouched
+      final callsBeforeTab2 = audioManager.navigatedTabChapters.length;
+      tabManager.openTab(40, 5);
       await tester.pumpAndSettle();
-      expect(find.text('Return to chapter 2'), findsNothing);
-      expect(find.text('Return to Genesis 2'), findsNothing);
+      expect(audioManager.navigatedTabChapters.length, callsBeforeTab2);
+      expect(audioManager._fakeHandler.currentBookId, 1);
+      expect(audioManager._fakeHandler.currentChapter, 1);
+    },
+  );
 
-      // Returning to Tab 1 and browsing to another book shows book name: "Return to Genesis 2"
-      tabManager.selectTab(tab1Id);
-      tabManager.updateActiveChapter(40, 5);
-      await tester.pumpAndSettle();
-      expect(find.text('Return to Genesis 2'), findsOneWidget);
+  testWidgets(
+    'Auto-scrolling audio verse positions verse near top of viewport',
+    (tester) async {
+      final db = getIt<DatabaseHelper>() as FakeDatabaseHelper;
+      db.chapterLines = List.generate(
+        40,
+        (i) => UsfmLine(
+          bookChapterVerse: 1001000 + (i + 1),
+          text:
+              'In verse ${i + 1}, here is plenty of text so the chapter scrolls well past the bottom of the screen. ' *
+              3,
+          format: (i % 2 == 0) ? ParagraphFormat.p : ParagraphFormat.m,
+        ),
+      );
 
-      // Tapping chip returns Tab 1 to Genesis 2
-      await tester.tap(find.text('Return to Genesis 2'));
+      audioManager.isPlayerVisible.value = true;
+      audioManager.currentVerseNotifier.value = 1;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
+        ),
+      );
       await tester.pumpAndSettle();
-      expect(tabManager.activeTab?.bookId, 1);
-      expect(tabManager.activeTab?.chapter, 2);
-      expect(find.text('Return to Genesis 2'), findsNothing);
-      expect(find.text('Return to chapter 2'), findsNothing);
+
+      // Advance audio to verse 20 (off-screen below viewport bottom)
+      audioManager.currentVerseNotifier.value = 20;
+      await tester.pumpAndSettle();
+
+      final rootRenderObject = tester.renderObject(find.byType(ChapterText));
+      double? verse20ScreenDy;
+      void findVerse(RenderObject node) {
+        if (verse20ScreenDy != null) return;
+        if (node is RenderVerseNumber && node.number == '20') {
+          verse20ScreenDy = node.localToGlobal(Offset.zero).dy;
+          return;
+        }
+        node.visitChildren(findVerse);
+      }
+
+      rootRenderObject.visitChildren(findVerse);
+      expect(verse20ScreenDy, isNotNull);
+      // Should sit near the top (well above mid-screen at 300px on a 600px test viewport)
+      expect(verse20ScreenDy!, lessThan(80.0));
+    },
+  );
+
+  testWidgets(
+    'Small manual drag keeping active verse on screen does not delay bottom auto-scroll or trigger Jump chip',
+    (tester) async {
+      final db = getIt<DatabaseHelper>() as FakeDatabaseHelper;
+      db.chapterLines = List.generate(
+        40,
+        (i) => UsfmLine(
+          bookChapterVerse: 1001000 + (i + 1),
+          text:
+              'In verse ${i + 1}, here is plenty of text so the chapter scrolls well past the bottom of the screen. ' *
+              3,
+          format: (i % 2 == 0) ? ParagraphFormat.p : ParagraphFormat.m,
+        ),
+      );
+
+      audioManager.isPlayerVisible.value = true;
+      audioManager.currentVerseNotifier.value = 2;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Small manual drag that leaves verse 2 visible inside the viewport
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -10));
+      await tester.pumpAndSettle();
+
+      // Advance audio to verse 20 (at/below bottom of viewport)
+      audioManager.currentVerseNotifier.value = 20;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('Jump to verse 20'), findsNothing);
+      await tester.pumpAndSettle();
+
+      final rootRenderObject = tester.renderObject(find.byType(ChapterText));
+      double? verse20ScreenDy;
+      void findVerse(RenderObject node) {
+        if (verse20ScreenDy != null) return;
+        if (node is RenderVerseNumber && node.number == '20') {
+          verse20ScreenDy = node.localToGlobal(Offset.zero).dy;
+          return;
+        }
+        node.visitChildren(findVerse);
+      }
+
+      rootRenderObject.visitChildren(findVerse);
+      expect(verse20ScreenDy, isNotNull);
+      expect(verse20ScreenDy!, lessThan(80.0));
+      expect(find.text('Jump to verse 20'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Scrolling active verse off screen pauses auto-scroll and shows Jump to verse chip',
+    (tester) async {
+      final db = getIt<DatabaseHelper>() as FakeDatabaseHelper;
+      db.chapterLines = List.generate(
+        40,
+        (i) => UsfmLine(
+          bookChapterVerse: 1001000 + (i + 1),
+          text:
+              'In verse ${i + 1}, here is plenty of text so the chapter scrolls well past the bottom of the screen. ' *
+              3,
+          format: (i % 2 == 0) ? ParagraphFormat.p : ParagraphFormat.m,
+        ),
+      );
+
+      audioManager.isPlayerVisible.value = true;
+      audioManager.currentVerseNotifier.value = 1;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Intentionally scroll way down so verse 1 is off-screen
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -1200));
+      await tester.pumpAndSettle();
+
+      audioManager.currentVerseNotifier.value = 2;
+      await tester.pumpAndSettle();
+      expect(find.text('Jump to verse 2'), findsOneWidget);
+
+      await tester.tap(find.text('Jump to verse 2'));
+      await tester.pumpAndSettle();
+      expect(find.text('Jump to verse 2'), findsNothing);
     },
   );
 }

@@ -77,11 +77,6 @@ class AudioPlayerBottomBar extends StatelessWidget {
                 stream: manager.mediaItemStream,
                 builder: (context, mediaSnapshot) {
                   final mediaItem = mediaSnapshot.data;
-                  final bookId = mediaItem?.extras?['bookId'] as int?;
-                  final chapter = mediaItem?.extras?['chapter'] as int?;
-
-                  final hasPrev = manager.hasPreviousChapter(bookId, chapter);
-                  final hasNext = manager.hasNextChapter(bookId, chapter);
 
                   return Row(
                     children: [
@@ -156,62 +151,83 @@ class AudioPlayerBottomBar extends StatelessWidget {
                         ),
                       ),
 
-                      // Previous Chapter
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous),
-                        tooltip: 'Previous Chapter',
-                        iconSize: 22,
-                        visualDensity: VisualDensity.compact,
-                        onPressed: hasPrev ? manager.skipToPrevious : null,
-                      ),
+                      // Previous Verse, Play/Pause, Next Verse
+                      StreamBuilder<PositionData>(
+                        stream: manager.positionDataStream,
+                        builder: (context, posSnapshot) {
+                          final pos =
+                              posSnapshot.data?.position ?? Duration.zero;
+                          final hasPrevVerse = manager.hasPreviousVerse(pos);
+                          final hasNextVerse = manager.hasNextVerse(pos);
 
-                      // Play / Pause / Buffering
-                      StreamBuilder<PlaybackState>(
-                        stream: manager.playbackStateStream,
-                        builder: (context, stateSnapshot) {
-                          final state = stateSnapshot.data;
-                          final playing = state?.playing ?? false;
-                          final processingState =
-                              state?.processingState ??
-                              AudioProcessingState.idle;
-
-                          if (processingState == AudioProcessingState.loading ||
-                              processingState ==
-                                  AudioProcessingState.buffering) {
-                            return const SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: Center(
-                                child: SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.fast_rewind),
+                                tooltip: 'Previous Verse',
+                                iconSize: 22,
+                                visualDensity: VisualDensity.compact,
+                                onPressed: hasPrevVerse
+                                    ? manager.skipToPreviousVerse
+                                    : null,
                               ),
-                            );
-                          }
 
-                          return IconButton(
-                            icon: Icon(
-                              playing ? Icons.pause : Icons.play_arrow,
-                            ),
-                            tooltip: playing ? 'Pause' : 'Play',
-                            iconSize: 26,
-                            visualDensity: VisualDensity.compact,
-                            onPressed: playing ? manager.pause : manager.play,
+                              // Play / Pause / Buffering
+                              StreamBuilder<PlaybackState>(
+                                stream: manager.playbackStateStream,
+                                builder: (context, stateSnapshot) {
+                                  final state = stateSnapshot.data;
+                                  final playing = state?.playing ?? false;
+                                  final processingState =
+                                      state?.processingState ??
+                                      AudioProcessingState.idle;
+
+                                  if (processingState ==
+                                          AudioProcessingState.loading ||
+                                      processingState ==
+                                          AudioProcessingState.buffering) {
+                                    return const SizedBox(
+                                      width: 36,
+                                      height: 36,
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  return IconButton(
+                                    icon: Icon(
+                                      playing ? Icons.pause : Icons.play_arrow,
+                                    ),
+                                    tooltip: playing ? 'Pause' : 'Play',
+                                    iconSize: 26,
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: playing
+                                        ? manager.pause
+                                        : manager.play,
+                                  );
+                                },
+                              ),
+
+                              IconButton(
+                                icon: const Icon(Icons.fast_forward),
+                                tooltip: 'Next Verse',
+                                iconSize: 22,
+                                visualDensity: VisualDensity.compact,
+                                onPressed: hasNextVerse
+                                    ? manager.skipToNextVerse
+                                    : null,
+                              ),
+                            ],
                           );
                         },
-                      ),
-
-                      // Next Chapter
-                      IconButton(
-                        icon: const Icon(Icons.skip_next),
-                        tooltip: 'Next Chapter',
-                        iconSize: 22,
-                        visualDensity: VisualDensity.compact,
-                        onPressed: hasNext ? manager.skipToNext : null,
                       ),
 
                       // Close Button
