@@ -276,6 +276,13 @@ class TabManager extends ChangeNotifier {
     }
   }
 
+  BibleTab? tabById(String tabId) {
+    for (final tab in _tabs) {
+      if (tab.id == tabId) return tab;
+    }
+    return null;
+  }
+
   void updateActiveChapter(
     int bookId,
     int chapter, [
@@ -283,18 +290,41 @@ class TabManager extends ChangeNotifier {
     int? targetVerse,
   ]) {
     final current = activeTab;
-    if (current == null || current.isPlaylist) return;
-    if (current.bookId == bookId &&
-        current.chapter == chapter &&
-        current.sectionHeading == sectionHeading &&
-        current.targetVerse == targetVerse) {
+    if (current == null) return;
+    _applyChapterToTab(current, bookId, chapter, sectionHeading, targetVerse);
+  }
+
+  void updateTabChapter(
+    String tabId,
+    int bookId,
+    int chapter, [
+    String? sectionHeading,
+    int? targetVerse,
+  ]) {
+    final tab = tabById(tabId);
+    if (tab == null) return;
+    _applyChapterToTab(tab, bookId, chapter, sectionHeading, targetVerse);
+  }
+
+  void _applyChapterToTab(
+    BibleTab tab,
+    int bookId,
+    int chapter, [
+    String? sectionHeading,
+    int? targetVerse,
+  ]) {
+    if (tab.isPlaylist) return;
+    if (tab.bookId == bookId &&
+        tab.chapter == chapter &&
+        tab.sectionHeading == sectionHeading &&
+        tab.targetVerse == targetVerse) {
       return;
     }
 
-    current.bookId = bookId;
-    current.chapter = chapter;
-    current.sectionHeading = sectionHeading;
-    current.targetVerse = targetVerse;
+    tab.bookId = bookId;
+    tab.chapter = chapter;
+    tab.sectionHeading = sectionHeading;
+    tab.targetVerse = targetVerse;
 
     _saveToPrefs();
     notifyListeners();

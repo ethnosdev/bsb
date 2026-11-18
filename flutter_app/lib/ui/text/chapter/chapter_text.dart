@@ -692,7 +692,7 @@ class _ChapterTextState extends State<ChapterText>
     _audioManager = getIt<AudioPlaybackManager>();
     _audioManager!.isPlayerVisible.addListener(_onAudioStateChanged);
     _audioManager!.currentVerseNotifier.addListener(_onAudioStateChanged);
-    _audioManager!.syncTextNotifier.addListener(_onAudioStateChanged);
+    _audioManager!.audioTabIdNotifier.addListener(_onAudioStateChanged);
     _audioMediaSub = _audioManager!.mediaItemStream.listen((item) {
       _audioMediaItem = item;
       _onAudioStateChanged();
@@ -704,7 +704,7 @@ class _ChapterTextState extends State<ChapterText>
     _audioMediaSub = null;
     _audioManager?.isPlayerVisible.removeListener(_onAudioStateChanged);
     _audioManager?.currentVerseNotifier.removeListener(_onAudioStateChanged);
-    _audioManager?.syncTextNotifier.removeListener(_onAudioStateChanged);
+    _audioManager?.audioTabIdNotifier.removeListener(_onAudioStateChanged);
     _audioManager = null;
   }
 
@@ -726,6 +726,31 @@ class _ChapterTextState extends State<ChapterText>
     return manager.currentVerseNotifier.value;
   }
 
+  (int, int)? _returnToChapterTarget() {
+    final manager = _audioManager;
+    if (!_isActive || manager == null || !manager.isPlayerVisible.value) {
+      return null;
+    }
+    final (bookId, chapter) = _loadedAudioChapter();
+    if (bookId == null || chapter == null) return null;
+    if (bookId == widget.bookId && chapter == widget.chapter) return null;
+
+    if (getIt.isRegistered<TabManager>()) {
+      final tabManager = getIt<TabManager>();
+      final audioTabId = manager.audioTabIdNotifier.value;
+      if (audioTabId != null && tabManager.activeTabId != audioTabId) {
+        return null;
+      }
+    }
+    return (bookId, chapter);
+  }
+
+  void _returnToPlayingChapter(int bookId, int chapter) {
+    if (!getIt.isRegistered<TabManager>()) return;
+    final verse = _audioManager?.currentVerseNotifier.value;
+    getIt<TabManager>().updateActiveChapter(bookId, chapter, null, verse);
+  }
+
   void _onAudioStateChanged() {
     if (!mounted) return;
     final activeVerse = _activeAudioVerse();
@@ -737,9 +762,7 @@ class _ChapterTextState extends State<ChapterText>
       return;
     }
 
-    if (_isActive &&
-        (_audioManager?.syncTextNotifier.value ?? false) &&
-        activeVerse > 0) {
+    if (_isActive && activeVerse > 0) {
       if (activeVerse != _lastAutoScrolledVerse) {
         if (_isAutoScrollPaused &&
             _lastManualScrollTime != null &&
@@ -765,8 +788,7 @@ class _ChapterTextState extends State<ChapterText>
   }
 
   void _pauseAutoScrollForManualInteraction() {
-    if (_activeAudioVerse() == null ||
-        !(_audioManager?.syncTextNotifier.value ?? false)) {
+    if (_activeAudioVerse() == null) {
       return;
     }
     _lastManualScrollTime = DateTime.now();
@@ -1156,7 +1178,6 @@ class _ChapterTextState extends State<ChapterText>
                         widget.targetVerse == null &&
                         activeAudioVerse != null &&
                         activeAudioVerse > 0 &&
-                        (_audioManager?.syncTextNotifier.value ?? false) &&
                         !_isAutoScrollPaused &&
                         _lastAutoScrolledVerse != activeAudioVerse) {
                       _scheduleAudioAutoScroll(activeAudioVerse);
@@ -1305,8 +1326,6 @@ class _ChapterTextState extends State<ChapterText>
                               if (_isActive &&
                                   _isAutoScrollPaused &&
                                   _isCurrentVerseOffScreen &&
-                                  (_audioManager?.syncTextNotifier.value ??
-                                      false) &&
                                   activeAudioVerse != null &&
                                   activeAudioVerse > 0)
                                 Positioned(
@@ -1323,6 +1342,30 @@ class _ChapterTextState extends State<ChapterText>
                                         'Jump to verse $activeAudioVerse',
                                       ),
                                       onPressed: _jumpToCurrentAudioVerse,
+                                    ),
+                                  ),
+                                )
+                              else if (_returnToChapterTarget()
+                                  case final target?)
+                                Positioned(
+                                  bottom: 16.0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: ActionChip(
+                                      avatar: const Icon(
+                                        Icons.my_location,
+                                        size: 16,
+                                      ),
+                                      label: Text(
+                                        target.$1 == widget.bookId
+                                            ? 'Return to chapter ${target.$2}'
+                                            : 'Return to ${bookIdToFullNameMap[target.$1] ?? 'chapter'} ${target.$2}',
+                                      ),
+                                      onPressed: () => _returnToPlayingChapter(
+                                        target.$1,
+                                        target.$2,
+                                      ),
                                     ),
                                   ),
                                 ),

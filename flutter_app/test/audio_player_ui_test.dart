@@ -101,12 +101,19 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
       ValueNotifier<VersePauseState>(VersePauseState.idle);
 
   @override
-  final ValueNotifier<AudioPlayMode> playModeNotifier =
-      ValueNotifier<AudioPlayMode>(AudioPlayMode.continuous);
+  final ValueNotifier<AudioPlayContext> playContextNotifier =
+      ValueNotifier<AudioPlayContext>(AudioPlayContext.chapter);
 
   @override
-  final ValueNotifier<Reference?> repeatPassageNotifier =
+  final ValueNotifier<AudioRepeatBehavior> repeatBehaviorNotifier =
+      ValueNotifier<AudioRepeatBehavior>(AudioRepeatBehavior.continueOn);
+
+  @override
+  final ValueNotifier<Reference?> activeRangeNotifier =
       ValueNotifier<Reference?>(null);
+
+  @override
+  final ValueNotifier<int?> lockedVerseNotifier = ValueNotifier<int?>(null);
 
   @override
   final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
@@ -117,7 +124,9 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
       ValueNotifier<Duration?>(null);
 
   @override
-  final ValueNotifier<bool> syncTextNotifier = ValueNotifier<bool>(true);
+  final ValueNotifier<String?> audioTabIdNotifier = ValueNotifier<String?>(
+    null,
+  );
 
   @override
   final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
@@ -306,46 +315,26 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
   }
 
   @override
-  void setPlayMode(AudioPlayMode mode) {
-    playModeNotifier.value = mode;
+  Future<void> setPlayContext(AudioPlayContext context) async {
+    playContextNotifier.value = context;
+    if (context == AudioPlayContext.verse) {
+      lockedVerseNotifier.value = currentVerseNotifier.value ?? 1;
+    } else {
+      lockedVerseNotifier.value = null;
+    }
   }
 
   @override
-  Future<void> setRepeatPassage(
-    Reference passage, {
-    bool playImmediately = true,
-    bool forceRestart = false,
-  }) async {
-    repeatPassageNotifier.value = passage;
-    playModeNotifier.value = AudioPlayMode.repeatPassage;
+  void setRepeatBehavior(AudioRepeatBehavior behavior) {
+    repeatBehaviorNotifier.value = behavior;
   }
 
   @override
   Future<void> playSelection(Reference reference) async {}
 
   @override
-  void cyclePlayMode() {
-    final nextMode = switch (playModeNotifier.value) {
-      AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
-      AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
-      AudioPlayMode.stopAfterChapter => AudioPlayMode.repeatVerse,
-      AudioPlayMode.repeatVerse =>
-        repeatPassageNotifier.value != null
-            ? AudioPlayMode.repeatPassage
-            : AudioPlayMode.continuous,
-      AudioPlayMode.repeatPassage => AudioPlayMode.continuous,
-    };
-    setPlayMode(nextMode);
-  }
-
-  @override
   void setSleepTimer(SleepTimerOption option) {
     sleepTimerOptionNotifier.value = option;
-  }
-
-  @override
-  void setSyncText(bool sync) {
-    syncTextNotifier.value = sync;
   }
 
   @override
@@ -362,11 +351,13 @@ class FakeAudioPlaybackManager implements AudioPlaybackManager {
     pauseBetweenVersesEnabledNotifier.dispose();
     pauseBetweenVersesSecondsNotifier.dispose();
     versePauseStateNotifier.dispose();
-    playModeNotifier.dispose();
-    repeatPassageNotifier.dispose();
+    playContextNotifier.dispose();
+    repeatBehaviorNotifier.dispose();
+    activeRangeNotifier.dispose();
+    lockedVerseNotifier.dispose();
     sleepTimerOptionNotifier.dispose();
     sleepTimerRemainingNotifier.dispose();
-    syncTextNotifier.dispose();
+    audioTabIdNotifier.dispose();
     currentVerseNotifier.dispose();
     playbackStateSubject.close();
     mediaItemSubject.close();
@@ -569,9 +560,12 @@ void main() {
       await tester.tap(miniPlayerTitle);
       await tester.pumpAndSettle();
 
-      // Verify AudioPlayerModalSheet is displayed
+      // Verify AudioPlayerModalSheet is displayed without legacy header/footer chrome
       expect(find.byType(AudioPlayerModalSheet), findsOneWidget);
-      expect(find.text('Audio Player'), findsOneWidget);
+      expect(find.text('Audio Player'), findsNothing);
+      expect(find.text('Go to Chapter'), findsNothing);
+      expect(find.byTooltip('Collapse'), findsNothing);
+      expect(find.byTooltip('Sync text with audio (Enabled)'), findsNothing);
       expect(find.text('Bob Souer'), findsOneWidget);
 
       // Verify Previous Verse and Next Verse buttons (replacing ±10s)
@@ -593,20 +587,33 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Genesis 1:14'), findsNWidgets(2));
 
-      // Verify Play Mode button opens Repeat Mode popup list instead of cycling
-      expect(find.text('Continuous'), findsOneWidget);
-      await tester.tap(find.text('Continuous'));
+      // Verify Context and Repeat chips open popup bottom sheets (no Range when unset)
+      expect(find.text('Chapter'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('audio_context_chip')));
       await tester.pumpAndSettle();
-      expect(find.text('Repeat Mode'), findsOneWidget);
-      expect(find.text('Repeat Chapter'), findsOneWidget);
-      expect(find.text('1 Chapter'), findsOneWidget);
-      expect(find.text('Repeat Verse'), findsOneWidget);
-      expect(find.text('Repeat Passage'), findsOneWidget);
+      expect(find.text('Context'), findsOneWidget);
+      expect(find.text('Full chapter'), findsOneWidget);
+      expect(find.text('Range'), findsNothing);
+      expect(find.text('Verse'), findsOneWidget);
+      expect(find.text('Verse 14'), findsOneWidget);
 
-      await tester.tap(find.text('Repeat Verse'));
+      await tester.tap(find.text('Verse'));
       await tester.pumpAndSettle();
-      expect(audioManager.playModeNotifier.value, AudioPlayMode.repeatVerse);
-      expect(find.text('Repeat Verse'), findsOneWidget);
+      expect(audioManager.playContextNotifier.value, AudioPlayContext.verse);
+      expect(find.text('Verse 14'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('audio_repeat_chip')));
+      await tester.pumpAndSettle();
+      expect(find.text('Stop after Verse 14'), findsOneWidget);
+      expect(find.text('Repeat Verse 14'), findsOneWidget);
+      await tester.tap(find.text('Repeat'));
+      await tester.pumpAndSettle();
+      expect(
+        audioManager.repeatBehaviorNotifier.value,
+        AudioRepeatBehavior.repeat,
+      );
+      expect(find.text('Repeat'), findsOneWidget);
 
       // Verify Speed picker
       expect(find.text('1.0x'), findsOneWidget);
@@ -628,19 +635,6 @@ void main() {
         audioManager.sleepTimerOptionNotifier.value,
         SleepTimerOption.fifteenMinutes,
       );
-
-      // Verify sync text toggle
-      expect(audioManager.syncTextNotifier.value, isTrue);
-      final syncButton = find.byTooltip('Sync text with audio (Enabled)');
-      expect(syncButton, findsOneWidget);
-      await tester.tap(syncButton);
-      await tester.pumpAndSettle();
-      expect(audioManager.syncTextNotifier.value, isFalse);
-
-      // Collapse sheet
-      await tester.tap(find.byTooltip('Collapse'));
-      await tester.pumpAndSettle();
-      expect(find.byType(AudioPlayerModalSheet), findsNothing);
     },
   );
 
@@ -862,17 +856,18 @@ void main() {
   );
 
   testWidgets(
-    'Repeat Passage shows compact range on chip and opens PassageRangePickerDialog on edit',
+    'Range context shows compact label on Context chip and dynamic description in Repeat sheet',
     (tester) async {
       tabManager.openTab(1, 1);
       audioManager.isPlayerVisible.value = true;
-      audioManager.repeatPassageNotifier.value = Reference(
+      audioManager.activeRangeNotifier.value = Reference(
         bookId: 45,
         chapter: 8,
         verse: 31,
         endVerse: 39,
       );
-      audioManager.playModeNotifier.value = AudioPlayMode.repeatPassage;
+      audioManager.playContextNotifier.value = AudioPlayContext.range;
+      audioManager.repeatBehaviorNotifier.value = AudioRepeatBehavior.stop;
 
       await tester.pumpWidget(const MaterialApp(home: HomePage()));
       await tester.pumpAndSettle();
@@ -886,21 +881,139 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ROM 8:31–39'), findsOneWidget);
-      await tester.tap(find.text('ROM 8:31–39'));
-      await tester.pumpAndSettle();
+      expect(find.text('Stop'), findsOneWidget);
 
-      expect(find.text('Repeat Mode'), findsOneWidget);
+      // Opening Context sheet shows Chapter, Range (with subtitle), and Verse
+      await tester.tap(find.byKey(const ValueKey('audio_context_chip')));
+      await tester.pumpAndSettle();
+      expect(find.text('Context'), findsOneWidget);
+      expect(find.text('Range'), findsOneWidget);
       expect(find.text('Romans 8:31–39'), findsOneWidget);
+      await tester.tap(find.text('Chapter'));
+      await tester.pumpAndSettle();
+      expect(audioManager.playContextNotifier.value, AudioPlayContext.chapter);
 
-      await tester.tap(
-        find.byKey(const ValueKey('edit_repeat_passage_button')),
+      // Switch back to Range and verify Repeat sheet dynamic labels
+      await tester.tap(find.byKey(const ValueKey('audio_context_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Range'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('audio_repeat_chip')));
+      await tester.pumpAndSettle();
+      expect(find.text('Stop after ROM 8:31–39'), findsOneWidget);
+      expect(find.text('Repeat ROM 8:31–39'), findsOneWidget);
+      await tester.tap(find.text('Repeat'));
+      await tester.pumpAndSettle();
+      expect(
+        audioManager.repeatBehaviorNotifier.value,
+        AudioRepeatBehavior.repeat,
       );
+    },
+  );
+
+  testWidgets(
+    'Automatic sync only advances audio tab, and closing audio tab closes player',
+    (tester) async {
+      tabManager.openTab(1, 1); // Tab 1: Gen 1
+      final tab1Id = tabManager.activeTab!.id;
+      tabManager.openTab(45, 8); // Tab 2: Rom 8 (active)
+      final tab2Id = tabManager.activeTab!.id;
+
+      audioManager.audioTabIdNotifier.value = tab1Id;
+      audioManager.isPlayerVisible.value = true;
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit Scripture Passage'), findsOneWidget);
-      expect(find.text('Repeat Passage'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
+      // Audio advances Gen 1 -> Gen 2 -> only Tab 1 advances; Tab 2 stays on Rom 8
+      audioManager.onChapterChanged?.call(1, 2);
       await tester.pumpAndSettle();
+
+      expect(tabManager.tabById(tab1Id)?.bookId, 1);
+      expect(tabManager.tabById(tab1Id)?.chapter, 2);
+      expect(tabManager.activeTab?.id, tab2Id);
+      expect(tabManager.activeTab?.bookId, 45);
+      expect(tabManager.activeTab?.chapter, 8);
+
+      // Closing Tab 1 closes/stops the audio player automatically
+      tabManager.closeTab(tab1Id);
+      await tester.pumpAndSettle();
+
+      expect(audioManager.stopCalled, isTrue);
+      expect(audioManager.isPlayerVisible.value, isFalse);
+      expect(find.byType(AudioPlayerBottomBar), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Navigating away inside audio tab pauses auto-sync and shows Return to chapter chip',
+    (tester) async {
+      tabManager.openTab(1, 1); // Gen 1
+      final tab1Id = tabManager.activeTab!.id;
+      audioManager.audioTabIdNotifier.value = tab1Id;
+      audioManager.isPlayerVisible.value = true;
+      audioManager._fakeHandler.currentBookId = 1;
+      audioManager._fakeHandler.currentChapter = 1;
+      audioManager.mediaItemSubject.add(
+        const MediaItem(
+          id: 'gen1',
+          album: 'Berean Standard Bible',
+          title: 'Genesis 1',
+          extras: {'bookId': 1, 'chapter': 1},
+        ),
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: HomePage()));
+      await tester.pumpAndSettle();
+
+      // Initial audio chapter event registers Genesis 1 as synced chapter
+      audioManager.onChapterChanged?.call(1, 1);
+      await tester.pumpAndSettle();
+
+      // User navigates Tab 1 to Genesis 5 in same book
+      tabManager.updateActiveChapter(1, 5);
+      await tester.pumpAndSettle();
+      expect(find.text('Return to chapter 1'), findsOneWidget);
+
+      // Audio advances to Genesis 2 in background -> Tab 1 stays on Gen 5, chip updates to chapter 2
+      audioManager._fakeHandler.currentBookId = 1;
+      audioManager._fakeHandler.currentChapter = 2;
+      audioManager.currentVerseNotifier.value = 3;
+      audioManager.mediaItemSubject.add(
+        const MediaItem(
+          id: 'gen2',
+          album: 'Berean Standard Bible',
+          title: 'Genesis 2',
+          extras: {'bookId': 1, 'chapter': 2},
+        ),
+      );
+      audioManager.onChapterChanged?.call(1, 2);
+      await tester.pumpAndSettle();
+
+      expect(tabManager.activeTab?.bookId, 1);
+      expect(tabManager.activeTab?.chapter, 5);
+      expect(find.text('Return to chapter 2'), findsOneWidget);
+
+      // Opening a second tab does NOT show Return chip on Tab 2
+      tabManager.openTab(45, 8);
+      await tester.pumpAndSettle();
+      expect(find.text('Return to chapter 2'), findsNothing);
+      expect(find.text('Return to Genesis 2'), findsNothing);
+
+      // Returning to Tab 1 and browsing to another book shows book name: "Return to Genesis 2"
+      tabManager.selectTab(tab1Id);
+      tabManager.updateActiveChapter(40, 5);
+      await tester.pumpAndSettle();
+      expect(find.text('Return to Genesis 2'), findsOneWidget);
+
+      // Tapping chip returns Tab 1 to Genesis 2
+      await tester.tap(find.text('Return to Genesis 2'));
+      await tester.pumpAndSettle();
+      expect(tabManager.activeTab?.bookId, 1);
+      expect(tabManager.activeTab?.chapter, 2);
+      expect(find.text('Return to Genesis 2'), findsNothing);
+      expect(find.text('Return to chapter 2'), findsNothing);
     },
   );
 }

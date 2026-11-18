@@ -2,46 +2,50 @@ import 'package:bsb/infrastructure/reference.dart';
 import 'package:database_builder/database_builder.dart';
 import 'package:material_ui/material_ui.dart';
 
-enum AudioPlayMode {
-  continuous('Continuous', Icons.repeat),
-  repeatChapter('Repeat Chapter', Icons.repeat_one),
-  stopAfterChapter('1 Chapter', Icons.stop_circle_outlined),
-  repeatVerse('Repeat Verse', Icons.replay),
-  repeatPassage('Repeat Passage', Icons.repeat_on);
+enum AudioPlayContext {
+  chapter('Chapter', Icons.menu_book_outlined),
+  range('Range', Icons.view_stream_outlined),
+  verse('Verse', Icons.format_quote_outlined);
 
   final String label;
   final IconData icon;
 
-  const AudioPlayMode(this.label, this.icon);
+  const AudioPlayContext(this.label, this.icon);
+}
 
-  static AudioPlayMode fromString(String? value) {
+enum AudioRepeatBehavior {
+  continueOn('Continue', Icons.double_arrow),
+  stop('Stop', Icons.stop_circle_outlined),
+  repeat('Repeat', Icons.repeat);
+
+  final String label;
+  final IconData icon;
+
+  const AudioRepeatBehavior(this.label, this.icon);
+
+  static AudioRepeatBehavior fromString(String? value) {
     switch (value) {
+      case 'repeat':
       case 'repeatChapter':
-        return AudioPlayMode.repeatChapter;
+        return AudioRepeatBehavior.repeat;
+      case 'stop':
       case 'stopAfterChapter':
-        return AudioPlayMode.stopAfterChapter;
-      case 'repeatVerse':
-        return AudioPlayMode.repeatVerse;
-      case 'repeatPassage':
-        return AudioPlayMode.repeatPassage;
+        return AudioRepeatBehavior.stop;
+      case 'continueOn':
       case 'continuous':
       default:
-        return AudioPlayMode.continuous;
+        return AudioRepeatBehavior.continueOn;
     }
   }
 
   String toStorageString() {
     switch (this) {
-      case AudioPlayMode.repeatChapter:
-        return 'repeatChapter';
-      case AudioPlayMode.stopAfterChapter:
-        return 'stopAfterChapter';
-      case AudioPlayMode.repeatVerse:
-        return 'repeatVerse';
-      case AudioPlayMode.repeatPassage:
-        return 'repeatPassage';
-      case AudioPlayMode.continuous:
-        return 'continuous';
+      case AudioRepeatBehavior.repeat:
+        return 'repeat';
+      case AudioRepeatBehavior.stop:
+        return 'stop';
+      case AudioRepeatBehavior.continueOn:
+        return 'continueOn';
     }
   }
 }

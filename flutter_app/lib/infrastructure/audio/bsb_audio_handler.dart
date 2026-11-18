@@ -41,16 +41,24 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   int? _currentBookId;
   int? _currentChapter;
   ChapterTimings? _currentTimings;
-  AudioPlayMode _playMode = AudioPlayMode.continuous;
-  Reference? repeatPassage;
+  AudioPlayContext _playContext = AudioPlayContext.chapter;
+  AudioRepeatBehavior _repeatBehavior = AudioRepeatBehavior.continueOn;
+  AudioRepeatBehavior defaultChapterRepeat = AudioRepeatBehavior.continueOn;
+  Reference? activeRange;
   bool _pauseBetweenVersesEnabled = false;
   int _pauseBetweenVersesSeconds = kDefaultVersePauseSeconds;
 
   bool stopAtEndOfChapter = false;
   VoidCallback? onSleepTimerFired;
-  ValueChanged<AudioPlayMode>? onPlayModeChanged;
+  void Function(
+    AudioPlayContext context,
+    AudioRepeatBehavior repeat,
+    Reference? activeRange,
+    int? lockedVerse,
+  )?
+  onModeChanged;
 
-  int? _repeatVerseTarget;
+  int? _lockedVerse;
   VerseTiming? _expectedActiveVerse;
   bool _isLoopSeeking = false;
   bool _isInVersePause = false;
@@ -73,6 +81,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   int? get currentChapter => _currentChapter;
   ChapterTimings? get currentTimings => _currentTimings;
   int? get currentVerse => _currentVerseSubject.value;
+  int? get lockedVerse => _lockedVerse;
   ValueStream<int?> get currentVerseStream => _currentVerseSubject.stream;
   VersePauseState get versePauseState => _versePauseStateSubject.value;
   ValueStream<VersePauseState> get versePauseStateStream =>
@@ -83,16 +92,33 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   bool get pauseBetweenVersesEnabled => _pauseBetweenVersesEnabled;
   int get pauseBetweenVersesSeconds => _pauseBetweenVersesSeconds;
 
-  AudioPlayMode get playMode => _playMode;
-  set playMode(AudioPlayMode value) {
-    if (_playMode == value) return;
-    _playMode = value;
-    if (value == AudioPlayMode.repeatVerse) {
-      _repeatVerseTarget = _resolveLoopVerse(_player.position);
+  AudioPlayContext get playContext => _playContext;
+  AudioRepeatBehavior get repeatBehavior => _repeatBehavior;
+
+  void setPlayContext(AudioPlayContext context, {int? targetVerse}) {
+    _playContext = context;
+    if (context == AudioPlayContext.verse) {
+      _lockedVerse = targetVerse ?? _resolveLoopVerse(_player.position);
     } else {
-      _repeatVerseTarget = null;
+      _lockedVerse = null;
     }
     _syncVerseBoundaryTimer();
+    _notifyModeChanged();
+  }
+
+  void setRepeatBehavior(AudioRepeatBehavior behavior) {
+    _repeatBehavior = behavior;
+    _syncVerseBoundaryTimer();
+    _notifyModeChanged();
+  }
+
+  void _notifyModeChanged() {
+    onModeChanged?.call(
+      _playContext,
+      _repeatBehavior,
+      activeRange,
+      _lockedVerse,
+    );
   }
 
   BsbAudioHandler({
@@ -129,8 +155,10 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     if (stopAtEndOfChapter) {
       stopAtEndOfChapter = false;
       onSleepTimerFired?.call();
-      final target = _playMode == AudioPlayMode.repeatVerse
+      final target = _playContext == AudioPlayContext.verse
           ? _resolveLastVerseStart()
+          : (_playContext == AudioPlayContext.range && activeRange != null)
+          ? (_resolveRangeStartTarget()?.seekPosition ?? Duration.zero)
           : Duration.zero;
       await pause();
       await seek(target);
@@ -138,40 +166,105 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     }
 
     final timings = _currentTimings;
-    switch (_playMode) {
-      case AudioPlayMode.repeatVerse:
-        final target = _resolveLastVerseStart();
-        if (_pauseBetweenVersesEnabled &&
-            _currentBookId != null &&
-            _currentChapter != null) {
-          final verse = _repeatVerseTarget ?? timings?.verses.lastOrNull?.verse;
-          await _enterVersePause(
-            _VersePauseTarget(
-              bookId: _currentBookId!,
-              chapter: _currentChapter!,
-              verse: verse,
-              seekPosition: target,
-            ),
+    switch (_playContext) {
+      case AudioPlayContext.verse:
+        final verseTarget = _resolveLastVerseStart();
+        switch (_repeatBehavior) {
+          case AudioRepeatBehavior.stop:
+            await pause();
+            await seek(verseTarget);
+            break;
+          case AudioRepeatBehavior.repeat:
+            if (_pauseBetweenVersesEnabled &&
+                _currentBookId != null &&
+                _currentChapter != null) {
+              final verse = _lockedVerse ?? timings?.verses.lastOrNull?.verse;
+              await _enterVersePause(
+                _VersePauseTarget(
+                  bookId: _currentBookId!,
+                  chapter: _currentChapter!,
+                  verse: verse,
+                  seekPosition: verseTarget,
+                ),
+              );
+            } else {
+              await seek(verseTarget);
+              await play();
+            }
+            break;
+          case AudioRepeatBehavior.continueOn:
+            _playContext = AudioPlayContext.chapter;
+            _lockedVerse = null;
+            _notifyModeChanged();
+            await _advanceOrPauseToNextChapter();
+            break;
+        }
+        break;
+      case AudioPlayContext.range:
+        final range = activeRange;
+        if (range == null) {
+          await _handleChapterCompleted(timings);
+          return;
+        }
+        final endChapter = range.endChapter ?? range.chapter;
+        if (_currentBookId == range.bookId &&
+            _currentChapter != null &&
+            _currentChapter! < endChapter) {
+          final nextChapTarget = _VersePauseTarget(
+            bookId: range.bookId,
+            chapter: _currentChapter! + 1,
+            verse: 1,
+            seekPosition: Duration.zero,
           );
-        } else {
-          await seek(target);
-          await play();
-        }
-        break;
-      case AudioPlayMode.repeatPassage:
-        final passageTarget = _resolveCompletedPassageTarget();
-        if (passageTarget != null) {
           if (_pauseBetweenVersesEnabled) {
-            await _enterVersePause(passageTarget);
+            await _enterVersePause(nextChapTarget);
           } else {
-            await _jumpToTargetAndPlay(passageTarget);
+            await _jumpToTargetAndPlay(nextChapTarget);
           }
-        } else {
-          await seek(Duration.zero);
-          await play();
+          return;
+        }
+        final rangeStart = _resolveRangeStartTarget();
+        switch (_repeatBehavior) {
+          case AudioRepeatBehavior.stop:
+            if (rangeStart != null) {
+              await _jumpToTargetPaused(rangeStart);
+            } else {
+              await pause();
+              await seek(Duration.zero);
+            }
+            break;
+          case AudioRepeatBehavior.repeat:
+            if (rangeStart != null) {
+              if (_pauseBetweenVersesEnabled) {
+                await _enterVersePause(rangeStart);
+              } else {
+                await _jumpToTargetAndPlay(rangeStart);
+              }
+            } else {
+              await seek(Duration.zero);
+              await play();
+            }
+            break;
+          case AudioRepeatBehavior.continueOn:
+            _playContext = AudioPlayContext.chapter;
+            _notifyModeChanged();
+            await _advanceOrPauseToNextChapter();
+            break;
         }
         break;
-      case AudioPlayMode.repeatChapter:
+      case AudioPlayContext.chapter:
+        await _handleChapterCompleted(timings);
+        break;
+    }
+  }
+
+  Future<void> _handleChapterCompleted(ChapterTimings? timings) async {
+    switch (_repeatBehavior) {
+      case AudioRepeatBehavior.stop:
+        await pause();
+        await seek(Duration.zero);
+        break;
+      case AudioRepeatBehavior.repeat:
         if (_pauseBetweenVersesEnabled &&
             _currentBookId != null &&
             _currentChapter != null) {
@@ -189,38 +282,48 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
           await play();
         }
         break;
-      case AudioPlayMode.stopAfterChapter:
-        await pause();
-        await seek(Duration.zero);
+      case AudioRepeatBehavior.continueOn:
+        await _advanceOrPauseToNextChapter();
         break;
-      case AudioPlayMode.continuous:
-        if (_pauseBetweenVersesEnabled &&
-            _currentBookId != null &&
-            _currentChapter != null) {
-          final next = _urlResolver.getNextChapter(
-            _currentBookId!,
-            _currentChapter!,
-          );
-          if (next != null) {
-            await _enterVersePause(
-              _VersePauseTarget(
-                bookId: next.$1,
-                chapter: next.$2,
-                verse: null,
-                seekPosition: Duration.zero,
-              ),
-            );
-          } else {
-            await stop();
-          }
-        } else {
-          try {
-            await skipToNext();
-          } catch (_) {
-            await stop();
-          }
-        }
-        break;
+    }
+  }
+
+  Future<void> _advanceOrPauseToNextChapter() async {
+    if (_pauseBetweenVersesEnabled &&
+        _currentBookId != null &&
+        _currentChapter != null) {
+      final next = _urlResolver.getNextChapter(
+        _currentBookId!,
+        _currentChapter!,
+      );
+      if (next != null) {
+        await _enterVersePause(
+          _VersePauseTarget(
+            bookId: next.$1,
+            chapter: next.$2,
+            verse: null,
+            seekPosition: Duration.zero,
+          ),
+        );
+      } else {
+        await stop();
+      }
+      return;
+    }
+    try {
+      await _advanceChapterSkippingModeReset();
+    } catch (_) {
+      await stop();
+    }
+  }
+
+  Future<void> _advanceChapterSkippingModeReset() async {
+    if (_currentBookId == null || _currentChapter == null) return;
+    final next = _urlResolver.getNextChapter(_currentBookId!, _currentChapter!);
+    if (next != null) {
+      await playChapter(next.$1, next.$2);
+    } else {
+      await stop();
     }
   }
 
@@ -277,8 +380,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   bool get _needsBoundaryPolling =>
-      _playMode == AudioPlayMode.repeatVerse ||
-      _playMode == AudioPlayMode.repeatPassage ||
+      _playContext == AudioPlayContext.verse ||
+      _playContext == AudioPlayContext.range ||
       _pauseBetweenVersesEnabled;
 
   void _syncVerseBoundaryTimer({bool? playing}) {
@@ -340,7 +443,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   Duration _resolveLastVerseStart() {
     final timings = _currentTimings;
     if (timings == null || timings.isEmpty) return Duration.zero;
-    final targetVerse = _repeatVerseTarget ?? timings.verses.last.verse;
+    final targetVerse = _lockedVerse ?? timings.verses.last.verse;
     return timings.timingFor(targetVerse)?.start ?? timings.verses.last.start;
   }
 
@@ -392,8 +495,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
 
-    if (_playMode == AudioPlayMode.repeatVerse) {
-      final targetVerse = _repeatVerseTarget ?? _resolveLoopVerse(position);
+    if (_playContext == AudioPlayContext.verse) {
+      final targetVerse = _lockedVerse ?? _resolveLoopVerse(position);
       if (targetVerse != null) {
         final vt = timings.timingFor(targetVerse);
         if (vt != null && position >= vt.end) {
@@ -412,13 +515,13 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     }
 
     // Also catch endVerse if currentTiming itself crossed its end cleanly.
-    if (_playMode == AudioPlayMode.repeatPassage) {
-      final passageEnd = _activePassageEndVerse(timings);
-      if (passageEnd != null &&
-          (currentTiming?.verse == passageEnd ||
+    if (_playContext == AudioPlayContext.range) {
+      final rangeEnd = _activeRangeEndVerse(timings);
+      if (rangeEnd != null &&
+          (currentTiming?.verse == rangeEnd ||
               (previousExpected == null &&
-                  position >= (timings.timingFor(passageEnd)?.end ?? Duration.zero)))) {
-        final endTiming = timings.timingFor(passageEnd);
+                  position >= (timings.timingFor(rangeEnd)?.end ?? Duration.zero)))) {
+        final endTiming = timings.timingFor(rangeEnd);
         if (endTiming != null && position >= endTiming.end) {
           _onVerseEnded(endTiming);
           return;
@@ -429,69 +532,67 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     _expectedActiveVerse = currentTiming;
   }
 
-  int? _activePassageEndVerse(ChapterTimings timings) {
-    final passage = repeatPassage;
-    if (passage == null ||
-        _currentBookId != passage.bookId ||
+  int? _activeRangeEndVerse(ChapterTimings timings) {
+    final range = activeRange;
+    if (range == null ||
+        _currentBookId != range.bookId ||
         _currentChapter == null) {
       return null;
     }
-    final endChapter = passage.endChapter ?? passage.chapter;
-    if (_currentChapter! < passage.chapter || _currentChapter! > endChapter) {
+    final endChapter = range.endChapter ?? range.chapter;
+    if (_currentChapter! < range.chapter || _currentChapter! > endChapter) {
       return null;
     }
     if (_currentChapter! < endChapter) {
       return timings.verses.lastOrNull?.verse;
     }
-    return passage.endVerse ??
-        (passage.verse ?? timings.verses.lastOrNull?.verse);
+    return range.endVerse ??
+        (range.verse ?? timings.verses.lastOrNull?.verse);
   }
 
-  bool _isAtPassageBoundary(VerseTiming endedVerse, ChapterTimings timings) {
-    final passage = repeatPassage;
-    if (passage == null ||
-        _currentBookId != passage.bookId ||
+  bool _isAtFinalRangeBoundary(VerseTiming endedVerse, ChapterTimings timings) {
+    final range = activeRange;
+    if (range == null ||
+        _currentBookId != range.bookId ||
         _currentChapter == null) {
       return false;
     }
-    final endChapter = passage.endChapter ?? passage.chapter;
-    if (_currentChapter! == endChapter) {
-      final endVerse =
-          passage.endVerse ?? (passage.verse ?? timings.verses.lastOrNull?.verse);
-      return endVerse != null && endedVerse.verse >= endVerse;
-    }
-    if (_currentChapter! >= passage.chapter && _currentChapter! < endChapter) {
-      final lastVerse = timings.verses.lastOrNull?.verse;
-      return lastVerse != null && endedVerse.verse == lastVerse;
-    }
-    return false;
+    final endChapter = range.endChapter ?? range.chapter;
+    if (_currentChapter! != endChapter) return false;
+    final endVerse =
+        range.endVerse ?? (range.verse ?? timings.verses.lastOrNull?.verse);
+    return endVerse != null && endedVerse.verse >= endVerse;
   }
 
-  _VersePauseTarget? _resolveCompletedPassageTarget() {
-    final passage = repeatPassage;
-    if (passage == null ||
-        _currentBookId == null ||
+  bool _isAtIntermediateRangeChapterEnd(
+    VerseTiming endedVerse,
+    ChapterTimings timings,
+  ) {
+    final range = activeRange;
+    if (range == null ||
+        _currentBookId != range.bookId ||
         _currentChapter == null) {
-      return null;
+      return false;
     }
-    final endChapter = passage.endChapter ?? passage.chapter;
-    if (_currentBookId == passage.bookId && _currentChapter! < endChapter) {
-      final nextChapter = _currentChapter! + 1;
-      return _VersePauseTarget(
-        bookId: passage.bookId,
-        chapter: nextChapter,
-        verse: 1,
-        seekPosition: Duration.zero, // Refined with loaded timings in transition.
-      );
+    final endChapter = range.endChapter ?? range.chapter;
+    if (_currentChapter! < range.chapter || _currentChapter! >= endChapter) {
+      return false;
     }
-    final startVerse = passage.verse ?? 1;
+    final lastVerse = timings.verses.lastOrNull?.verse;
+    return lastVerse != null && endedVerse.verse == lastVerse;
+  }
+
+  _VersePauseTarget? _resolveRangeStartTarget() {
+    final range = activeRange;
+    if (range == null) return null;
+    final startVerse = range.verse ?? 1;
     final seekPos =
-        _currentChapter == passage.chapter && _currentBookId == passage.bookId
+        _currentChapter == range.chapter && _currentBookId == range.bookId
         ? (_currentTimings?.timingFor(startVerse)?.start ?? Duration.zero)
         : Duration.zero;
     return _VersePauseTarget(
-      bookId: passage.bookId,
-      chapter: passage.chapter,
+      bookId: range.bookId,
+      chapter: range.chapter,
       verse: startVerse,
       seekPosition: seekPos,
     );
@@ -505,8 +606,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
 
     _isLoopSeeking = true;
     try {
-      // 1. Repeat Verse boundary
-      if (_playMode == AudioPlayMode.repeatVerse) {
+      // 1. Verse context boundary
+      if (_playContext == AudioPlayContext.verse) {
         if (stopAtEndOfChapter) {
           stopAtEndOfChapter = false;
           onSleepTimerFired?.call();
@@ -516,69 +617,115 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
           _broadcastState();
           return;
         }
-        final target = _VersePauseTarget(
-          bookId: bookId,
-          chapter: chapter,
-          verse: endedVerse.verse,
-          seekPosition: endedVerse.start,
-        );
-        if (_pauseBetweenVersesEnabled) {
-          await _enterVersePause(target);
-        } else {
-          await _player.seek(endedVerse.start);
-          _syncVerseAfterSeek(endedVerse.start);
-          _broadcastState();
+        switch (_repeatBehavior) {
+          case AudioRepeatBehavior.stop:
+            await _player.pause();
+            await _player.seek(endedVerse.start);
+            _syncVerseAfterSeek(endedVerse.start);
+            _broadcastState();
+            return;
+          case AudioRepeatBehavior.repeat:
+            final target = _VersePauseTarget(
+              bookId: bookId,
+              chapter: chapter,
+              verse: endedVerse.verse,
+              seekPosition: endedVerse.start,
+            );
+            if (_pauseBetweenVersesEnabled) {
+              await _enterVersePause(target);
+            } else {
+              await _player.seek(endedVerse.start);
+              _syncVerseAfterSeek(endedVerse.start);
+              _broadcastState();
+            }
+            return;
+          case AudioRepeatBehavior.continueOn:
+            // Crossing past the verse under Continue transitions to Chapter context.
+            _playContext = AudioPlayContext.chapter;
+            _lockedVerse = null;
+            _notifyModeChanged();
+            break;
         }
-        return;
       }
 
-      // 2. Repeat Passage boundary (end of chapter inside cross-chapter passage OR end of passage)
-      if (_playMode == AudioPlayMode.repeatPassage &&
-          _isAtPassageBoundary(endedVerse, timings)) {
-        final target = _resolveCompletedPassageTarget();
-        if (target != null) {
-          if (stopAtEndOfChapter &&
-              (chapter == (repeatPassage!.endChapter ?? repeatPassage!.chapter) ||
-                  endedVerse.verse == timings.verses.lastOrNull?.verse)) {
-            stopAtEndOfChapter = false;
-            onSleepTimerFired?.call();
-            await _jumpToTargetPaused(target);
-            return;
-          }
+      // 2. Range context boundaries (intermediate chapter end or final range end)
+      if (_playContext == AudioPlayContext.range && activeRange != null) {
+        if (_isAtIntermediateRangeChapterEnd(endedVerse, timings)) {
+          final nextChapterTarget = _VersePauseTarget(
+            bookId: bookId,
+            chapter: chapter + 1,
+            verse: 1,
+            seekPosition: Duration.zero,
+          );
           if (_pauseBetweenVersesEnabled) {
-            await _enterVersePause(target);
+            await _enterVersePause(nextChapterTarget);
           } else {
-            await _jumpToTargetAndPlay(target);
+            await _jumpToTargetAndPlay(nextChapterTarget);
           }
           return;
         }
+
+        if (_isAtFinalRangeBoundary(endedVerse, timings)) {
+          final startTarget = _resolveRangeStartTarget();
+          if (stopAtEndOfChapter) {
+            stopAtEndOfChapter = false;
+            onSleepTimerFired?.call();
+            if (startTarget != null) {
+              await _jumpToTargetPaused(startTarget);
+            }
+            return;
+          }
+          switch (_repeatBehavior) {
+            case AudioRepeatBehavior.stop:
+              if (startTarget != null) {
+                await _jumpToTargetPaused(startTarget);
+              }
+              return;
+            case AudioRepeatBehavior.repeat:
+              if (startTarget != null) {
+                if (_pauseBetweenVersesEnabled) {
+                  await _enterVersePause(startTarget);
+                } else {
+                  await _jumpToTargetAndPlay(startTarget);
+                }
+              }
+              return;
+            case AudioRepeatBehavior.continueOn:
+              // Crossing past the range under Continue transitions to Chapter context.
+              _playContext = AudioPlayContext.chapter;
+              _notifyModeChanged();
+              break;
+          }
+        }
       }
 
-      // 3. Normal / Repeat Chapter / Stop After Chapter verse-pause boundaries
-      if (!_pauseBetweenVersesEnabled) {
-        final idx = timings.verses.indexOf(endedVerse);
-        if (idx >= 0 && idx + 1 < timings.verses.length) {
-          _expectedActiveVerse = timings.verses[idx + 1];
+      // 3. Advancing between verses or handling chapter boundary
+      final idx = timings.verses.indexOf(endedVerse);
+      if (idx >= 0 && idx + 1 < timings.verses.length) {
+        final nextTiming = timings.verses[idx + 1];
+        if (_pauseBetweenVersesEnabled) {
+          await _enterVersePause(
+            _VersePauseTarget(
+              bookId: bookId,
+              chapter: chapter,
+              verse: nextTiming.verse,
+              seekPosition: nextTiming.start,
+            ),
+          );
+        } else {
+          _expectedActiveVerse = nextTiming;
         }
         return;
       }
 
-      final idx = timings.verses.indexOf(endedVerse);
-      if (idx >= 0 && idx + 1 < timings.verses.length) {
-        final nextTiming = timings.verses[idx + 1];
-        await _enterVersePause(
-          _VersePauseTarget(
-            bookId: bookId,
-            chapter: chapter,
-            verse: nextTiming.verse,
-            seekPosition: nextTiming.start,
-          ),
-        );
+      // Reached end of the last verse of the chapter
+      if (!_pauseBetweenVersesEnabled) {
+        // Without verse-pause, let ProcessingState.completed finish the audio naturally,
+        // unless we jumped here because sleep timer stopped at chapter end.
         return;
       }
 
-      // Ended last verse of the chapter with pauseBetweenVersesEnabled
-      if (stopAtEndOfChapter || _playMode == AudioPlayMode.stopAfterChapter) {
+      if (stopAtEndOfChapter || _repeatBehavior == AudioRepeatBehavior.stop) {
         if (stopAtEndOfChapter) {
           stopAtEndOfChapter = false;
           onSleepTimerFired?.call();
@@ -590,7 +737,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
         return;
       }
 
-      if (_playMode == AudioPlayMode.repeatChapter) {
+      if (_repeatBehavior == AudioRepeatBehavior.repeat) {
         final firstVerse = timings.verses.firstOrNull;
         await _enterVersePause(
           _VersePauseTarget(
@@ -603,20 +750,18 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
         return;
       }
 
-      if (_playMode == AudioPlayMode.continuous) {
-        final next = _urlResolver.getNextChapter(bookId, chapter);
-        if (next != null) {
-          await _enterVersePause(
-            _VersePauseTarget(
-              bookId: next.$1,
-              chapter: next.$2,
-              verse: null,
-              seekPosition: Duration.zero,
-            ),
-          );
-        } else {
-          await stop();
-        }
+      final next = _urlResolver.getNextChapter(bookId, chapter);
+      if (next != null) {
+        await _enterVersePause(
+          _VersePauseTarget(
+            bookId: next.$1,
+            chapter: next.$2,
+            verse: null,
+            seekPosition: Duration.zero,
+          ),
+        );
+      } else {
+        await stop();
       }
     } finally {
       _isLoopSeeking = false;
@@ -641,8 +786,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       return target.seekPosition;
     }
     if (target.verse != null &&
-        (_playMode == AudioPlayMode.repeatPassage ||
-            _playMode == AudioPlayMode.repeatVerse)) {
+        (_playContext == AudioPlayContext.range ||
+            _playContext == AudioPlayContext.verse)) {
       return timings.timingFor(target.verse!)?.start ?? Duration.zero;
     }
     return Duration.zero;
@@ -927,7 +1072,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     _currentBookId = bookId;
     _currentChapter = chapter;
     _currentTimings = null;
-    _repeatVerseTarget = null;
+    _lockedVerse = null;
     _expectedActiveVerse = null;
     _currentVerseSubject.add(null);
 
@@ -938,8 +1083,8 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     var startPos = seekPositionHint;
     if (startPos == Duration.zero &&
         targetVerse != null &&
-        (_playMode == AudioPlayMode.repeatPassage ||
-            _playMode == AudioPlayMode.repeatVerse)) {
+        (_playContext == AudioPlayContext.range ||
+            _playContext == AudioPlayContext.verse)) {
       startPos = timings.timingFor(targetVerse)?.start ?? Duration.zero;
     }
 
@@ -947,8 +1092,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     _currentVerseSubject.add(initialVerse);
     _expectedActiveVerse =
         initialVerse != null ? timings.timingFor(initialVerse) : null;
-    if (_playMode == AudioPlayMode.repeatVerse) {
-      _repeatVerseTarget = _resolveLoopVerse(startPos);
+    if (_playContext == AudioPlayContext.verse) {
+      _lockedVerse = targetVerse ?? _resolveLoopVerse(startPos);
+      _notifyModeChanged();
     }
 
     final url = _urlResolver.getChapterUrl(bookId, chapter);
@@ -1041,25 +1187,25 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     final timings = _currentTimings;
     if (timings == null || timings.isEmpty) return;
 
-    if (_playMode == AudioPlayMode.repeatPassage && repeatPassage != null) {
-      final passage = repeatPassage!;
+    if (_playContext == AudioPlayContext.range && activeRange != null) {
+      final range = activeRange!;
       final currentVerse = timings.verseAt(_player.position);
-      final endChapter = passage.endChapter ?? passage.chapter;
+      final endChapter = range.endChapter ?? range.chapter;
       final endVerse =
-          passage.endVerse ?? (passage.verse ?? timings.verses.last.verse);
+          range.endVerse ?? (range.verse ?? timings.verses.last.verse);
 
-      if (_currentBookId == passage.bookId && _currentChapter != null) {
+      if (_currentBookId == range.bookId && _currentChapter != null) {
         if (_currentChapter == endChapter &&
             currentVerse != null &&
             currentVerse >= endVerse) {
-          await playPassageStart(passage);
+          await playPassageStart(range);
           return;
         }
         if (_currentChapter! < endChapter &&
             currentVerse != null &&
             currentVerse >= timings.verses.last.verse) {
           await playFromVerse(
-            passage.bookId,
+            range.bookId,
             _currentChapter! + 1,
             1,
             skipAnnouncement: true,
@@ -1081,11 +1227,11 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     final timings = _currentTimings;
     if (timings == null || timings.isEmpty) return;
 
-    if (_playMode == AudioPlayMode.repeatPassage && repeatPassage != null) {
-      final passage = repeatPassage!;
-      final startVerse = passage.verse ?? 1;
-      if (_currentBookId == passage.bookId &&
-          _currentChapter == passage.chapter) {
+    if (_playContext == AudioPlayContext.range && activeRange != null) {
+      final range = activeRange!;
+      final startVerse = range.verse ?? 1;
+      if (_currentBookId == range.bookId &&
+          _currentChapter == range.chapter) {
         final startTiming = timings.timingFor(startVerse);
         final currentVerse = timings.verseAt(_player.position);
         if (currentVerse == null || currentVerse <= startVerse) {
@@ -1102,7 +1248,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   bool hasNextVerse(Duration position) {
-    if (_playMode == AudioPlayMode.repeatPassage && repeatPassage != null) {
+    if (_playContext == AudioPlayContext.range && activeRange != null) {
       return _currentTimings != null && !_currentTimings!.isEmpty;
     }
     return _currentTimings?.nextSeekTarget(position) != null;
@@ -1136,8 +1282,9 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> seek(Duration position) async {
     await _cancelVersePause(resumePlayer: false);
-    if (_playMode == AudioPlayMode.repeatVerse) {
-      _repeatVerseTarget = _resolveLoopVerse(position);
+    if (_playContext == AudioPlayContext.verse) {
+      _lockedVerse = _resolveLoopVerse(position);
+      _notifyModeChanged();
     }
     await _player.seek(position);
     _syncVerseAfterSeek(position);
@@ -1175,15 +1322,22 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
     await super.stop();
   }
 
+  void _resetToChapterContextForSkip() {
+    if (_playContext != AudioPlayContext.chapter || activeRange != null) {
+      _playContext = AudioPlayContext.chapter;
+      activeRange = null;
+      _lockedVerse = null;
+      _repeatBehavior = defaultChapterRepeat;
+      _syncVerseBoundaryTimer();
+      _notifyModeChanged();
+    }
+  }
+
   @override
   Future<void> skipToNext() async {
     if (_currentBookId == null || _currentChapter == null) return;
     await _cancelVersePause(resumePlayer: false);
-    if (_playMode == AudioPlayMode.repeatPassage) {
-      _playMode = AudioPlayMode.continuous;
-      _syncVerseBoundaryTimer();
-      onPlayModeChanged?.call(AudioPlayMode.continuous);
-    }
+    _resetToChapterContextForSkip();
     final next = _urlResolver.getNextChapter(_currentBookId!, _currentChapter!);
     if (next != null) {
       await playChapter(next.$1, next.$2);
@@ -1206,11 +1360,7 @@ class BsbAudioHandler extends BaseAudioHandler with SeekHandler {
       _currentChapter!,
     );
     if (prev != null) {
-      if (_playMode == AudioPlayMode.repeatPassage) {
-        _playMode = AudioPlayMode.continuous;
-        _syncVerseBoundaryTimer();
-        onPlayModeChanged?.call(AudioPlayMode.continuous);
-      }
+      _resetToChapterContextForSkip();
       await playChapter(prev.$1, prev.$2);
     } else {
       await seek(Duration.zero);

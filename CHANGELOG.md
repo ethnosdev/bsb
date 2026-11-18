@@ -2,12 +2,14 @@
 
 - Redesigned the theme chooser and custom theme editor.
 - Added bundled per-verse audio timings (`audio_timings` table) for Souer audio playback.
-- Highlight the verse currently being read and auto-scroll to follow playback when Sync Text is enabled (with manual-scroll pause and a "Jump to verse" chip).
+- Highlight the verse currently being read and automatically follow audio across verses and chapters on the audio-playing tab (with a manual-scroll "Jump to verse" chip, a "Return to chapter" chip when browsing elsewhere in that tab, and automatic player close when the tab is closed).
+- Simplified the expanded audio player by removing the Collapse button, "Audio Player" header, Sync Text toggle, and "Go to Chapter" button.
 - Added live verse references in the mini player, expanded player, and lock-screen notification.
 - Added "Play" to the verse selection More menu to start audio from a selected verse.
-- Replaced ±10s buttons in the expanded player with Previous/Next Verse controls, and added a Repeat Verse play mode.
+- Replaced ±10s buttons in the expanded player with Previous/Next Verse controls.
 - Added a `1.0x (with N second pause)` playback speed option with configurable pause duration between verses (default 5 seconds) and silent audio keep-alive for lock-screen memorization.
-- Added a Repeat Passage play mode supporting single-chapter and cross-chapter verse ranges, replaced Play Mode tap-cycling with a popup bottom sheet picker, and updated selection More → Play to auto-enable Repeat Verse (1 verse) or Repeat Passage (2+ verses).
+- Replaced the cycling Play Mode chip with separate **Context** (`Chapter`, `Range`, `Verse`) and **Repeat** (`Continue`, `Stop`, `Repeat`) popup bottom sheet pickers supporting all 7 play-once, repeat, and continuous behaviors.
+- Updated selection `More` → `Play` to play a single verse or multi-verse range once (`Stop`), while AppBar `Play Audio` uses `Chapter` context with the saved chapter-level repeat preference.
 
 # 2.8.0 - 2026.11.16
 

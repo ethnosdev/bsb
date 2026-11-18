@@ -8,6 +8,7 @@ import 'package:bsb/infrastructure/audio/verse_timings.dart';
 import 'package:bsb/infrastructure/reference.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/user_settings.dart';
+import 'package:bsb/ui/tabs/tab_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -32,13 +33,20 @@ class AudioPlaybackManager {
   final ValueNotifier<int> pauseBetweenVersesSecondsNotifier;
   final ValueNotifier<VersePauseState> versePauseStateNotifier =
       ValueNotifier<VersePauseState>(VersePauseState.idle);
-  final ValueNotifier<AudioPlayMode> playModeNotifier;
-  final ValueNotifier<Reference?> repeatPassageNotifier;
+  final ValueNotifier<AudioPlayContext> playContextNotifier =
+      ValueNotifier<AudioPlayContext>(AudioPlayContext.chapter);
+  final ValueNotifier<AudioRepeatBehavior> repeatBehaviorNotifier;
+  final ValueNotifier<Reference?> activeRangeNotifier =
+      ValueNotifier<Reference?>(null);
+  final ValueNotifier<int?> lockedVerseNotifier = ValueNotifier<int?>(null);
+  AudioRepeatBehavior _chapterRepeatPreference;
   final ValueNotifier<SleepTimerOption> sleepTimerOptionNotifier =
       ValueNotifier<SleepTimerOption>(SleepTimerOption.off);
   final ValueNotifier<Duration?> sleepTimerRemainingNotifier =
       ValueNotifier<Duration?>(null);
-  final ValueNotifier<bool> syncTextNotifier;
+  final ValueNotifier<String?> audioTabIdNotifier = ValueNotifier<String?>(
+    null,
+  );
   final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
 
   Timer? _sleepCountdownTimer;
@@ -82,24 +90,17 @@ class AudioPlaybackManager {
         _resolveInitialSettings(userSettings)?.audioPauseBetweenVersesSeconds ??
             kDefaultVersePauseSeconds,
       ),
-      playModeNotifier = ValueNotifier<AudioPlayMode>(
-        AudioPlayMode.fromString(
+      _chapterRepeatPreference = AudioRepeatBehavior.fromString(
+        _resolveInitialSettings(userSettings)?.audioPlayMode,
+      ),
+      repeatBehaviorNotifier = ValueNotifier<AudioRepeatBehavior>(
+        AudioRepeatBehavior.fromString(
           _resolveInitialSettings(userSettings)?.audioPlayMode,
         ),
-      ),
-      repeatPassageNotifier = ValueNotifier<Reference?>(
-        _resolveInitialSettings(userSettings)?.audioRepeatPassage,
-      ),
-      syncTextNotifier = ValueNotifier<bool>(
-        _resolveInitialSettings(userSettings)?.audioSyncText ?? true,
       ) {
-    if (playModeNotifier.value == AudioPlayMode.repeatPassage &&
-        repeatPassageNotifier.value == null) {
-      playModeNotifier.value = AudioPlayMode.continuous;
-    }
-
-    audioHandler.repeatPassage = repeatPassageNotifier.value;
-    audioHandler.playMode = playModeNotifier.value;
+    audioHandler.defaultChapterRepeat = _chapterRepeatPreference;
+    audioHandler.setPlayContext(AudioPlayContext.chapter);
+    audioHandler.setRepeatBehavior(_chapterRepeatPreference);
     if (pauseBetweenVersesEnabledNotifier.value) {
       speedNotifier.value = 1.0;
       audioHandler.setSpeed(1.0);
@@ -115,9 +116,11 @@ class AudioPlaybackManager {
       sleepTimerOptionNotifier.value = SleepTimerOption.off;
       sleepTimerRemainingNotifier.value = null;
     };
-    audioHandler.onPlayModeChanged = (mode) {
-      playModeNotifier.value = mode;
-      _effectiveSettings?.setAudioPlayMode(mode.toStorageString());
+    audioHandler.onModeChanged = (context, repeat, range, lockedVerse) {
+      playContextNotifier.value = context;
+      repeatBehaviorNotifier.value = repeat;
+      activeRangeNotifier.value = range;
+      lockedVerseNotifier.value = lockedVerse;
     };
 
     _mediaItemSub = audioHandler.mediaItem.listen((item) {
@@ -133,9 +136,7 @@ class AudioPlaybackManager {
       }
       _lastNotifiedBookId = bookId;
       _lastNotifiedChapter = chapter;
-      if (syncTextNotifier.value) {
-        onChapterChanged?.call(bookId, chapter);
-      }
+      onChapterChanged?.call(bookId, chapter);
     });
 
     _verseSub = audioHandler.currentVerseStream.listen((verse) {
@@ -184,8 +185,18 @@ class AudioPlaybackManager {
     return '$title:$verse';
   }
 
+  void _bindActiveTabIfAvailable() {
+    if (getIt.isRegistered<TabManager>()) {
+      final activeId = getIt<TabManager>().activeTabId;
+      if (activeId != null) {
+        audioTabIdNotifier.value = activeId;
+      }
+    }
+  }
+
   /// Starts or resumes playing the given chapter and ensures player bar is visible.
   Future<void> playOrToggleChapter(int bookId, int chapter) async {
+    _bindActiveTabIfAvailable();
     isPlayerVisible.value = true;
     playbackErrorNotifier.value = null;
 
@@ -193,13 +204,27 @@ class AudioPlaybackManager {
     final currentChap = audioHandler.currentChapter;
 
     try {
-      if (currentBook == bookId && currentChap == chapter) {
+      if (currentBook == bookId &&
+          currentChap == chapter &&
+          playContextNotifier.value == AudioPlayContext.chapter) {
         if (audioHandler.player.playing || audioHandler.isInVersePause) {
           return;
         } else {
           await audioHandler.play();
           return;
         }
+      }
+
+      // Starting playback from the app bar enters Chapter context and restores
+      // the saved chapter-level Repeat preference.
+      activeRangeNotifier.value = null;
+      audioHandler.activeRange = null;
+      audioHandler.setPlayContext(AudioPlayContext.chapter);
+      audioHandler.setRepeatBehavior(_chapterRepeatPreference);
+
+      if (currentBook == bookId && currentChap == chapter) {
+        await audioHandler.playChapter(bookId, chapter);
+        return;
       }
 
       // Check if resuming saved position on the same chapter
@@ -227,6 +252,7 @@ class AudioPlaybackManager {
 
   /// Starts playback from [verse] in [bookId] and [chapter].
   Future<void> playFromVerse(int bookId, int chapter, int verse) async {
+    _bindActiveTabIfAvailable();
     isPlayerVisible.value = true;
     playbackErrorNotifier.value = null;
     try {
@@ -282,6 +308,7 @@ class AudioPlaybackManager {
 
   Future<void> closePlayer() async {
     isPlayerVisible.value = false;
+    audioTabIdNotifier.value = null;
     _lastNotifiedBookId = null;
     _lastNotifiedChapter = null;
     _saveCurrentState();
@@ -323,10 +350,45 @@ class AudioPlaybackManager {
     );
   }
 
-  void setPlayMode(AudioPlayMode mode) {
-    playModeNotifier.value = mode;
-    audioHandler.playMode = mode;
-    _effectiveSettings?.setAudioPlayMode(mode.toStorageString());
+  Future<void> setPlayContext(AudioPlayContext context) async {
+    if (context == AudioPlayContext.range) {
+      final range = activeRangeNotifier.value;
+      if (range == null) return;
+      audioHandler.activeRange = range;
+      audioHandler.setPlayContext(AudioPlayContext.range);
+      if (!_isCurrentlyWithinPassage(range)) {
+        isPlayerVisible.value = true;
+        playbackErrorNotifier.value = null;
+        try {
+          await audioHandler.playPassageStart(range);
+        } catch (e) {
+          playbackErrorNotifier.value =
+              'Unable to play audio. Check internet connection.';
+        }
+      }
+      return;
+    }
+
+    if (context == AudioPlayContext.verse) {
+      final targetVerse = currentVerseNotifier.value ?? 1;
+      audioHandler.setPlayContext(
+        AudioPlayContext.verse,
+        targetVerse: targetVerse,
+      );
+      return;
+    }
+
+    audioHandler.setPlayContext(AudioPlayContext.chapter);
+  }
+
+  void setRepeatBehavior(AudioRepeatBehavior behavior) {
+    repeatBehaviorNotifier.value = behavior;
+    audioHandler.setRepeatBehavior(behavior);
+    if (playContextNotifier.value == AudioPlayContext.chapter) {
+      _chapterRepeatPreference = behavior;
+      audioHandler.defaultChapterRepeat = behavior;
+      _effectiveSettings?.setAudioPlayMode(behavior.toStorageString());
+    }
   }
 
   bool _isCurrentlyWithinPassage(Reference passage) {
@@ -351,79 +413,62 @@ class AudioPlaybackManager {
     return true;
   }
 
-  Future<void> setRepeatPassage(
-    Reference passage, {
-    bool playImmediately = true,
-    bool forceRestart = false,
-  }) async {
-    repeatPassageNotifier.value = passage;
-    audioHandler.repeatPassage = passage;
-    await _effectiveSettings?.setAudioRepeatPassage(passage);
-    setPlayMode(AudioPlayMode.repeatPassage);
-
-    if (playImmediately &&
-        (forceRestart || !_isCurrentlyWithinPassage(passage))) {
-      isPlayerVisible.value = true;
-      playbackErrorNotifier.value = null;
-      try {
-        await audioHandler.playPassageStart(passage);
-      } catch (e) {
-        playbackErrorNotifier.value =
-            'Unable to play audio. Check internet connection.';
-      }
-    }
-  }
-
-  /// Plays [reference] from reader text selection:
-  /// - 1 verse -> Repeat Verse
-  /// - 2+ verses (or multi-chapter) -> Repeat Passage
-  /// - Whole single chapter -> Repeat Chapter
+  /// Plays [reference] once from long-press text selection:
+  /// - 1 verse -> Context = Verse, Repeat = Stop
+  /// - 2+ verses (or multi-chapter) -> Context = Range, Repeat = Stop
+  /// - Whole single chapter -> Context = Chapter, Repeat = Stop
   Future<void> playSelection(Reference reference) async {
     final verse = reference.verse;
     final endChapter = reference.endChapter;
     final endVerse = reference.endVerse;
 
-    if (verse == null) {
-      if (endChapter != null && endChapter > reference.chapter) {
-        await setRepeatPassage(
-          reference,
-          playImmediately: true,
-          forceRestart: true,
-        );
-      } else {
-        setPlayMode(AudioPlayMode.repeatChapter);
-        await playFromVerse(reference.bookId, reference.chapter, 1);
+    _bindActiveTabIfAvailable();
+    isPlayerVisible.value = true;
+    playbackErrorNotifier.value = null;
+
+    try {
+      if (verse == null) {
+        if (endChapter != null && endChapter > reference.chapter) {
+          activeRangeNotifier.value = reference;
+          audioHandler.activeRange = reference;
+          audioHandler.setPlayContext(AudioPlayContext.range);
+          audioHandler.setRepeatBehavior(AudioRepeatBehavior.stop);
+          await audioHandler.playPassageStart(reference);
+        } else {
+          activeRangeNotifier.value = null;
+          audioHandler.activeRange = null;
+          audioHandler.setPlayContext(AudioPlayContext.chapter);
+          audioHandler.setRepeatBehavior(AudioRepeatBehavior.stop);
+          await audioHandler.playChapter(reference.bookId, reference.chapter);
+        }
+        return;
       }
-      return;
-    }
 
-    final isMultiVerse =
-        (endChapter != null && endChapter > reference.chapter) ||
-        (endVerse != null && endVerse > verse);
-    if (isMultiVerse) {
-      await setRepeatPassage(
-        reference,
-        playImmediately: true,
-        forceRestart: true,
-      );
-    } else {
-      setPlayMode(AudioPlayMode.repeatVerse);
-      await playFromVerse(reference.bookId, reference.chapter, verse);
+      final isMultiVerse =
+          (endChapter != null && endChapter > reference.chapter) ||
+          (endVerse != null && endVerse > verse);
+      if (isMultiVerse) {
+        activeRangeNotifier.value = reference;
+        audioHandler.activeRange = reference;
+        audioHandler.setPlayContext(AudioPlayContext.range);
+        audioHandler.setRepeatBehavior(AudioRepeatBehavior.stop);
+        await audioHandler.playPassageStart(reference);
+      } else {
+        activeRangeNotifier.value = null;
+        audioHandler.activeRange = null;
+        audioHandler.setPlayContext(AudioPlayContext.verse, targetVerse: verse);
+        audioHandler.setRepeatBehavior(AudioRepeatBehavior.stop);
+        await audioHandler.playFromVerse(
+          reference.bookId,
+          reference.chapter,
+          verse,
+          skipAnnouncement: true,
+        );
+      }
+    } catch (e) {
+      playbackErrorNotifier.value =
+          'Unable to play audio. Check internet connection.';
     }
-  }
-
-  void cyclePlayMode() {
-    final nextMode = switch (playModeNotifier.value) {
-      AudioPlayMode.continuous => AudioPlayMode.repeatChapter,
-      AudioPlayMode.repeatChapter => AudioPlayMode.stopAfterChapter,
-      AudioPlayMode.stopAfterChapter => AudioPlayMode.repeatVerse,
-      AudioPlayMode.repeatVerse =>
-        repeatPassageNotifier.value != null
-            ? AudioPlayMode.repeatPassage
-            : AudioPlayMode.continuous,
-      AudioPlayMode.repeatPassage => AudioPlayMode.continuous,
-    };
-    setPlayMode(nextMode);
   }
 
   void setSleepTimer(SleepTimerOption option) {
@@ -468,20 +513,6 @@ class AudioPlaybackManager {
     }
   }
 
-  void setSyncText(bool sync) {
-    syncTextNotifier.value = sync;
-    _effectiveSettings?.setAudioSyncText(sync);
-    if (sync) {
-      final bookId = audioHandler.currentBookId;
-      final chap = audioHandler.currentChapter;
-      if (bookId != null && chap != null) {
-        _lastNotifiedBookId = bookId;
-        _lastNotifiedChapter = chap;
-        onChapterChanged?.call(bookId, chap);
-      }
-    }
-  }
-
   bool hasNextChapter(int? bookId, int? chapter) {
     if (bookId == null || chapter == null) return false;
     return const AudioUrlResolver().getNextChapter(bookId, chapter) != null;
@@ -504,11 +535,13 @@ class AudioPlaybackManager {
     pauseBetweenVersesEnabledNotifier.dispose();
     pauseBetweenVersesSecondsNotifier.dispose();
     versePauseStateNotifier.dispose();
-    playModeNotifier.dispose();
-    repeatPassageNotifier.dispose();
+    playContextNotifier.dispose();
+    repeatBehaviorNotifier.dispose();
+    activeRangeNotifier.dispose();
+    lockedVerseNotifier.dispose();
     sleepTimerOptionNotifier.dispose();
     sleepTimerRemainingNotifier.dispose();
-    syncTextNotifier.dispose();
+    audioTabIdNotifier.dispose();
     currentVerseNotifier.dispose();
   }
 }

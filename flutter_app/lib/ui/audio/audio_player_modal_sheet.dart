@@ -3,33 +3,25 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/reference.dart';
-import 'package:bsb/ui/playlists/widgets/passage_range_picker_dialog.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the expanded full-featured audio player bottom sheet.
 Future<void> showAudioPlayerModalSheet(
   BuildContext context,
-  AudioPlaybackManager manager, {
-  VoidCallback? onGoToChapter,
-}) {
+  AudioPlaybackManager manager,
+) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) =>
-        AudioPlayerModalSheet(manager: manager, onGoToChapter: onGoToChapter),
+    builder: (context) => AudioPlayerModalSheet(manager: manager),
   );
 }
 
 class AudioPlayerModalSheet extends StatelessWidget {
   final AudioPlaybackManager manager;
-  final VoidCallback? onGoToChapter;
 
-  const AudioPlayerModalSheet({
-    super.key,
-    required this.manager,
-    this.onGoToChapter,
-  });
+  const AudioPlayerModalSheet({super.key, required this.manager});
 
   String _formatTimerDuration(Duration duration) {
     final minutes = duration.inMinutes;
@@ -223,36 +215,24 @@ class AudioPlayerModalSheet extends StatelessWidget {
     );
   }
 
-  Future<void> _pickRepeatPassage(BuildContext context) async {
-    Reference? initialRef = manager.repeatPassageNotifier.value;
-    if (initialRef == null) {
-      final bookId = manager.audioHandler.currentBookId;
-      final chapter = manager.audioHandler.currentChapter;
-      if (bookId != null && chapter != null) {
-        initialRef = Reference(
-          bookId: bookId,
-          chapter: chapter,
-          verse: manager.currentVerseNotifier.value ?? 1,
-        );
-      }
-    }
-
-    final result = await PassageRangePickerDialog.show(
-      context,
-      initialReference: initialRef,
-      confirmButtonText: 'Repeat Passage',
-    );
-    if (result != null) {
-      await manager.setRepeatPassage(
-        result.reference,
-        playImmediately: true,
-        forceRestart: true,
-      );
+  String _formatContextLabel(
+    AudioPlayContext ctx,
+    Reference? activeRange,
+    int? verse,
+  ) {
+    switch (ctx) {
+      case AudioPlayContext.chapter:
+        return 'Chapter';
+      case AudioPlayContext.range:
+        return activeRange != null
+            ? formatCompactPassageReference(activeRange)
+            : 'Range';
+      case AudioPlayContext.verse:
+        return verse != null ? 'Verse $verse' : 'Verse';
     }
   }
 
-  void _showPlayModePicker(BuildContext context) {
-    final parentContext = context;
+  void _showContextPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -262,94 +242,197 @@ class AudioPlayerModalSheet extends StatelessWidget {
       builder: (sheetContext) {
         return SafeArea(
           child: SingleChildScrollView(
-            child: ValueListenableBuilder<AudioPlayMode>(
-              valueListenable: manager.playModeNotifier,
-              builder: (context, currentMode, _) {
+            child: ValueListenableBuilder<AudioPlayContext>(
+              valueListenable: manager.playContextNotifier,
+              builder: (context, currentContext, _) {
                 return ValueListenableBuilder<Reference?>(
-                  valueListenable: manager.repeatPassageNotifier,
-                  builder: (context, repeatPassage, _) {
-                    final colorScheme = Theme.of(context).colorScheme;
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 12),
-                        Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.3,
-                            ),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'Repeat Mode',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        ...AudioPlayMode.values.map((mode) {
-                          final isSelected = mode == currentMode;
-                          final isPassageMode =
-                              mode == AudioPlayMode.repeatPassage;
-                          return ListTile(
-                            title: Text(mode.label),
-                            subtitle: isPassageMode
-                                ? Text(
-                                    repeatPassage?.toString() ??
-                                        'Choose a range of verses',
-                                  )
-                                : null,
-                            leading: Icon(
-                              isSelected
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
-                              color: isSelected
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
-                            ),
-                            trailing: isPassageMode && repeatPassage != null
-                                ? IconButton(
-                                    key: const ValueKey(
-                                      'edit_repeat_passage_button',
-                                    ),
-                                    icon: const Icon(Icons.edit_outlined),
-                                    tooltip: 'Edit passage range',
-                                    onPressed: () {
-                                      Navigator.pop(sheetContext);
-                                      _pickRepeatPassage(parentContext);
-                                    },
-                                  )
-                                : Icon(
-                                    mode.icon,
-                                    size: 20,
-                                    color: colorScheme.onSurfaceVariant,
+                  valueListenable: manager.activeRangeNotifier,
+                  builder: (context, activeRange, _) {
+                    return ValueListenableBuilder<int?>(
+                      valueListenable: manager.currentVerseNotifier,
+                      builder: (context, currentVerse, _) {
+                        return ValueListenableBuilder<int?>(
+                          valueListenable: manager.lockedVerseNotifier,
+                          builder: (context, lockedVerse, _) {
+                            final colorScheme = Theme.of(context).colorScheme;
+                            final verseNum =
+                                (currentContext == AudioPlayContext.verse
+                                    ? lockedVerse
+                                    : null) ??
+                                currentVerse ??
+                                1;
+                            final availableContexts = [
+                              AudioPlayContext.chapter,
+                              if (activeRange != null) AudioPlayContext.range,
+                              AudioPlayContext.verse,
+                            ];
+
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: 36,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
-                            selected: isSelected,
-                            onTap: () {
-                              Navigator.pop(sheetContext);
-                              if (isPassageMode) {
-                                if (repeatPassage == null ||
-                                    currentMode ==
-                                        AudioPlayMode.repeatPassage) {
-                                  _pickRepeatPassage(parentContext);
-                                } else {
-                                  manager.setRepeatPassage(
-                                    repeatPassage,
-                                    playImmediately: true,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Context',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                ...availableContexts.map((ctx) {
+                                  final isSelected = ctx == currentContext;
+                                  final subtitle = switch (ctx) {
+                                    AudioPlayContext.chapter => 'Full chapter',
+                                    AudioPlayContext.range =>
+                                      activeRange?.toString(),
+                                    AudioPlayContext.verse => 'Verse $verseNum',
+                                  };
+                                  return ListTile(
+                                    title: Text(ctx.label),
+                                    subtitle: subtitle != null
+                                        ? Text(subtitle)
+                                        : null,
+                                    leading: Icon(
+                                      isSelected
+                                          ? Icons.radio_button_checked
+                                          : Icons.radio_button_unchecked,
+                                      color: isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                                    trailing: Icon(
+                                      ctx.icon,
+                                      size: 20,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    selected: isSelected,
+                                    onTap: () {
+                                      Navigator.pop(sheetContext);
+                                      manager.setPlayContext(ctx);
+                                    },
                                   );
-                                }
-                              } else {
-                                manager.setPlayMode(mode);
-                              }
-                            },
-                          );
-                        }),
-                        const SizedBox(height: 12),
-                      ],
+                                }),
+                                const SizedBox(height: 12),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRepeatPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: ValueListenableBuilder<AudioRepeatBehavior>(
+              valueListenable: manager.repeatBehaviorNotifier,
+              builder: (context, currentRepeat, _) {
+                return ValueListenableBuilder<AudioPlayContext>(
+                  valueListenable: manager.playContextNotifier,
+                  builder: (context, currentContext, _) {
+                    return ValueListenableBuilder<Reference?>(
+                      valueListenable: manager.activeRangeNotifier,
+                      builder: (context, activeRange, _) {
+                        return ValueListenableBuilder<int?>(
+                          valueListenable: manager.lockedVerseNotifier,
+                          builder: (context, lockedVerse, _) {
+                            final colorScheme = Theme.of(context).colorScheme;
+                            final unitLabel = _formatContextLabel(
+                              currentContext,
+                              activeRange,
+                              lockedVerse ??
+                                  manager.currentVerseNotifier.value ??
+                                  1,
+                            );
+
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: 36,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Repeat Mode',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                ...AudioRepeatBehavior.values.map((behavior) {
+                                  final isSelected = behavior == currentRepeat;
+                                  final subtitle = switch (behavior) {
+                                    AudioRepeatBehavior.continueOn =>
+                                      'Continue past $unitLabel across chapters',
+                                    AudioRepeatBehavior.stop =>
+                                      'Stop after $unitLabel',
+                                    AudioRepeatBehavior.repeat =>
+                                      'Repeat $unitLabel',
+                                  };
+                                  return ListTile(
+                                    title: Text(behavior.label),
+                                    subtitle: Text(subtitle),
+                                    leading: Icon(
+                                      isSelected
+                                          ? Icons.radio_button_checked
+                                          : Icons.radio_button_unchecked,
+                                      color: isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                                    trailing: Icon(
+                                      behavior.icon,
+                                      size: 20,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    selected: isSelected,
+                                    onTap: () {
+                                      Navigator.pop(sheetContext);
+                                      manager.setRepeatBehavior(behavior);
+                                    },
+                                  );
+                                }),
+                                const SizedBox(height: 12),
+                              ],
+                            );
+                          },
+                        );
+                      },
                     );
                   },
                 );
@@ -456,7 +539,7 @@ class AudioPlayerModalSheet extends StatelessWidget {
                     Container(
                       width: 36,
                       height: 4,
-                      margin: const EdgeInsets.only(top: 4, bottom: 8),
+                      margin: const EdgeInsets.only(top: 6, bottom: 16),
                       decoration: BoxDecoration(
                         color: colorScheme.onSurfaceVariant.withValues(
                           alpha: 0.35,
@@ -464,47 +547,6 @@ class AudioPlayerModalSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-
-                    // Header Row: Collapse button, Title, Sync Text Toggle
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.keyboard_arrow_down),
-                          tooltip: 'Collapse',
-                          iconSize: 28,
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        Flexible(
-                          child: Text(
-                            'Audio Player',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        ValueListenableBuilder<bool>(
-                          valueListenable: manager.syncTextNotifier,
-                          builder: (context, sync, _) {
-                            return IconButton(
-                              icon: Icon(
-                                sync ? Icons.sync : Icons.sync_disabled,
-                                color: sync
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurfaceVariant,
-                              ),
-                              tooltip: sync
-                                  ? 'Sync text with audio (Enabled)'
-                                  : 'Sync text with audio (Disabled)',
-                              onPressed: () => manager.setSyncText(!sync),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
 
                     // Scripture Artwork Card
                     Container(
@@ -729,151 +771,177 @@ class AudioPlayerModalSheet extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // Quick Action Chips: Speed, Sleep Timer, Play Mode
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Playback Speed
-                          ValueListenableBuilder<double>(
-                            valueListenable: manager.speedNotifier,
-                            builder: (context, speed, _) {
-                              return ValueListenableBuilder<bool>(
-                                valueListenable:
-                                    manager.pauseBetweenVersesEnabledNotifier,
-                                builder: (context, pauseEnabled, _) {
-                                  return ValueListenableBuilder<int>(
-                                    valueListenable: manager
-                                        .pauseBetweenVersesSecondsNotifier,
-                                    builder: (context, pauseSeconds, _) {
-                                      return OutlinedButton.icon(
-                                        style: OutlinedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
+                    // Quick Action Chips: Speed, Sleep Timer, Context, Repeat
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        // Playback Speed
+                        ValueListenableBuilder<double>(
+                          valueListenable: manager.speedNotifier,
+                          builder: (context, speed, _) {
+                            return ValueListenableBuilder<bool>(
+                              valueListenable:
+                                  manager.pauseBetweenVersesEnabledNotifier,
+                              builder: (context, pauseEnabled, _) {
+                                return ValueListenableBuilder<int>(
+                                  valueListenable:
+                                      manager.pauseBetweenVersesSecondsNotifier,
+                                  builder: (context, pauseSeconds, _) {
+                                    return OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        visualDensity: VisualDensity.compact,
+                                        foregroundColor: pauseEnabled
+                                            ? colorScheme.primary
+                                            : null,
+                                      ),
+                                      icon: const Icon(Icons.speed, size: 16),
+                                      label: Text(
+                                        pauseEnabled
+                                            ? '1.0x (${pauseSeconds}s)'
+                                            : '${speed}x',
+                                      ),
+                                      onPressed: () =>
+                                          _showSpeedPicker(context),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
+
+                        // Sleep Timer
+                        ValueListenableBuilder<SleepTimerOption>(
+                          valueListenable: manager.sleepTimerOptionNotifier,
+                          builder: (context, option, _) {
+                            return ValueListenableBuilder<Duration?>(
+                              valueListenable:
+                                  manager.sleepTimerRemainingNotifier,
+                              builder: (context, remaining, _) {
+                                final label = remaining != null
+                                    ? _formatTimerDuration(remaining)
+                                    : (option == SleepTimerOption.endOfChapter
+                                          ? 'End of Ch'
+                                          : 'Sleep');
+                                final isActive = option != SleepTimerOption.off;
+
+                                return OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
+                                    foregroundColor: isActive
+                                        ? colorScheme.primary
+                                        : null,
+                                  ),
+                                  icon: Icon(
+                                    isActive
+                                        ? Icons.timer
+                                        : Icons.timer_outlined,
+                                    size: 16,
+                                  ),
+                                  label: Text(label),
+                                  onPressed: () =>
+                                      _showSleepTimerPicker(context),
+                                );
+                              },
+                            );
+                          },
+                        ),
+
+                        // Playback Context (Chapter / Range / Verse)
+                        ValueListenableBuilder<AudioPlayContext>(
+                          valueListenable: manager.playContextNotifier,
+                          builder: (context, playContext, _) {
+                            return ValueListenableBuilder<Reference?>(
+                              valueListenable: manager.activeRangeNotifier,
+                              builder: (context, activeRange, _) {
+                                return ValueListenableBuilder<int?>(
+                                  valueListenable: manager.lockedVerseNotifier,
+                                  builder: (context, lockedVerse, _) {
+                                    return ValueListenableBuilder<int?>(
+                                      valueListenable:
+                                          manager.currentVerseNotifier,
+                                      builder: (context, currentVerse, _) {
+                                        final verseNum =
+                                            lockedVerse ?? currentVerse;
+                                        final label = _formatContextLabel(
+                                          playContext,
+                                          activeRange,
+                                          verseNum,
+                                        );
+                                        final isHighlighted =
+                                            playContext !=
+                                            AudioPlayContext.chapter;
+                                        return OutlinedButton.icon(
+                                          key: const ValueKey(
+                                            'audio_context_chip',
                                           ),
-                                          visualDensity: VisualDensity.compact,
-                                          foregroundColor: pauseEnabled
-                                              ? colorScheme.primary
-                                              : null,
-                                        ),
-                                        icon: const Icon(Icons.speed, size: 16),
-                                        label: Text(
-                                          pauseEnabled
-                                              ? '1.0x (${pauseSeconds}s)'
-                                              : '${speed}x',
-                                        ),
-                                        onPressed: () =>
-                                            _showSpeedPicker(context),
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                            foregroundColor: isHighlighted
+                                                ? colorScheme.primary
+                                                : null,
+                                          ),
+                                          icon: Icon(
+                                            playContext.icon,
+                                            size: 16,
+                                          ),
+                                          label: Text(label),
+                                          onPressed: () =>
+                                              _showContextPicker(context),
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
 
-                          const SizedBox(width: 8),
-
-                          // Sleep Timer
-                          ValueListenableBuilder<SleepTimerOption>(
-                            valueListenable: manager.sleepTimerOptionNotifier,
-                            builder: (context, option, _) {
-                              return ValueListenableBuilder<Duration?>(
-                                valueListenable:
-                                    manager.sleepTimerRemainingNotifier,
-                                builder: (context, remaining, _) {
-                                  final label = remaining != null
-                                      ? _formatTimerDuration(remaining)
-                                      : (option == SleepTimerOption.endOfChapter
-                                            ? 'End of Ch'
-                                            : 'Sleep');
-                                  final isActive =
-                                      option != SleepTimerOption.off;
-
-                                  return OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      visualDensity: VisualDensity.compact,
-                                      foregroundColor: isActive
-                                          ? colorScheme.primary
-                                          : null,
-                                    ),
-                                    icon: Icon(
-                                      isActive
-                                          ? Icons.timer
-                                          : Icons.timer_outlined,
-                                      size: 16,
-                                    ),
-                                    label: Text(label),
-                                    onPressed: () =>
-                                        _showSleepTimerPicker(context),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-
-                          const SizedBox(width: 8),
-
-                          // Play Mode
-                          ValueListenableBuilder<AudioPlayMode>(
-                            valueListenable: manager.playModeNotifier,
-                            builder: (context, mode, _) {
-                              return ValueListenableBuilder<Reference?>(
-                                valueListenable: manager.repeatPassageNotifier,
-                                builder: (context, repeatPassage, _) {
-                                  final isPassageActive =
-                                      mode == AudioPlayMode.repeatPassage &&
-                                      repeatPassage != null;
-                                  final label = isPassageActive
-                                      ? formatCompactPassageReference(
-                                          repeatPassage,
-                                        )
-                                      : mode.label;
-                                  return OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      visualDensity: VisualDensity.compact,
-                                      foregroundColor:
-                                          mode == AudioPlayMode.repeatPassage
-                                          ? colorScheme.primary
-                                          : null,
-                                    ),
-                                    icon: Icon(mode.icon, size: 16),
-                                    label: Text(label),
-                                    onPressed: () =>
-                                        _showPlayModePicker(context),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                        // Repeat Behavior (Continue / Stop / Repeat)
+                        ValueListenableBuilder<AudioRepeatBehavior>(
+                          valueListenable: manager.repeatBehaviorNotifier,
+                          builder: (context, repeatBehavior, _) {
+                            final isHighlighted =
+                                repeatBehavior !=
+                                AudioRepeatBehavior.continueOn;
+                            return OutlinedButton.icon(
+                              key: const ValueKey('audio_repeat_chip'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                foregroundColor: isHighlighted
+                                    ? colorScheme.primary
+                                    : null,
+                              ),
+                              icon: Icon(repeatBehavior.icon, size: 16),
+                              label: Text(repeatBehavior.label),
+                              onPressed: () => _showRepeatPicker(context),
+                            );
+                          },
+                        ),
+                      ],
                     ),
 
-                    const SizedBox(height: 8),
-
-                    // "Read Chapter" Button
-                    if (onGoToChapter != null)
-                      TextButton.icon(
-                        icon: const Icon(Icons.menu_book, size: 18),
-                        label: const Text('Go to Chapter'),
-                        onPressed: () {
-                          onGoToChapter?.call();
-                          Navigator.pop(context);
-                        },
-                      ),
-
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 12),
                   ],
                 );
               },

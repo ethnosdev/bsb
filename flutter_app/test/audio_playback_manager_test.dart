@@ -218,54 +218,59 @@ void main() {
   group('AudioPlaybackManager logic', () {
     test('default settings are loaded from userSettings', () {
       expect(manager.speedNotifier.value, 1.0);
-      expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
-      expect(manager.syncTextNotifier.value, isTrue);
+      expect(manager.playContextNotifier.value, AudioPlayContext.chapter);
+      expect(
+        manager.repeatBehaviorNotifier.value,
+        AudioRepeatBehavior.continueOn,
+      );
+      expect(manager.audioTabIdNotifier.value, isNull);
       expect(manager.sleepTimerOptionNotifier.value, SleepTimerOption.off);
     });
 
-    test(
-      'setSpeed updates handler, notifier, and persists to userSettings',
-      () async {
-        await manager.setSpeed(1.5);
-        expect(manager.speedNotifier.value, 1.5);
-        expect(mockPlayer.currentSpeed, 1.5);
-        expect(userSettings.audioSpeed, 1.5);
-      },
-    );
+    test('setRepeatBehavior in Chapter context persists and migrates legacy keys', () {
+      expect(
+        AudioRepeatBehavior.fromString('continuous'),
+        AudioRepeatBehavior.continueOn,
+      );
+      expect(
+        AudioRepeatBehavior.fromString('repeatChapter'),
+        AudioRepeatBehavior.repeat,
+      );
+      expect(
+        AudioRepeatBehavior.fromString('stopAfterChapter'),
+        AudioRepeatBehavior.stop,
+      );
 
-    test('setPlayMode and cyclePlayMode cycle through all 4 modes and persist', () {
-      expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
+      expect(
+        manager.repeatBehaviorNotifier.value,
+        AudioRepeatBehavior.repeat,
+      );
+      expect(audioHandler.repeatBehavior, AudioRepeatBehavior.repeat);
+      expect(userSettings.audioPlayMode, 'repeat');
 
-      manager.cyclePlayMode();
-      expect(manager.playModeNotifier.value, AudioPlayMode.repeatChapter);
-      expect(audioHandler.playMode, AudioPlayMode.repeatChapter);
-      expect(userSettings.audioPlayMode, 'repeatChapter');
+      manager.setRepeatBehavior(AudioRepeatBehavior.stop);
+      expect(userSettings.audioPlayMode, 'stop');
 
-      manager.cyclePlayMode();
-      expect(manager.playModeNotifier.value, AudioPlayMode.stopAfterChapter);
-      expect(audioHandler.playMode, AudioPlayMode.stopAfterChapter);
-      expect(userSettings.audioPlayMode, 'stopAfterChapter');
-
-      manager.cyclePlayMode();
-      expect(manager.playModeNotifier.value, AudioPlayMode.repeatVerse);
-      expect(audioHandler.playMode, AudioPlayMode.repeatVerse);
-      expect(userSettings.audioPlayMode, 'repeatVerse');
-      expect(AudioPlayMode.fromString('repeatVerse'), AudioPlayMode.repeatVerse);
-
-      manager.cyclePlayMode();
-      expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
-      expect(audioHandler.playMode, AudioPlayMode.continuous);
-      expect(userSettings.audioPlayMode, 'continuous');
+      // Transient Repeat changes in Verse context do not overwrite chapter-level preference
+      manager.setPlayContext(AudioPlayContext.verse);
+      manager.setRepeatBehavior(AudioRepeatBehavior.continueOn);
+      expect(userSettings.audioPlayMode, 'stop');
     });
 
-    test('setSyncText updates notifier and persists', () {
-      manager.setSyncText(false);
-      expect(manager.syncTextNotifier.value, isFalse);
-      expect(userSettings.audioSyncText, isFalse);
+    test('setSpeed updates handler, notifier, and persists to userSettings', () async {
+      await manager.setSpeed(1.5);
+      expect(manager.speedNotifier.value, 1.5);
+      expect(mockPlayer.currentSpeed, 1.5);
+      expect(userSettings.audioSpeed, 1.5);
+    });
 
-      manager.setSyncText(true);
-      expect(manager.syncTextNotifier.value, isTrue);
-      expect(userSettings.audioSyncText, isTrue);
+    test('closePlayer clears audioTabIdNotifier and hides player', () async {
+      manager.audioTabIdNotifier.value = 'tab-1';
+      manager.isPlayerVisible.value = true;
+      await manager.closePlayer();
+      expect(manager.isPlayerVisible.value, isFalse);
+      expect(manager.audioTabIdNotifier.value, isNull);
     });
 
     test('setSleepTimer endOfChapter sets handler flag', () {
@@ -392,23 +397,33 @@ void main() {
       expect(chapterNotifications, 1);
     });
 
-    test('repeatVerse loops back to verse start_ms (skipping announcement for v1) and loops last verse on completion', () async {
+    test('Verse context with Repeat loops verse and Continue advances to Chapter context', () async {
       await audioHandler.playChapter(43, 10);
-      manager.setPlayMode(AudioPlayMode.repeatVerse);
+      await manager.setPlayContext(AudioPlayContext.verse);
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
 
       // Move into verse 1, then past verse 1 end -> loops back to v1 start_ms (4.7s), not 0:00
       await manager.seek(const Duration(milliseconds: 6000));
       mockPlayer.emitPosition(const Duration(milliseconds: 13000));
       await Future<void>.delayed(Duration.zero);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+      expect(manager.playContextNotifier.value, AudioPlayContext.verse);
 
-      // Seek to last verse (v3) and emit completed -> seeks back to v3 start_ms (16.69s) and stays on John 10
+      // Seek to last verse (v3) and emit completed -> seeks back to v3 start_ms (16.69s)
       await manager.seek(const Duration(milliseconds: 18000));
       mockPlayer.emitCompleted();
       await Future<void>.delayed(Duration.zero);
       expect(audioHandler.currentBookId, 43);
       expect(audioHandler.currentChapter, 10);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 16690));
+      expect(mockPlayer.isPlaying, isTrue);
+
+      // Switching to Continue advances past verse 1 end into Chapter context seamlessly
+      await manager.seek(const Duration(milliseconds: 6000));
+      manager.setRepeatBehavior(AudioRepeatBehavior.continueOn);
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.playContextNotifier.value, AudioPlayContext.chapter);
       expect(mockPlayer.isPlaying, isTrue);
     });
 
@@ -488,36 +503,40 @@ void main() {
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
     });
 
-    test('repeatPassage loops single-chapter and cross-chapter passages cleanly', () async {
-      // Single-chapter: John 10:1-2
-      final singlePassage = Reference(
+    test('Range context supports Stop, Repeat (single/cross-chapter), Continue, and Chapter Skip reset', () async {
+      // Single-chapter selection from long-press starts in (Range, Stop) and stops after end
+      final singleRange = Reference(
         bookId: 43,
         chapter: 10,
         verse: 1,
         endVerse: 2,
       );
-      await manager.setRepeatPassage(singlePassage);
+      await manager.playSelection(singleRange);
       await Future<void>.delayed(Duration.zero);
 
-      expect(manager.playModeNotifier.value, AudioPlayMode.repeatPassage);
+      expect(manager.playContextNotifier.value, AudioPlayContext.range);
+      expect(manager.repeatBehaviorNotifier.value, AudioRepeatBehavior.stop);
+      expect(manager.activeRangeNotifier.value, singleRange);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700)); // v1 start, skipping announcement
-      expect(userSettings.audioRepeatPassage, singlePassage);
+      expect(mockPlayer.isPlaying, isTrue);
 
-      // Move into v2, then pass v2 end (16690ms) -> loops to v1 start (4700ms)
+      // Finish verse 2 -> stops cleanly at range start (4700ms)
       mockPlayer.emitPosition(const Duration(milliseconds: 13500));
       mockPlayer.emitPosition(const Duration(milliseconds: 16800));
       await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.isPlaying, isFalse);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
 
-      // Cross-chapter: John 10:2-11:1
-      final crossPassage = Reference(
+      // Switch to Repeat -> loops cross-chapter range John 10:2-11:1 cleanly
+      final crossRange = Reference(
         bookId: 43,
         chapter: 10,
         verse: 2,
         endChapter: 11,
         endVerse: 1,
       );
-      await manager.setRepeatPassage(crossPassage, forceRestart: true);
+      await manager.playSelection(crossRange);
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
       await Future<void>.delayed(Duration.zero);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
 
@@ -534,51 +553,55 @@ void main() {
       expect(audioHandler.currentChapter, 10);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
 
-      // Chapter Skip exits Repeat Passage back to Continuous
+      // Switch to Continue -> passing end transitions Context to Chapter cleanly
+      manager.setRepeatBehavior(AudioRepeatBehavior.continueOn);
+      mockPlayer.emitPosition(const Duration(milliseconds: 17000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 25000));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(audioHandler.currentChapter, 11);
+      mockPlayer.emitPosition(const Duration(milliseconds: 10100));
+      await Future<void>.delayed(Duration.zero);
+      expect(manager.playContextNotifier.value, AudioPlayContext.chapter);
+
+      // Chapter Skip resets activeRange and restores saved chapter Repeat preference
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
+      await manager.playSelection(singleRange);
+      expect(manager.playContextNotifier.value, AudioPlayContext.range);
       await manager.skipToNext();
       await Future<void>.delayed(Duration.zero);
-      expect(manager.playModeNotifier.value, AudioPlayMode.continuous);
+      expect(manager.playContextNotifier.value, AudioPlayContext.chapter);
+      expect(manager.activeRangeNotifier.value, isNull);
+      expect(manager.repeatBehaviorNotifier.value, AudioRepeatBehavior.repeat);
       expect(audioHandler.currentChapter, 11);
-      expect(userSettings.audioPlayMode, 'continuous');
     });
 
-    test('playSelection enables repeatVerse for 1 verse and repeatPassage for 2+ verses', () async {
+    test('playSelection plays 1 verse once; AppBar playOrToggleChapter restores Chapter & saved repeat', () async {
+      // Save chapter repeat = repeat
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
+      expect(userSettings.audioPlayMode, 'repeat');
+
+      // Long-press 1 verse -> Verse + Stop (does not overwrite saved chapter repeat)
       await manager.playSelection(Reference(bookId: 43, chapter: 10, verse: 2));
       await Future<void>.delayed(Duration.zero);
-      expect(manager.playModeNotifier.value, AudioPlayMode.repeatVerse);
+      expect(manager.playContextNotifier.value, AudioPlayContext.verse);
+      expect(manager.repeatBehaviorNotifier.value, AudioRepeatBehavior.stop);
+      expect(manager.lockedVerseNotifier.value, 2);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
+      expect(userSettings.audioPlayMode, 'repeat');
+
+      // Crossing verse 2 end stops playback cleanly at verse 2 start
+      mockPlayer.emitPosition(const Duration(milliseconds: 16800));
+      await Future<void>.delayed(Duration.zero);
+      expect(mockPlayer.isPlaying, isFalse);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
 
-      final multi = Reference(bookId: 43, chapter: 10, verse: 1, endVerse: 2);
-      await manager.playSelection(multi);
+      // AppBar Play Audio resets to Chapter and restores saved chapter repeat
+      await manager.playOrToggleChapter(43, 10);
       await Future<void>.delayed(Duration.zero);
-      expect(manager.playModeNotifier.value, AudioPlayMode.repeatPassage);
-      expect(manager.repeatPassageNotifier.value, multi);
-      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
-    });
-
-    test('UserSettings validates and round-trips repeatPassage including corrupt fallback', () async {
-      final cross = Reference(
-        bookId: 43,
-        chapter: 10,
-        verse: 2,
-        endChapter: 11,
-        endVerse: 1,
-      );
-      await userSettings.setAudioRepeatPassage(cross);
-      expect(userSettings.audioRepeatPassage, cross);
-
-      final wholeChapters = Reference(
-        bookId: 43,
-        chapter: 10,
-        endChapter: 11,
-      );
-      await userSettings.setAudioRepeatPassage(wholeChapters);
-      expect(userSettings.audioRepeatPassage, wholeChapters);
-
-      // Corrupt out-of-range book returns null cleanly
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('audioRepeatPassageStartVerse', 99001001);
-      expect(userSettings.audioRepeatPassage, isNull);
+      expect(manager.playContextNotifier.value, AudioPlayContext.chapter);
+      expect(manager.repeatBehaviorNotifier.value, AudioRepeatBehavior.repeat);
+      expect(mockPlayer.currentPosition, Duration.zero);
+      expect(mockPlayer.isPlaying, isTrue);
     });
 
     test('pauseBetweenVerses works with just_audio play() future contract and avoids boundary double-pause', () async {

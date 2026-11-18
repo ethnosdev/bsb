@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bsb/app_state.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/deep_link_handler.dart';
@@ -31,6 +33,8 @@ class _HomePageState extends State<HomePage> {
   final _tabManager = getIt<TabManager>();
   final _chapterChooserNotifier = ValueNotifier<(int, int, int?)?>(null);
   AudioPlaybackManager? _cachedAudioManager;
+  int? _syncedAudioBookId;
+  int? _syncedAudioChapter;
   PlaylistShareHandler? _playlistShareHandler;
   DeepLinkHandler? _deepLinkHandler;
   bool _isDistractionFree = false;
@@ -70,9 +74,27 @@ class _HomePageState extends State<HomePage> {
     if (_chapterChooserNotifier.value != null) {
       _chapterChooserNotifier.value = null;
     }
+    final manager = _cachedAudioManager;
+    if (manager != null && manager.isPlayerVisible.value) {
+      final audioTabId = manager.audioTabIdNotifier.value;
+      if (audioTabId != null && _tabManager.tabById(audioTabId) == null) {
+        _syncedAudioBookId = null;
+        _syncedAudioChapter = null;
+        unawaited(manager.closePlayer());
+      }
+    }
   }
 
   void _onPlayerVisibilityChanged() {
+    final manager = _cachedAudioManager;
+    if (manager != null) {
+      if (manager.isPlayerVisible.value) {
+        manager.audioTabIdNotifier.value ??= _tabManager.activeTabId;
+      } else {
+        _syncedAudioBookId = null;
+        _syncedAudioChapter = null;
+      }
+    }
     if (mounted) {
       setState(() {});
     }
@@ -111,22 +133,32 @@ class _HomePageState extends State<HomePage> {
 
   void _onAudioChapterChanged(int bookId, int chapter) {
     if (!mounted) return;
-    _tabManager.updateActiveChapter(bookId, chapter);
+    final prevBook = _syncedAudioBookId;
+    final prevChapter = _syncedAudioChapter;
+    _syncedAudioBookId = bookId;
+    _syncedAudioChapter = chapter;
+
+    final audioTabId = _cachedAudioManager?.audioTabIdNotifier.value;
+    if (audioTabId == null) {
+      _tabManager.updateActiveChapter(bookId, chapter);
+      return;
+    }
+
+    final audioTab = _tabManager.tabById(audioTabId);
+    if (audioTab == null || audioTab.isPlaylist) return;
+
+    final isOnSyncedChapter =
+        prevBook == null ||
+        prevChapter == null ||
+        (audioTab.bookId == prevBook && audioTab.chapter == prevChapter) ||
+        (audioTab.bookId == bookId && audioTab.chapter == chapter);
+    if (isOnSyncedChapter) {
+      _tabManager.updateTabChapter(audioTabId, bookId, chapter);
+    }
   }
 
   void _openExpandedAudioSheet(AudioPlaybackManager audioManager) {
-    showAudioPlayerModalSheet(
-      context,
-      audioManager,
-      onGoToChapter: () {
-        final currentMedia = audioManager.audioHandler.mediaItem.value;
-        final bookId = currentMedia?.extras?['bookId'] as int?;
-        final chapter = currentMedia?.extras?['chapter'] as int?;
-        if (bookId != null && chapter != null) {
-          _tabManager.updateActiveChapter(bookId, chapter);
-        }
-      },
-    );
+    showAudioPlayerModalSheet(context, audioManager);
   }
 
   void _onAudioError() {
@@ -374,6 +406,10 @@ class _HomePageState extends State<HomePage> {
                                       } else if (value == 'play') {
                                         if (activeTab.bookId != null &&
                                             activeTab.chapter != null) {
+                                          audioManager
+                                                  ?.audioTabIdNotifier
+                                                  .value =
+                                              activeTab.id;
                                           audioManager?.playOrToggleChapter(
                                             activeTab.bookId!,
                                             activeTab.chapter!,

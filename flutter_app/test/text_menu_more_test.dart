@@ -581,7 +581,9 @@ class _FakePlayAudioManager implements AudioPlaybackManager {
   final ValueNotifier<int?> currentVerseNotifier = ValueNotifier<int?>(null);
 
   @override
-  final ValueNotifier<bool> syncTextNotifier = ValueNotifier<bool>(true);
+  final ValueNotifier<String?> audioTabIdNotifier = ValueNotifier<String?>(
+    null,
+  );
 
   @override
   Stream<MediaItem?> get mediaItemStream => const Stream.empty();
