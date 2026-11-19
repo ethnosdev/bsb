@@ -1,15 +1,8 @@
-# 2.9.0 - 2026.11.17
+# 2.9.0 - 2026.11.19
 
 - Redesigned the theme chooser and custom theme editor.
-- Added bundled per-verse audio timings (`audio_timings` table) for Souer audio playback.
-- Highlight the verse currently being read and automatically follow audio across verses and chapters on the audio-playing tab (with a manual-scroll "Jump to verse" chip, a "Return to chapter" chip when browsing elsewhere in that tab, and automatic player close when the tab is closed).
-- Simplified the expanded audio player by removing the Collapse button, "Audio Player" header, Sync Text toggle, and "Go to Chapter" button.
-- Added live verse references in the mini player, expanded player, and lock-screen notification.
-- Added "Play" to the verse selection More menu to start audio from a selected verse.
-- Replaced ±10s buttons in the expanded player with Previous/Next Verse controls.
-- Added a `1.0x (with N second pause)` playback speed option with configurable pause duration between verses (default 5 seconds) and silent audio keep-alive for lock-screen memorization.
-- Replaced the cycling Play Mode chip with separate **Context** (`Chapter`, `Range`, `Verse`) and **Repeat** (`Continue`, `Stop`, `Repeat`) popup bottom sheet pickers supporting all 7 play-once, repeat, and continuous behaviors.
-- Updated selection `More` → `Play` to play a single verse or multi-verse range once (`Stop`), while AppBar `Play Audio` uses `Chapter` context with the saved chapter-level repeat preference.
+- Added bundled per-verse audio timings for Souer audio playback.
+- Updated the audio player to benefit from verse timings.
 
 # 2.8.0 - 2026.11.16
 

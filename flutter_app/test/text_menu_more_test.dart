@@ -144,12 +144,16 @@ void main() {
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
 
-      // Verify popup menu shows Play, Compare Translations, Cross Reference, Add to Playlist, and Memorize
-      expect(find.text('Play'), findsOneWidget);
+      // Verify popup menu shows Compare Translations, Cross Reference, Add to Playlist, Memorize, and Play Audio at the bottom
       expect(find.text('Compare Translations'), findsOneWidget);
       expect(find.text('Cross Reference'), findsOneWidget);
       expect(find.text('Add to Playlist'), findsOneWidget);
       expect(find.text('Memorize'), findsOneWidget);
+      expect(find.text('Play Audio'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Play Audio')).dy,
+        greaterThan(tester.getTopLeft(find.text('Memorize')).dy),
+      );
 
       // Tap outside (barrier) to dismiss menu
       await tester.tapAt(const Offset(10, 10));
@@ -500,7 +504,7 @@ void main() {
     },
   );
 
-  testWidgets('Selecting Play starts audio from selected verse and clears selection', (
+  testWidgets('Selecting Play Audio starts audio from selected verse and clears selection', (
     tester,
   ) async {
     final fakeAudio = _FakePlayAudioManager();
@@ -526,14 +530,14 @@ void main() {
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Play'));
+    await tester.tap(find.text('Play Audio'));
     await tester.pumpAndSettle();
 
     expect(fakeAudio.playedSelection, Reference(bookId: 19, chapter: 23, verse: 4));
     expect(controller.hasSelection, isFalse);
   });
 
-  testWidgets('Selecting Play with multiple verses sends full range to playSelection', (
+  testWidgets('Selecting Play Audio with multiple verses sends full range to playSelection', (
     tester,
   ) async {
     final fakeAudio = _FakePlayAudioManager();
@@ -559,7 +563,7 @@ void main() {
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Play'));
+    await tester.tap(find.text('Play Audio'));
     await tester.pumpAndSettle();
 
     expect(

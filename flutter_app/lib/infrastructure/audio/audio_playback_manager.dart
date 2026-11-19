@@ -212,7 +212,8 @@ class AudioPlaybackManager {
     final currentChap = audioHandler.currentChapter;
 
     try {
-      if (currentBook == bookId &&
+      if (audioHandler.hasLoadedSource &&
+          currentBook == bookId &&
           currentChap == chapter &&
           playContextNotifier.value == AudioPlayContext.chapter) {
         if (audioHandler.player.playing || audioHandler.isInVersePause) {
@@ -227,7 +228,9 @@ class AudioPlaybackManager {
       // the saved chapter-level Repeat preference.
       _resetToChapterContext();
 
-      if (currentBook == bookId && currentChap == chapter) {
+      if (audioHandler.hasLoadedSource &&
+          currentBook == bookId &&
+          currentChap == chapter) {
         await audioHandler.playChapter(bookId, chapter);
         return;
       }
@@ -250,6 +253,9 @@ class AudioPlaybackManager {
         initialPosition: resumePos,
       );
     } catch (e) {
+      if (!audioHandler.hasLoadedSource) {
+        _clearPlayerUiState();
+      }
       playbackErrorNotifier.value =
           'Unable to play audio. Check internet connection.';
     }
@@ -263,6 +269,9 @@ class AudioPlaybackManager {
     try {
       await audioHandler.playFromVerse(bookId, chapter, verse);
     } catch (e) {
+      if (!audioHandler.hasLoadedSource) {
+        _clearPlayerUiState();
+      }
       playbackErrorNotifier.value =
           'Unable to play audio. Check internet connection.';
     }
@@ -289,6 +298,9 @@ class AudioPlaybackManager {
         targetVerse: targetVerse,
       );
     } catch (e) {
+      if (!audioHandler.hasLoadedSource) {
+        _clearPlayerUiState();
+      }
       playbackErrorNotifier.value =
           'Unable to play audio. Check internet connection.';
     }
@@ -374,6 +386,9 @@ class AudioPlaybackManager {
         try {
           await audioHandler.playPassageStart(range);
         } catch (e) {
+          if (!audioHandler.hasLoadedSource) {
+            _clearPlayerUiState();
+          }
           playbackErrorNotifier.value =
               'Unable to play audio. Check internet connection.';
         }
@@ -478,6 +493,9 @@ class AudioPlaybackManager {
         );
       }
     } catch (e) {
+      if (!audioHandler.hasLoadedSource) {
+        _clearPlayerUiState();
+      }
       playbackErrorNotifier.value =
           'Unable to play audio. Check internet connection.';
     }

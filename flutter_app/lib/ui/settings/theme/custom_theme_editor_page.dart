@@ -1,4 +1,5 @@
 import 'package:bsb/app_state.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/theme/app_color_picker.dart';
@@ -239,205 +240,229 @@ class _CustomThemeEditorPageState extends State<CustomThemeEditorPage> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Pinned Live Scripture Preview Card (always shows Words of Jesus color)
-            Padding(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final previewHeader = Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: ScriptureThemePreviewCard(
                 colorScheme: activeScheme,
                 wordsOfJesusInRed: true,
                 wordsOfJesusColor: _config.wordsOfJesusColor,
                 verseNumberColor: _config.verseNumberColor,
-                textSize: appState.textSize,
+                textSize: FontScale.themePreview(appState.textSize),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  // Inline cue + staged toggle when Words of Jesus in Color was off
-                  if (_initiallyHadWordsOfJesusOff) ...[
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                      ),
-                      child: SwitchListTile(
-                        dense: true,
-                        title: const Text(
-                          'Show Words of Jesus in color while reading',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _wordsOfJesusInRed
-                              ? 'Will be enabled when you tap Apply'
-                              : 'Currently off in Settings (preview only)',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        value: _wordsOfJesusInRed,
-                        onChanged: (value) {
-                          setState(() {
-                            _wordsOfJesusInRed = value;
-                          });
-                        },
+            );
+
+            final editorItems = [
+              // Inline cue + staged toggle when Words of Jesus in Color was off
+              if (_initiallyHadWordsOfJesusOff) ...[
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: SwitchListTile(
+                    dense: true,
+                    title: const Text(
+                      'Show Words of Jesus in color while reading',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                  ],
+                    subtitle: Text(
+                      _wordsOfJesusInRed
+                          ? 'Will be enabled when you tap Apply'
+                          : 'Currently off in Settings (preview only)',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    value: _wordsOfJesusInRed,
+                    onChanged: (value) {
+                      setState(() {
+                        _wordsOfJesusInRed = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
-                  // Readability Contrast Banners
-                  if (isUnreadable) ...[
-                    _ContrastWarningBanner(
-                      isError: true,
-                      message:
-                          'Text and background colors are too close to read (${ratio.toStringAsFixed(1)}:1). Adjust Text or Background Color to apply.',
-                      onGenerateMatching: () {
-                        setState(() {
-                          _config = CustomThemeConfig.harmonizeFromBackground(
-                            _config.backgroundColor,
-                          );
-                        });
+              // Readability Contrast Banners
+              if (isUnreadable) ...[
+                _ContrastWarningBanner(
+                  isError: true,
+                  message:
+                      'Text and background colors are too close to read (${ratio.toStringAsFixed(1)}:1). Adjust Text or Background Color to apply.',
+                  onGenerateMatching: () {
+                    setState(() {
+                      _config = CustomThemeConfig.harmonizeFromBackground(
+                        _config.backgroundColor,
+                      );
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+              ] else if (isLowContrast) ...[
+                _ContrastWarningBanner(
+                  isError: false,
+                  message:
+                      'Low contrast (${ratio.toStringAsFixed(1)}:1) — may be harder to read.',
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Start from a Preset Card
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  leading: ThemeSwatchTrio(
+                    firstColor: _config.backgroundColor,
+                    secondColor: _config.textColor,
+                    accentColor: _config.primaryColor,
+                  ),
+                  title: const Text(
+                    'Start from a Preset',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _showPresetPickerSheet,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Five Ordered Color Slots
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _buildColorRow(
+                      title: 'Background Color',
+                      color: _config.backgroundColor,
+                      onTap: _onBackgroundColorTap,
+                    ),
+                    const Divider(height: 1),
+                    _buildColorRow(
+                      title: 'Text Color',
+                      color: _config.textColor,
+                      onTap: () async {
+                        final selected = await _pickColor(
+                          title: 'Text Color',
+                          currentColor: _config.textColor,
+                        );
+                        if (selected != null && mounted) {
+                          setState(() {
+                            _config = _config.copyWith(textColor: selected);
+                          });
+                        }
                       },
                     ),
-                    const SizedBox(height: 12),
-                  ] else if (isLowContrast) ...[
-                    _ContrastWarningBanner(
-                      isError: false,
-                      message:
-                          'Low contrast (${ratio.toStringAsFixed(1)}:1) — may be harder to read.',
+                    const Divider(height: 1),
+                    _buildColorRow(
+                      title: 'Words of Jesus Color',
+                      color: _config.wordsOfJesusColor,
+                      onTap: () async {
+                        final selected = await _pickColor(
+                          title: 'Words of Jesus Color',
+                          currentColor: _config.wordsOfJesusColor,
+                        );
+                        if (selected != null && mounted) {
+                          setState(() {
+                            _config = _config.copyWith(
+                              wordsOfJesusColor: selected,
+                            );
+                          });
+                        }
+                      },
                     ),
-                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    _buildColorRow(
+                      title: 'Verse Number Color',
+                      color: _config.verseNumberColor,
+                      onTap: () async {
+                        final selected = await _pickColor(
+                          title: 'Verse Number Color',
+                          currentColor: _config.verseNumberColor,
+                        );
+                        if (selected != null && mounted) {
+                          setState(() {
+                            _config = _config.copyWith(
+                              verseNumberColor: selected,
+                            );
+                          });
+                        }
+                      },
+                    ),
+                    const Divider(height: 1),
+                    _buildColorRow(
+                      title: 'Accent Color',
+                      subtitle: 'Buttons, tabs, links, and selection',
+                      color: _config.primaryColor,
+                      onTap: () async {
+                        final selected = await _pickColor(
+                          title: 'Accent Color',
+                          currentColor: _config.primaryColor,
+                        );
+                        if (selected != null && mounted) {
+                          setState(() {
+                            _config = _config.copyWith(primaryColor: selected);
+                          });
+                        }
+                      },
+                    ),
                   ],
+                ),
+              ),
+            ];
 
-            // Start from a Preset Card
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                leading: ThemeSwatchTrio(
-                  firstColor: _config.backgroundColor,
-                  secondColor: _config.textColor,
-                  accentColor: _config.primaryColor,
-                ),
-                title: const Text(
-                  'Start from a Preset',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: _showPresetPickerSheet,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Five Ordered Color Slots
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-              ),
-              child: Column(
+            if (constraints.maxHeight >= 520) {
+              return Column(
                 children: [
-                  _buildColorRow(
-                    title: 'Background Color',
-                    color: _config.backgroundColor,
-                    onTap: _onBackgroundColorTap,
-                  ),
+                  previewHeader,
                   const Divider(height: 1),
-                  _buildColorRow(
-                    title: 'Text Color',
-                    color: _config.textColor,
-                    onTap: () async {
-                      final selected = await _pickColor(
-                        title: 'Text Color',
-                        currentColor: _config.textColor,
-                      );
-                      if (selected != null && mounted) {
-                        setState(() {
-                          _config = _config.copyWith(textColor: selected);
-                        });
-                      }
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _buildColorRow(
-                    title: 'Words of Jesus Color',
-                    color: _config.wordsOfJesusColor,
-                    onTap: () async {
-                      final selected = await _pickColor(
-                        title: 'Words of Jesus Color',
-                        currentColor: _config.wordsOfJesusColor,
-                      );
-                      if (selected != null && mounted) {
-                        setState(() {
-                          _config = _config.copyWith(
-                            wordsOfJesusColor: selected,
-                          );
-                        });
-                      }
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _buildColorRow(
-                    title: 'Verse Number Color',
-                    color: _config.verseNumberColor,
-                    onTap: () async {
-                      final selected = await _pickColor(
-                        title: 'Verse Number Color',
-                        currentColor: _config.verseNumberColor,
-                      );
-                      if (selected != null && mounted) {
-                        setState(() {
-                          _config = _config.copyWith(
-                            verseNumberColor: selected,
-                          );
-                        });
-                      }
-                    },
-                  ),
-                  const Divider(height: 1),
-                  _buildColorRow(
-                    title: 'Accent Color',
-                    subtitle: 'Buttons, tabs, links, and selection',
-                    color: _config.primaryColor,
-                    onTap: () async {
-                      final selected = await _pickColor(
-                        title: 'Accent Color',
-                        currentColor: _config.primaryColor,
-                      );
-                      if (selected != null && mounted) {
-                        setState(() {
-                          _config = _config.copyWith(primaryColor: selected);
-                        });
-                      }
-                    },
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      children: editorItems,
+                    ),
                   ),
                 ],
-              ),
-            ),
-                ],
-              ),
-            ),
-          ],
+              );
+            }
+
+            return ListView(
+              padding: const EdgeInsets.only(bottom: 24),
+              children: [
+                previewHeader,
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: editorItems,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

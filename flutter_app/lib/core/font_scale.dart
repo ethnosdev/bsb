@@ -50,4 +50,8 @@ abstract final class FontScale {
 
   /// Informational page paragraph spacing (0.6x).
   static double infoSpacing(double base) => base * 0.6;
+
+  /// Theme preview card scripture text, clamped so large reading sizes do not
+  /// overflow the pinned preview header.
+  static double themePreview(double base) => base.clamp(12.0, 20.0);
 }

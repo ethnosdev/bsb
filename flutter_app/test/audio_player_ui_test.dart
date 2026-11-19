@@ -62,6 +62,9 @@ class FakeBsbAudioHandler implements BsbAudioHandler {
   int? currentChapter = 1;
 
   @override
+  bool get hasLoadedSource => true;
+
+  @override
   final BehaviorSubject<MediaItem?> mediaItem =
       BehaviorSubject<MediaItem?>.seeded(
         const MediaItem(
@@ -1353,6 +1356,90 @@ void main() {
       await tester.tap(find.text('Jump to verse 2'));
       await tester.pumpAndSettle();
       expect(find.text('Jump to verse 2'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ChapterText does not rebuild on same-chapter MediaItem title updates or other-chapter verse changes',
+    (tester) async {
+      final db = getIt<DatabaseHelper>() as FakeDatabaseHelper;
+      db.chapterLines = [
+        UsfmLine(
+          bookChapterVerse: 1001001,
+          text: 'In the beginning God created the heavens and the earth.',
+          format: ParagraphFormat.p,
+        ),
+        UsfmLine(
+          bookChapterVerse: 1001002,
+          text: 'Now the earth was formless and void.',
+          format: ParagraphFormat.m,
+        ),
+      ];
+
+      audioManager.isPlayerVisible.value = true;
+      audioManager.currentVerseNotifier.value = 1;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final initialUsfm = tester.widget<UsfmWidget>(find.byType(UsfmWidget));
+
+      // Same-chapter MediaItem countdown title updates should not rebuild ChapterText
+      audioManager.mediaItemSubject.add(
+        const MediaItem(
+          id: 'test_url',
+          album: 'Berean Standard Bible',
+          title: 'Genesis 1:1 (4s)',
+          extras: {'bookId': 1, 'chapter': 1},
+        ),
+      );
+      await tester.pump();
+      expect(
+        identical(tester.widget<UsfmWidget>(find.byType(UsfmWidget)), initialUsfm),
+        isTrue,
+      );
+
+      // Actual verse advance on the playing chapter rebuilds to update highlight
+      audioManager.currentVerseNotifier.value = 2;
+      await tester.pump();
+      expect(
+        identical(tester.widget<UsfmWidget>(find.byType(UsfmWidget)), initialUsfm),
+        isFalse,
+      );
+
+      // Non-playing chapter ignores verse advances on another chapter
+      await tester.pumpWidget(
+        const MaterialApp(
+          key: ValueKey('other_chapter'),
+          home: Scaffold(body: ChapterText(bookId: 1, chapter: 2)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final otherChapterInitial = tester.widget<UsfmWidget>(
+        find.byType(UsfmWidget),
+      );
+
+      audioManager.currentVerseNotifier.value = 3;
+      audioManager.mediaItemSubject.add(
+        const MediaItem(
+          id: 'test_url',
+          album: 'Berean Standard Bible',
+          title: 'Genesis 1:3',
+          extras: {'bookId': 1, 'chapter': 1},
+        ),
+      );
+      await tester.pump();
+      expect(
+        identical(
+          tester.widget<UsfmWidget>(find.byType(UsfmWidget)),
+          otherChapterInitial,
+        ),
+        isTrue,
+      );
     },
   );
 }

@@ -1,4 +1,5 @@
 import 'package:bsb/app_state.dart';
+import 'package:bsb/core/font_scale.dart';
 import 'package:bsb/core/theme.dart';
 import 'package:bsb/infrastructure/service_locator.dart';
 import 'package:bsb/ui/settings/theme/custom_theme_editor_page.dart';
@@ -121,9 +122,9 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
             ],
           ),
           body: SafeArea(
-            child: Column(
-              children: [
-                Padding(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final header = Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -166,74 +167,99 @@ class _ThemeSelectionPageState extends State<ThemeSelectionPage> {
                         verseNumberColor: _isCustomSelected
                             ? custom.verseNumberColor
                             : null,
-                        textSize: _appState.textSize,
+                        textSize: FontScale.themePreview(_appState.textSize),
                       ),
                     ],
                   ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                );
+
+                final listItems = [
+                  // Section: Preset Themes
+                  _buildSectionHeader(context, 'Preset Themes'),
+                  const SizedBox(height: 4),
+
+                  ...AppThemePreset.all.map((preset) {
+                    return _buildThemeTile(
+                      context,
+                      leading: ThemeSwatchTrio.preset(preset),
+                      title: preset.name,
+                      isSelected: _draftThemeId == preset.id,
+                      onTap: () {
+                        setState(() {
+                          _draftThemeId = preset.id;
+                        });
+                      },
+                    );
+                  }),
+
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(height: 1),
+                  ),
+
+                  // Section: Custom Theme
+                  _buildSectionHeader(context, 'Personalized Theme'),
+                  const SizedBox(height: 4),
+
+                  _buildThemeTile(
+                    context,
+                    leading: ThemeSwatchTrio(
+                      firstColor: custom.backgroundColor,
+                      secondColor: custom.textColor,
+                      accentColor: custom.primaryColor,
+                    ),
+                    title: 'Custom Theme',
+                    isSelected: _isCustomSelected,
+                    onTap: () {
+                      setState(() {
+                        _draftThemeId = AppThemePreset.customPresetId;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        onPressed: _openCustomThemeEditor,
+                        icon: const Icon(Icons.palette_outlined, size: 18),
+                        label: const Text('Customize Colors'),
+                      ),
+                    ),
+                  ),
+                ];
+
+                if (constraints.maxHeight >= 520) {
+                  return Column(
                     children: [
-                      // Section: Preset Themes
-                      _buildSectionHeader(context, 'Preset Themes'),
-                      const SizedBox(height: 4),
-
-                      ...AppThemePreset.all.map((preset) {
-                        return _buildThemeTile(
-                          context,
-                          leading: ThemeSwatchTrio.preset(preset),
-                          title: preset.name,
-                          isSelected: _draftThemeId == preset.id,
-                          onTap: () {
-                            setState(() {
-                              _draftThemeId = preset.id;
-                            });
-                          },
-                        );
-                      }),
-
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Divider(height: 1),
-                      ),
-
-                      // Section: Custom Theme
-                      _buildSectionHeader(context, 'Personalized Theme'),
-                      const SizedBox(height: 4),
-
-                      _buildThemeTile(
-                        context,
-                        leading: ThemeSwatchTrio(
-                          firstColor: custom.backgroundColor,
-                          secondColor: custom.textColor,
-                          accentColor: custom.primaryColor,
-                        ),
-                        title: 'Custom Theme',
-                        isSelected: _isCustomSelected,
-                        onTap: () {
-                          setState(() {
-                            _draftThemeId = AppThemePreset.customPresetId;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 6),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: OutlinedButton.icon(
-                            onPressed: _openCustomThemeEditor,
-                            icon: const Icon(Icons.palette_outlined, size: 18),
-                            label: const Text('Customize Colors'),
-                          ),
+                      header,
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                          children: listItems,
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  children: [
+                    header,
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: listItems,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );

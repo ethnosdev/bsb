@@ -19,9 +19,9 @@ dependencies:
   shared_preferences_android: ^2.4.28
   url_launcher: ^6.3.2
   package_info_plus: ^10.2.1
-  # scripture: ^0.15.0
-  scripture:
-    path: ../../scripture
+  scripture: ^0.16.0
+  # scripture:
+  #   path: ../../scripture
   uuid: ^4.6.0
   flutter_markdown_plus: ^1.0.12
   file_picker: ^13.1.0
@@ -36,7 +36,7 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   wakelock_plus: ^1.8.0
 
-  material_ui: any
+  material_ui: ^1.11.0
 dev_dependencies:
   flutter_test: 
     sdk: flutter
@@ -48,9 +48,9 @@ hooks:
     sqlite3:
       source: system
 
-dependency_overrides:
-  scripture:
-    path: ../../scripture
+# dependency_overrides:
+#   scripture:
+#     path: ../../scripture
 
 flutter:
   uses-material-design: true

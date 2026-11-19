@@ -611,6 +611,89 @@ void main() {
     },
   );
 
+  testWidgets(
+    'ThemeSelectionPage and CustomThemeEditorPage do not overflow at max font size (50.0)',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final appState = getIt<AppState>();
+      await appState.setTextSize(50.0);
+
+      await tester.pumpWidget(const MaterialApp(home: ThemeSelectionPage()));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('Custom Theme'),
+        150,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Custom Theme'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialConfig: CustomThemeConfig.defaultConfig(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('Accent Color'),
+        150,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Accent Color'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'ThemeSelectionPage and CustomThemeEditorPage scroll cleanly without overflow in landscape (640x360)',
+    (tester) async {
+      tester.view.physicalSize = const Size(640, 360);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const MaterialApp(home: ThemeSelectionPage()));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('Customize Colors'),
+        150,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Customize Colors'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomThemeEditorPage(
+            initialConfig: CustomThemeConfig.defaultConfig(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('Accent Color'),
+        150,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(find.text('Accent Color'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   group('Single-palette migration and AppState brightness independence', () {
     test('migrates legacy customThemeLight/Dark based on ThemeMode and customization', () async {
       // Case 1: ThemeMode.system where only Dark was explicitly customized

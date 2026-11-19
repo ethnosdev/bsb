@@ -55,12 +55,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _tabManager.addListener(_onTabManagerChanged);
     if (getIt.isRegistered<AudioPlaybackManager>()) {
-      _cachedAudioManager = getIt<AudioPlaybackManager>();
-      _cachedAudioManager!.isPlayerVisible.addListener(
-        _onPlayerVisibilityChanged,
-      );
-      _cachedAudioManager!.playbackErrorNotifier.addListener(_onAudioError);
-      _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
+      _attachAudioManager(getIt<AudioPlaybackManager>());
     }
     _playlistShareHandler = PlaylistShareHandler();
     _deepLinkHandler = DeepLinkHandler(
@@ -100,14 +95,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _attachAudioManager(AudioPlaybackManager manager) {
+    _cachedAudioManager = manager;
+    manager.isPlayerVisible.addListener(_onPlayerVisibilityChanged);
+    manager.playbackErrorNotifier.addListener(_onAudioError);
+    manager.onChapterChanged = _onAudioChapterChanged;
+  }
+
   AudioPlaybackManager? get _audioManager {
     if (_cachedAudioManager == null &&
         getIt.isRegistered<AudioPlaybackManager>()) {
-      _cachedAudioManager = getIt<AudioPlaybackManager>();
-      _cachedAudioManager!.isPlayerVisible.addListener(
-        _onPlayerVisibilityChanged,
-      );
-      _cachedAudioManager!.onChapterChanged = _onAudioChapterChanged;
+      _attachAudioManager(getIt<AudioPlaybackManager>());
     }
     return _cachedAudioManager;
   }

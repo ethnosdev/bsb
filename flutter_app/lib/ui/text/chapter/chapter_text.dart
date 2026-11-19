@@ -87,6 +87,9 @@ class _ChapterTextState extends State<ChapterText>
   AudioPlaybackManager? _audioManager;
   StreamSubscription<MediaItem?>? _audioMediaSub;
   MediaItem? _audioMediaItem;
+  int? _lastAudioMediaBookId;
+  int? _lastAudioMediaChapter;
+  int? _lastRenderedAudioVerse;
   int? _lastAutoScrolledVerse;
   bool _isAutoScrollPaused = false;
   DateTime? _lastManualScrollTime;
@@ -305,6 +308,7 @@ class _ChapterTextState extends State<ChapterText>
       _isVerseScrubberVisible = false;
       _verseAtZoomStart = null;
       _lastRenderedTextSize = null;
+      _lastRenderedAudioVerse = null;
       _lastAutoScrolledVerse = null;
       _isAutoScrollPaused = false;
       _lastManualScrollTime = null;
@@ -694,6 +698,14 @@ class _ChapterTextState extends State<ChapterText>
     _audioManager!.currentVerseNotifier.addListener(_onAudioStateChanged);
     _audioMediaSub = _audioManager!.mediaItemStream.listen((item) {
       _audioMediaItem = item;
+      final bookId = item?.extras?['bookId'] as int?;
+      final chapter = item?.extras?['chapter'] as int?;
+      if (bookId == _lastAudioMediaBookId &&
+          chapter == _lastAudioMediaChapter) {
+        return;
+      }
+      _lastAudioMediaBookId = bookId;
+      _lastAudioMediaChapter = chapter;
       _onAudioStateChanged();
     });
   }
@@ -701,6 +713,8 @@ class _ChapterTextState extends State<ChapterText>
   void _detachAudioListeners() {
     _audioMediaSub?.cancel();
     _audioMediaSub = null;
+    _lastAudioMediaBookId = null;
+    _lastAudioMediaChapter = null;
     _audioManager?.isPlayerVisible.removeListener(_onAudioStateChanged);
     _audioManager?.currentVerseNotifier.removeListener(_onAudioStateChanged);
     _audioManager = null;
@@ -729,6 +743,14 @@ class _ChapterTextState extends State<ChapterText>
     final activeVerse = _activeAudioVerse();
 
     if (activeVerse == null) {
+      if (_lastRenderedAudioVerse == null &&
+          _lastAutoScrolledVerse == null &&
+          !_isAutoScrollPaused &&
+          _lastManualScrollTime == null &&
+          !_isCurrentVerseOffScreen) {
+        return;
+      }
+      _lastRenderedAudioVerse = null;
       _lastAutoScrolledVerse = null;
       _isAutoScrollPaused = false;
       _lastManualScrollTime = null;
@@ -759,7 +781,10 @@ class _ChapterTextState extends State<ChapterText>
       _isCurrentVerseOffScreen = false;
     }
 
-    setState(() {});
+    if (activeVerse != _lastRenderedAudioVerse) {
+      _lastRenderedAudioVerse = activeVerse;
+      setState(() {});
+    }
   }
 
   void _pauseAutoScrollForManualInteraction() {

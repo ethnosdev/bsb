@@ -45,7 +45,7 @@ class HelpPage extends StatelessWidget {
                   title: 'Navigation',
                   content:
                       'While reading the biblical text, swipe left or right to move between chapters. '
-                      'Tap the active chapter in the app bar to reopen the chapter keypad. '
+                      'Tap the active chapter in the app bar to reopen the chapter chooser. '
                       'Drag along the verse scrubber on the right edge to jump directly to any verse, '
                       'or pinch the screen to adjust the font size.',
                   titleStyle: titleStyle,
@@ -86,10 +86,9 @@ class HelpPage extends StatelessWidget {
                 _HelpCard(
                   title: 'Search',
                   content:
-                      'Search for words or phrases across the entire Bible, Old Testament, '
-                      'New Testament, or the current book. '
+                      'Search for words or phrases across the entire Bible, or filter by the current book. '
                       'Use the "Exact" filter to match exact phrases or words, '
-                      'and tap any result to open it in a chapter tab.',
+                      'and tap any result to open it in a new chapter tab.',
                   titleStyle: titleStyle,
                   contentStyle: contentStyle,
                 ),
@@ -102,6 +101,37 @@ class HelpPage extends StatelessWidget {
                       'grammatical details, and full lexicon entry (Abbott-Smith or BDB). '
                       'Tap "Occurrences" to see every verse where the word or root appears in Scripture, '
                       'or swipe left and right to navigate between verses.',
+                  titleStyle: titleStyle,
+                  contentStyle: contentStyle,
+                ),
+                const SizedBox(height: 16),
+                _HelpCard(
+                  title: 'Audio playback',
+                  content:
+                      'Open the chapter menu and tap "Play Audio" to listen to the chapter, or select a verse '
+                      'or passage, tap "More", and choose "Play Audio". The text highlights and follows along verse by verse. '
+                      'Tap the player bar to open controls for playback speed, pause-before-verse memorization delays, '
+                      'and repeat modes.',
+                  titleStyle: titleStyle,
+                  contentStyle: contentStyle,
+                ),
+                const SizedBox(height: 16),
+                _HelpCard(
+                  title: 'Playlists & reading plans',
+                  content:
+                      'Open Playlists from the menu to group Bible passages and notes into an ordered collection '
+                      'for study or sharing, and open playlists directly as tabs. '
+                      'Open Reading Plans to start a reading track and mark daily readings as you finish chapters.',
+                  titleStyle: titleStyle,
+                  contentStyle: contentStyle,
+                ),
+                const SizedBox(height: 16),
+                _HelpCard(
+                  title: 'Themes & backup',
+                  content:
+                      'Visit Settings to choose a color theme or create a custom theme, adjust text size, '
+                      'enable British English spelling, or export and import backups of your highlights, '
+                      'notes, and playlists.',
                   titleStyle: titleStyle,
                   contentStyle: contentStyle,
                 ),

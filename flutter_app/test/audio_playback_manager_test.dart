@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:bsb/infrastructure/audio/audio_models.dart';
 import 'package:bsb/infrastructure/audio/audio_playback_manager.dart';
 import 'package:bsb/infrastructure/audio/bsb_audio_handler.dart';
@@ -18,6 +19,9 @@ class MockAudioPlayer extends AudioPlayer {
   bool isPlaying = false;
   int setAudioSourceCalls = 0;
   Duration? lastInitialPosition;
+  ProcessingState currentProcessingState = ProcessingState.ready;
+  Future<Duration?> Function(AudioSource source, Duration? initialPosition)?
+  onSetAudioSource;
 
   final StreamController<Duration> positionController =
       StreamController<Duration>.broadcast();
@@ -42,7 +46,7 @@ class MockAudioPlayer extends AudioPlayer {
   Stream<PlaybackEvent> get playbackEventStream => eventController.stream;
 
   @override
-  ProcessingState get processingState => ProcessingState.ready;
+  ProcessingState get processingState => currentProcessingState;
 
   @override
   double get speed => currentSpeed;
@@ -77,7 +81,14 @@ class MockAudioPlayer extends AudioPlayer {
   }) async {
     setAudioSourceCalls++;
     lastInitialPosition = initialPosition;
+    if (onSetAudioSource != null) {
+      final duration = await onSetAudioSource!(source, initialPosition);
+      currentPosition = initialPosition ?? Duration.zero;
+      currentProcessingState = ProcessingState.ready;
+      return duration;
+    }
     currentPosition = initialPosition ?? Duration.zero;
+    currentProcessingState = ProcessingState.ready;
     return currentDuration;
   }
 
@@ -120,6 +131,7 @@ class MockAudioPlayer extends AudioPlayer {
   @override
   Future<void> stop() async {
     isPlaying = false;
+    currentProcessingState = ProcessingState.idle;
     _completePendingPlay();
   }
 
@@ -728,6 +740,282 @@ void main() {
       expect(mockPlayer.isPlaying, isFalse);
       expect(mockPlayer.currentPosition, const Duration(milliseconds: 12950));
       expect(manager.currentVerseNotifier.value, 2);
+    });
+
+    test('failed audio load clears state so retrying the same chapter succeeds', () async {
+      mockPlayer.onSetAudioSource = (_, _) async {
+        throw Exception('Offline');
+      };
+
+      await manager.playOrToggleChapter(43, 10);
+      expect(manager.isPlayerVisible.value, isFalse);
+      expect(manager.playbackErrorNotifier.value, isNotNull);
+      expect(audioHandler.hasLoadedSource, isFalse);
+      expect(audioHandler.currentBookId, isNull);
+      expect(audioHandler.currentChapter, isNull);
+
+      // Retrying the exact same chapter once online reloads and starts playing
+      mockPlayer.onSetAudioSource = null;
+      await manager.playOrToggleChapter(43, 10);
+      expect(manager.isPlayerVisible.value, isTrue);
+      expect(manager.playbackErrorNotifier.value, isNull);
+      expect(audioHandler.hasLoadedSource, isTrue);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.setAudioSourceCalls, 2);
+
+      // Failed playFromVerse on a new chapter also allows retrying that verse
+      mockPlayer.onSetAudioSource = (_, _) async {
+        throw Exception('Offline');
+      };
+      await manager.playFromVerse(43, 11, 2);
+      expect(manager.isPlayerVisible.value, isFalse);
+      expect(manager.playbackErrorNotifier.value, isNotNull);
+      expect(audioHandler.hasLoadedSource, isFalse);
+
+      mockPlayer.onSetAudioSource = null;
+      await manager.playFromVerse(43, 11, 2);
+      expect(manager.isPlayerVisible.value, isTrue);
+      expect(manager.playbackErrorNotifier.value, isNull);
+      expect(audioHandler.hasLoadedSource, isTrue);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.currentPosition, const Duration(seconds: 10));
+    });
+
+    test('closePlayer followed by playOrToggleChapter on same chapter reloads and resumes saved position', () async {
+      await manager.playOrToggleChapter(43, 10);
+      mockPlayer.emitPosition(const Duration(milliseconds: 14000));
+
+      await manager.closePlayer();
+      expect(audioHandler.hasLoadedSource, isFalse);
+      expect(manager.isPlayerVisible.value, isFalse);
+      expect(userSettings.lastAudioBookId, 43);
+      expect(userSettings.lastAudioChapter, 10);
+      expect(userSettings.lastAudioPositionMs, 14000);
+
+      final callsBefore = mockPlayer.setAudioSourceCalls;
+      await manager.playOrToggleChapter(43, 10);
+      expect(mockPlayer.setAudioSourceCalls, callsBefore + 1);
+      expect(
+        mockPlayer.lastInitialPosition,
+        const Duration(milliseconds: 14000),
+      );
+      expect(mockPlayer.isPlaying, isTrue);
+    });
+
+    test('rapid navigateTabToChapter suppresses PlayerInterruptedException and preserves autoPlay from verse pause', () async {
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 5);
+      await manager.playOrToggleChapter(43, 10);
+      mockPlayer.emitPosition(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.isInVersePause, isTrue);
+
+      final firstLoadStarted = Completer<void>();
+      final firstLoadCompleter = Completer<Duration?>();
+      mockPlayer.onSetAudioSource = (_, _) {
+        if (!firstLoadStarted.isCompleted) {
+          firstLoadStarted.complete();
+        }
+        return firstLoadCompleter.future;
+      };
+
+      final firstNav = manager.navigateTabToChapter(43, 11);
+      await firstLoadStarted.future;
+
+      mockPlayer.onSetAudioSource = null;
+      final secondNav = manager.navigateTabToChapter(43, 12);
+      firstLoadCompleter.completeError(
+        PlayerInterruptedException('Connection aborted'),
+      );
+
+      await Future.wait([firstNav, secondNav]);
+      expect(manager.playbackErrorNotifier.value, isNull);
+      expect(manager.isPlayerVisible.value, isTrue);
+      expect(audioHandler.currentBookId, 43);
+      expect(audioHandler.currentChapter, 12);
+      expect(mockPlayer.isPlaying, isTrue);
+    });
+
+    test('skipToNextVerse, skipToPreviousVerse, and seek during verse pause cancel countdown and resume playback', () async {
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 5);
+      await manager.playOrToggleChapter(43, 10);
+
+      // Enter verse pause before verse 2
+      mockPlayer.emitPosition(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.isInVersePause, isTrue);
+      expect(mockPlayer.isPlaying, isFalse);
+
+      await manager.skipToNextVerse();
+      expect(audioHandler.isInVersePause, isFalse);
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 16690));
+
+      // Enter verse pause before verse 2 again, then skip backward
+      await manager.seek(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.isInVersePause, isTrue);
+
+      await manager.skipToPreviousVerse();
+      expect(audioHandler.isInVersePause, isFalse);
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 4700));
+
+      // Enter verse pause again, then scrub directly
+      mockPlayer.emitPosition(const Duration(milliseconds: 6000));
+      mockPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(audioHandler.isInVersePause, isTrue);
+
+      await manager.seek(const Duration(milliseconds: 17500));
+      expect(audioHandler.isInVersePause, isFalse);
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(mockPlayer.isPlaying, isTrue);
+      expect(mockPlayer.currentPosition, const Duration(milliseconds: 17500));
+    });
+
+    test('audio interruptions and becomingNoisy during verse pause cancel countdown and stay paused', () async {
+      final localPlayer = MockAudioPlayer();
+      final localSilencePlayer = MockAudioPlayer();
+      final interruptionController =
+          StreamController<AudioInterruptionEvent>.broadcast();
+      final noisyController = StreamController<void>.broadcast();
+      final customHandler = BsbAudioHandler(
+        player: localPlayer,
+        silencePlayer: localSilencePlayer,
+        interruptionEvents: interruptionController.stream,
+        becomingNoisyEvents: noisyController.stream,
+        timingsLoader: (bookId, chapter) async {
+          if (bookId == 43 && chapter == 10) return john10Timings;
+          return ChapterTimings.empty(bookId, chapter);
+        },
+      );
+      final customManager = AudioPlaybackManager(
+        audioHandler: customHandler,
+        userSettings: userSettings,
+      );
+
+      await customManager.setPauseBetweenVerses(enabled: true, seconds: 5);
+      await customManager.playOrToggleChapter(43, 10);
+      localPlayer.emitPosition(const Duration(milliseconds: 6000));
+      localPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(customHandler.isInVersePause, isTrue);
+
+      // Ducking does not cancel verse pause
+      interruptionController.add(
+        AudioInterruptionEvent(true, AudioInterruptionType.duck),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(customHandler.isInVersePause, isTrue);
+
+      // Non-duck interruption cancels verse pause and leaves player paused
+      interruptionController.add(
+        AudioInterruptionEvent(true, AudioInterruptionType.pause),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(customHandler.isInVersePause, isFalse);
+      expect(localSilencePlayer.isPlaying, isFalse);
+      expect(localPlayer.isPlaying, isFalse);
+
+      // Re-enter verse pause, then simulate headphone unplug (becomingNoisy)
+      await customHandler.play();
+      localPlayer.emitPosition(const Duration(milliseconds: 6000));
+      localPlayer.emitPosition(const Duration(milliseconds: 13000));
+      await Future<void>.delayed(Duration.zero);
+      expect(customHandler.isInVersePause, isTrue);
+
+      noisyController.add(null);
+      await Future<void>.delayed(Duration.zero);
+      expect(customHandler.isInVersePause, isFalse);
+      expect(localSilencePlayer.isPlaying, isFalse);
+      expect(localPlayer.isPlaying, isFalse);
+
+      customManager.dispose();
+      await customHandler.dispose();
+      await interruptionController.close();
+      await noisyController.close();
+    });
+
+    test('Verse and Range stop/repeat boundaries never emit verse + 1 on stream or MediaItem', () async {
+      final emittedVerses = <int?>[];
+      final emittedTitles = <String>[];
+      final verseSub = audioHandler.currentVerseStream.listen(emittedVerses.add);
+      final mediaSub = audioHandler.mediaItem.listen((item) {
+        if (item != null) emittedTitles.add(item.title);
+      });
+
+      // Verse 2 with Stop
+      await manager.playSelection(Reference(bookId: 43, chapter: 10, verse: 2));
+      await Future<void>.delayed(Duration.zero);
+      emittedVerses.clear();
+      emittedTitles.clear();
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 16800));
+      await Future<void>.delayed(Duration.zero);
+      expect(emittedVerses, isNot(contains(3)));
+      expect(emittedTitles, isNot(contains('John 10:3')));
+
+      // Verse 2 with Repeat
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
+      await manager.play();
+      await Future<void>.delayed(Duration.zero);
+      emittedVerses.clear();
+      emittedTitles.clear();
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 16800));
+      await Future<void>.delayed(Duration.zero);
+      expect(emittedVerses, isNot(contains(3)));
+      expect(emittedTitles, isNot(contains('John 10:3')));
+
+      // Range 10:1-2 with Stop and Repeat
+      await manager.playSelection(
+        Reference(bookId: 43, chapter: 10, verse: 1, endChapter: 10, endVerse: 2),
+      );
+      await Future<void>.delayed(Duration.zero);
+      emittedVerses.clear();
+      emittedTitles.clear();
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 13500));
+      mockPlayer.emitPosition(const Duration(milliseconds: 16800));
+      await Future<void>.delayed(Duration.zero);
+      expect(emittedVerses, isNot(contains(3)));
+      expect(emittedTitles, isNot(contains('John 10:3')));
+
+      manager.setRepeatBehavior(AudioRepeatBehavior.repeat);
+      await manager.play();
+      await Future<void>.delayed(Duration.zero);
+      emittedVerses.clear();
+      emittedTitles.clear();
+
+      mockPlayer.emitPosition(const Duration(milliseconds: 13500));
+      mockPlayer.emitPosition(const Duration(milliseconds: 16800));
+      await Future<void>.delayed(Duration.zero);
+      expect(emittedVerses, isNot(contains(3)));
+      expect(emittedTitles, isNot(contains('John 10:3')));
+
+      await verseSub.cancel();
+      await mediaSub.cancel();
+    });
+
+    test('scrubbing to end of chapter while paused does not trigger verse-pause countdown or advance chapters', () async {
+      await manager.setPauseBetweenVerses(enabled: true, seconds: 5);
+      await manager.playOrToggleChapter(43, 10);
+      await manager.pause();
+      expect(mockPlayer.isPlaying, isFalse);
+
+      await manager.seek(const Duration(milliseconds: 25000));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(audioHandler.isInVersePause, isFalse);
+      expect(mockSilencePlayer.isPlaying, isFalse);
+      expect(audioHandler.currentChapter, 10);
+      expect(mockPlayer.isPlaying, isFalse);
+      expect(manager.currentVerseNotifier.value, 3);
     });
   });
 }

@@ -748,7 +748,6 @@ class _TextScreenState extends State<TextScreen>
       context: context,
       position: position,
       items: const [
-        PopupMenuItem<String>(value: 'play', child: Text('Play')),
         PopupMenuItem<String>(
           value: 'compare',
           child: Text('Compare Translations'),
@@ -762,6 +761,7 @@ class _TextScreenState extends State<TextScreen>
           child: Text('Add to Playlist'),
         ),
         PopupMenuItem<String>(value: 'memorize', child: Text('Memorize')),
+        PopupMenuItem<String>(value: 'play', child: Text('Play Audio')),
       ],
     );
 
